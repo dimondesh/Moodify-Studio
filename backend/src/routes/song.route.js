@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { protectRoute, requireAdmin } from "../middleware/auth.middleware";
-import { getAllSongs, getFeaturedSongs,getMadeForYouSongs, getTrendingSongs} from "../controller/song.controller";
+import { protectRoute, requireAdmin } from "../middleware/auth.middleware.js";
+import { getAllSongs, getFeaturedSongs,getMadeForYouSongs, getTrendingSongs} from "../controller/song.controller.js";
 
 
 
