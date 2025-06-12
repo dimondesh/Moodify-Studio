@@ -8,6 +8,9 @@ import authRoutes from './routes/auth.route.js';
 import songRoutes from './routes/song.route.js';
 import albumRoutes from './routes/album.route.js';
 import statsRoutes from './routes/stat.route.js';
+import fileUpload from 'express-fileupload';
+import path from 'path';
+import { log } from 'console';
 
 
 dotenv.config();
@@ -17,7 +20,18 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 const app = express();
 
+const __dirname = path.resolve();
+
 app.use(clerkMiddleware());
+
+
+app.use(fileUpload({
+    useTempFiles: true,
+    tempFileDir: path.join(__dirname, 'temp'),
+    createParentPath: true,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+    
+}));
 
 const jsonParser = express.json();
 app.use(jsonParser);
@@ -30,7 +44,12 @@ app.use("/api/albums", albumRoutes);
 app.use("/api/stats", statsRoutes);
 
 
-
+app.use((err, req, res, next) => { 
+    res.status(500).json({
+        success: false,
+        message: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message,
+    });
+});
 
 
 app.listen(PORT, () => {
