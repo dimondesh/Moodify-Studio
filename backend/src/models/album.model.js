@@ -14,9 +14,9 @@ const albumSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        releaseDate: {
+        releaseYear: {
             type: Number,
-            required: true,
+            required: false,
         },
         songs: [
             {
@@ -29,4 +29,4 @@ const albumSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-export const Album = mongoose.model("Album", albumSchema);
+export const Album = mongoose.model("Album", albumSchema); 

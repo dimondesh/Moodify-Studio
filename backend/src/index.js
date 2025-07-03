@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { connectDB } from './lib/db.js';
 import { clerkMiddleware } from '@clerk/express'
 import userRoutes from './routes/user.route.js';
@@ -10,7 +11,10 @@ import albumRoutes from './routes/album.route.js';
 import statsRoutes from './routes/stat.route.js';
 import fileUpload from 'express-fileupload';
 import path from 'path';
-import { log } from 'console';
+import cors from 'cors';
+import { initializeSocket } from './lib/socket.js';
+
+
 
 
 dotenv.config();
@@ -18,9 +22,18 @@ dotenv.config();
 
 
 const PORT = process.env.PORT || 5000;
+
 const app = express();
 
 const __dirname = path.resolve();
+
+
+const httpServer = createServer(app);
+initializeSocket(httpServer)
+
+app.use(cors({
+    origin: "http://localhost:3000", credentials: true, 
+}))
 
 app.use(clerkMiddleware());
 
@@ -31,7 +44,10 @@ app.use(fileUpload({
     createParentPath: true,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
     
+    
 }));
+
+
 
 const jsonParser = express.json();
 app.use(jsonParser);
@@ -52,7 +68,7 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     connectDB();
     console.log('Server is running on port 5000');
 });
