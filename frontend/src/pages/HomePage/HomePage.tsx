@@ -17,7 +17,7 @@ const HomePage = () => {
     featuredSongs,
   } = useMusicStore();
 
-  const { initializeQueue } = usePlayerStore();
+  const { initializeQueue, toggleShuffle, isShuffle } = usePlayerStore();
 
   useEffect(() => {
     fetchFeaturedSongs();
@@ -33,8 +33,17 @@ const HomePage = () => {
     ) {
       const allSongs = [...featuredSongs, ...madeForYouSongs, ...trendingSongs];
       initializeQueue(allSongs);
+
+      // Включаем shuffle, если он ещё выключен
     }
-  }, [initializeQueue, madeForYouSongs, featuredSongs, trendingSongs]);
+  }, [
+    initializeQueue,
+    madeForYouSongs,
+    featuredSongs,
+    trendingSongs,
+    isShuffle,
+    toggleShuffle,
+  ]);
 
   return (
     <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-800 to-zinc-900">

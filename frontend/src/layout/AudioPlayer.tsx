@@ -5,7 +5,7 @@ const AudioPlayer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const prevSongRef = useRef<string | null>(null);
 
-  const { currentSong, isPlaying, playNext } = usePlayerStore();
+  const { currentSong, isPlaying, playNext, repeatMode } = usePlayerStore();
 
   useEffect(() => {
     if (isPlaying) audioRef.current?.play();
@@ -16,13 +16,27 @@ const AudioPlayer = () => {
     const audio = audioRef.current;
 
     const handleEnded = () => {
-      playNext();
+      if (repeatMode === "one") {
+        // Повторяем текущий трек
+        if (!audioRef.current) return;
+        audioRef.current.currentTime = 0;
+        // Небольшая задержка, чтобы play точно сработал
+        setTimeout(() => {
+          audioRef.current?.play().catch(() => {});
+        }, 0);
+      } else if (repeatMode === "all") {
+        playNext();
+      } else {
+        // repeatMode === "off"
+        // Можно остановить воспроизведение
+        usePlayerStore.setState({ isPlaying: false });
+      }
     };
 
     audio?.addEventListener("ended", handleEnded);
 
     return () => audio?.removeEventListener("ended", handleEnded);
-  }, [playNext]);
+  }, [playNext, repeatMode]);
 
   useEffect(() => {
     if (!audioRef.current || !currentSong) return;

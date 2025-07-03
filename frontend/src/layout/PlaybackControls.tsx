@@ -23,15 +23,22 @@ const formatTime = (seconds: number) => {
 };
 
 const PlaybackControls = () => {
-  const { currentSong, isPlaying, togglePlay, playNext, playPrevious } =
-    usePlayerStore();
+  const {
+    currentSong,
+    isPlaying,
+    togglePlay,
+    playNext,
+    playPrevious,
+    repeatMode,
+    setRepeatMode,
+    isShuffle,
+    toggleShuffle,
+  } = usePlayerStore();
+
   const [volume, setVolume] = useState(75);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const repeatMode = usePlayerStore((state) => state.repeatMode);
-  const setRepeatMode = usePlayerStore((state) => state.setRepeatMode);
 
   const toggleRepeatMode = () => {
     if (repeatMode === "off") {
@@ -57,13 +64,14 @@ const PlaybackControls = () => {
     const handleEnded = () => {
       if (repeatMode === "one") {
         audio.currentTime = 0;
-        audio.play();
+        setTimeout(() => {
+          audio.play().catch(console.warn);
+        }, 0);
       } else if (repeatMode === "all") {
         const { currentIndex, queue } = usePlayerStore.getState();
         if (currentIndex + 1 < queue.length) {
           usePlayerStore.getState().playNext();
         } else {
-          // если конец очереди — начать с начала
           usePlayerStore.getState().playAlbum(queue, 0);
         }
       } else {
@@ -110,13 +118,19 @@ const PlaybackControls = () => {
         </div>
         <div className="flex flex-col items-center gap-2 flex-1 max-w-full sm:max-w-[45%]">
           <div className="flex items-center gap-4 sm:gap-6">
+            {/* Кнопка Shuffle */}
             <Button
               size="icon"
               variant="ghost"
-              className="hidden sm:inline-flex hover:text-white text-zinc-400"
+              className={`hidden sm:inline-flex hover:text-white ${
+                isShuffle ? "text-violet-400" : "text-zinc-400"
+              }`}
+              onClick={toggleShuffle}
+              title="Toggle Shuffle"
             >
               <Shuffle className="h-4 w-4" />
             </Button>
+
             <Button
               size="icon"
               variant="ghost"
@@ -139,6 +153,7 @@ const PlaybackControls = () => {
                 <Play className="h-5 w-5 fill-current" />
               )}
             </Button>
+
             <Button
               size="icon"
               variant="ghost"
@@ -148,6 +163,7 @@ const PlaybackControls = () => {
             >
               <SkipForward className="h-4 w-4" />
             </Button>
+
             <Button
               size="icon"
               variant="ghost"
@@ -155,6 +171,7 @@ const PlaybackControls = () => {
                 repeatMode !== "off" ? "text-violet-400" : "text-zinc-400"
               }`}
               onClick={toggleRepeatMode}
+              title="Toggle Repeat Mode"
             >
               {repeatMode === "one" ? (
                 <Repeat1 className="h-4 w-4" />
