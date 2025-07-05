@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { useChatStore } from "../../stores/useChatStore";
-import { useUser } from "@clerk/clerk-react";
-import Topbar from "../../components/ui/Topbar";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "../../lib/firebase";
 import UsersList from "./UsersList";
 import ChatHeader from "./ChatHeader";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Avatar, AvatarImage } from "../../components/ui/avatar";
 import MessageInput from "./MessageInput";
+import { useAuthStore } from "../../stores/useAuthStore"; // Импортируем useAuthStore
 
 const formatTime = (date: string) => {
   return new Date(date).toLocaleTimeString("en-US", {
@@ -17,19 +18,26 @@ const formatTime = (date: string) => {
 };
 
 const ChatPage = () => {
-  const { user } = useUser();
+  const [firebaseUser] = useAuthState(auth); // Firebase user
+  const { user: mongoUser } = useAuthStore(); // MongoDB user from your store
   const { messages, selectedUser, fetchUsers, fetchMessages } = useChatStore();
 
   useEffect(() => {
-    if (user) fetchUsers();
-  }, [fetchUsers, user]);
+    // 💡 ИСПРАВЛЕНО: Вызываем fetchUsers только когда MongoDB user доступен
+    if (mongoUser) {
+      fetchUsers();
+    }
+  }, [fetchUsers, mongoUser]);
 
   useEffect(() => {
-    if (selectedUser) fetchMessages(selectedUser.clerkId);
-  }, [selectedUser, fetchMessages]);
+    // 💡 ИСПРАВЛЕНО: Передаем MongoDB _id для fetchMessages
+    if (selectedUser && mongoUser) {
+      fetchMessages(selectedUser._id);
+    }
+  }, [selectedUser, fetchMessages, mongoUser]);
+
   return (
     <main className="h-full rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-900 overflow-hidden">
-      <Topbar />
       <div className="grid lg:grid-cols-[300px_1fr] grid-cols-[80px_1fr] h-[calc(100vh-180px)]">
         <UsersList />
 
@@ -43,14 +51,19 @@ const ChatPage = () => {
                     <div
                       key={message._id}
                       className={`flex items-start gap-3 ${
-                        message.senderId === user?.id ? "flex-row-reverse" : ""
+                        // 💡 ИСПРАВЛЕНО: Сравниваем по MongoDB _id
+                        message.senderId === mongoUser?.id
+                          ? "flex-row-reverse"
+                          : ""
                       }`}
                     >
                       <Avatar className="size-8">
                         <AvatarImage
                           src={
-                            message.senderId === user?.id
-                              ? user.imageUrl
+                            // 💡 ИСПРАВЛЕНО: Используем photoURL из FirebaseUser для текущего,
+                            // imageUrl из selectedUser для другого
+                            message.senderId === mongoUser?.id
+                              ? firebaseUser?.photoURL || undefined
                               : selectedUser.imageUrl
                           }
                         />
@@ -58,7 +71,8 @@ const ChatPage = () => {
 
                       <div
                         className={`rounded-lg p-3 max-w-[70%] ${
-                          message.senderId === user?.id
+                          // 💡 ИСПРАВЛЕНО: Сравниваем по MongoDB _id
+                          message.senderId === mongoUser?.id
                             ? "bg-green-500"
                             : "bg-zinc-800"
                         }`}

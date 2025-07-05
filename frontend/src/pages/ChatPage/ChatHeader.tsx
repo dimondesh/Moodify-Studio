@@ -19,7 +19,8 @@ const ChatHeader = () => {
         <div>
           <h2 className="font-medium">{selectedUser.fullName}</h2>
           <p className="text-sm text-zinc-400">
-            {onlineUsers.has(selectedUser.clerkId) ? "Online" : "Offline"}
+            {/* 💡 ИСПРАВЛЕНО: Проверяем по MongoDB _id */}
+            {onlineUsers.has(selectedUser._id) ? "Online" : "Offline"}
           </p>
         </div>
       </div>

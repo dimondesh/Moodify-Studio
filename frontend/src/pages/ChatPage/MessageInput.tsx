@@ -1,18 +1,26 @@
-import { useUser } from "@clerk/clerk-react";
 import { useState } from "react";
 import { useChatStore } from "../../stores/useChatStore";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Send } from "lucide-react";
+import { useAuthStore } from "../../stores/useAuthStore";
 
 const MessageInput = () => {
   const [newMessage, setNewMessage] = useState("");
-  const { user } = useUser();
   const { selectedUser, sendMessage } = useChatStore();
+  const { user: mongoUser } = useAuthStore();
 
   const handleSend = () => {
-    if (!selectedUser || !user || !newMessage) return;
-    sendMessage(selectedUser.clerkId, user.id, newMessage.trim());
+    // 💡 ИСПРАВЛЕНО: Проверяем наличие mongoUser.id перед использованием
+    if (!selectedUser || !mongoUser?.id || !newMessage.trim()) {
+      console.warn(
+        "Cannot send message: Missing selected user, current user ID, or message content."
+      );
+      return;
+    }
+
+    // Теперь mongoUser.id гарантированно string
+    sendMessage(selectedUser._id, mongoUser.id, newMessage.trim());
     setNewMessage("");
   };
 
@@ -26,11 +34,7 @@ const MessageInput = () => {
           className="bg-zinc-800 border-none"
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
         />
-        <Button
-          size={"icon"}
-          onClick={handleSend}
-          disabled={!newMessage.trim()}
-        >
+        <Button size="icon" onClick={handleSend} disabled={!newMessage.trim()}>
           <Send className="size-4" />
         </Button>
       </div>

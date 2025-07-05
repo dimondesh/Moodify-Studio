@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
-import { Clock, Pause, Play } from "lucide-react";
+import { CheckCircle2, Clock, Pause, Play, PlusCircle } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
+import { useLibraryStore } from "../../stores/useLibraryStore";
 
 export const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -16,6 +17,32 @@ const AlbumPage = () => {
   const { albumId } = useParams();
   const { fetchAlbumbyId, currentAlbum, isLoading } = useMusicStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
+  const { albums, toggleAlbum } = useLibraryStore();
+  const [inLibrary, setInLibrary] = useState(false);
+
+  useEffect(() => {
+    if (!currentAlbum) return;
+    const exists = albums.some((a) => a._id === currentAlbum._id);
+    setInLibrary(exists);
+  }, [albums, currentAlbum]);
+
+  const [isToggling, setIsToggling] = useState(false);
+
+  useEffect(() => {
+    if (!currentAlbum) return;
+    const exists = albums.some(
+      (a) => a._id.toString() === currentAlbum._id.toString()
+    );
+    setInLibrary(exists);
+  }, [albums, currentAlbum]);
+
+  const handleToggleAlbum = async () => {
+    if (!currentAlbum || isToggling) return;
+    setIsToggling(true);
+    await toggleAlbum(currentAlbum._id);
+    setIsToggling(false);
+  };
+
   useEffect(() => {
     if (albumId) fetchAlbumbyId(albumId);
   }, [albumId, fetchAlbumbyId]);
@@ -52,10 +79,12 @@ const AlbumPage = () => {
               <img
                 src={currentAlbum?.imageUrl}
                 alt={currentAlbum?.title}
-                className="w-[240px] h-[240px] shadow-xl rounded"
+                className="w-[240px] h-[240px] shadow-xl rounded object-cover"
               />
               <div className="flex flex-col justify-end">
-                <p className="text-sm font-medium">Album</p>
+                <p className="text-sm font-medium ">
+                  {currentAlbum?.type || "Album"}
+                </p>
                 <h1 className="text-7xl font-bold my-4">
                   {currentAlbum?.title}
                 </h1>
@@ -63,7 +92,10 @@ const AlbumPage = () => {
                   <span className="font-medium text-white">
                     {currentAlbum?.artist}
                   </span>
-                  <span>• {currentAlbum?.songs.length} songs</span>
+                  <span>
+                    • {currentAlbum?.songs.length}{" "}
+                    {currentAlbum?.songs.length !== 1 ? "songs" : "song"}
+                  </span>
                   <span>• {currentAlbum?.releaseYear}</span>
                 </div>
               </div>
@@ -85,6 +117,24 @@ const AlbumPage = () => {
                   <Play className="w-8 h-8 text-black fill-current" />
                 )}
               </Button>
+              {currentAlbum && (
+                <Button
+                  onClick={handleToggleAlbum}
+                  disabled={isToggling}
+                  variant="ghost"
+                  size="icon"
+                  className={`w-10 h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors ${
+                    inLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
+                  }`}
+                  title={inLibrary ? "Remove from Library" : "Add to Library"}
+                >
+                  {inLibrary ? (
+                    <CheckCircle2 className="size-8 text-violet-400" />
+                  ) : (
+                    <PlusCircle className="size-8 text-white" />
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Table Section */}
@@ -136,7 +186,7 @@ const AlbumPage = () => {
                           <img
                             src={song.imageUrl}
                             alt={song.title}
-                            className="size-10"
+                            className="size-10 object-cover"
                           />
 
                           <div>

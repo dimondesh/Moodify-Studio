@@ -12,7 +12,10 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  Volume,
   Volume1,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Slider } from "../components/ui/slider";
 
@@ -88,6 +91,26 @@ const PlaybackControls = () => {
     };
   }, [currentSong, repeatMode]);
 
+  const [previousVolume, setPreviousVolume] = useState(100); // для восстановления
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setPreviousVolume(volume);
+      setVolume(0);
+      if (audioRef.current) audioRef.current.volume = 0;
+    } else {
+      setVolume(previousVolume);
+      if (audioRef.current) audioRef.current.volume = previousVolume / 100;
+    }
+  };
+
+  const renderVolumeIcon = () => {
+    if (volume === 0) return <VolumeX className="h-4 w-4" />;
+    if (volume <= 33) return <Volume className="h-4 w-4" />;
+    if (volume <= 66) return <Volume1 className="h-4 w-4" />;
+    return <Volume2 className="h-4 w-4" />;
+  };
+
   const handleSeek = (value: number[]) => {
     if (audioRef.current) {
       audioRef.current.currentTime = value[0];
@@ -135,10 +158,18 @@ const PlaybackControls = () => {
               size="icon"
               variant="ghost"
               className="hover:text-white text-zinc-400"
-              onClick={playPrevious}
+              onClick={() => {
+                if (!audioRef.current) return;
+
+                if (audioRef.current.currentTime > 3) {
+                  audioRef.current.currentTime = 0;
+                } else {
+                  playPrevious();
+                }
+              }}
               disabled={!currentSong}
             >
-              <SkipBack className="h-4 w-4" />
+              <SkipBack className="h-4 w-4 fill-current" />
             </Button>
 
             <Button
@@ -161,7 +192,7 @@ const PlaybackControls = () => {
               onClick={playNext}
               disabled={!currentSong}
             >
-              <SkipForward className="h-4 w-4" />
+              <SkipForward className="h-4 w-4 fill-current" />
             </Button>
 
             <Button
@@ -222,8 +253,9 @@ const PlaybackControls = () => {
               size="icon"
               variant="ghost"
               className="hover:text-white text-zinc-400"
+              onClick={toggleMute}
             >
-              <Volume1 className="h-4 w-4" />
+              {renderVolumeIcon()}
             </Button>
 
             <Slider
@@ -232,9 +264,11 @@ const PlaybackControls = () => {
               step={1}
               className="w-24 hover:cursor-grab active:cursor-grabbing"
               onValueChange={(value) => {
-                setVolume(value[0]);
+                const newVolume = value[0];
+                setVolume(newVolume);
+                if (newVolume > 0) setPreviousVolume(newVolume); // обновляем только если не mute
                 if (audioRef.current) {
-                  audioRef.current.volume = value[0] / 100;
+                  audioRef.current.volume = newVolume / 100;
                 }
               }}
             />

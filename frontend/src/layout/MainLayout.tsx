@@ -8,6 +8,7 @@ import LeftSidebar from "./LeftSidebar";
 import FriendsActivity from "./FriendsActivity";
 import AudioPlayer from "./AudioPlayer";
 import PlaybackControls from "./PlaybackControls";
+import Topbar from "../components/ui/Topbar";
 import { useEffect, useState } from "react";
 
 const MainLayout = () => {
@@ -22,39 +23,44 @@ const MainLayout = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
   return (
     <div className="h-screen bg-black text-white flex flex-col">
       <AudioPlayer />
+
+      {/* Topbar на всю ширину, всегда сверху */}
+      <Topbar />
+
+      {/* Основной layout */}
       <ResizablePanelGroup
         direction="horizontal"
-        className="flex-1 flex h-full overflow-hidden p-2"
+        className="flex-1 flex overflow-hidden p-2"
       >
-        {/* left panel */}
+        {/* Левая панель */}
         <ResizablePanel
           defaultSize={20}
           minSize={isMobile ? 0 : 10}
           maxSize={30}
-          className=""
         >
           <LeftSidebar />
         </ResizablePanel>
+
         <ResizableHandle className="w-2 bg-black rounded-lg transition-colors" />
-        {/* Main content */}
-        <ResizablePanel>
+
+        {/* Центральная панель с контентом */}
+        <ResizablePanel className="overflow-y-auto">
           <Outlet />
         </ResizablePanel>
 
-        {/* Right panel */}
+        {/* Правая панель — активность друзей */}
         {!isMobile && (
           <>
             <ResizableHandle className="w-2 bg-black rounded-lg transition-colors" />
-
             <ResizablePanel
               defaultSize={20}
               minSize={0}
               maxSize={25}
               collapsedSize={0}
-              className=""
             >
               <FriendsActivity />
             </ResizablePanel>

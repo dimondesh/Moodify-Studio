@@ -1,60 +1,48 @@
-import { Loader } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/card";
-import { useEffect, useRef} from "react";
-import { useUser } from "@clerk/clerk-react";
-import { axiosInstance } from "../../lib/axios";
+import { useEffect } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "../../lib/firebase";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../stores/useAuthStore";
 
-
-
-  const AuthCallbackPage = () => {
-  const {isLoaded, user} = useUser();
+const AuthCallbackPage = () => {
+  const [user, loading, error] = useAuthState(auth);
   const navigate = useNavigate();
-  const syncAttempted = useRef(false);
+  const { syncUser } = useAuthStore();
 
   useEffect(() => {
-    const syncUser = async () => {
-      if (!isLoaded || !user || syncAttempted.current) return;
-      try {
-        syncAttempted.current = true; // Prevent further attempts
-        
-        await axiosInstance.post("/auth/callback", {
-          id: user.id,
-          email: user.primaryEmailAddress?.emailAddress,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          imageUrl: user.imageUrl
-        });
-      } catch (error) {
-        console.error("Error during user sync:", error);
-        
-      } finally {
-    
-        navigate("/", );
-      }
+    if (loading) return;
+
+    if (error) {
+      console.error("Firebase auth error:", error);
+      navigate("/login");
+      return;
     }
 
+    if (user) {
+      console.log("Firebase user:", user); // Логируем данные пользователя
+      const syncData = {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        photoURL: user.photoURL,
+      };
+      console.log("Sending sync data:", syncData);
 
+      syncUser(syncData)
+        .then(() => {
+          console.log("User synced successfully");
+          navigate("/");
+        })
+        .catch((err) => {
+          console.error("Sync failed:", err);
+          navigate("/login");
+        });
+    } else {
+      navigate("/login");
+    }
+  }, [user, loading, error, navigate, syncUser]);
 
-    syncUser()
-  }, [isLoaded, user, navigate]);
-  
-  
-  return (
+  return <div>Loading...</div>;
+};
 
-
-
-    <div className="h-screen w-full bg-black flex items-center justify-center">
-      <Card className="w-[90%] max-w-md bg-zinc-900 border-zinc-800">
-        <CardContent className="flex flex-col items-center gap-4 pt-6">
-          <Loader className="size-6 text-emerald-500 animate-spin"/>
-          <h3 className="text-zinc-400 text-xl font-bold">Logging you in</h3>
-          <p className="text-zinc-400 text-sm">Redirecting...</p>
-
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export default AuthCallbackPage
+export default AuthCallbackPage;

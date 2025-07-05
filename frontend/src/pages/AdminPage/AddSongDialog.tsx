@@ -28,7 +28,8 @@ interface NewSong {
   title: string;
   artist: string;
   album: string;
-  duration: string;
+
+  releaseYear: number; // ✅ добавлено
 }
 
 const AddSongDialog = () => {
@@ -40,7 +41,8 @@ const AddSongDialog = () => {
     title: "",
     artist: "",
     album: "",
-    duration: "0",
+
+    releaseYear: new Date().getFullYear(), // ✅ по умолчанию текущий год
   });
 
   const [files, setFiles] = useState<{
@@ -66,10 +68,11 @@ const AddSongDialog = () => {
 
       formData.append("title", newSong.title);
       formData.append("artist", newSong.artist);
-      formData.append("duration", newSong.duration);
+
       if (newSong.album && newSong.album !== "none") {
         formData.append("albumId", newSong.album);
       }
+      formData.append("releaseYear", newSong.releaseYear.toString());
 
       formData.append("audioFile", files.audio);
       formData.append("imageFile", files.image);
@@ -84,7 +87,8 @@ const AddSongDialog = () => {
         title: "",
         artist: "",
         album: "",
-        duration: "0",
+
+        releaseYear: new Date().getFullYear(), // ✅ по умолчанию текущий год
       });
 
       setFiles({
@@ -213,14 +217,18 @@ const AddSongDialog = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Duration (seconds)
+              Release Year
             </label>
             <Input
               type="number"
-              min="0"
-              value={newSong.duration}
+              min={1900}
+              max={new Date().getFullYear()}
+              value={newSong.releaseYear}
               onChange={(e) =>
-                setNewSong({ ...newSong, duration: e.target.value || "0" })
+                setNewSong({
+                  ...newSong,
+                  releaseYear: parseInt(e.target.value),
+                })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
             />

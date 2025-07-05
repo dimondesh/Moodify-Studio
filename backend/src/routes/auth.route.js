@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { User } from "../models/user.model.js";
-import { authCallback } from "../controller/auth.controller.js";
-
+// Импортируем новую функцию
+import { syncUserWithDb } from "../controller/auth.controller.js";
 const router = Router();
 
-router.post("/callback", authCallback);
+// Маршрут теперь использует новую, безопасную логику
+router.post("/sync", syncUserWithDb);
+
 export default router;
