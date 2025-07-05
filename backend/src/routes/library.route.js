@@ -1,3 +1,5 @@
+// backend/routes/library.routes.js
+
 import express from "express";
 import {
   toggleAlbumInLibrary,
@@ -12,6 +14,6 @@ const router = express.Router();
 router.get("/albums", protectRoute, getLibraryAlbums);
 router.get("/liked-songs", protectRoute, getLikedSongs);
 router.post("/albums/toggle", protectRoute, toggleAlbumInLibrary);
-router.post("/songs/toggle-like", protectRoute, toggleSongLikeInLibrary);
+router.post("/songs/toggle-like", protectRoute, toggleSongLikeInLibrary); // Путь уже правильный
 
 export default router;

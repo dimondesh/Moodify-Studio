@@ -1,3 +1,5 @@
+// frontend/src/types/index.ts
+
 export interface Song {
   _id: string;
   title: string;
@@ -8,6 +10,8 @@ export interface Song {
   duration: number; // in seconds
   createdAt: string;
   updatedAt: string;
+  // 💡 Добавим опциональное поле likedAt, так как оно будет только у лайкнутых песен
+  likedAt?: string;
 }
 
 export interface Album {
@@ -20,6 +24,8 @@ export interface Album {
   type: string | "Album";
   createdAt: string;
   updatedAt: string;
+  // 💡 Добавим опциональное поле addedAt для альбомов в библиотеке
+  addedAt?: string;
 }
 
 export interface Stats {
@@ -55,8 +61,9 @@ export interface SearchState {
   search: (q: string) => Promise<void>;
 }
 
+// 💡 ОБНОВЛЕННЫЙ ИНТЕРФЕЙС UserLibrary для соответствия бэкенду
 export interface UserLibrary {
   userId: string;
-  likedSongs: string[]; // song._id[]
-  likedAlbums: string[]; // album._id[]
+  likedSongs: Song[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Song (включая likedAt)
+  albums: Album[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Album (включая addedAt)
 }

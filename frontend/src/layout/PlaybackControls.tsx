@@ -1,7 +1,11 @@
+// frontend/src/components/PlaybackControls.tsx
+
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
+import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
 import {
+  Heart,
   Laptop2,
   ListMusic,
   Mic2,
@@ -38,10 +42,16 @@ const PlaybackControls = () => {
     toggleShuffle,
   } = usePlayerStore();
 
+  const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
+
   const [volume, setVolume] = useState(75);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetchLikedSongs(); // Загружаем лайкнутые песни при монтировании
+  }, [fetchLikedSongs]);
 
   const toggleRepeatMode = () => {
     if (repeatMode === "off") {
@@ -91,7 +101,7 @@ const PlaybackControls = () => {
     };
   }, [currentSong, repeatMode]);
 
-  const [previousVolume, setPreviousVolume] = useState(100); // для восстановления
+  const [previousVolume, setPreviousVolume] = useState(100);
 
   const toggleMute = () => {
     if (volume > 0) {
@@ -117,9 +127,16 @@ const PlaybackControls = () => {
     }
   };
 
+  const handleToggleLike = () => {
+    if (currentSong) {
+      toggleSongLike(currentSong._id);
+    }
+  };
+
   return (
     <footer className="h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4">
       <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
+        {/* Левая часть - Обложка, Название, Артист, Кнопка лайка */}
         <div className="hidden sm:flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
             <>
@@ -128,20 +145,46 @@ const PlaybackControls = () => {
                 alt={currentSong.title}
                 className="w-14 h-14 object-cover rounded-md"
               />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate hover:underline cursor-pointer">
-                  {currentSong.title}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {" "}
+                {/* 💡 ИСПРАВЛЕНО: Flex-контейнер для текста и лайка */}
+                <div className="flex flex-col">
+                  {" "}
+                  {/* 💡 Flex-контейнер для названия и артиста */}
+                  <div className="font-medium truncate hover:underline cursor-pointer">
+                    {currentSong.title}
+                  </div>
+                  <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
+                    {currentSong.artist}
+                  </div>
                 </div>
-                <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
-                  {currentSong.artist}
-                </div>
+                {/* 💡 КНОПКА ЛАЙКА: Теперь внутри этого же flex-контейнера */}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={`hover:text-white ${
+                    // Убран ml-2, flex gap справится с отступом
+                    currentSong && isSongLiked(currentSong._id)
+                      ? "text-red-500"
+                      : "text-zinc-400"
+                  }`}
+                  onClick={handleToggleLike}
+                  disabled={!currentSong}
+                  title={
+                    currentSong && isSongLiked(currentSong._id)
+                      ? "Unlike song"
+                      : "Like song"
+                  }
+                >
+                  <Heart className="h-4 w-4 fill-current" />
+                </Button>
               </div>
             </>
           )}
         </div>
+        {/* Центральная часть - Элементы управления воспроизведением */}
         <div className="flex flex-col items-center gap-2 flex-1 max-w-full sm:max-w-[45%]">
           <div className="flex items-center gap-4 sm:gap-6">
-            {/* Кнопка Shuffle */}
             <Button
               size="icon"
               variant="ghost"
@@ -153,14 +196,12 @@ const PlaybackControls = () => {
             >
               <Shuffle className="h-4 w-4" />
             </Button>
-
             <Button
               size="icon"
               variant="ghost"
               className="hover:text-white text-zinc-400"
               onClick={() => {
                 if (!audioRef.current) return;
-
                 if (audioRef.current.currentTime > 3) {
                   audioRef.current.currentTime = 0;
                 } else {
@@ -171,7 +212,6 @@ const PlaybackControls = () => {
             >
               <SkipBack className="h-4 w-4 fill-current" />
             </Button>
-
             <Button
               size="icon"
               className="bg-white hover:bg-white/80 text-black rounded-full h-8 w-8"
@@ -184,7 +224,6 @@ const PlaybackControls = () => {
                 <Play className="h-5 w-5 fill-current" />
               )}
             </Button>
-
             <Button
               size="icon"
               variant="ghost"
@@ -194,7 +233,6 @@ const PlaybackControls = () => {
             >
               <SkipForward className="h-4 w-4 fill-current" />
             </Button>
-
             <Button
               size="icon"
               variant="ghost"
@@ -225,6 +263,7 @@ const PlaybackControls = () => {
             <div className="text-xs text-zinc-400">{formatTime(duration)}</div>
           </div>
         </div>
+        {/* Правая часть - Дополнительные кнопки и громкость */}
         <div className="hidden sm:flex items-center gap-4 min-w-[180px] w-[30%] justify-end">
           <Button
             size="icon"
@@ -247,7 +286,6 @@ const PlaybackControls = () => {
           >
             <Laptop2 className="h-4 w-4" />
           </Button>
-
           <div className="flex items-center gap-2">
             <Button
               size="icon"
@@ -257,7 +295,6 @@ const PlaybackControls = () => {
             >
               {renderVolumeIcon()}
             </Button>
-
             <Slider
               value={[volume]}
               max={100}
@@ -266,7 +303,7 @@ const PlaybackControls = () => {
               onValueChange={(value) => {
                 const newVolume = value[0];
                 setVolume(newVolume);
-                if (newVolume > 0) setPreviousVolume(newVolume); // обновляем только если не mute
+                if (newVolume > 0) setPreviousVolume(newVolume);
                 if (audioRef.current) {
                   audioRef.current.volume = newVolume / 100;
                 }
