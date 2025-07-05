@@ -1,4 +1,5 @@
 // frontend/src/App.tsx
+
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage/HomePage";
 import AuthCallbackPage from "./pages/AuthCallback/AuthCallbackPage";
@@ -12,61 +13,16 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import LoginPage from "./pages/LoginPage/LoginPage";
 
-import { useEffect } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "./lib/firebase";
-import { useAuthStore } from "./stores/useAuthStore"; // Импорт useAuthStore
-import { useChatStore } from "./stores/useChatStore"; // Импорт useChatStore для сокетов
+// Удалены импорты useAuthState, auth из firebase, useAuthStore, useChatStore
+// Вся эта логика теперь централизована в AuthProvider
 
 function App() {
-  const [firebaseUser, loadingFirebaseUser] = useAuthState(auth);
-  // Используем user и fetchUser из useAuthStore
-  const { user: mongoUser, fetchUser, logout } = useAuthStore();
-  const {
-    initSocket,
-    disconnectSocket,
-    isConnected,
-    error: socketError,
-  } = useChatStore();
+  // Логика аутентификации и инициализации сокета теперь находится в AuthProvider.
+  // App.tsx больше не должен напрямую зависеть от firebaseUser или mongoUser для этих целей.
 
-  // Эффект для синхронизации Firebase пользователя с MongoDB пользователем
-  useEffect(() => {
-    // Если Firebase пользователь есть и данные MongoDB пользователя еще не загружены/синхронизированы
-    if (firebaseUser && !loadingFirebaseUser && !mongoUser) {
-      console.log("Firebase user detected, fetching/syncing MongoDB user...");
-      fetchUser(firebaseUser.uid);
-    } else if (!firebaseUser && !loadingFirebaseUser && mongoUser) {
-      // Если Firebase пользователь вышел, очищаем состояние
-      console.log(
-        "Firebase user logged out, clearing MongoDB user from store."
-      );
-      logout(); // Вызываем вашу новую функцию logout
-    }
-  }, [firebaseUser, loadingFirebaseUser, mongoUser, fetchUser, logout]);
-
-  // Эффект для инициализации и отключения Socket.IO соединения
-  useEffect(() => {
-    // Подключаем сокет, если mongoUser.id доступен и сокет еще не подключен
-    if (mongoUser?.id && !isConnected) {
-      console.log("Initializing Socket.IO with MongoDB User ID:", mongoUser.id);
-      initSocket(mongoUser.id);
-    }
-
-    // Функция очистки: отключаем сокет при размонтировании компонента
-    // или когда mongoUser.id становится недоступным (например, при выходе)
-    return () => {
-      if (isConnected) {
-        console.log("Cleaning up Socket.IO connection.");
-        disconnectSocket();
-      }
-    };
-  }, [mongoUser?.id, initSocket, disconnectSocket, isConnected]); // Зависимости для этого эффекта
-
-  // Optional: Display Socket.IO connection errors
-  if (socketError) {
-    // toast.error(`Socket Error: ${socketError}`);
-    console.error(`Socket Error: ${socketError}`);
-  }
+  // Если вам нужны данные пользователя в App.tsx или его дочерних компонентах,
+  // используйте useAuthStore() для получения `user`.
+  // Например: const { user } = useAuthStore();
 
   return (
     <>

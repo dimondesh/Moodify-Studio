@@ -1,3 +1,5 @@
+// frontend/src/FriendsActivity/FriendsActivity.tsx
+
 import { HeadphonesIcon, Music, Users } from "lucide-react";
 import { useChatStore } from "../stores/useChatStore";
 import { useEffect } from "react";
@@ -5,17 +7,40 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { useAuthStore } from "../stores/useAuthStore"; // Импортируем useAuthStore
 
 const FriendsActivity = () => {
   const { users, fetchUsers, onlineUsers, userActivities } = useChatStore();
-  const [user, loadingUser, authError] = useAuthState(auth); // Получаем состояние пользователя
+  const { user: authUser, isLoading: loadingAuthUser } = useAuthStore(); // Используем user из useAuthStore
+  // const [firebaseUser, loadingFirebaseUser, authError] = useAuthState(auth); // Это больше не нужно напрямую здесь
 
   useEffect(() => {
-    // 💡 ИСПРАВЛЕНО: Вызываем fetchUsers только если пользователь аутентифицирован и не в процессе загрузки
-    if (user && !loadingUser) {
+    // 💡 ИСПРАВЛЕНО: Теперь используем аутентифицированного пользователя из useAuthStore
+    // Это гарантирует, что у нас есть MongoDB ID, прежде чем запрашивать список пользователей.
+    if (authUser && authUser.id && !loadingAuthUser) {
       fetchUsers();
     }
-  }, [fetchUsers, user, loadingUser]); // Добавили loadingUser в зависимости
+  }, [fetchUsers, authUser, loadingAuthUser]); // Зависимости обновлены
+
+  // Пока Firebase user загружается (хотя теперь это в AuthProvider), или пока authUser не загружен
+  if (loadingAuthUser) {
+    return (
+      <div className="h-full bg-zinc-900 rounded-lg flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <HeadphonesIcon className="size-8 animate-pulse text-zinc-500" />
+        </div>
+      </div>
+    );
+  }
+
+  // Если пользователя нет после загрузки
+  if (!authUser) {
+    return (
+      <div className="h-full bg-zinc-900 rounded-lg flex flex-col">
+        <LoginPrompt />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-zinc-900 rounded-lg flex flex-col">
@@ -26,19 +51,15 @@ const FriendsActivity = () => {
         </div>
       </div>
 
-      {loadingUser ? ( // Показываем скелетон, пока Firebase user загружается
-        <div className="flex-1 flex items-center justify-center">
-          <HeadphonesIcon className="size-8 animate-pulse text-zinc-500" />
-        </div>
-      ) : authError ? (
-        <p className="text-red-500 p-4">Authentication error.</p>
-      ) : !user ? (
-        <LoginPrompt />
-      ) : (
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-4">
-            {users.map((userObj) => {
-              const activity = userActivities.get(userObj.firebaseUid);
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {users.length === 0 && !loadingAuthUser ? (
+            <p className="text-zinc-400 text-center p-4">No users found.</p>
+          ) : (
+            users.map((userObj) => {
+              // 💡 ИСПРАВЛЕНО: Используем userObj._id (MongoDB ID) для проверки онлайн-статуса
+              const isOnline = onlineUsers.has(userObj._id);
+              const activity = userActivities.get(userObj._id); // 💡 ИСПРАВЛЕНО: Получаем активность по MongoDB ID
               const isPlaying = activity && activity !== "Idle";
 
               return (
@@ -57,9 +78,7 @@ const FriendsActivity = () => {
                       </Avatar>
                       <div
                         className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-zinc-900 ${
-                          onlineUsers.has(userObj.firebaseUid)
-                            ? "bg-green-500"
-                            : "bg-zinc-500"
+                          isOnline ? "bg-green-500" : "bg-zinc-500"
                         }`}
                         aria-hidden="true"
                       />
@@ -89,10 +108,10 @@ const FriendsActivity = () => {
                   </div>
                 </div>
               );
-            })}
-          </div>
-        </ScrollArea>
-      )}
+            })
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

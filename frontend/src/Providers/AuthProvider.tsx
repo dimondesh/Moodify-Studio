@@ -1,98 +1,107 @@
 // frontend/src/Providers/AuthProvider.tsx
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { useAuthStore } from "../stores/useAuthStore"; // Импортируем useAuthStore
-import { useChatStore } from "../stores/useChatStore"; // Импортируем useChatStore
-import { Loader } from "lucide-react";
-import type { User as FirebaseUser } from "firebase/auth"; // Переименовываем User Firebase в FirebaseUser
+import { useAuthStore } from "../stores/useAuthStore";
+import { useChatStore } from "../stores/useChatStore";
 
-const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [loading, setLoading] = useState(true);
-  // 💡 ИСПРАВЛЕНО: Вместо setUser и syncUser, будем использовать fetchUser и logout
-  const {
-    user: mongoUser,
-    fetchUser,
-    logout,
-    checkAdminStatus,
-  } = useAuthStore();
-  const {
-    initSocket,
-    disconnectSocket,
-    isConnected: isSocketConnected,
-  } = useChatStore();
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // Состояние для отслеживания инициализации Firebase.
+  // Это важно, чтобы не рендерить приложение, пока Firebase не определил статус пользователя.
+  const [firebaseChecked, setFirebaseChecked] = useState(false);
+
+  const { user, setUser, fetchUser, logout, checkAdminStatus } = useAuthStore();
+  const { initSocket, disconnectSocket, isConnected } = useChatStore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser: FirebaseUser | null) => {
+    // Подписываемся на изменения состояния аутентификации Firebase.
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Пользователь Firebase вошел в систему или его сессия была восстановлена.
+        console.log(
+          "AuthProvider: Firebase user detected:",
+          firebaseUser.uid,
+          firebaseUser.email
+        );
         try {
-          if (firebaseUser) {
-            console.log("Firebase user detected:", firebaseUser.uid);
-            // 💡 ИСПРАВЛЕНО: Вызываем fetchUser для получения полного AuthUser из MongoDB
-            // fetchUser сам вызывает syncUser внутри и обновляет store.user
-            await fetchUser(firebaseUser.uid);
-
-            // 💡 ИСПРАВЛЕНО: checkAdminStatus теперь должен вызываться после того,
-            // как mongoUser будет доступен в сторе (после fetchUser).
-            // Поскольку fetchUser обновляет стор, checkAdminStatus может использовать его.
-            await checkAdminStatus();
-
-            // 💡 ИСПРАВЛЕНО: Socket.IO инициализируется в App.tsx
-            // Если вы все еще хотите инициализировать его здесь, используйте mongoUser?.id
-            // Однако, лучше централизовать это в App.tsx, как мы обсуждали.
-            // if (mongoUser?.id && !isSocketConnected) { // mongoUser здесь может быть null на первом рендере
-            //   initSocket(mongoUser.id);
-            // }
-          } else {
-            console.log("No Firebase user detected.");
-            // 💡 ИСПРАВЛЕНО: Используем logout из useAuthStore для очистки состояния
-            logout();
-            // 💡 ИСПРАВЛЕНО: Отключаем сокет при выходе пользователя
-            disconnectSocket();
-          }
+          // Запрашиваем/синхронизируем данные пользователя с MongoDB.
+          // Эта функция обновит `useAuthStore().user` с MongoDB `_id`.
+          await fetchUser(firebaseUser.uid);
+          console.log("AuthProvider: MongoDB user synced.");
         } catch (error) {
           console.error(
-            "Auth Provider Error during Firebase Auth State Change:",
+            "AuthProvider: Error syncing Firebase user with MongoDB:",
             error
           );
-          // 💡 ИСПРАВЛЕНО: При ошибке, также вызываем logout для полной очистки
+          // Если синхронизация не удалась, лучше разлогинить пользователя.
           logout();
-          disconnectSocket(); // Убеждаемся, что сокет отключен
-        } finally {
-          setLoading(false);
         }
+      } else {
+        // Пользователь Firebase не вошел в систему или вышел.
+        console.log("AuthProvider: No Firebase user is signed in.");
+        // Очищаем состояние пользователя в Zustand.
+        setUser(null);
+        // Отключаем Socket.IO, если он был подключен.
+        disconnectSocket();
       }
-    );
+      // Устанавливаем флаг, что Firebase завершил проверку состояния аутентификации.
+      setFirebaseChecked(true);
+    });
 
+    // Функция очистки: отписываемся от слушателя при размонтировании компонента.
     return () => unsubscribe();
-  }, [fetchUser, logout, checkAdminStatus, initSocket, disconnectSocket]); // Убедитесь, что все зависимости указаны
+  }, [setUser, fetchUser, logout, disconnectSocket]); // Зависимости для useEffect
 
-  // 💡 ВАЖНО: Socket.IO инициализация должна быть в App.tsx
-  // Если вы оставили код инициализации сокета в App.tsx, то этот блок здесь не нужен.
-  // Я его закомментировал, предполагая, что вы следуете предыдущей рекомендации.
-  // useEffect(() => {
-  //   if (mongoUser?.id && !isSocketConnected) {
-  //     console.log("AuthProvider: Initializing Socket.IO with MongoDB User ID:", mongoUser.id);
-  //     initSocket(mongoUser.id);
-  //   }
-  //   return () => {
-  //     if (isSocketConnected) {
-  //       console.log("AuthProvider: Cleaning up Socket.IO connection.");
-  //       disconnectSocket();
-  //     }
-  //   };
-  // }, [mongoUser?.id, initSocket, disconnectSocket, isSocketConnected]);
+  useEffect(() => {
+    // Инициализируем Socket.IO и проверяем статус администратора только тогда, когда:
+    // 1. Firebase *уже* проверил состояние аутентификации (`firebaseChecked` true).
+    // 2. В `useAuthStore` есть данные пользователя, включая его MongoDB ID (`user && user.id`).
+    // 3. Socket.IO *еще не* подключен (`!isConnected`).
+    if (firebaseChecked && user && user.id && !isConnected) {
+      console.log(
+        "AuthProvider: Initializing Socket.IO with MongoDB User ID:",
+        user.id
+      );
+      initSocket(user.id);
+      checkAdminStatus(); // Проверяем статус администратора после входа.
+    } else if (firebaseChecked && !user && isConnected) {
+      // Если Firebase проверен, пользователя нет (он вышел), но сокет все еще подключен,
+      // это может быть остаточным состоянием - явно отключаем сокет.
+      console.log(
+        "AuthProvider: User logged out after Firebase check, disconnecting socket."
+      );
+      disconnectSocket();
+    }
+  }, [
+    user,
+    initSocket,
+    disconnectSocket,
+    checkAdminStatus,
+    isConnected,
+    firebaseChecked,
+  ]);
 
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
+  // Эффект для обработки ошибок Socket.IO из useChatStore.
+  const { error: chatError } = useChatStore();
+  useEffect(() => {
+    if (chatError) {
+      console.error("AuthProvider Chat Socket Error:", chatError);
+      // Здесь можно добавить toast.error(chatError) или другую логику уведомлений.
+    }
+  }, [chatError]);
+
+  // Пока Firebase не завершил проверку аутентификации, показываем заглушку.
+  if (!firebaseChecked) {
+    return <div>Загрузка аутентификации...</div>; // Можно заменить на красивый спиннер.
   }
 
+  // Когда Firebase проверил состояние, рендерим дочерние компоненты.
   return <>{children}</>;
 };
 
