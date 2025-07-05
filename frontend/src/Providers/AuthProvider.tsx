@@ -87,11 +87,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     firebaseChecked,
   ]);
 
-  // Эффект для обработки ошибок Socket.IO из useChatStore.
+  // Эффект для обработки сообщений Socket.IO из useChatStore.
   const { error: chatError } = useChatStore();
   useEffect(() => {
     if (chatError) {
-      console.error("AuthProvider Chat Socket Error:", chatError);
+      // 💡 ИСПРАВЛЕНО: Изменено на console.info для ожидаемых отключений,
+      // остальные ошибки по-прежнему логируются как console.error.
+      if (
+        chatError.includes("io client disconnect") ||
+        chatError.includes("transport close")
+      ) {
+        console.info(
+          "AuthProvider Chat Socket Info: Socket intentionally disconnected or closed."
+        );
+      } else {
+        console.error("AuthProvider Chat Socket Error:", chatError);
+      }
       // Здесь можно добавить toast.error(chatError) или другую логику уведомлений.
     }
   }, [chatError]);
