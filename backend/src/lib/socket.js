@@ -8,7 +8,7 @@ export const initializeSocket = (server) => {
   if (process.env.NODE_ENV === "production") {
     allowedOrigin = process.env.CLIENT_ORIGIN_URL;
   } else {
-    allowedOrigin = "http://localhost:3000";
+    allowedOrigin = "http://localhost:5173";
   }
 
   const io = new Server(server, {
