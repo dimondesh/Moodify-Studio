@@ -431,7 +431,7 @@ export const usePlayerStore = create<PlayerStore>()(
         shufflePointer: state.shufflePointer,
       }),
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      onRehydrateStorage: (state) => {
+      onRehydrateStorage: (_state) => {
         return (persistedState, error) => {
           if (error) {
             console.log("an error happened during rehydration", error);
