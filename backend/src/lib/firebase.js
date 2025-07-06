@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const serviceAccountPath = path.resolve(
   __dirname,
-  "../firebaseServiceKey.json"
+  "../../firebaseServiceKey.json"
 );
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf-8"));
 
