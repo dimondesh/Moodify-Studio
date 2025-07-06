@@ -1,24 +1,40 @@
-import { clerkClient } from "@clerk/express";
-
+import { firebaseAdmin } from "../lib/firebase.js";
+import { User } from "../models/user.model.js";
+import dotenv from "dotenv";
+dotenv.config();
 export const protectRoute = async (req, res, next) => {
-            const currentUser = await clerkClient.users.getUser(req.auth.userId);
+  console.log("ProtectRoute middleware triggered");
 
-    if (!req.auth.userId) {
-        return res.status(401).json({ message: "Unauthorizeddddd" });
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      console.error("No token provided");
+      return res.status(401).json({ error: "Token required" });
     }
+
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    console.log("Decoded token:", decodedToken);
+
+    const user = await User.findOne({ firebaseUid: decodedToken.uid });
+    console.log("User from DB:", user);
+
+    if (!user) {
+      console.error("User not found in DB for firebaseUid:", decodedToken.uid);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    req.user = {
+      id: user._id,
+      firebaseUid: user.firebaseUid,
+      email: decodedToken.email,
+      isAdmin: decodedToken.email === process.env.ADMIN_EMAIL,
+    };
+
     next();
+  } catch (error) {
+    console.error("Auth error:", error.message);
+    res
+      .status(401)
+      .json({ error: "Authentication failed", details: error.message });
+  }
 };
-
-export const requireAdmin = async (req, res, next) => {
-    try {
-        const currentUser = await clerkClient.users.getUser(req.auth.userId);
-        const isAdmin = process.env.ADMIN_EMAIL === currentUser.primaryEmailAddress?.emailAddress;
-
-        if (!isAdmin) {
-            return res.status(403).json({ message: "Forbidden: Admin access required" });
-        }
-        next();
-    }
-    catch (error) {
-        next(error);
-    }};

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -14,6 +13,13 @@ import {
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 
 const AddAlbumDialog = () => {
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false);
@@ -24,6 +30,7 @@ const AddAlbumDialog = () => {
     title: "",
     artist: "",
     releaseYear: new Date().getFullYear(),
+    type: "Album",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -47,6 +54,8 @@ const AddAlbumDialog = () => {
       formData.append("title", newAlbum.title);
       formData.append("artist", newAlbum.artist);
       formData.append("releaseYear", newAlbum.releaseYear.toString());
+      formData.append("type", newAlbum.type);
+
       formData.append("imageFile", imageFile);
 
       await axiosInstance.post("/admin/albums", formData, {
@@ -59,6 +68,7 @@ const AddAlbumDialog = () => {
         title: "",
         artist: "",
         releaseYear: new Date().getFullYear(),
+        type: "Album",
       });
       setImageFile(null);
       setAlbumDialogOpen(false);
@@ -147,6 +157,23 @@ const AddAlbumDialog = () => {
               min={1900}
               max={new Date().getFullYear()}
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Type</label>
+            <Select
+              value={newAlbum.type}
+              onValueChange={(value) =>
+                setNewAlbum({ ...newAlbum, type: value })
+              }
+            >
+              <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700">
+                <SelectItem value="Album">Album</SelectItem>
+                <SelectItem value="EP">EP</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

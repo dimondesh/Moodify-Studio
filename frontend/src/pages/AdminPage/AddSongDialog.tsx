@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import toast from "react-hot-toast";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { useRef, useState } from "react";
@@ -23,12 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { ScrollArea } from "../../components/ui/scroll-area";
 
 interface NewSong {
   title: string;
   artist: string;
   album: string;
-  duration: string;
+
+  releaseYear: number;
 }
 
 const AddSongDialog = () => {
@@ -40,7 +40,8 @@ const AddSongDialog = () => {
     title: "",
     artist: "",
     album: "",
-    duration: "0",
+
+    releaseYear: new Date().getFullYear(),
   });
 
   const [files, setFiles] = useState<{
@@ -66,10 +67,11 @@ const AddSongDialog = () => {
 
       formData.append("title", newSong.title);
       formData.append("artist", newSong.artist);
-      formData.append("duration", newSong.duration);
+
       if (newSong.album && newSong.album !== "none") {
         formData.append("albumId", newSong.album);
       }
+      formData.append("releaseYear", newSong.releaseYear.toString());
 
       formData.append("audioFile", files.audio);
       formData.append("imageFile", files.image);
@@ -84,7 +86,8 @@ const AddSongDialog = () => {
         title: "",
         artist: "",
         album: "",
-        duration: "0",
+
+        releaseYear: new Date().getFullYear(),
       });
 
       setFiles({
@@ -213,45 +216,51 @@ const AddSongDialog = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Duration (seconds)
+              Release Year
             </label>
             <Input
               type="number"
-              min="0"
-              value={newSong.duration}
+              min={1900}
+              max={new Date().getFullYear()}
+              value={newSong.releaseYear}
               onChange={(e) =>
-                setNewSong({ ...newSong, duration: e.target.value || "0" })
+                setNewSong({
+                  ...newSong,
+                  releaseYear: parseInt(e.target.value),
+                })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white">
-              Album (Optional)
-            </label>
-            <Select
-              value={newSong.album}
-              onValueChange={(value) =>
-                setNewSong({ ...newSong, album: value })
-              }
-            >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700">
-                <SelectValue
-                  placeholder="Select album"
-                  className="text-zinc-400"
-                />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
-                <SelectItem value="none">No Album (Single)</SelectItem>
-                {albums.map((album) => (
-                  <SelectItem key={album._id} value={album._id}>
-                    {album.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ScrollArea>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Album (Optional)
+              </label>
+              <Select
+                value={newSong.album}
+                onValueChange={(value) =>
+                  setNewSong({ ...newSong, album: value })
+                }
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                  <SelectValue
+                    placeholder="Select album"
+                    className="text-zinc-400"
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectItem value="none">No Album (Single)</SelectItem>
+                  {albums.map((album) => (
+                    <SelectItem key={album._id} value={album._id}>
+                      {album.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </ScrollArea>
         </div>
 
         <DialogFooter>

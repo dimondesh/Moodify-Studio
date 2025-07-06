@@ -1,36 +1,36 @@
-import { useUser } from "@clerk/clerk-react";
-import { useState } from "react";
-import { useChatStore } from "../../stores/useChatStore";
+import React from "react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Send } from "lucide-react";
+import type { User } from "../../types";
+interface MessageInputProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSend: (e: React.FormEvent) => void;
+  selectedUser: User | null;
+  currentUserId: string;
+}
 
-const MessageInput = () => {
-  const [newMessage, setNewMessage] = useState("");
-  const { user } = useUser();
-  const { selectedUser, sendMessage } = useChatStore();
-
-  const handleSend = () => {
-    if (!selectedUser || !user || !newMessage) return;
-    sendMessage(selectedUser.clerkId, user.id, newMessage.trim());
-    setNewMessage("");
-  };
+const MessageInput = ({
+  value,
+  onChange,
+  onSend,
+  selectedUser,
+  currentUserId,
+}: MessageInputProps) => {
+  const isSendDisabled = !value.trim() || !selectedUser || !currentUserId;
 
   return (
-    <div className="p-4 mt-auto border-t border-zinc-800">
+    <div className="p-4 mb-5 sm:mb-10 lg:mb-0 mt-auto border-t border-zinc-800">
       <div className="flex gap-2">
         <Input
           placeholder="Type a message"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          value={value}
+          onChange={onChange}
           className="bg-zinc-800 border-none"
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => e.key === "Enter" && onSend(e)}
         />
-        <Button
-          size={"icon"}
-          onClick={handleSend}
-          disabled={!newMessage.trim()}
-        >
+        <Button size="icon" onClick={onSend} disabled={isSendDisabled}>
           <Send className="size-4" />
         </Button>
       </div>
