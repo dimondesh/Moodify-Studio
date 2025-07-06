@@ -1,8 +1,6 @@
-// frontend/src/components/ui/Topbar.tsx
-
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { LayoutDashboardIcon, Search, LogOut } from "lucide-react"; // Добавил UserCircle, LogOut
+import { LayoutDashboardIcon, Search, LogOut } from "lucide-react";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
 import { Button, buttonVariants } from "./button";
@@ -14,14 +12,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu"; // Предполагаем, что у тебя есть DropdownMenu компоненты
-
+} from "../ui/dropdown-menu";
 const Topbar = () => {
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
-  const [isSearchVisible, setIsSearchVisible] = useState(false); // Для мобильного поиска
-
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isAdmin } = useAuthStore();
 
   const [user, setUser] = useState<null | {
@@ -29,7 +25,6 @@ const Topbar = () => {
     photoURL: string | null;
   }>(null);
 
-  // Следим за авторизацией
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -53,7 +48,6 @@ const Topbar = () => {
       if (val.trim() !== "") {
         navigate(`/search?q=${encodeURIComponent(val)}`);
       } else {
-        // Если поле пустое, переходим на главную, если мы уже на странице поиска
         if (location.pathname.startsWith("/search")) {
           navigate(`/`);
         }
@@ -89,7 +83,7 @@ const Topbar = () => {
           placeholder="Artists, songs, or podcasts"
           value={query}
           onChange={handleChange}
-          autoFocus={isSearchVisible} // Фокусировка при открытии на мобильных
+          autoFocus={isSearchVisible}
           className="
             w-full
             bg-zinc-800
@@ -115,7 +109,7 @@ const Topbar = () => {
             variant="ghost"
             size="sm"
             className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white md:hidden"
-            onClick={() => setIsSearchVisible(false)} // Кнопка закрытия поиска на мобильных
+            onClick={() => setIsSearchVisible(false)}
           >
             Cancel
           </Button>
@@ -131,7 +125,7 @@ const Topbar = () => {
         <Button
           size="icon"
           variant="ghost"
-          className="md:hidden" // Кнопка поиска для мобильных
+          className="md:hidden"
           onClick={() => setIsSearchVisible(true)}
         >
           <Search className="w-5 h-5" />

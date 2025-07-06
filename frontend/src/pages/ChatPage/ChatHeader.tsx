@@ -1,17 +1,14 @@
-// frontend/src/pages/ChatPage/ChatHeader.tsx
-
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "../../components/ui/avatar";
 import { useChatStore } from "../../stores/useChatStore";
-import { Button } from "../../components/ui/button"; // Импортируем Button
-import { ArrowLeft } from "lucide-react"; // Импортируем ArrowLeft
-
+import { Button } from "../../components/ui/button";
+import { ArrowLeft } from "lucide-react";
 interface ChatHeaderProps {
-  showBackButton?: boolean; // Новый пропс для показа кнопки назад
-  onBack?: () => void; // Новый пропс для обработчика кнопки назад
+  showBackButton?: boolean;
+  onBack?: () => void;
 }
 
 const ChatHeader = ({ showBackButton = false, onBack }: ChatHeaderProps) => {

@@ -1,5 +1,4 @@
-// frontend/src/layout/LeftSidebar.tsx
-import { Heart, HomeIcon, Library, MessageCircle, Search } from "lucide-react"; // Добавил Search для единообразия, хотя он будет в BottomNav
+import { Heart, HomeIcon, Library, MessageCircle, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
@@ -22,8 +21,6 @@ const LeftSidebar = () => {
   }, [fetchLibrary, user, loadingUser]);
 
   return (
-    // Этот контейнер теперь по умолчанию будет виден на md и выше, скрыт на sm
-    // Его видимость контролируется MainLayout через ResizablePanel
     <div className="h-full flex flex-col gap-2 p-2">
       {" "}
       {/* Добавил p-2 для отступов внутри сайдбара */}
@@ -158,7 +155,6 @@ const LeftSidebar = () => {
 
 export default LeftSidebar;
 
-// Компонент LoginPrompt (остается без изменений)
 const LoginPrompt = ({ className }: { className?: string }) => (
   <div
     className={cn(

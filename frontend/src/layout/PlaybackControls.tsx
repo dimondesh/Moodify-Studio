@@ -627,14 +627,7 @@ const PlaybackControls = () => {
               max={duration || 100}
               step={1}
               className="w-full hover:cursor-grab active:cursor-grabbing"
-              onValueChange={(value) => {
-                const newVolume = value[0];
-                setVolume(newVolume);
-                if (newVolume > 0) setPreviousVolume(newVolume);
-                if (audioRef.current) {
-                  audioRef.current.volume = newVolume / 100;
-                }
-              }}
+              onValueChange={handleSeek}
             />
             <div className="text-xs text-zinc-400">{formatTime(duration)}</div>
           </div>

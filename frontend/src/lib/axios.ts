@@ -5,7 +5,6 @@ const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Добавляем интерсептор для токена
 axiosInstance.interceptors.request.use(async (config) => {
   const user = auth.currentUser;
   if (user) {

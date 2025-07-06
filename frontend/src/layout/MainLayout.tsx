@@ -1,5 +1,3 @@
-// frontend/src/layout/MainLayout.tsx
-
 import { Outlet } from "react-router-dom";
 import {
   ResizableHandle,
@@ -13,12 +11,10 @@ import PlaybackControls from "./PlaybackControls";
 import Topbar from "../components/ui/Topbar";
 import BottomNavigationBar from "./BottomNavigationBar";
 import { useEffect, useState } from "react";
-// НОВОЕ: Импортируем isFullScreenPlayerOpen из usePlayerStore
 import { usePlayerStore } from "../stores/usePlayerStore";
 
 const MainLayout = () => {
   const [isCompactView, setIsCompactView] = useState(false);
-  // НОВОЕ: Получаем isFullScreenPlayerOpen из usePlayerStore
   const { currentSong, isFullScreenPlayerOpen } = usePlayerStore();
 
   useEffect(() => {
@@ -32,18 +28,13 @@ const MainLayout = () => {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Определяем отступ снизу для контента
-  let contentPaddingBottom = "pb-0"; // По умолчанию нет отступа
-
+  let contentPaddingBottom = "pb-0";
   if (isCompactView) {
     if (isFullScreenPlayerOpen) {
-      // Если полноэкранный плеер открыт, ни навигации, ни компактного плеера нет
       contentPaddingBottom = "pb-0";
     } else if (currentSong) {
-      // Если есть песня, то плеер (h-16/h-20) + навигация (h-16)
-      contentPaddingBottom = "pb-[calc(4rem+4rem)] sm:pb-[calc(5rem+4rem)]"; // 4rem (плеер) + 4rem (навигация) = 8rem (128px)
+      contentPaddingBottom = "pb-[calc(4rem+4rem)] sm:pb-[calc(5rem+4rem)]";
     } else {
-      // Только навигация (h-16), если нет песни и плеер не открыт
       contentPaddingBottom = "pb-16";
     }
   }
@@ -55,7 +46,7 @@ const MainLayout = () => {
 
       <ResizablePanelGroup
         direction="horizontal"
-        className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`} // Динамический отступ здесь
+        className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`}
       >
         {!isCompactView && (
           <>

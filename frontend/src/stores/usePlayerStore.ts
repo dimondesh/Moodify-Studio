@@ -1,10 +1,8 @@
-// frontend/src/stores/usePlayerStore.ts
-
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware"; // <-- ДОБАВЛЕНО: Импорт persist и createJSONStorage
-
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
 import { useChatStore } from "./useChatStore";
+import { useAuthStore } from "./useAuthStore";
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -15,11 +13,9 @@ interface PlayerStore {
 
   isShuffle: boolean;
 
-  shuffleHistory: number[]; // История индексов для шаффла
-  shufflePointer: number; // Текущая позиция в истории
-
-  isFullScreenPlayerOpen: boolean; // Состояние полноэкранного плеера
-
+  shuffleHistory: number[];
+  shufflePointer: number;
+  isFullScreenPlayerOpen: boolean;
   setRepeatMode: (mode: "off" | "all" | "one") => void;
 
   toggleShuffle: () => void;
@@ -48,7 +44,6 @@ const shuffleQueue = (length: number) => {
   return arr;
 };
 
-// <-- ОБНОВЛЕНО: Оборачиваем create в persist
 export const usePlayerStore = create<PlayerStore>()(
   persist(
     (set, get) => ({
@@ -79,6 +74,8 @@ export const usePlayerStore = create<PlayerStore>()(
         if (songs.length === 0) return;
 
         const isShuffle = get().isShuffle;
+        const { user: authUser } = useAuthStore.getState();
+        const currentUserId = authUser?.id;
 
         if (isShuffle) {
           const newShuffleHistory = shuffleQueue(songs.length);
@@ -101,9 +98,9 @@ export const usePlayerStore = create<PlayerStore>()(
           const firstSong = songs[firstIndex];
 
           const socket = useChatStore.getState().socket;
-          if (socket.auth) {
+          if (currentUserId && socket.connected) {
             socket.emit("update_activity", {
-              userId: socket.auth.userId,
+              userId: currentUserId,
               activity: `${firstSong.title}   ${firstSong.artist}`,
             });
           }
@@ -120,9 +117,9 @@ export const usePlayerStore = create<PlayerStore>()(
           const song = songs[startIndex];
 
           const socket = useChatStore.getState().socket;
-          if (socket.auth) {
+          if (currentUserId && socket.connected) {
             socket.emit("update_activity", {
-              userId: socket.auth.userId,
+              userId: currentUserId,
               activity: `${song.title}   ${song.artist}`,
             });
           }
@@ -141,11 +138,14 @@ export const usePlayerStore = create<PlayerStore>()(
       setCurrentSong: (song: Song | null) => {
         if (!song) return;
 
+        const { user: authUser } = useAuthStore.getState();
+        const currentUserId = authUser?.id;
+
         const socket = useChatStore.getState().socket;
-        if (socket.auth) {
+        if (currentUserId && socket.connected) {
           socket.emit("update_activity", {
-            userId: socket.auth.userId,
-            activity: `${song.title}   ${song.artist}`, // <-- УБЕДИЛСЯ, ЧТО ЗДЕСЬ artist
+            userId: currentUserId,
+            activity: `${song.title}   ${song.artist}`,
           });
         }
 
@@ -162,10 +162,13 @@ export const usePlayerStore = create<PlayerStore>()(
         const willStartPlaying = !get().isPlaying;
 
         const currentSong = get().currentSong;
+        const { user: authUser } = useAuthStore.getState();
+        const currentUserId = authUser?.id;
+
         const socket = useChatStore.getState().socket;
-        if (socket.auth) {
+        if (currentUserId && socket.connected) {
           socket.emit("update_activity", {
-            userId: socket.auth.userId,
+            userId: currentUserId,
             activity:
               willStartPlaying && currentSong
                 ? ` ${currentSong.title}   ${currentSong.artist}`
@@ -181,15 +184,12 @@ export const usePlayerStore = create<PlayerStore>()(
       toggleShuffle: () => {
         set((state) => {
           if (state.isShuffle) {
-            // Выключаем shuffle
             return {
               isShuffle: false,
               shuffleHistory: [],
               shufflePointer: -1,
             };
           } else {
-            // Включаем shuffle
-
             const queueLength = state.queue.length;
             if (queueLength === 0) {
               return {
@@ -234,8 +234,11 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
+        const { user: authUser } = useAuthStore.getState();
+        const currentUserId = authUser?.id;
+
         if (repeatMode === "one") {
-          set({ repeatMode: "all" }); // переключаем в all при ручном переключении next
+          set({ repeatMode: "all" });
         }
 
         if (isShuffle) {
@@ -245,9 +248,9 @@ export const usePlayerStore = create<PlayerStore>()(
 
             const nextSong = queue[nextIndex];
             const socket = useChatStore.getState().socket;
-            if (socket.auth) {
+            if (currentUserId && socket.connected) {
               socket.emit("update_activity", {
-                userId: socket.auth.userId,
+                userId: currentUserId,
                 activity: `${nextSong.title}   ${nextSong.artist}`,
               });
             }
@@ -262,9 +265,9 @@ export const usePlayerStore = create<PlayerStore>()(
             if (repeatMode === "off") {
               set({ isPlaying: false });
               const socket = useChatStore.getState().socket;
-              if (socket.auth) {
+              if (currentUserId && socket.connected) {
                 socket.emit("update_activity", {
-                  userId: socket.auth.userId,
+                  userId: currentUserId,
                   activity: "Idle",
                 });
               }
@@ -274,9 +277,9 @@ export const usePlayerStore = create<PlayerStore>()(
               const firstSong = queue[firstIndex];
 
               const socket = useChatStore.getState().socket;
-              if (socket.auth) {
+              if (currentUserId && socket.connected) {
                 socket.emit("update_activity", {
-                  userId: socket.auth.userId,
+                  userId: currentUserId,
                   activity: `${firstSong.title}   ${firstSong.artist}`,
                 });
               }
@@ -298,9 +301,9 @@ export const usePlayerStore = create<PlayerStore>()(
             } else {
               set({ isPlaying: false });
               const socket = useChatStore.getState().socket;
-              if (socket.auth) {
+              if (currentUserId && socket.connected) {
                 socket.emit("update_activity", {
-                  userId: socket.auth.userId,
+                  userId: currentUserId,
                   activity: "Idle",
                 });
               }
@@ -311,9 +314,9 @@ export const usePlayerStore = create<PlayerStore>()(
           const nextSong = queue[nextIndex];
 
           const socket = useChatStore.getState().socket;
-          if (socket.auth) {
+          if (currentUserId && socket.connected) {
             socket.emit("update_activity", {
-              userId: socket.auth.userId,
+              userId: currentUserId,
               activity: `${nextSong.title}   ${nextSong.artist}`,
             });
           }
@@ -336,8 +339,11 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
+        const { user: authUser } = useAuthStore.getState();
+        const currentUserId = authUser?.id;
+
         if (repeatMode === "one") {
-          set({ repeatMode: "all" }); // переключаем в all при ручном переключении prev
+          set({ repeatMode: "all" });
         }
 
         if (isShuffle) {
@@ -347,9 +353,9 @@ export const usePlayerStore = create<PlayerStore>()(
 
             const prevSong = queue[prevIndex];
             const socket = useChatStore.getState().socket;
-            if (socket.auth) {
+            if (currentUserId && socket.connected) {
               socket.emit("update_activity", {
-                userId: socket.auth.userId,
+                userId: currentUserId,
                 activity: `${prevSong.title}   ${prevSong.artist}`,
               });
             }
@@ -363,9 +369,9 @@ export const usePlayerStore = create<PlayerStore>()(
           } else {
             set({ isPlaying: false });
             const socket = useChatStore.getState().socket;
-            if (socket.auth) {
+            if (currentUserId && socket.connected) {
               socket.emit("update_activity", {
-                userId: socket.auth.userId,
+                userId: currentUserId,
                 activity: "Idle",
               });
             }
@@ -378,9 +384,9 @@ export const usePlayerStore = create<PlayerStore>()(
             } else {
               set({ isPlaying: false });
               const socket = useChatStore.getState().socket;
-              if (socket.auth) {
+              if (currentUserId && socket.connected) {
                 socket.emit("update_activity", {
-                  userId: socket.auth.userId,
+                  userId: currentUserId,
                   activity: "Idle",
                 });
               }
@@ -391,9 +397,9 @@ export const usePlayerStore = create<PlayerStore>()(
           const prevSong = queue[prevIndex];
 
           const socket = useChatStore.getState().socket;
-          if (socket.auth) {
+          if (currentUserId && socket.connected) {
             socket.emit("update_activity", {
-              userId: socket.auth.userId,
+              userId: currentUserId,
               activity: `${prevSong.title}   ${prevSong.artist}`,
             });
           }
@@ -412,10 +418,9 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ isFullScreenPlayerOpen: isOpen }),
     }),
     {
-      name: "music-player-storage", // Уникальное имя для localStorage
-      storage: createJSONStorage(() => localStorage), // Использование localStorage
+      name: "music-player-storage",
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        // Определяем, какие части состояния сохранять
         currentSong: state.currentSong,
         isPlaying: state.isPlaying,
         queue: state.queue,
@@ -424,19 +429,15 @@ export const usePlayerStore = create<PlayerStore>()(
         isShuffle: state.isShuffle,
         shuffleHistory: state.shuffleHistory,
         shufflePointer: state.shufflePointer,
-        // isFullScreenPlayerOpen НЕ сохраняем
       }),
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       onRehydrateStorage: (state) => {
-        // Что делать после загрузки состояния из localStorage
         return (persistedState, error) => {
           if (error) {
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
-            // Устанавливаем isPlaying в false по умолчанию при перезагрузке,
-            // чтобы музыка не начинала играть сама по себе
             persistedState.isPlaying = false;
-            // Убеждаемся, что полноэкранный плеер всегда закрыт при перезагрузке
             persistedState.isFullScreenPlayerOpen = false;
           }
         };

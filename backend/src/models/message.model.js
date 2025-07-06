@@ -3,11 +3,11 @@ import mongoose from "mongoose";
 const messageSchema = new mongoose.Schema(
   {
     senderId: {
-      type: String, // Этот String должен содержать MongoDB _id
+      type: String,
       required: true,
     },
     receiverId: {
-      type: String, // Этот String должен содержать MongoDB _id
+      type: String,
       required: true,
     },
     content: {

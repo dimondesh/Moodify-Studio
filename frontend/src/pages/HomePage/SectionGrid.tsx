@@ -8,20 +8,19 @@ type SectionGridProps = {
   title: string;
   songs: Song[] | null | undefined;
   isLoading: boolean;
-  showAllPath?: string;
+  apiEndpoint?: string;
 };
 
 const SectionGrid = ({
   title,
   songs,
   isLoading,
-  showAllPath,
+  apiEndpoint,
 }: SectionGridProps) => {
   const navigate = useNavigate();
 
   if (isLoading) return <SectionGridSkeleton />;
 
-  // Защитная проверка и преобразование в массив
   const safeSongs = Array.isArray(songs) ? songs : [];
   const songsToShow = safeSongs.slice(0, 4);
 
@@ -29,20 +28,30 @@ const SectionGrid = ({
     return (
       <div className="mb-8">
         <h2 className="text-xl sm:text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-zinc-400">No Songs Availible</p>
+        <p className="text-zinc-400">No Songs Available</p>
       </div>
     );
   }
+
+  const handleShowAll = () => {
+    navigate(`/all-songs/${encodeURIComponent(title)}`, {
+      state: {
+        songs: safeSongs,
+        title: title,
+        apiEndpoint: apiEndpoint,
+      },
+    });
+  };
 
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4 ">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
-        {safeSongs.length > 4 && showAllPath && (
+        {safeSongs.length > 4 && (
           <Button
             variant="link"
             className="text-sm text-zinc-400 hover:text-white"
-            onClick={() => navigate(showAllPath)}
+            onClick={handleShowAll}
           >
             Show all
           </Button>

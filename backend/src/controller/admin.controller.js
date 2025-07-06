@@ -17,14 +17,16 @@ const uploadToCloudinary = async (file) => {
   }
 };
 
-export const checkAdmin = (req, res, next) => {
-  res.status(200).json({ admin: true });
-};
-
 export const createSong = async (req, res, next) => {
   console.log("🚀 Reached /admin/songs route");
 
   try {
+    if (!req.user || !req.user.isAdmin) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Admin privileges required." });
+    }
+
     if (!req.files || !req.files.audioFile || !req.files.imageFile) {
       return res.status(400).json({ message: "Please upload all files" });
     }
@@ -36,7 +38,6 @@ export const createSong = async (req, res, next) => {
     console.log(audioFile);
     console.log(imageFile);
 
-    // ✅ Получаем длительность из файла
     console.log("Audio temp path:", audioFile.tempFilePath);
 
     let duration = 0;
@@ -64,7 +65,7 @@ export const createSong = async (req, res, next) => {
         imageUrl,
         releaseYear: releaseYear || new Date().getFullYear(),
         songs: [],
-        type: "Single", // ✅ добавлено
+        type: "Single",
       });
       await newAlbum.save();
       finalAlbumId = newAlbum._id;
@@ -77,7 +78,7 @@ export const createSong = async (req, res, next) => {
       artist,
       audioUrl,
       imageUrl,
-      duration, // ✅ автоматическая длительность
+      duration,
       albumId: finalAlbumId,
     });
 
@@ -98,6 +99,12 @@ export const createSong = async (req, res, next) => {
 
 export const deleteSong = async (req, res, next) => {
   try {
+    if (!req.user || !req.user.isAdmin) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     const song = await Song.findById(id);
 
@@ -115,9 +122,14 @@ export const deleteSong = async (req, res, next) => {
   }
 };
 
-// admin.controller.js
 export const createAlbum = async (req, res, next) => {
   try {
+    if (!req.user || !req.user.isAdmin) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Admin privileges required." });
+    }
+
     console.log("createAlbum body:", req.body);
     console.log("createAlbum files:", req.files);
 
@@ -142,6 +154,12 @@ export const createAlbum = async (req, res, next) => {
 
 export const deleteAlbum = async (req, res, next) => {
   try {
+    if (!req.user || !req.user.isAdmin) {
+      return res
+        .status(403)
+        .json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     await Song.deleteMany({ albumId: id });
     await Album.findByIdAndDelete(id);

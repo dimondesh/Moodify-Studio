@@ -1,5 +1,3 @@
-// frontend/src/pages/ChatPage/ChatPage.tsx
-
 import React, { useEffect, useState, useRef } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
@@ -35,7 +33,6 @@ const ChatPage = () => {
     selectedUser,
     fetchUsers,
     initSocket,
-    disconnectSocket,
     sendMessage,
     fetchMessages,
     setSelectedUser,
@@ -47,7 +44,6 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageContent, setMessageContent] = useState("");
 
-  // Отладочные логи (можно удалить после подтверждения работы)
   useEffect(() => {
     console.log("ChatPage Mount/Update. Current State:");
     console.log("  mongoUser:", mongoUser);
@@ -56,22 +52,17 @@ const ChatPage = () => {
     console.log("  isConnected:", isConnected);
   }, [mongoUser, selectedUser, messages.length, isConnected]);
 
-  // НОВАЯ ФУНКЦИЯ: Прокрутка в самый низ
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
-    // Добавили async
     e.preventDefault();
     if (messageContent.trim() && selectedUser && mongoUser) {
-      await sendMessage(selectedUser._id, mongoUser.id, messageContent); // Добавили await
+      await sendMessage(selectedUser._id, mongoUser.id, messageContent);
       setMessageContent("");
-      // Вызываем прокрутку после отправки сообщения
-      // Небольшая задержка может быть полезна, чтобы DOM успел обновиться
       setTimeout(scrollToBottom, 100);
     } else {
-      // Дополнительные логи для отладки, если сообщение не отправляется
       console.warn(
         "Failed to send message: Missing selectedUser, mongoUser, or empty content."
       );
@@ -96,25 +87,11 @@ const ChatPage = () => {
       console.log("ChatPage: Fetching users.");
       fetchUsers();
     }
-
-    return () => {
-      if (isConnected) {
-        console.log("ChatPage: Disconnecting socket on unmount.");
-        disconnectSocket();
-      }
-    };
-  }, [
-    mongoUser,
-    initSocket,
-    disconnectSocket,
-    isConnected,
-    fetchUsers,
-    users.length,
-  ]);
+    return () => {};
+  }, [mongoUser, initSocket, fetchUsers, isConnected, users.length]);
 
   useEffect(() => {
     if (selectedUser && mongoUser && mongoUser.id) {
-      // Проверяем mongoUser.id, чтобы убедиться, что он есть
       console.log(`ChatPage: Fetching messages for ${selectedUser.fullName}.`);
       fetchMessages(selectedUser._id);
     } else {
@@ -130,10 +107,8 @@ const ChatPage = () => {
   }, [selectedUser, fetchMessages, mongoUser]);
 
   useEffect(() => {
-    // Этот ref также будет срабатывать при изменении сообщений (например, при загрузке старых)
-    // Но для новых сообщений мы теперь вызываем scrollToBottom явно после отправки.
     scrollToBottom();
-  }, [messages]); // Зависит от изменения сообщений
+  }, [messages]);
 
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);
@@ -160,9 +135,6 @@ const ChatPage = () => {
           {selectedUser ? (
             <>
               <ChatHeader />
-              {/*
-                 Десктоп: Используем явную высоту, которая работает.
-              */}
               <ScrollArea className="overflow-y-auto h-[calc(100vh-340px)]">
                 <div className="p-4 space-y-4">
                   {messages.length === 0 ? (
@@ -228,14 +200,7 @@ const ChatPage = () => {
         {selectedUser ? (
           <div className="flex flex-col h-full">
             <ChatHeader showBackButton={true} onBack={handleBackToList} />
-            {/*
-               МОБИЛЬНАЯ ВЕРСИЯ: УБРАН h-full ИЗ SCROLLAREA
-               flex-1 должен быть достаточным для заполнения оставшегося пространства
-               в flex-контейнере и обеспечения прокрутки.
-            */}
             <ScrollArea className="flex-1 overflow-y-auto">
-              {" "}
-              {/* <-- ИСПРАВЛЕНО ЗДЕСЬ */}
               <div className="p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-zinc-400 mt-8">

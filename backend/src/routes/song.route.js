@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 
-router.get("/", protectRoute, getAllSongs); //reqadm
+router.get("/", protectRoute, getAllSongs);
 router.get("/featured", getFeaturedSongs);
 router.get("/made-for-you", getMadeForYouSongs);
 router.get("/trending", getTrendingSongs);

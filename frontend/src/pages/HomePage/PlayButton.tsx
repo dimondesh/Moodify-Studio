@@ -14,9 +14,8 @@ const PlayButton = ({ song, onClick }: PlayButtonProps) => {
   const isCurrentSong = currentSong?._id === song._id;
 
   const handlePlay = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation(); // Остановить всплытие, чтобы клик не вызывал переход по карточке
-    if (onClick) onClick(e); // Если есть кастомный onClick — вызвать его
-
+    e.stopPropagation();
+    if (onClick) onClick(e);
     if (isCurrentSong) togglePlay();
     else setCurrentSong(song);
   };

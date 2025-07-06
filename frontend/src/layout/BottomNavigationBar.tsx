@@ -1,5 +1,3 @@
-// frontend/src/layout/BottomNavigationBar.tsx
-
 import { Link, useLocation } from "react-router-dom";
 import { HomeIcon, Search, Library, MessageCircle } from "lucide-react";
 import { useAuthStore } from "../stores/useAuthStore";
@@ -24,7 +22,7 @@ const BottomNavigationBar = () => {
       authRequired: false,
     },
     {
-      to: "/library", // ИЗМЕНЕНО: Теперь ведет на /library
+      to: "/library",
       icon: Library,
       label: "Library",
       authRequired: true,

@@ -1,5 +1,3 @@
-// frontend/src/pages/SearchPage/AlbumGrid.tsx
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";

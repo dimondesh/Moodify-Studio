@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -31,7 +30,7 @@ const AddAlbumDialog = () => {
     title: "",
     artist: "",
     releaseYear: new Date().getFullYear(),
-    type: "Album", // default value
+    type: "Album",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -69,7 +68,7 @@ const AddAlbumDialog = () => {
         title: "",
         artist: "",
         releaseYear: new Date().getFullYear(),
-        type: "Album", // default value
+        type: "Album",
       });
       setImageFile(null);
       setAlbumDialogOpen(false);

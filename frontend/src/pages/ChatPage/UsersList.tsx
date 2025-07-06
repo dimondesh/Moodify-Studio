@@ -1,5 +1,3 @@
-// frontend/src/pages/ChatPage/UsersList.tsx
-
 import {
   Avatar,
   AvatarFallback,
@@ -9,8 +7,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import UsersListSkeleton from "../../components/ui/skeletons/UsersListSkeleton";
 import { useChatStore } from "../../stores/useChatStore";
 import { useAuthStore } from "../../stores/useAuthStore";
-import type { User } from "../../types"; // Импортируем тип User
-
+import type { User } from "../../types";
 interface UsersListProps {
   onUserSelect: (user: User) => void;
   selectedUser: User | null;
@@ -46,7 +43,6 @@ const UsersList = ({
       if (aOnline && !bOnline) return -1;
       if (!aOnline && bOnline) return 1;
 
-      // ИСПРАВЛЕНО: Используем user.fullName для сортировки
       return a.fullName.localeCompare(b.fullName);
     });
 

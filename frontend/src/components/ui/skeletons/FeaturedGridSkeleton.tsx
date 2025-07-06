@@ -1,12 +1,10 @@
-// frontend/src/pages/HomePage/FeaturedGridSkeleton.tsx
-
 import { cn } from "../../../lib/utils";
 
 function FeaturedGridSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8", // Matching responsive grid
+        "grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8",
         className
       )}
     >

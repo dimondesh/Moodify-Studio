@@ -1,25 +1,18 @@
-// frontend/src/FriendsActivity/FriendsActivity.tsx
-
 import { HeadphonesIcon, Music, Users } from "lucide-react";
 import { useChatStore } from "../stores/useChatStore";
 import { useEffect } from "react";
-// import { useAuthState } from "react-firebase-hooks/auth"; // Больше не нужен
-// import { auth } from "../lib/firebase"; // Больше не нужен
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { useAuthStore } from "../stores/useAuthStore"; // Импортируем useAuthStore
-
+import { useAuthStore } from "../stores/useAuthStore";
 const FriendsActivity = () => {
   const { users, fetchUsers, onlineUsers, userActivities } = useChatStore();
-  const { user: authUser, isLoading: loadingAuthUser } = useAuthStore(); // Используем user из useAuthStore
-
+  const { user: authUser, isLoading: loadingAuthUser } = useAuthStore();
   useEffect(() => {
     if (authUser && authUser.id && !loadingAuthUser) {
       fetchUsers();
     }
   }, [fetchUsers, authUser, loadingAuthUser]);
 
-  // Пока пользователь загружается (исходим из того, что AuthProvider делает это)
   if (loadingAuthUser) {
     return (
       <div className="h-full bg-zinc-900 rounded-lg flex flex-col">
@@ -30,7 +23,6 @@ const FriendsActivity = () => {
     );
   }
 
-  // Если пользователя нет после загрузки
   if (!authUser) {
     return (
       <div className="h-full bg-zinc-900 rounded-lg flex flex-col">
@@ -39,16 +31,8 @@ const FriendsActivity = () => {
     );
   }
 
-  // Фильтруем пользователей:
-  // 1. Исключаем текущего пользователя (mongoDbUser.id),
-  //    предполагая, что authUser.id - это MongoDB ID
-  // 2. Оставляем только тех, кто онлайн (onlineUsers Set)
-  // 3. У кого есть активность (userActivities Map)
   const activeUsers = users.filter(
-    (userObj) =>
-      userObj._id !== authUser.id && // Исключаем текущего пользователя
-      onlineUsers.has(userObj._id) // Пользователь онлайн
-    // userActivities.has(userObj._id) // Если хочешь показывать только тех, у кого есть "активность", а не "Idle"
+    (userObj) => userObj._id !== authUser.id && onlineUsers.has(userObj._id)
   );
 
   return (
@@ -77,7 +61,6 @@ const FriendsActivity = () => {
               const activity = userActivities.get(userObj._id);
               const isPlaying = activity && activity !== "Idle";
 
-              // Разбираем активность на название песни и исполнителя
               let songTitle = "";
               let artistName = "";
               if (isPlaying) {
@@ -97,7 +80,7 @@ const FriendsActivity = () => {
                       {/* Добавляем flex-shrink-0 */}
                       <Avatar className="size-10 border border-zinc-800">
                         <AvatarImage
-                          src={userObj.imageUrl || "/default-avatar.png"} // Добавляем fallback
+                          src={userObj.imageUrl || "/default-avatar.png"}
                           alt={userObj.fullName}
                         />
                         <AvatarFallback>

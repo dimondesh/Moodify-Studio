@@ -1,6 +1,3 @@
-// frontend/src/components/ui/skeletons/PlaylistSkeleton.tsx (or LibraryGridSkeleton.tsx if you renamed it)
-// This skeleton is used for lists of items (e.g., albums in LeftSidebar or Liked Songs)
-
 import { cn } from "../../../lib/utils";
 
 function PlaylistSkeleton({ className }: { className?: string }) {

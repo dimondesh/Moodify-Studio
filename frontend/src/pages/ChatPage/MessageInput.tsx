@@ -1,11 +1,8 @@
-// frontend/src/pages/ChatPage/MessageInput.tsx
-
 import React from "react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Send } from "lucide-react";
-import type { User } from "../../types"; // Импортируем тип User
-
+import type { User } from "../../types";
 interface MessageInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -24,7 +21,7 @@ const MessageInput = ({
   const isSendDisabled = !value.trim() || !selectedUser || !currentUserId;
 
   return (
-    <div className="p-4 mt-auto border-t border-zinc-800">
+    <div className="p-4 mb-5 sm:mb-10 lg:mb-0 mt-auto border-t border-zinc-800">
       <div className="flex gap-2">
         <Input
           placeholder="Type a message"

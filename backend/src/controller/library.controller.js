@@ -1,9 +1,5 @@
-// backend/controller/library.controller.js
-
 import mongoose from "mongoose";
-import { Library } from "../models/library.model.js"; // Убедись, что путь корректен
-
-// Получить только альбомы из библиотеки пользователя
+import { Library } from "../models/library.model.js";
 export const getLibraryAlbums = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -20,21 +16,22 @@ export const getLibraryAlbums = async (req, res, next) => {
     }
 
     const albums = library.albums
+      .filter((a) => a.albumId && a.albumId._doc)
       .map((a) => ({
         ...a.albumId._doc,
         addedAt: a.addedAt,
       }))
       .sort(
         (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
-      ); // Добавил .getTime() для надежности
+      );
 
     res.json({ albums });
   } catch (err) {
+    console.error("❌ Error in getLibraryAlbums:", err);
     next(err);
   }
 };
 
-// Получить только лайкнутые песни из библиотеки пользователя
 export const getLikedSongs = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -43,31 +40,31 @@ export const getLikedSongs = async (req, res, next) => {
     }
 
     const library = await Library.findOne({ userId }).populate({
-      path: "likedSongs.songId", // 💡 ИСПРАВЛЕНО: Путь к полю, которое нужно populate для лайкнутых песен
-      model: "Song", // Модель, на которую ссылается songId
+      path: "likedSongs.songId",
+      model: "Song",
     });
 
     if (!library) {
       return res.json({ songs: [] });
     }
 
-    // 💡 ИСПРАВЛЕНО: Сортируем по addedAt из вложенного объекта и преобразуем ответ
     const songs = library.likedSongs
+      .filter((item) => item.songId && item.songId._doc)
       .sort(
         (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
       )
       .map((item) => ({
-        ...item.songId._doc, // Разворачиваем объект песни
-        likedAt: item.addedAt, // Добавляем время лайка
+        ...item.songId._doc,
+        likedAt: item.addedAt,
       }));
 
     res.json({ songs });
   } catch (err) {
+    console.error("❌ Error in getLikedSongs:", err);
     next(err);
   }
 };
 
-// Тоггл альбома (добавить/удалить из библиотеки альбом)
 export const toggleAlbumInLibrary = async (req, res, next) => {
   try {
     console.log("▶️ toggleAlbumInLibrary called with:", req.body);
@@ -107,14 +104,13 @@ export const toggleAlbumInLibrary = async (req, res, next) => {
 
     await library.save();
 
-    res.json({ success: true, isAdded: !exists }); // Добавил isAdded для удобства фронтенда
+    res.json({ success: true, isAdded: !exists });
   } catch (err) {
     console.error("❌ toggleAlbumInLibrary error:", err);
     next(err);
   }
 };
 
-// Тоггл лайка песни (добавить/удалить из likedSongs)
 export const toggleSongLikeInLibrary = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -134,18 +130,15 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // 💡 ИСПРАВЛЕНО: Проверяем наличие songId в массиве likedSongs (который теперь массив объектов)
     const exists = library.likedSongs.some(
       (s) => s.songId?.toString() === songId
     );
 
     if (exists) {
-      // 💡 ИСПРАВЛЕНО: Фильтруем likedSongs
       library.likedSongs = library.likedSongs.filter(
         (s) => s.songId?.toString() !== songId
       );
     } else {
-      // 💡 ИСПРАВЛЕНО: Добавляем новый объект в likedSongs
       library.likedSongs.push({
         songId: new mongoose.Types.ObjectId(songId),
         addedAt: new Date(),
@@ -154,7 +147,7 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
 
     await library.save();
 
-    res.json({ success: true, isLiked: !exists }); // Добавил isLiked для удобства фронтенда
+    res.json({ success: true, isLiked: !exists });
   } catch (err) {
     console.error("❌ toggleSongLikeInLibrary error:", err);
     next(err);

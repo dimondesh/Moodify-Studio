@@ -1,5 +1,3 @@
-// frontend/src/pages/LikedSongs/LikedSongs.tsx
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../../stores/useLibraryStore";
@@ -10,7 +8,7 @@ import { Clock, Heart, Pause, Play } from "lucide-react";
 import Equalizer from "../../components/ui/equalizer";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 
-export const formatDuration = (seconds: number) => {
+const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
@@ -211,7 +209,7 @@ const LikedSongsPage = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center hidden md:flex">
+                        <div className=" items-center hidden md:flex">
                           {" "}
                           {song.likedAt
                             ? new Date(song.likedAt).toLocaleDateString()

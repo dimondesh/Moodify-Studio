@@ -32,8 +32,6 @@ const HomePage = () => {
     ) {
       const allSongs = [...featuredSongs, ...madeForYouSongs, ...trendingSongs];
       initializeQueue(allSongs);
-
-      // Включаем shuffle, если он ещё выключен
     }
   }, [
     initializeQueue,

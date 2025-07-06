@@ -1,19 +1,18 @@
-// frontend/src/stores/useChatStore.ts
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import type { Message, User } from "../types";
 
-import { io } from "socket.io-client";
-import { auth } from "../lib/firebase"; // Импортируем auth для получения Firebase ID Token
-import { useAuthStore } from "./useAuthStore"; // <-- ИМПОРТИРУЕМ useAuthStore
+import { io, Socket } from "socket.io-client";
+import type { DefaultEventsMap } from "@socket.io/component-emitter";
+import { auth } from "../lib/firebase";
+import { useAuthStore } from "./useAuthStore";
 
 interface ChatStore {
   users: User[];
   isLoading: boolean;
   error: string | null;
-  socket: any;
+  socket: Socket<DefaultEventsMap, DefaultEventsMap>;
   isConnected: boolean;
   onlineUsers: Set<string>;
   userActivities: Map<string, string>;
@@ -31,18 +30,15 @@ interface ChatStore {
 
 const baseURL = "http://localhost:5001";
 
-// Важно: socket не должен автоматически подключаться
-const socket = io(baseURL, {
+const socket: Socket<DefaultEventsMap, DefaultEventsMap> = io(baseURL, {
   autoConnect: false,
-  auth: {}, // Будет заполнено в initSocket
+  auth: {},
   withCredentials: true,
-  // Добавим reconnectionAttempts и reconnectionDelay для большей устойчивости
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000, // 1 секунда
+  reconnectionDelay: 1000,
 });
 
 let listenersRegistered = false;
-
 export const useChatStore = create<ChatStore>((set, get) => ({
   users: [],
   isLoading: false,
@@ -57,7 +53,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setSelectedUser: (user) => set({ selectedUser: user }),
 
   fetchUsers: async () => {
-    // 💡 ДОБАВЛЕНО: Получаем текущего пользователя из useAuthStore
     const { user: authUser } = useAuthStore.getState();
     if (!authUser || !authUser.id) {
       console.warn(
@@ -67,12 +62,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         isLoading: false,
         error: "Authentication required to fetch users.",
       });
-      return; // Выходим, если пользователя нет
+      return;
     }
 
     set({ isLoading: true, error: null });
     try {
-      // Здесь также нужно получить токен Firebase, так как axiosInstance не делает это автоматически
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error(
@@ -82,7 +76,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const token = await currentUser.getIdToken();
 
       const response = await axiosInstance.get("/users", {
-        headers: { Authorization: `Bearer ${token}` }, // Передаем токен
+        headers: { Authorization: `Bearer ${token}` },
       });
       set({
         users: Array.isArray(response.data)
@@ -106,10 +100,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       return;
     }
 
-    if (get().isConnected) {
+    if (get().isConnected || socket.connected) {
       console.log(
-        "initSocket: Socket already connected for user:",
-        mongoDbUserId
+        "initSocket: Socket already connected or connecting. Aborting init."
       );
       return;
     }
@@ -137,7 +130,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           console.log(
             "Socket.IO: 'connect' event - Socket connected. Emitting 'user_connected'."
           );
-          socket.emit("user_connected", mongoDbUserId); // Используем переданный ID
+          socket.emit("user_connected", mongoDbUserId);
         });
 
         socket.on("connect_error", (err: any) => {
@@ -254,7 +247,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   disconnectSocket: () => {
-    if (get().isConnected) {
+    if (socket.connected) {
       console.log("disconnectSocket: Disconnecting socket...");
       socket.disconnect();
       set({
@@ -285,7 +278,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   fetchMessages: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
-      // 💡 Здесь тоже нужно получить токен Firebase
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error(
@@ -295,7 +287,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const token = await currentUser.getIdToken();
 
       const response = await axiosInstance.get(`/users/messages/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }, // Передаем токен
+        headers: { Authorization: `Bearer ${token}` },
       });
       set({ messages: response.data });
     } catch (error: any) {

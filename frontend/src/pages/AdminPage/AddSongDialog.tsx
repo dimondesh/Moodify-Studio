@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import toast from "react-hot-toast";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { useRef, useState } from "react";
@@ -23,13 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { ScrollArea } from "../../components/ui/scroll-area";
 
 interface NewSong {
   title: string;
   artist: string;
   album: string;
 
-  releaseYear: number; // ✅ добавлено
+  releaseYear: number;
 }
 
 const AddSongDialog = () => {
@@ -42,7 +41,7 @@ const AddSongDialog = () => {
     artist: "",
     album: "",
 
-    releaseYear: new Date().getFullYear(), // ✅ по умолчанию текущий год
+    releaseYear: new Date().getFullYear(),
   });
 
   const [files, setFiles] = useState<{
@@ -88,7 +87,7 @@ const AddSongDialog = () => {
         artist: "",
         album: "",
 
-        releaseYear: new Date().getFullYear(), // ✅ по умолчанию текущий год
+        releaseYear: new Date().getFullYear(),
       });
 
       setFiles({
@@ -234,32 +233,34 @@ const AddSongDialog = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white">
-              Album (Optional)
-            </label>
-            <Select
-              value={newSong.album}
-              onValueChange={(value) =>
-                setNewSong({ ...newSong, album: value })
-              }
-            >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700">
-                <SelectValue
-                  placeholder="Select album"
-                  className="text-zinc-400"
-                />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
-                <SelectItem value="none">No Album (Single)</SelectItem>
-                {albums.map((album) => (
-                  <SelectItem key={album._id} value={album._id}>
-                    {album.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ScrollArea>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Album (Optional)
+              </label>
+              <Select
+                value={newSong.album}
+                onValueChange={(value) =>
+                  setNewSong({ ...newSong, album: value })
+                }
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                  <SelectValue
+                    placeholder="Select album"
+                    className="text-zinc-400"
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectItem value="none">No Album (Single)</SelectItem>
+                  {albums.map((album) => (
+                    <SelectItem key={album._id} value={album._id}>
+                      {album.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </ScrollArea>
         </div>
 
         <DialogFooter>

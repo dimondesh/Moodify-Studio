@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// frontend/src/stores/useAuthStore.ts
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios";
 import { auth, signOut as firebaseSignOut } from "../lib/firebase";
 
 interface AuthUser {
-  id: string; // MongoDB _id пользователя (обязательно после синхронизации)
-  firebaseUid: string; // Firebase UID пользователя (обязательно после синхронизации)
-  email: string; // Email пользователя (обязательно)
-  fullName: string; // Полное имя пользователя из MongoDB (часто соответствует displayName Firebase)
-  imageUrl?: string | null; // URL изображения профиля из MongoDB (часто соответствует photoURL Firebase)
+  id: string;
+  firebaseUid: string;
+  email: string;
+  fullName: string;
+  imageUrl?: string | null;
+  isAdmin?: boolean;
 }
 
 interface FirebaseUserDataForSync {
@@ -85,6 +84,7 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
 
+          await get().checkAdminStatus();
           set({
             user: {
               id: syncedUserFromBackend._id,
@@ -107,6 +107,7 @@ export const useAuthStore = create<AuthStore>()(
             error: error.response?.data?.message || "Failed to sync user",
             isLoading: false,
             user: null,
+            isAdmin: false,
           });
         }
       },
@@ -139,6 +140,7 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             user: null,
             error: error.message || "Failed to fetch user data.",
+            isAdmin: false,
           });
         }
       },
@@ -147,12 +149,22 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         try {
           const headers = await getAuthHeaders();
-          const response = await axiosInstance.get("/admin/check", headers);
-          set({
-            isAdmin: response.data.isAdmin,
+          const response = await axiosInstance.get("/users/me", headers);
+          const currentUserData = response.data;
+
+          set((state) => ({
+            user: {
+              ...state.user,
+              ...currentUserData,
+            },
+            isAdmin: currentUserData.isAdmin || false,
             isLoading: false,
             error: null,
-          });
+          }));
+          console.log(
+            "Admin status checked. Is Admin:",
+            currentUserData.isAdmin
+          );
         } catch (error: any) {
           console.error("Admin check error:", error);
           set({

@@ -27,11 +27,18 @@ const app = express();
 const __dirname = path.resolve();
 
 const httpServer = createServer(app);
-initializeSocket(httpServer); // Здесь Socket.IO инициализируется
+initializeSocket(httpServer);
+
+let allowedOrigin;
+if (process.env.NODE_ENV === "production") {
+  allowedOrigin = process.env.CLIENT_ORIGIN_URL;
+} else {
+  allowedOrigin = "http://localhost:3000";
+}
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigin,
     credentials: true,
   })
 );
@@ -74,6 +81,8 @@ app.use("/api/search", searchRoutes);
 app.use("/api/library", libraryRoutes);
 
 app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR HANDLER CAUGHT AN ERROR:");
+  console.error(err);
   res.status(500).json({
     success: false,
     message:
@@ -85,5 +94,7 @@ app.use((err, req, res, next) => {
 
 httpServer.listen(PORT, () => {
   connectDB();
-  console.log(`Server on port ${PORT}`);
+  console.log(
+    `Server on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`
+  );
 });

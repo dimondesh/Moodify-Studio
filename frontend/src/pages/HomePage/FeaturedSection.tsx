@@ -1,4 +1,3 @@
-// frontend/src/pages/HomePage/FeaturedSection.tsx
 import { useNavigate } from "react-router-dom";
 import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
@@ -12,7 +11,6 @@ const FeaturedSection = () => {
 
   if (error) return <p className="text-red-500 mb-4 text-lg">{error}</p>;
 
-  // Добавляем проверку на массив и fallback
   const songsArray = Array.isArray(featuredSongs) ? featuredSongs : [];
 
   const handleClick = (albumId: string | null) => {

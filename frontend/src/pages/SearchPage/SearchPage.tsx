@@ -1,5 +1,3 @@
-// frontend/src/pages/SearchPage/SearchPage.tsx
-
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSearchStore } from "../../stores/useSearchStore";

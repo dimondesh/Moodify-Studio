@@ -1,5 +1,3 @@
-// frontend/src/pages/AlbumPage/AlbumPage.tsx
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMusicStore } from "../../stores/useMusicStore";
@@ -11,13 +9,13 @@ import {
   Pause,
   Play,
   PlusCircle,
-  Heart, // <-- Импортируем Heart
+  Heart,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 
-export const formatDuration = (seconds: number) => {
+const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
@@ -27,7 +25,7 @@ const AlbumPage = () => {
   const { albumId } = useParams();
   const { fetchAlbumbyId, currentAlbum, isLoading } = useMusicStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
-  const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore(); // <-- Добавили likedSongs и toggleSongLike
+  const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
 
@@ -52,7 +50,6 @@ const AlbumPage = () => {
 
   if (isLoading) return null;
 
-  // Если currentAlbum не загружен, отображаем заглушку или лоадер
   if (!currentAlbum) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
@@ -65,7 +62,6 @@ const AlbumPage = () => {
   }
 
   const handlePlayAlbum = () => {
-    // currentAlbum уже проверен выше, поэтому можно использовать его без ?
     const isCurrentAlbumPlaying = currentAlbum.songs.some(
       (song) => song._id === currentSong?._id
     );
@@ -76,7 +72,6 @@ const AlbumPage = () => {
   };
 
   const handlePlaySong = (index: number) => {
-    // currentAlbum уже проверен выше
     playAlbum(currentAlbum.songs, index);
   };
 
@@ -165,7 +160,6 @@ const AlbumPage = () => {
               <div
                 className="grid grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
-                // Изменен grid-cols для добавления места под кнопку лайка
               >
                 <div>#</div>
                 <div>Title</div>
@@ -183,7 +177,6 @@ const AlbumPage = () => {
                 <div className="space-y-2 py-4">
                   {currentAlbum.songs.map((song, index) => {
                     const isCurrentSong = currentSong?._id === song._id;
-                    // Проверяем, лайкнута ли песня
                     const songIsLiked = likedSongs.some(
                       (likedSong) => likedSong._id === song._id
                     );
@@ -195,7 +188,6 @@ const AlbumPage = () => {
                         className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
                       text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
                       ${isCurrentSong ? "bg-white/10" : ""}`}
-                        // Изменен grid-cols для добавления места под кнопку лайка
                       >
                         <div className="flex items-center justify-center">
                           {isCurrentSong && isPlaying ? (
@@ -254,7 +246,7 @@ const AlbumPage = () => {
                                 : "text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                             }`}
                             onClick={(e) => {
-                              e.stopPropagation(); // Предотвращаем проигрывание песни
+                              e.stopPropagation();
                               toggleSongLike(song._id);
                             }}
                             title={songIsLiked ? "Unlike song" : "Like song"}

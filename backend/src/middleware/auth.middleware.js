@@ -1,6 +1,7 @@
 import { firebaseAdmin } from "../lib/firebase.js";
 import { User } from "../models/user.model.js";
-
+import dotenv from "dotenv";
+dotenv.config();
 export const protectRoute = async (req, res, next) => {
   console.log("ProtectRoute middleware triggered");
 
@@ -14,7 +15,6 @@ export const protectRoute = async (req, res, next) => {
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
     console.log("Decoded token:", decodedToken);
 
-    // Ищем пользователя по firebaseUid, который пришел из декодированного токена
     const user = await User.findOne({ firebaseUid: decodedToken.uid });
     console.log("User from DB:", user);
 
@@ -23,11 +23,11 @@ export const protectRoute = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Прикрепляем к объекту запроса данные пользователя из вашей MongoDB
-    // Это будет доступно в последующих контроллерах как req.user
     req.user = {
-      id: user._id, // MongoDB _id
+      id: user._id,
       firebaseUid: user.firebaseUid,
+      email: decodedToken.email,
+      isAdmin: decodedToken.email === process.env.ADMIN_EMAIL,
     };
 
     next();
