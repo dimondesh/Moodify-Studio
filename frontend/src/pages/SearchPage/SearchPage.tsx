@@ -1,3 +1,5 @@
+// frontend/src/pages/SearchPage/SearchPage.tsx
+
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSearchStore } from "../../stores/useSearchStore";
@@ -20,30 +22,37 @@ const SearchPage = () => {
   }, [queryParam, query, setQuery, search]);
 
   return (
-    <main className="flex flex-col items-center justify-start min-h-[calc(100vh-64px)] bg-gradient-to-b from-zinc-900 to-zinc-950  text-white py-10 px-4 w-full max-w-7xl mx-auto rounded-md overflow-hidden">
-      <ScrollArea className="h-[calc(100vh-64px)] w-full">
-        <h1 className="text-3xl font-bold mb-8 text-center">
-          Search results for &quot;{queryParam}&quot;
-        </h1>
-
-        {loading && <p>Loading...</p>}
-
-        {error && <p className="text-red-500">{error}</p>}
-
-        {!loading && !error && songs.length === 0 && albums.length === 0 && (
-          <p className="text-zinc-400">No results found.</p>
-        )}
-
-        {!loading && !error && (songs.length > 0 || albums.length > 0) && (
-          <>
-            {songs.length > 0 && (
-              <SongGrid title="Songs" songs={songs} isLoading={loading} />
-            )}
-            {albums.length > 0 && (
-              <AlbumGrid title="Albums" albums={albums} isLoading={loading} />
-            )}
-          </>
-        )}
+    <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+      {/* Отступ снизу для мобильных, чтобы контент не перекрывался нижней навигацией и плеером */}
+      <ScrollArea className="h-[calc(100vh-64px)] w-full pb-20 md:pb-0">
+        <div className="py-10 px-4 sm:px-6">
+          {" "}
+          {/* Адаптивные отступы */}
+          {queryParam ? (
+            <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
+              Search results for &quot;{queryParam}&quot;
+            </h1>
+          ) : (
+            <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
+              Find your favorite songs here
+            </h1>
+          )}
+          {loading && <p>Loading...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+          {!loading && !error && songs.length === 0 && albums.length === 0 && (
+            <p className="text-zinc-400">No results found.</p>
+          )}
+          {!loading && !error && (songs.length > 0 || albums.length > 0) && (
+            <>
+              {songs.length > 0 && (
+                <SongGrid title="Songs" songs={songs} isLoading={loading} />
+              )}
+              {albums.length > 0 && (
+                <AlbumGrid title="Albums" albums={albums} isLoading={loading} />
+              )}
+            </>
+          )}
+        </div>
       </ScrollArea>
     </main>
   );

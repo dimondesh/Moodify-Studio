@@ -1,4 +1,5 @@
-import { Heart, HomeIcon, Library, MessageCircle } from "lucide-react";
+// frontend/src/layout/LeftSidebar.tsx
+import { Heart, HomeIcon, Library, MessageCircle, Search } from "lucide-react"; // Добавил Search для единообразия, хотя он будет в BottomNav
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
@@ -8,7 +9,7 @@ import { useEffect } from "react";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
-import { HeadphonesIcon } from "lucide-react"; // Импортируем HeadphonesIcon для LoginPrompt
+import { HeadphonesIcon } from "lucide-react";
 
 const LeftSidebar = () => {
   const { albums, fetchLibrary, isLoading, error } = useLibraryStore();
@@ -21,10 +22,15 @@ const LeftSidebar = () => {
   }, [fetchLibrary, user, loadingUser]);
 
   return (
-    <div className="h-full flex flex-col gap-2">
+    // Этот контейнер теперь по умолчанию будет виден на md и выше, скрыт на sm
+    // Его видимость контролируется MainLayout через ResizablePanel
+    <div className="h-full flex flex-col gap-2 p-2">
+      {" "}
+      {/* Добавил p-2 для отступов внутри сайдбара */}
       {/* Навигация */}
       <div className="rounded-lg bg-zinc-900 p-4">
         <div className="space-y-2">
+          {/* Ссылка на Home */}
           <Link
             to="/"
             className={cn(
@@ -35,7 +41,21 @@ const LeftSidebar = () => {
             )}
           >
             <HomeIcon className="mr-2 size-5" />
-            <span className="hidden md:inline">Home</span>
+            <span>Home</span> {/* Убран hidden md:inline */}
+          </Link>
+
+          {/* Ссылка на Search - добавляем сюда для десктопа */}
+          <Link
+            to="/search"
+            className={cn(
+              buttonVariants({
+                variant: "ghost",
+                className: "w-full justify-start text-white hover:bg-zinc-800",
+              })
+            )}
+          >
+            <Search className="mr-2 size-5" />
+            <span>Search</span> {/* Убран hidden md:inline */}
           </Link>
 
           {user && (
@@ -50,7 +70,7 @@ const LeftSidebar = () => {
               )}
             >
               <MessageCircle className="mr-2 size-5" />
-              <span className="hidden md:inline">Messages</span>
+              <span>Messages</span> {/* Убран hidden md:inline */}
             </Link>
           )}
 
@@ -66,33 +86,27 @@ const LeftSidebar = () => {
               )}
             >
               <Heart className="mr-2 size-5" />
-              <span className="hidden md:inline">Liked Songs</span>
+              <span>Liked Songs</span> {/* Убран hidden md:inline */}
             </Link>
           )}
         </div>
       </div>
-
       {/* Библиотека альбомов */}
       <div className="flex-1 rounded-lg bg-zinc-900 p-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center text-white px-2">
             <Library className="size-5 mr-2" />
-            <span className="hidden md:inline">Your Library</span>
+            <span>Your Library</span> {/* Убран hidden md:inline */}
           </div>
         </div>
 
         {loadingUser ? (
-          // Если пользователь загружается, показываем скелетон
           <PlaylistSkeleton />
         ) : authError ? (
-          // Если есть ошибка аутентификации, показываем её
           <p className="text-red-500 px-2">Authentication error.</p>
         ) : !user ? (
-          // Если пользователь не залогинен, показываем LoginPrompt
-          // Передаем классы для растягивания на всю высоту и центрирования
           <LoginPrompt className="flex-1" />
         ) : (
-          // Если пользователь залогинен, показываем ScrollArea с альбомами
           <ScrollArea className="flex-1">
             {isLoading && <PlaylistSkeleton />}
             {error && <p className="text-red-500 px-2">{error}</p>}
@@ -144,14 +158,12 @@ const LeftSidebar = () => {
 
 export default LeftSidebar;
 
-// Компонент LoginPrompt
+// Компонент LoginPrompt (остается без изменений)
 const LoginPrompt = ({ className }: { className?: string }) => (
-  // Добавляем flex-col, items-center, justify-center для центрирования
-  // и h-full для занятия всей доступной высоты
   <div
     className={cn(
       "flex flex-col items-center justify-center p-6 text-center space-y-4",
-      className // Этот className позволит передать flex-1 из родителя
+      className
     )}
   >
     <div className="relative">

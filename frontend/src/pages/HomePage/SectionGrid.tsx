@@ -29,14 +29,14 @@ const SectionGrid = ({
     return (
       <div className="mb-8">
         <h2 className="text-xl sm:text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-zinc-400">Нет доступных песен</p>
+        <p className="text-zinc-400">No Songs Availible</p>
       </div>
     );
   }
 
   return (
     <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 ">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
         {safeSongs.length > 4 && showAllPath && (
           <Button
@@ -48,7 +48,7 @@ const SectionGrid = ({
           </Button>
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className=" grid  grid-cols-2 grid-rows-1 sm:grid-cols-2  lg:grid-cols-4 gap-4 ">
         {songsToShow.map((song) => (
           <div
             key={song._id}
@@ -68,7 +68,7 @@ const SectionGrid = ({
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
                   src={song.imageUrl || "/default-song-cover.png"}
-                  alt={song.title || "Без названия"}
+                  alt={song.title || "No title"}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
@@ -79,10 +79,10 @@ const SectionGrid = ({
               <PlayButton song={song} />
             </div>
             <h3 className="font-medium mb-2 truncate">
-              {song.title || "Без названия"}
+              {song.title || "No title"}
             </h3>
             <p className="text-sm text-zinc-400 truncate">
-              {song.artist || "Неизвестный исполнитель"}
+              {song.artist || "Unknown artist"}
             </p>
           </div>
         ))}

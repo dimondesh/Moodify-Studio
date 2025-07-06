@@ -4,7 +4,6 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import type { Album, Song } from "../types";
-import { usePlayerStore } from "./usePlayerStore";
 
 interface LibraryStore {
   albums: Album[];
@@ -73,14 +72,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
           // Если песня была лайкнута (добавлена), добавляем её в начало массива
           // Нужно получить полную информацию о песне для этого, можно из `currentSong` в `usePlayerStore`
           // Или, если эта функция вызывается только из плеера, где `currentSong` доступен
-          const playerStore = usePlayerStore.getState();
-          const songToAdd =
-            playerStore.currentSong && playerStore.currentSong._id === songId
-              ? {
-                  ...playerStore.currentSong,
-                  likedAt: new Date().toISOString(),
-                }
-              : null; // Если currentSong не совпадает, нужно будет получить ее откуда-то еще.
+          // Если currentSong не совпадает, нужно будет получить ее откуда-то еще.
           // Для простоты, пока будем предполагать, что мы всегда лайкаем текущую песню.
           // ИЛИ: Если бэкенд возвращает полный объект песни при лайке, то использовать его.
           // Твой бэкенд возвращает `likedSong: song`, но только при добавлении.

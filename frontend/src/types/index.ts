@@ -10,6 +10,7 @@ export interface Song {
   duration: number; // in seconds
   createdAt: string;
   updatedAt: string;
+  albumTitle?: string;
   // 💡 Добавим опциональное поле likedAt, так как оно будет только у лайкнутых песен
   likedAt?: string;
 }

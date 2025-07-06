@@ -1,3 +1,5 @@
+// frontend/src/pages/SearchPage/AlbumGrid.tsx
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -32,7 +34,8 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
           </Button>
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {albumsToShow.map((album) => (
           <div
             key={album._id}
@@ -42,9 +45,13 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={album.imageUrl}
+                  src={album.imageUrl || "/default-album-cover.png"}
                   alt={album.title}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/default-album-cover.png";
+                  }}
                 />
               </div>
             </div>

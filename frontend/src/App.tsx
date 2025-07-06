@@ -12,18 +12,9 @@ import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import LoginPage from "./pages/LoginPage/LoginPage";
-
-// Удалены импорты useAuthState, auth из firebase, useAuthStore, useChatStore
-// Вся эта логика теперь централизована в AuthProvider
+import LibraryPage from "./pages/LibraryPage/LibraryPage"; // НОВОЕ: Импортируем новый компонент LibraryPage
 
 function App() {
-  // Логика аутентификации и инициализации сокета теперь находится в AuthProvider.
-  // App.tsx больше не должен напрямую зависеть от firebaseUser или mongoUser для этих целей.
-
-  // Если вам нужны данные пользователя в App.tsx или его дочерних компонентах,
-  // используйте useAuthStore() для получения `user`.
-  // Например: const { user } = useAuthStore();
-
   return (
     <>
       <Routes>
@@ -38,6 +29,8 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/liked-songs" element={<LikedSongs />} />
+          <Route path="/library" element={<LibraryPage />} />{" "}
+          {/* НОВОЕ: Маршрут для страницы библиотеки */}
         </Route>
       </Routes>
       <Toaster />

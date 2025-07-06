@@ -1,17 +1,26 @@
+// frontend/src/components/ui/Topbar.tsx
+
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { LayoutDashboardIcon, Search } from "lucide-react";
+import { LayoutDashboardIcon, Search, LogOut } from "lucide-react"; // Добавил UserCircle, LogOut
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
-import { buttonVariants } from "./button";
+import { Button, buttonVariants } from "./button";
 import SignInOAuthButton from "./SignInOAuthButton";
 import { auth } from "../../lib/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu"; // Предполагаем, что у тебя есть DropdownMenu компоненты
 
 const Topbar = () => {
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
+  const [isSearchVisible, setIsSearchVisible] = useState(false); // Для мобильного поиска
 
   const { isAdmin } = useAuthStore();
 
@@ -44,7 +53,10 @@ const Topbar = () => {
       if (val.trim() !== "") {
         navigate(`/search?q=${encodeURIComponent(val)}`);
       } else {
-        navigate(`/`);
+        // Если поле пустое, переходим на главную, если мы уже на странице поиска
+        if (location.pathname.startsWith("/search")) {
+          navigate(`/`);
+        }
       }
     }, 300);
   };
@@ -54,20 +66,30 @@ const Topbar = () => {
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md">
-      {/* Лого */}
-      <div className="flex gap-3 items-center">
+    <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md sm:px-6">
+      {/* Лого - скрываем на мобильных, если поиск активен */}
+      <div
+        className={`flex gap-3 items-center ${
+          isSearchVisible ? "hidden sm:flex" : "flex"
+        }`}
+      >
         <img src="/Moodify.png" alt="Moodify" className="h-8 w-auto" />
       </div>
 
       {/* Поиск */}
-      <div className="flex-1 max-w-lg mx-8 relative">
+      {/* На мобильных: иконка Search, при клике появляется input */}
+      <div
+        className={`relative flex-1 max-w-lg ${
+          isSearchVisible ? "block" : "hidden md:block"
+        }`}
+      >
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
         <input
           type="text"
           placeholder="Artists, songs, or podcasts"
           value={query}
           onChange={handleChange}
+          autoFocus={isSearchVisible} // Фокусировка при открытии на мобильных
           className="
             w-full
             bg-zinc-800
@@ -88,34 +110,91 @@ const Topbar = () => {
           spellCheck={false}
           autoComplete="off"
         />
+        {isSearchVisible && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white md:hidden"
+            onClick={() => setIsSearchVisible(false)} // Кнопка закрытия поиска на мобильных
+          >
+            Cancel
+          </Button>
+        )}
       </div>
 
       {/* Кнопки справа */}
-      <div className="flex items-center gap-4">
+      <div
+        className={`flex items-center gap-4 ${
+          isSearchVisible ? "hidden" : "flex"
+        }`}
+      >
+        <Button
+          size="icon"
+          variant="ghost"
+          className="md:hidden" // Кнопка поиска для мобильных
+          onClick={() => setIsSearchVisible(true)}
+        >
+          <Search className="w-5 h-5" />
+        </Button>
+
         {isAdmin && (
           <Link
             to={"/admin"}
-            className={cn(buttonVariants({ variant: "outline" }))}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "hidden sm:inline-flex"
+            )}
           >
-            <LayoutDashboardIcon className="w-5 h-5 mr-2" />
-            Admin Dashboard
+            <LayoutDashboardIcon className="w-4 h-4 mr-2" />
+            <span className="hidden md:inline">Admin</span>{" "}
+            {/* Компактнее на sm */}
           </Link>
         )}
 
         {user ? (
-          <div className="flex items-center gap-3">
-            <img
-              src={user.photoURL || "/Moodify.png"}
-              alt="avatar"
-              className="w-8 h-8 rounded-full"
-            />
-            <button
-              onClick={handleLogout}
-              className={cn(buttonVariants({ variant: "ghost" }), "text-sm")}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-8 w-8 rounded-full"
+              >
+                <img
+                  src={user.photoURL || "/Moodify.png"}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-48 bg-zinc-800 border-zinc-700 text-white p-1"
+              align="end"
             >
-              Logout
-            </button>
-          </div>
+              {user.displayName && (
+                <DropdownMenuItem className="text-sm font-semibold cursor-default text-zinc-200 p-2 opacity-100 hover:bg-zinc-700">
+                  {user.displayName}
+                </DropdownMenuItem>
+              )}
+              {isAdmin && (
+                <DropdownMenuItem
+                  asChild
+                  className="p-2 cursor-pointer hover:bg-zinc-700"
+                >
+                  <Link to="/admin">
+                    <LayoutDashboardIcon className="w-4 h-4 mr-2" />
+                    Admin Dashboard
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <SignInOAuthButton />
         )}

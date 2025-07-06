@@ -1,40 +1,39 @@
-import { useState } from "react";
-import { useChatStore } from "../../stores/useChatStore";
+// frontend/src/pages/ChatPage/MessageInput.tsx
+
+import React from "react";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Send } from "lucide-react";
-import { useAuthStore } from "../../stores/useAuthStore";
+import type { User } from "../../types"; // Импортируем тип User
 
-const MessageInput = () => {
-  const [newMessage, setNewMessage] = useState("");
-  const { selectedUser, sendMessage } = useChatStore();
-  const { user: mongoUser } = useAuthStore();
+interface MessageInputProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSend: (e: React.FormEvent) => void;
+  selectedUser: User | null;
+  currentUserId: string;
+}
 
-  const handleSend = () => {
-    // 💡 ИСПРАВЛЕНО: Проверяем наличие mongoUser.id перед использованием
-    if (!selectedUser || !mongoUser?.id || !newMessage.trim()) {
-      console.warn(
-        "Cannot send message: Missing selected user, current user ID, or message content."
-      );
-      return;
-    }
-
-    // Теперь mongoUser.id гарантированно string
-    sendMessage(selectedUser._id, mongoUser.id, newMessage.trim());
-    setNewMessage("");
-  };
+const MessageInput = ({
+  value,
+  onChange,
+  onSend,
+  selectedUser,
+  currentUserId,
+}: MessageInputProps) => {
+  const isSendDisabled = !value.trim() || !selectedUser || !currentUserId;
 
   return (
     <div className="p-4 mt-auto border-t border-zinc-800">
       <div className="flex gap-2">
         <Input
           placeholder="Type a message"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          value={value}
+          onChange={onChange}
           className="bg-zinc-800 border-none"
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => e.key === "Enter" && onSend(e)}
         />
-        <Button size="icon" onClick={handleSend} disabled={!newMessage.trim()}>
+        <Button size="icon" onClick={onSend} disabled={isSendDisabled}>
           <Send className="size-4" />
         </Button>
       </div>

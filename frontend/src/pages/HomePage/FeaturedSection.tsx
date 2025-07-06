@@ -1,3 +1,4 @@
+// frontend/src/pages/HomePage/FeaturedSection.tsx
 import { useNavigate } from "react-router-dom";
 import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
@@ -27,25 +28,25 @@ const FeaturedSection = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
       {songsArray.map((song) => (
         <div
           key={song._id}
-          className="flex items-center bg-zinc-800/50 rounded-md overflow-hidden hover:bg-zinc-700/50
-             transition-colors group cursor-pointer relative"
+          className="flex items-cengridter bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
+             transition-colors group cursor-pointer relative "
           onClick={() => handleClick(song.albumId)}
         >
           <img
             src={song.imageUrl || "/default-song-cover.png"}
             alt={song.title}
-            className="w-16 sm:w-20 h-16 sm:h-20 object-cover flex-shrink-0"
+            className="w-10 sm:w-20 h-10 sm:h-20 object-cover flex-shrink-0"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/default-song-cover.png";
             }}
           />
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-2 sm:p-4">
             <p className="font-md truncate">{song.title || "Без названия"}</p>
-            <p className="font-sm text-zinc-400 truncate">
+            <p className="hidden sm:inline font-sm text-zinc-400 truncate">
               {song.artist || "Неизвестный исполнитель"}
             </p>
           </div>
