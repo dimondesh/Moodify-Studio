@@ -9,6 +9,7 @@ type SectionGridProps = {
   songs: Song[] | null | undefined;
   isLoading: boolean;
   apiEndpoint?: string;
+  showAllPath: string;
 };
 
 const SectionGrid = ({
