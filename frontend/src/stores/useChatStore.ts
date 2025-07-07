@@ -28,9 +28,7 @@ interface ChatStore {
   setSelectedUser: (user: User | null) => void;
 }
 
-let baseURL;
-if (import.meta.env.VITE_API_URL === "production")
-  baseURL = "https://moodify-yf1r.onrender.com";
+const baseURL = import.meta.env.VITE_API_URL;
 
 const socket: Socket<DefaultEventsMap, DefaultEventsMap> = io(baseURL, {
   autoConnect: false,
