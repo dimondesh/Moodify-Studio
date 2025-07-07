@@ -22,7 +22,7 @@ const FeaturedSection = () => {
   };
 
   if (songsArray.length === 0) {
-    return <p className="text-zinc-400">Нет рекомендуемых песен</p>;
+    return <p className="text-zinc-400">No songs available</p>;
   }
 
   return (
