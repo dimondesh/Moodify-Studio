@@ -21,7 +21,7 @@ const LeftSidebar = () => {
   }, [fetchLibrary, user, loadingUser]);
 
   return (
-    <div className="h-full flex flex-col gap-2 p-2">
+    <div className="h-full flex flex-col gap-2">
       {" "}
       <div className="rounded-lg bg-zinc-900 p-4">
         <div className="space-y-2">
