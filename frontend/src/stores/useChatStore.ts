@@ -29,7 +29,7 @@ interface ChatStore {
 }
 
 let baseURL;
-if (process.env.VITE_ENV === "production")
+if (import.meta.env.VITE_API_URL === "production")
   baseURL = "https://moodify-yf1r.onrender.com";
 else baseURL = "http://localhost:5001";
 
