@@ -47,12 +47,4 @@ The Moodify project is built using a modern technology stack:
 * **Vercel:** For deploying the frontend application.
 * **Render:** For deploying the backend server.
 
-## 🚀 Getting Started Locally
 
-To get the Moodify project up and running on your local machine, follow these steps:
-
-### 1. Clone the repository
-
-```bash
-git clone [https://github.com/dimondesh/Moodify.git](https://github.com/dimondesh/Moodify.git)
-cd Moodify
