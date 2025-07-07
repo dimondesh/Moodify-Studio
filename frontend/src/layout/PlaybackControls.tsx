@@ -1,5 +1,3 @@
-// frontend/src/layout/PlaybackControls.tsx
-
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
@@ -97,11 +95,10 @@ const PlaybackControls = () => {
       return;
     }
 
-    // Инициализируем источник аудио и громкость при изменении currentSong
     if (currentSong) {
       if (audio.src !== currentSong.audioUrl) {
         audio.src = currentSong.audioUrl;
-        audio.load(); // Загружаем новое аудио
+        audio.load();
       }
       if (isPlaying) {
         audio.play().catch((e) => console.warn("Audio playback failed:", e));
@@ -110,7 +107,7 @@ const PlaybackControls = () => {
       }
     } else {
       audio.pause();
-      audio.src = ""; // Очищаем источник аудио, если нет текущей песни
+      audio.src = "";
     }
 
     audio.volume = volume / 100;
@@ -120,7 +117,7 @@ const PlaybackControls = () => {
 
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("canplaythrough", updateDuration); // Добавлен canplaythrough
+    audio.addEventListener("canplaythrough", updateDuration);
 
     const handleEnded = () => {
       if (repeatMode === "one") {
@@ -128,7 +125,6 @@ const PlaybackControls = () => {
         audio.play().catch(console.warn);
       } else if (repeatMode === "all") {
         if (usePlayerStore.getState().isShuffle) {
-          // Используем getState() для актуального состояния
           if (
             usePlayerStore.getState().shufflePointer ===
             usePlayerStore.getState().shuffleHistory.length - 1
@@ -147,7 +143,7 @@ const PlaybackControls = () => {
         ) {
           playNext();
         } else {
-          playAlbum(usePlayerStore.getState().queue, 0); // Начать альбом заново
+          playAlbum(usePlayerStore.getState().queue, 0);
         }
       } else {
         usePlayerStore.setState({ isPlaying: false });
@@ -173,7 +169,6 @@ const PlaybackControls = () => {
     playAlbum,
   ]);
 
-  // Отдельный useEffect для команд play/pause на основе состояния isPlaying
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
@@ -225,7 +220,6 @@ const PlaybackControls = () => {
   if (isCompactView) {
     return (
       <>
-        {/* Аудио элемент находится здесь, чтобы он был частью компонента и всегда в DOM */}
         <audio id="player-audio-element" />
 
         {!isFullScreenPlayerOpen && (
@@ -296,10 +290,6 @@ const PlaybackControls = () => {
         {/* ПОЛНОЭКРАННЫЙ ПЛЕЕР (МОДАЛЬНОЕ ОКНО) */}
         <Dialog
           open={isFullScreenPlayerOpen}
-          // ИСПРАВЛЕНО: Для shadcn/ui DialogContent, чтобы убрать кнопку "x",
-          // нужно передать onOpenChange как undefined или сделать его условным.
-          // Если вы используете shadcn/ui, это удалит стандартную кнопку закрытия.
-          // Закрытие будет только через ChevronDown.
           onOpenChange={
             isFullScreenPlayerOpen ? setIsFullScreenPlayerOpen : undefined
           }
@@ -307,10 +297,8 @@ const PlaybackControls = () => {
           <DialogPortal>
             <DialogContent
               aria-describedby={undefined}
-              // УБРАНО: aria-describedby={undefined}
-              className="fixed inset-y-0 top-105 w-screen h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0"
+              className="fixed inset-y-0 top-[calc(100vh-50vh)] w-screen h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0"
             >
-              {/* DialogTitle для доступности (скрыт визуально) */}
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
                 {currentSong?.artist || "Unknown Artist"}
@@ -325,11 +313,9 @@ const PlaybackControls = () => {
                 >
                   <ChevronDown className="h-6 w-6" />
                 </Button>
-                {/* Это уже отображаемый заголовок альбома/плейлиста, не DialogTitle для скринридеров */}
                 <div className="text-sm font-semibold text-zinc-400 uppercase">
                   {currentSong?.albumTitle || "Now Playing"}
                 </div>
-                {/* ЭТА КНОПКА БЫЛА СДЕЛАНА НЕВИДИМОЙ ДЛЯ ВЫРАВНИВАНИЯ, ОСТАВЛЯЕМ ЕЕ */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -508,14 +494,12 @@ const PlaybackControls = () => {
     );
   }
 
-  // ДЕСКТОПНЫЙ ПЛЕЕР (ИЛИ ПЛЕЕР НА БОЛЬШИХ ЭКРАНАХ)
+  // ДЕСКТОПНЫЙ ПЛЕЕР
   return (
     <footer className="h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40">
-      {/* Аудио элемент находится здесь, чтобы он был частью компонента и всегда в DOM */}
       <audio id="player-audio-element" />
 
       <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
-        {/* ИСПРАВЛЕНО: Разделяем блок информации о песне и кнопку лайка */}
         <div className="flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
             <>
