@@ -31,7 +31,6 @@ interface ChatStore {
 let baseURL;
 if (import.meta.env.VITE_API_URL === "production")
   baseURL = "https://moodify-yf1r.onrender.com";
-else baseURL = "http://localhost:5001";
 
 const socket: Socket<DefaultEventsMap, DefaultEventsMap> = io(baseURL, {
   autoConnect: false,
