@@ -28,7 +28,10 @@ interface ChatStore {
   setSelectedUser: (user: User | null) => void;
 }
 
-const baseURL = "http://localhost:5001";
+let baseURL;
+if (process.env.VITE_ENV === "production")
+  baseURL = "https://moodify-yf1r.onrender.com/api";
+else baseURL = "http://localhost:5001/api";
 
 const socket: Socket<DefaultEventsMap, DefaultEventsMap> = io(baseURL, {
   autoConnect: false,
