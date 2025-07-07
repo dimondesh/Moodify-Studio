@@ -21,7 +21,7 @@ const SearchPage = () => {
 
   return (
     <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-      <ScrollArea className="h-[calc(100vh-64px)] w-full pb-20 md:pb-0">
+      <ScrollArea className="h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-160px)] lg:h-[calc(100vh-120px)] w-full pb-20 md:pb-0">
         <div className="py-10 px-4 sm:px-6">
           {" "}
           {queryParam ? (
