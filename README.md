@@ -1,6 +1,6 @@
 # Moodify - Your Personal Music Streaming Service
 
-![Moodify Logo](https://github.com/dimondesh/Moodify/blob/main/frontend/public/Moodify.png) Moodify is a modern, full-featured music streaming service designed to help you enjoy your favorite music, organize your collection, and discover new tracks. This project serves as a personal portfolio piece, showcasing a complete web application development cycle.
+![Moodify Logo](https://github.com/dimondesh/Moodify/blob/main/frontend/public/Preview.png) Moodify is a modern, full-featured music streaming service designed to help you enjoy your favorite music, organize your collection, and discover new tracks. This project serves as a personal portfolio piece, showcasing a complete web application development cycle.
 
 ## 🚀 Key Features
 
