@@ -8,7 +8,6 @@ export const initializeSocket = (server) => {
     "http://localhost:5173",
 
     "https://moodify-ruddy.vercel.app",
-    "https://moodify-ruddy.vercel.app/",
     process.env.CLIENT_ORIGIN_URL,
   ];
 
