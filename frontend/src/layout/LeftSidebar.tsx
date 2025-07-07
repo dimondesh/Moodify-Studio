@@ -23,11 +23,8 @@ const LeftSidebar = () => {
   return (
     <div className="h-full flex flex-col gap-2 p-2">
       {" "}
-      {/* Добавил p-2 для отступов внутри сайдбара */}
-      {/* Навигация */}
       <div className="rounded-lg bg-zinc-900 p-4">
         <div className="space-y-2">
-          {/* Ссылка на Home */}
           <Link
             to="/"
             className={cn(
@@ -38,10 +35,9 @@ const LeftSidebar = () => {
             )}
           >
             <HomeIcon className="mr-2 size-5" />
-            <span>Home</span> {/* Убран hidden md:inline */}
+            <span>Home</span>
           </Link>
 
-          {/* Ссылка на Search - добавляем сюда для десктопа */}
           <Link
             to="/search"
             className={cn(
@@ -52,7 +48,7 @@ const LeftSidebar = () => {
             )}
           >
             <Search className="mr-2 size-5" />
-            <span>Search</span> {/* Убран hidden md:inline */}
+            <span>Search</span>
           </Link>
 
           {user && (
@@ -67,7 +63,7 @@ const LeftSidebar = () => {
               )}
             >
               <MessageCircle className="mr-2 size-5" />
-              <span>Messages</span> {/* Убран hidden md:inline */}
+              <span>Messages</span>
             </Link>
           )}
 
@@ -83,17 +79,16 @@ const LeftSidebar = () => {
               )}
             >
               <Heart className="mr-2 size-5" />
-              <span>Liked Songs</span> {/* Убран hidden md:inline */}
+              <span>Liked Songs</span>
             </Link>
           )}
         </div>
       </div>
-      {/* Библиотека альбомов */}
       <div className="flex-1 rounded-lg bg-zinc-900 p-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center text-white px-2">
             <Library className="size-5 mr-2" />
-            <span>Your Library</span> {/* Убран hidden md:inline */}
+            <span>Your Library</span>
           </div>
         </div>
 
@@ -104,7 +99,7 @@ const LeftSidebar = () => {
         ) : !user ? (
           <LoginPrompt className="flex-1" />
         ) : (
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 h-full pb-7">
             {isLoading && <PlaylistSkeleton />}
             {error && <p className="text-red-500 px-2">{error}</p>}
 
