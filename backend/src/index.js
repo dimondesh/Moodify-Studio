@@ -28,13 +28,7 @@ const __dirname = path.resolve();
 
 const httpServer = createServer(app);
 initializeSocket(httpServer);
-
-let allowedOrigin;
-if (process.env.NODE_ENV === "production") {
-  allowedOrigin = process.env.CLIENT_ORIGIN_URL;
-} else {
-  allowedOrigin = "http://localhost:5173";
-}
+const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
 
 app.use(
   cors({

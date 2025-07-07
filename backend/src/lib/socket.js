@@ -3,6 +3,7 @@ import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
 import { firebaseAdmin } from "./firebase.js";
 
+
 export const initializeSocket = (server) => {
   const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
 
