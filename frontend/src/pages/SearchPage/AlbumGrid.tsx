@@ -45,7 +45,7 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
                 <img
                   src={album.imageUrl || "/default-album-cover.png"}
                   alt={album.title}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/default-album-cover.png";

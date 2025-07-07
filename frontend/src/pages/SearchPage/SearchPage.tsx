@@ -21,11 +21,9 @@ const SearchPage = () => {
 
   return (
     <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-      {/* Отступ снизу для мобильных, чтобы контент не перекрывался нижней навигацией и плеером */}
       <ScrollArea className="h-[calc(100vh-64px)] w-full pb-20 md:pb-0">
         <div className="py-10 px-4 sm:px-6">
           {" "}
-          {/* Адаптивные отступы */}
           {queryParam ? (
             <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center">
               Search results for &quot;{queryParam}&quot;
