@@ -4,12 +4,10 @@ import { User } from "../models/user.model.js";
 import { firebaseAdmin } from "./firebase.js";
 
 export const initializeSocket = (server) => {
-  const allowedOrigin = [
-    "https://moodify-ruddy.vercel.app",
-    "http://localhost:5173",
-
-    process.env.CLIENT_ORIGIN_URL,
-  ];
+  let allowedOrigin;
+  if (process.env.NODE_ENV === "production")
+    allowedOrigin = "https://moodify-ruddy.vercel.app";
+  else allowedOrigin = "http://localhost:5173";
 
   const io = new Server(server, {
     cors: {
