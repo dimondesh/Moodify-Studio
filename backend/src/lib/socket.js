@@ -5,9 +5,9 @@ import { firebaseAdmin } from "./firebase.js";
 
 export const initializeSocket = (server) => {
   const allowedOrigin = [
+    "https://moodify-ruddy.vercel.app",
     "http://localhost:5173",
 
-    "https://moodify-ruddy.vercel.app",
     process.env.CLIENT_ORIGIN_URL,
   ];
 

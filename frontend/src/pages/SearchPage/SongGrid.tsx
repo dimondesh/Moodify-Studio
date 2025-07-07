@@ -53,7 +53,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={song.imageUrl || "/default-song-cover.png"}
+                  src={song.imageUrl}
                   alt={song.title}
                   className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
