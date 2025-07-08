@@ -27,7 +27,7 @@ export const protectRoute = async (req, res, next) => {
       id: user._id,
       firebaseUid: user.firebaseUid,
       email: decodedToken.email,
-      isAdmin: decodedToken.email === process.env.ADMIN_EMAIL,
+      isAdmin: process.env.ADMIN_EMAILS.split(",").includes(decodedToken.email),
     };
 
     next();
