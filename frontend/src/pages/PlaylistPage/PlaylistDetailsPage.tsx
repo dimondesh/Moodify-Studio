@@ -1,0 +1,693 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { usePlaylistStore } from "../../stores/usePlaylistStore";
+import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
+import { format } from "date-fns";
+import { Button } from "../../components/ui/button";
+import {
+  Play,
+  Pause,
+  PlusCircle,
+  Edit,
+  Trash2,
+  Plus,
+  MoreHorizontal,
+  CheckCircle2,
+  X,
+  Clock,
+  Heart,
+} from "lucide-react";
+import { usePlayerStore } from "../../stores/usePlayerStore";
+import { Song, Playlist } from "../../types";
+import { useAuthStore } from "../../stores/useAuthStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { useSearchStore } from "../../stores/useSearchStore";
+import toast from "react-hot-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../../components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
+import { useLibraryStore } from "../../stores/useLibraryStore";
+import { EditPlaylistDialog } from "./EditPlaylistDialog";
+import Equalizer from "../../components/ui/equalizer"; // Ensure this path is correct
+
+// Helper function for duration formatting
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+const PlaylistDetailsPage = () => {
+  const { playlistId } = useParams<{ playlistId: string }>();
+  const navigate = useNavigate();
+  const {
+    currentPlaylist,
+    error,
+    fetchPlaylistDetails,
+    deletePlaylist,
+    addSongToPlaylist,
+    removeSongFromPlaylist,
+  } = usePlaylistStore();
+
+  const { user: authUser } = useAuthStore();
+  const {
+    playlists: libraryPlaylists,
+    togglePlaylist,
+    likedSongs,
+    toggleSongLike,
+  } = useLibraryStore();
+
+  const [localIsLoading, setLocalIsLoading] = useState(true);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddSongDialogOpen, setIsAddSongDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
+
+  const {
+    songs: searchSongs,
+    loading: searchLoading,
+    search: performSearch,
+  } = useSearchStore();
+
+  const {
+    playAlbum,
+    setCurrentSong,
+    togglePlay,
+    isPlaying,
+    currentSong,
+    queue,
+  } = usePlayerStore();
+
+  const isInLibrary = currentPlaylist
+    ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
+    : false;
+  console.log(isInLibrary, "////////////////////////////////");
+  useEffect(() => {
+    const loadPlaylist = async () => {
+      setLocalIsLoading(true);
+      if (playlistId) {
+        await fetchPlaylistDetails(playlistId);
+      }
+      setLocalIsLoading(false);
+    };
+
+    loadPlaylist();
+  }, [playlistId, fetchPlaylistDetails]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      performSearch(searchTerm);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm, performSearch]);
+
+  const handlePlayPlaylist = () => {
+    if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
+
+    if (
+      isPlaying &&
+      currentSong &&
+      // Check if the current song belongs to this playlist's queue
+      queue.length > 0 &&
+      currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
+      queue[0]?._id === currentPlaylist.songs[0]?._id // Check if this playlist is the current queue
+    ) {
+      togglePlay();
+    } else {
+      playAlbum(currentPlaylist.songs, 0);
+    }
+  };
+
+  const handlePlaySong = (song: Song, index: number) => {
+    if (!currentPlaylist) return;
+
+    const isThisPlaylistInPlayer =
+      queue.length > 0 &&
+      currentPlaylist.songs.some((s) => s._id === queue[0]?._id);
+
+    if (isThisPlaylistInPlayer) {
+      if (currentSong?._id === song._id) {
+        togglePlay();
+      } else {
+        setCurrentSong(song);
+        playAlbum(currentPlaylist.songs, index);
+      }
+    } else {
+      playAlbum(currentPlaylist.songs, index);
+    }
+  };
+
+  const isOwner = authUser && currentPlaylist?.owner?._id === authUser.id;
+
+  const handleDeletePlaylistConfirm = async () => {
+    if (!currentPlaylist || !isOwner) {
+      toast.error("You don't have permission to delete this playlist.");
+      return;
+    }
+    try {
+      await deletePlaylist(currentPlaylist._id);
+      toast.success("Playlist successfully deleted!");
+      navigate("/library");
+    } catch (e) {
+      toast.error("Failed to delete playlist.");
+      console.error("Error deleting playlist:", e);
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteSongConfirm = async () => {
+    if (!songToDeleteId || !currentPlaylist || !isOwner) {
+      toast.error("Error deleting song.");
+      return;
+    }
+    try {
+      await removeSongFromPlaylist(currentPlaylist._id, songToDeleteId);
+      toast.success("Song successfully removed from playlist!");
+      await fetchPlaylistDetails(currentPlaylist._id);
+    } catch (e) {
+      toast.error("Failed to remove song.");
+      console.error("Error removing song:", e);
+    } finally {
+      setSongToDeleteId(null);
+    }
+  };
+
+  const handleAddSongToPlaylist = async (songId: string) => {
+    if (!currentPlaylist) return;
+    try {
+      await addSongToPlaylist(currentPlaylist._id, songId);
+      toast.success("Song added to playlist!");
+      await fetchPlaylistDetails(currentPlaylist._id);
+    } catch (e) {
+      toast.error("Failed to add song.");
+      console.error("Error adding song:", e);
+    }
+  };
+
+  const handleRemoveSong = (songId: string) => {
+    if (!currentPlaylist || !isOwner) {
+      toast.error(
+        "You don't have permission to remove songs from this playlist."
+      );
+      return;
+    }
+    setSongToDeleteId(songId);
+  };
+
+  const handleTogglePlaylistInLibrary = async () => {
+    if (!currentPlaylist || isTogglingLibrary) return;
+    setIsTogglingLibrary(true);
+    try {
+      await togglePlaylist(currentPlaylist._id);
+      toast.success(
+        isInLibrary
+          ? "Playlist removed from library!"
+          : "Playlist added to library!"
+      );
+    } catch (e) {
+      toast.error("Failed to change playlist status in library.");
+      console.error("Error adding/removing playlist from library:", e);
+    } finally {
+      setIsTogglingLibrary(false);
+    }
+  };
+
+  if (localIsLoading) {
+    return <PlaylistDetailsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Error</h1>
+        <p className="text-red-500">Failed to load playlist details: {error}</p>
+      </div>
+    );
+  }
+
+  if (!currentPlaylist) {
+    return (
+      <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
+          Playlist Not Found
+        </h1>
+        <p className="text-zinc-400">
+          It seems this playlist does not exist or has been deleted.
+        </p>
+      </div>
+    );
+  }
+
+  const totalDurationSeconds = currentPlaylist.songs.reduce(
+    (acc, song) => acc + song.duration,
+    0
+  );
+  const totalMinutes = Math.floor(totalDurationSeconds / 60);
+  const remainingSeconds = totalDurationSeconds % 60;
+  const formattedDuration = `${totalMinutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`; // Format as M:SS
+
+  const isCurrentPlaylistPlaying =
+    isPlaying &&
+    currentPlaylist.songs.length > 0 &&
+    queue.length > 0 &&
+    currentSong &&
+    currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
+    queue[0]?._id === currentPlaylist.songs[0]?._id; // Check if this playlist is the current queue
+
+  return (
+    <div className="h-[calc(100vh-100px)]">
+      <ScrollArea className="h-full rounded-md pb-24 md:pb-0">
+        <div className="relative min-h-screen">
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80
+            to-zinc-900 pointer-events-none"
+            aria-hidden="true"
+          />
+          <div className="relative z-10">
+            {/* Header section with cover and details - Adjusted to match AlbumPage */}
+            <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
+              <img
+                src={currentPlaylist.imageUrl || "/default_playlist_cover.png"}
+                alt={currentPlaylist.title}
+                className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
+              />
+              <div className="flex flex-col justify-end flex-grow">
+                <p className="text-xs sm:text-sm font-medium">
+                  {" "}
+                  {/* Added uppercase */}
+                  Playlist
+                </p>
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
+                  {currentPlaylist.title}
+                </h1>
+                {currentPlaylist.description && (
+                  <p className="text-zinc-400 text-base mt-2">
+                    {currentPlaylist.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100 mt-2">
+                  <span className="font-semibold text-white flex items-center">
+                    <img
+                      src={currentPlaylist.owner.imageUrl}
+                      className="w-4 h-4 rounded-full mr-1"
+                      alt=""
+                    />
+                    {currentPlaylist.owner?.fullName || "Unknown User"}
+                  </span>
+                  <span className="hidden lg:inline">
+                    • {currentPlaylist.songs.length}{" "}
+                    {currentPlaylist.songs.length !== 1 ? "songs" : "song"}
+                  </span>
+                  {currentPlaylist.songs.length > 0 && (
+                    <>
+                      <span className="hidden lg:inline">
+                        • {formattedDuration}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons - Adjusted to match AlbumPage */}
+            <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-6">
+              {currentPlaylist.songs.length > 0 && (
+                <Button
+                  size="icon"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105" // Violet color
+                  onClick={handlePlayPlaylist}
+                  title={isCurrentPlaylistPlaying ? "Pause" : "Play"}
+                >
+                  {isCurrentPlaylistPlaying ? (
+                    <Pause className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-current" />
+                  ) : (
+                    <Play className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-current" />
+                  )}
+                </Button>
+              )}
+
+              {!isOwner ? (
+                <Button
+                  onClick={handleTogglePlaylistInLibrary}
+                  disabled={isTogglingLibrary}
+                  variant="ghost"
+                  size="icon"
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors flex-shrink-0 ${
+                    isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
+                  }`}
+                  title={isInLibrary ? "Remove from Library" : "Add to Library"}
+                >
+                  {isInLibrary ? (
+                    <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                  ) : (
+                    <PlusCircle className="size-5 sm:size-6 text-white" />
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
+                    onClick={() => setIsAddSongDialogOpen(true)}
+                    title="Add Song"
+                  >
+                    <Plus className="size-4 sm:size-5" />
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
+                        title="More actions"
+                      >
+                        <MoreHorizontal className="size-4 sm:size-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48 bg-zinc-800 text-white border-zinc-700">
+                      <DropdownMenuItem
+                        className="cursor-pointer hover:bg-zinc-700"
+                        onClick={() => setIsEditDialogOpen(true)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Playlist
+                      </DropdownMenuItem>
+
+                      <AlertDialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={setIsDeleteDialogOpen}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            className="cursor-pointer text-red-400 hover:bg-zinc-700 hover:text-red-300"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Playlist
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-white">
+                              Are you sure you want to delete this playlist?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-zinc-400">
+                              This action cannot be undone. The playlist will be
+                              permanently deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-600 text-white hover:bg-red-700"
+                              onClick={handleDeletePlaylistConfirm}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )}
+            </div>
+
+            {/* Table Section - Adjusted to match AlbumPage */}
+            <div className="bg-black/20 backdrop-blur-sm">
+              {/* Table Header */}
+              <div
+                className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[25px_3.6fr_0.5fr_2.5fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
+            text-zinc-400 border-b border-white/5"
+              >
+                <div className="pl-4">#</div>
+                <div>Title</div>
+                <div className="hidden md:flex justify-between">Date Added</div>
+                <div className="flex items-center justify-center">
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div className="hidden md:block"></div>
+              </div>
+
+              {/* Songs List - Adjusted to match AlbumPage */}
+              <div className="px-4 sm:px-6">
+                <div className="space-y-2 py-4">
+                  {currentPlaylist.songs.map((song, index) => {
+                    const isCurrentSong = currentSong?._id === song._id;
+                    const songIsLiked = likedSongs.some(
+                      (likedSong) => likedSong._id === song._id
+                    );
+
+                    return (
+                      <div
+                        key={song._id}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest("button")) {
+                            return;
+                          }
+                          handlePlaySong(song, index);
+                        }}
+                        className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
+                      text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
+                      ${isCurrentSong ? "bg-white/10" : ""}`}
+                      >
+                        {/* Number / Playback Indicator */}
+                        <div className="flex items-center justify-center">
+                          {isCurrentSong && isPlaying ? (
+                            <div className="z-10">
+                              <Equalizer />
+                            </div>
+                          ) : (
+                            <span className="group-hover:hidden text-xs sm:text-sm">
+                              {index + 1}
+                            </span>
+                          )}
+
+                          {!isCurrentSong && (
+                            <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
+                          )}
+                        </div>
+
+                        {/* Title and Artist */}
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={song.imageUrl || "/default-song-cover.png"}
+                            alt={song.title}
+                            className="size-10 object-cover rounded-md flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "/default-song-cover.png";
+                            }}
+                          />
+
+                          <div className="flex flex-col overflow-hidden">
+                            <div
+                              className={`font-medium truncate ${
+                                isCurrentSong ? "text-violet-400" : "text-white" // Violet color
+                              }`}
+                            >
+                              {song.title}
+                            </div>
+                            <div className="text-zinc-400 text-xs sm:text-sm truncate">
+                              {song.artist}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Date Added (hidden on small screens) */}
+                        <div className="items-center hidden md:flex justify-baseline text-xs">
+                          {song.createdAt
+                            ? format(new Date(song.createdAt), "MMM dd, yyyy") // Keep full date format for clarity, but hidden on mobile
+                            : "N/A"}
+                        </div>
+                        {/* Duration */}
+                        <div className="flex items-center text-xs sm:text-sm flex-shrink-0">
+                          {formatDuration(song.duration)}
+                        </div>
+                        {/* Like and Delete Buttons */}
+                        <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
+                          {/* Like Button */}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`rounded-full size-6 sm:size-7 ${
+                              songIsLiked
+                                ? "text-violet-500 hover:text-violet-400" // Violet color
+                                : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSongLike(song._id);
+                            }}
+                            title={songIsLiked ? "Unlike song" : "Like song"}
+                          >
+                            <Heart
+                              className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                                songIsLiked ? "fill-violet-500" : "" // Violet fill
+                              }`}
+                            />
+                          </Button>
+                          {/* Delete Button (only for playlist owner) */}
+                          {isOwner && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveSong(song._id);
+                              }}
+                              title="Remove song from playlist"
+                            >
+                              <X className="size-3 sm:size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+
+      {/* Edit Playlist Dialog */}
+      {currentPlaylist && (
+        <EditPlaylistDialog
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          playlist={currentPlaylist}
+          onSuccess={() => fetchPlaylistDetails(currentPlaylist._id)}
+        />
+      )}
+
+      {/* Add Song Dialog */}
+      <Dialog open={isAddSongDialogOpen} onOpenChange={setIsAddSongDialogOpen}>
+        <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900 text-white border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-white max-w-[80vw]">
+              Add Song to Playlist
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 max-w-[80vw]">
+              Find a song and add it to the playlist.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Search songs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-4 bg-zinc-800 text-white border-zinc-700 focus:ring-green-500 w-[80vw] sm:w-[55vw] md:w-[38vw] lg:w-[19.5vw] 2xl:w-[18vw]"
+            />
+            {searchLoading ? (
+              <p className="text-zinc-400">Searching...</p>
+            ) : searchSongs.length === 0 && searchTerm.length > 0 ? (
+              <p className="text-zinc-400">No songs found.</p>
+            ) : (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-2">
+                  {searchSongs.map((song) => (
+                    <div
+                      key={song._id}
+                      className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
+                    >
+                      <div className="flex flex-col truncate">
+                        <span className="font-semibold text-white truncate">
+                          {song.title}
+                        </span>
+                        <span className="text-sm text-zinc-400 truncate">
+                          {song.artist}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddSongToPlaylist(song._id)}
+                        className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
+                        disabled={currentPlaylist?.songs.some(
+                          (s) => s._id === song._id
+                        )}
+                      >
+                        {currentPlaylist?.songs.some((s) => s._id === song._id)
+                          ? "Added"
+                          : "Add"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Song Confirmation Dialog */}
+      <AlertDialog
+        open={!!songToDeleteId}
+        onOpenChange={(open) => {
+          if (!open) setSongToDeleteId(null);
+        }}
+      >
+        <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Are you sure you want to remove this song from the playlist?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              This action will remove the song from the current playlist.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={handleDeleteSongConfirm}
+            >
+              Remove Song
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default PlaylistDetailsPage;

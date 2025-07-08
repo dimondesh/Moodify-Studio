@@ -50,12 +50,17 @@ export interface User {
   firebaseUid: string;
   fullName: string;
   imageUrl: string;
+  email: string; // Добавить email, если используется в AuthStore или отображается
+  isAdmin?: boolean; // Добавить опциональное поле isAdmin
+  playlists?: Playlist[];
 }
 
 export interface SearchState {
   query: string;
   songs: Song[];
   albums: Album[];
+  playlists: Playlist[]; // <-- ЭТО ВАЖНО: должно быть здесь
+
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;
@@ -68,3 +73,44 @@ export interface UserLibrary {
   likedSongs: Song[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Song (включая likedAt)
   albums: Album[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Album (включая addedAt)
 }
+
+export interface Playlist {
+  _id: string;
+  title: string;
+  description?: string;
+  isPublic: boolean;
+  owner: User; // Ссылка на владельца плейлиста
+  songs: Song[]; // Массив песен в плейлисте
+  imageUrl?: string; // Обложка плейлиста
+  likes: string[]; // Массив ID пользователей, которые лайкнули плейлист
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BaseLibraryItem {
+  _id: string;
+  title: string;
+  imageUrl?: string | null;
+  createdAt: Date; // Используем Date здесь, так как мы преобразуем при создании
+}
+
+// Конкретный тип для "Liked Songs"
+export interface LikedSongsItem extends BaseLibraryItem {
+  type: "liked-songs";
+  songsCount: number;
+}
+
+// Конкретный тип для альбомов
+export interface AlbumItem extends BaseLibraryItem {
+  type: "album";
+  artist: string;
+}
+
+// Конкретный тип для плейлистов
+export interface PlaylistItem extends BaseLibraryItem {
+  type: "playlist";
+  owner: User; // Важно, чтобы здесь был тип User
+}
+
+// Объединяющий тип для всех элементов библиотеки
+export type LibraryItem = LikedSongsItem | AlbumItem | PlaylistItem;

@@ -3,43 +3,90 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
+// Named imports for stores
 import { useLibraryStore } from "../../stores/useLibraryStore";
-import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"; // Переиспользуем скелетон
+import { usePlaylistStore } from "../../stores/usePlaylistStore";
+import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+// Import LibraryItem, Song, Album, Playlist, User from your central types file
+import { LibraryItem } from "../../types";
 
 const LibraryPage = () => {
-  // Получаем данные о лайкнутых песнях и альбомах из useLibraryStore
   const {
     likedSongs,
     albums,
-    isLoading,
-    error,
+    isLoading: isLoadingLibrary,
+    error: libraryError,
     fetchLibrary,
     fetchLikedSongs,
   } = useLibraryStore();
+  const {
+    myPlaylists,
+    isLoading: isLoadingPlaylists,
+    error: playlistsError,
+    fetchMyPlaylists,
+  } = usePlaylistStore();
 
   useEffect(() => {
-    // Загружаем альбомы и лайкнутые песни при монтировании компонента
     fetchLibrary();
     fetchLikedSongs();
-  }, [fetchLibrary, fetchLikedSongs]); // Зависимости для useEffect
+    fetchMyPlaylists();
+  }, [fetchLibrary, fetchLikedSongs, fetchMyPlaylists]);
 
-  // Отображаем скелетон во время загрузки данных
+  const isLoading = isLoadingLibrary || isLoadingPlaylists;
+
+  // Assume errors from stores are string | null.
+  // Combine errors; if both are null, result is null. If one is a string, it will be the result.
+  const combinedError: string | null =
+    (libraryError as string | null) || (playlistsError as string | null);
+
+  // Directly use combinedError as the errorMessage, as it's already a string or null
+  const errorMessage = combinedError;
+
   if (isLoading) return <LibraryGridSkeleton />;
 
-  // Отображаем сообщение об ошибке, если произошла ошибка загрузки
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
         <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Ваша библиотека</h1>
         <p className="text-red-500 mt-4 text-center">
-          Ошибка загрузки библиотеки: {error}
+          Ошибка загрузки библиотеки: {errorMessage}
         </p>
       </div>
     );
   }
 
-  // Количество лайкнутых песен для отображения на карточке
-  const likedSongsCount = likedSongs.length;
+  const libraryItems: LibraryItem[] = [
+    {
+      _id: "liked-songs",
+      type: "liked-songs",
+      title: "Liked Songs",
+      imageUrl: "/liked.png",
+      createdAt: new Date(0), // Placeholder date, can be adjusted if real "liked songs" date is available
+      songsCount: likedSongs.length,
+    } as LibraryItem, // Use LibraryItem directly here, it will discriminate based on 'type'
+    ...albums.map(
+      (album) =>
+        ({
+          _id: album._id,
+          title: album.title,
+          imageUrl: album.imageUrl,
+          createdAt: new Date(album.createdAt),
+          type: "album",
+          artist: album.artist,
+        } as LibraryItem)
+    ), // Use LibraryItem directly here
+    ...myPlaylists.map(
+      (playlist) =>
+        ({
+          _id: playlist._id,
+          title: playlist.title,
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(playlist.createdAt),
+          type: "playlist",
+          owner: playlist.owner,
+        } as LibraryItem)
+    ), // Use LibraryItem directly here
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
     <div className="h-full">
@@ -55,65 +102,66 @@ const LibraryPage = () => {
               Your Library
             </h1>
 
-            {/* Используем flex-col для вертикального списка элементов библиотеки */}
             <div className="flex flex-col gap-2">
-              {/* Карточка для "Понравившихся песен" (Liked Songs) */}
-              {/* Использует статическую обложку /liked.png */}
-              <Link
-                to="/liked-songs"
-                className="bg-zinc-900 rounded-md p-2 flex items-center gap-4 hover:bg-zinc-800 transition-colors duration-200 cursor-pointer shadow-lg"
-              >
-                <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
-                  <img
-                    src="/liked.png" // Обложка для "Понравившихся песен"
-                    alt="Liked Songs"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/default-song-cover.png";
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <h2 className="text-base font-bold text-white truncate">
-                    Liked Songs
-                  </h2>
-                  <p className="text-sm text-zinc-400">
-                    Playlist • {likedSongsCount}{" "}
-                    {likedSongsCount !== 1 ? "songs" : "song"}
-                  </p>
-                </div>
-              </Link>
+              {libraryItems.length === 0 ? (
+                <p className="text-zinc-400 px-2">
+                  No items in your library yet.
+                </p>
+              ) : (
+                libraryItems.map((item) => {
+                  let linkPath: string;
+                  let subtitle: string;
+                  let coverImageUrl: string | null | undefined = item.imageUrl;
 
-              {/* Карточки для альбомов пользователя (Albums) */}
-              {/* Используют реальные обложки альбомов из album.imageUrl */}
-              {albums.map((album) => (
-                <Link
-                  key={album._id}
-                  to={`/albums/${album._id}`}
-                  className="bg-zinc-900 rounded-md p-2 flex items-center gap-4 hover:bg-zinc-800 transition-colors duration-200 cursor-pointer shadow-lg"
-                >
-                  <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
-                    <img
-                      src={album.imageUrl || "/default-song-cover.png"} // Реальная обложка альбома
-                      alt={album.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/default-song-cover.png";
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <h2 className="text-base font-bold text-white truncate">
-                      {album.title}
-                    </h2>
-                    <p className="text-sm text-zinc-400">
-                      {album.type} • {album.artist}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+                  if (item.type === "liked-songs") {
+                    linkPath = "/liked-songs";
+                    subtitle = `Playlist • ${item.songsCount} ${
+                      item.songsCount !== 1 ? "songs" : "song"
+                    }`;
+                    coverImageUrl = item.imageUrl;
+                  } else if (item.type === "album") {
+                    linkPath = `/albums/${item._id}`;
+                    subtitle = `Album • ${item.artist}`;
+                    coverImageUrl = item.imageUrl || "/default-album-cover.png";
+                  } else {
+                    // item.type === "playlist"
+                    linkPath = `/playlists/${item._id}`;
+                    subtitle = `Playlist • ${
+                      item.owner?.fullName || "Unknown"
+                    }`;
+                    coverImageUrl =
+                      item.imageUrl || "/default_playlist_cover.png";
+                  }
+
+                  return (
+                    <Link
+                      key={item._id}
+                      to={linkPath}
+                      className="bg-zinc-900 rounded-md p-2 flex items-center gap-4 hover:bg-zinc-800 transition-colors duration-200 cursor-pointer shadow-lg"
+                    >
+                      <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
+                        <img
+                          src={coverImageUrl || "/default_playlist_cover.png"}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              item.type === "album"
+                                ? "/default-album-cover.png"
+                                : "/default_playlist_cover.png";
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <h2 className="text-base font-bold text-white truncate">
+                          {item.title}
+                        </h2>
+                        <p className="text-sm text-zinc-400">{subtitle}</p>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

@@ -29,6 +29,7 @@ export const protectRoute = async (req, res, next) => {
       email: decodedToken.email,
       isAdmin: process.env.ADMIN_EMAILS.split(",").includes(decodedToken.email),
     };
+    console.log("req.user set in protectRoute:", req.user);
 
     next();
   } catch (error) {

@@ -9,6 +9,7 @@ import songRoutes from "./routes/song.route.js";
 import albumRoutes from "./routes/album.route.js";
 import statsRoutes from "./routes/stat.route.js";
 import searchRoutes from "./routes/search.route.js";
+import playlistRoutes from "./routes/playlist.route.js";
 import fileUpload from "express-fileupload";
 import path from "path";
 import cors from "cors";
@@ -73,6 +74,7 @@ app.use("/api/albums", albumRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/library", libraryRoutes);
+app.use("/api/playlists", playlistRoutes);
 
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR HANDLER CAUGHT AN ERROR:");

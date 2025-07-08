@@ -1,25 +1,17 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSearchStore } from "../../stores/useSearchStore";
-import AlbumGrid from "./AlbumGrid";
+import AlbumGrid from "../SearchPage/AlbumGrid";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import SongGrid from "./SongGrid";
-import PlaylistGrid from "./PlaylistGrid"; // Импортируем новый компонент
+import SongGrid from "../SearchPage/SongGrid";
+import PlaylistGrid from "../SearchPage/PlaylistGrid"; // Импортируем новый компонент
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const queryParam = searchParams.get("q") || "";
 
-  const {
-    query,
-    songs,
-    albums,
-    playlists,
-    loading,
-    error,
-    setQuery,
-    search,
-  } = useSearchStore(); // Добавляем playlists
+  const { query, songs, albums, playlists, loading, error, setQuery, search } =
+    useSearchStore(); // Добавляем playlists
 
   useEffect(() => {
     if (queryParam !== query) {

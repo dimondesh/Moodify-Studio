@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
+import { format } from "date-fns";
+
 import {
   CheckCircle2,
   Clock,
@@ -230,7 +232,9 @@ const AlbumPage = () => {
                         <div className="items-center hidden md:flex justify-baseline">
                           {" "}
                           {/* Скрываем на мобильных */}
-                          {song.createdAt.split("T")[0]}
+                          {song.createdAt
+                            ? format(new Date(song.createdAt), "MMM dd, yyyy") // Keep full date format for clarity, but hidden on mobile
+                            : "N/A"}
                         </div>
                         <div className="flex items-center">
                           {formatDuration(song.duration)}

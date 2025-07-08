@@ -22,24 +22,25 @@ const librarySchema = new mongoose.Schema(
         addedAt: { type: Date, default: Date.now },
       },
     ],
-    // --- ОБНОВЛЕННОЕ ПОЛЕ ДЛЯ ЛАЙКОВ ---
     likedSongs: [
       {
-        // Теперь это массив объектов
         songId: {
-          // ID песни
           type: mongoose.Schema.Types.ObjectId,
           ref: "Song",
           required: true,
         },
         addedAt: {
-          // Когда эта песня была лайкнута пользователем
           type: Date,
           default: Date.now,
         },
       },
     ],
-    // плейлисты и артисты позже
+    playlists: [
+      {
+        playlistId: { type: mongoose.Schema.Types.ObjectId, ref: "Playlist" },
+        addedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

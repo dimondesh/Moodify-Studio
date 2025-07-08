@@ -1,0 +1,46 @@
+// backend/src/models/playlist.model.js
+import mongoose from "mongoose";
+
+const playlistSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    imageUrl: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/your-cloud-name/image/upload/v1/default_playlist_image.png", // TODO: Замените на вашу дефолтную картинку плейлиста в Cloudinary
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    songs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Song",
+      },
+    ],
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+export const Playlist = mongoose.model("Playlist", playlistSchema);

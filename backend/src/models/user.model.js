@@ -6,6 +6,13 @@ const userSchema = new mongoose.Schema(
     imageUrl: String,
     email: { type: String, required: true },
     firebaseUid: { type: String, required: true, unique: true },
+    playlists: [
+      // Добавляем новое поле для плейлистов
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Playlist",
+      },
+    ],
   },
   { timestamps: true }
 );

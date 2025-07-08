@@ -1,24 +1,61 @@
-import { Heart, HomeIcon, Library, MessageCircle, Search } from "lucide-react";
+// frontend/src/components/LeftSidebar.tsx
+import {
+  Heart,
+  HomeIcon,
+  Library,
+  MessageCircle,
+  Search,
+  Plus,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { buttonVariants } from "../components/ui/button";
+import { Button, buttonVariants } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import PlaylistSkeleton from "../components/ui/skeletons/PlaylistSkeleton";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLibraryStore } from "../stores/useLibraryStore";
+import { usePlaylistStore } from "../stores/usePlaylistStore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
 import { HeadphonesIcon } from "lucide-react";
+import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
+import { Playlist } from "../types"; // Убедитесь, что Playlist импортируется
 
 const LeftSidebar = () => {
-  const { albums, fetchLibrary, isLoading, error } = useLibraryStore();
+  const {
+    albums,
+    fetchLibrary,
+    isLoading: isLoadingAlbums,
+    error: albumsError,
+  } = useLibraryStore();
+  const {
+    myPlaylists,
+    fetchMyPlaylists,
+    isLoading: isLoadingPlaylists,
+    error: playlistsError,
+  } = usePlaylistStore();
   const [user, loadingUser, authError] = useAuthState(auth);
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user && !loadingUser) {
       fetchLibrary();
+      fetchMyPlaylists();
     }
-  }, [fetchLibrary, user, loadingUser]);
+  }, [fetchLibrary, fetchMyPlaylists, user, loadingUser]);
+
+  const isLoading = isLoadingAlbums || isLoadingPlaylists || loadingUser;
+  // Исправление для ошибки 'message'
+  const combinedError = albumsError || playlistsError || authError;
+  const errorMessage =
+    combinedError instanceof Error
+      ? combinedError.message
+      : typeof combinedError === "string"
+      ? combinedError
+      : combinedError
+      ? String(combinedError)
+      : null;
 
   return (
     <div className="h-full flex flex-col gap-2">
@@ -90,27 +127,38 @@ const LeftSidebar = () => {
             <Library className="size-5 mr-2" />
             <span>Your Library</span>
           </div>
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-zinc-800"
+              onClick={() => setIsCreateDialogOpen(true)}
+              title="Create new playlist"
+            >
+              <Plus className="size-5" />
+            </Button>
+          )}
         </div>
 
-        {loadingUser ? (
+        {isLoading ? (
           <PlaylistSkeleton />
-        ) : authError ? (
-          <p className="text-red-500 px-2">Authentication error.</p>
+        ) : errorMessage ? ( // Используем errorMessage
+          <p className="text-red-500 px-2">
+            Error loading library: {errorMessage}
+          </p>
         ) : !user ? (
           <LoginPrompt className="flex-1" />
         ) : (
           <ScrollArea className="flex-1 h-full pb-7">
-            {isLoading && <PlaylistSkeleton />}
-            {error && <p className="text-red-500 px-2">{error}</p>}
-
-            {!isLoading && !error && (
-              <>
-                {albums.length === 0 ? (
-                  <p className="text-zinc-400 px-2">
-                    No albums in your library.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
+            {albums.length === 0 && myPlaylists.length === 0 ? (
+              <p className="text-zinc-400 px-2">No items in your library.</p>
+            ) : (
+              <div className="space-y-2">
+                {albums.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-semibold text-zinc-300 px-2 mt-4">
+                      Albums
+                    </h3>
                     {albums.map((album) => (
                       <Link
                         to={`/albums/${album._id}`}
@@ -137,13 +185,57 @@ const LeftSidebar = () => {
                         </div>
                       </Link>
                     ))}
-                  </div>
+                  </>
                 )}
-              </>
+
+                {myPlaylists.length > 0 && (
+                  <>
+                    <h3 className="text-sm font-semibold text-zinc-300 px-2 mt-4">
+                      Playlists
+                    </h3>
+                    {myPlaylists.map(
+                      (
+                        playlist: Playlist // Уточнен тип для playlist
+                      ) => (
+                        <Link
+                      
+                          to={`/playlists/${playlist._id}`}
+                          key={playlist._id}
+                          className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
+                        >
+                          <img
+                            src={
+                              playlist.imageUrl || "/default_playlist_cover.png"
+                            }
+                            alt={playlist.title}
+                            className="size-12 rounded-md flex-shrink-0 object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "/default_playlist_cover.png";
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-md truncate text-white">
+                              {playlist.title || "Untitled Playlist"}
+                            </p>
+                            <p className="text-sm text-zinc-400 truncate">
+                              Playlist • {playlist.owner?.fullName || "Unknown"}{" "}
+                            </p>
+                          </div>
+                        </Link>
+                      )
+                    )}
+                  </>
+                )}
+              </div>
             )}
           </ScrollArea>
         )}
       </div>
+      <CreatePlaylistDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
     </div>
   );
 };
