@@ -1,4 +1,3 @@
-// frontend/src/components/LeftSidebar.tsx
 import {
   Heart,
   HomeIcon,
@@ -19,21 +18,24 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
 import { HeadphonesIcon } from "lucide-react";
 import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
-import { Playlist } from "../types"; // Убедитесь, что Playlist импортируется
+import { LibraryItem } from "../types";
 
 const LeftSidebar = () => {
   const {
     albums,
+    playlists, // добавленные в библиотеку
     fetchLibrary,
-    isLoading: isLoadingAlbums,
-    error: albumsError,
+    isLoading: isLoadingLibrary,
+    error: libraryError,
   } = useLibraryStore();
+
   const {
     myPlaylists,
     fetchMyPlaylists,
     isLoading: isLoadingPlaylists,
     error: playlistsError,
   } = usePlaylistStore();
+
   const [user, loadingUser, authError] = useAuthState(auth);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -45,21 +47,43 @@ const LeftSidebar = () => {
     }
   }, [fetchLibrary, fetchMyPlaylists, user, loadingUser]);
 
-  const isLoading = isLoadingAlbums || isLoadingPlaylists || loadingUser;
-  // Исправление для ошибки 'message'
-  const combinedError = albumsError || playlistsError || authError;
-  const errorMessage =
-    combinedError instanceof Error
-      ? combinedError.message
-      : typeof combinedError === "string"
-      ? combinedError
-      : combinedError
-      ? String(combinedError)
-      : null;
+  const isLoading = isLoadingLibrary || isLoadingPlaylists || loadingUser;
+
+  const combinedError = libraryError || playlistsError || authError;
+  const errorMessage = combinedError ? String(combinedError) : null;
+
+  // 📌 Объединяем всё в общий список LibraryItem[]
+  const libraryItems: LibraryItem[] = [
+    ...albums.map((album) => ({
+      _id: album._id,
+      type: "album",
+      title: album.title,
+      imageUrl: album.imageUrl,
+      createdAt: new Date(album.addedAt),
+      artist: album.artist,
+    })),
+
+    ...myPlaylists.map((playlist) => ({
+      _id: playlist._id,
+      type: "playlist",
+      title: playlist.title,
+      imageUrl: playlist.imageUrl,
+      createdAt: new Date(playlist.updatedAt),
+      owner: playlist.owner,
+    })),
+
+    ...playlists.map((playlist) => ({
+      _id: playlist._id,
+      type: "playlist",
+      title: playlist.title,
+      imageUrl: playlist.imageUrl,
+      createdAt: new Date(playlist.addedAt),
+      owner: playlist.owner,
+    })),
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
     <div className="h-full flex flex-col gap-2">
-      {" "}
       <div className="rounded-lg bg-zinc-900 p-4">
         <div className="space-y-2">
           <Link
@@ -121,6 +145,7 @@ const LeftSidebar = () => {
           )}
         </div>
       </div>
+
       <div className="flex-1 rounded-lg bg-zinc-900 p-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center text-white px-2">
@@ -142,96 +167,63 @@ const LeftSidebar = () => {
 
         {isLoading ? (
           <PlaylistSkeleton />
-        ) : errorMessage ? ( // Используем errorMessage
+        ) : errorMessage ? (
           <p className="text-red-500 px-2">
             Error loading library: {errorMessage}
           </p>
         ) : !user ? (
           <LoginPrompt className="flex-1" />
+        ) : libraryItems.length === 0 ? (
+          <p className="text-zinc-400 px-2">No items in your library.</p>
         ) : (
           <ScrollArea className="flex-1 h-full pb-7">
-            {albums.length === 0 && myPlaylists.length === 0 ? (
-              <p className="text-zinc-400 px-2">No items in your library.</p>
-            ) : (
-              <div className="space-y-2">
-                {albums.length > 0 && (
-                  <>
-                    <h3 className="text-sm font-semibold text-zinc-300 px-2 mt-4">
-                      Albums
-                    </h3>
-                    {albums.map((album) => (
-                      <Link
-                        to={`/albums/${album._id}`}
-                        key={album._id}
-                        className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
-                      >
-                        <img
-                          src={album.imageUrl || "/default-album-cover.png"}
-                          alt={album.title}
-                          className="size-12 rounded-md flex-shrink-0 object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "/default-album-cover.png";
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-md truncate text-white">
-                            {album.title || "Untitled Album"}
-                          </p>
-                          <p className="text-sm text-zinc-400 truncate">
-                            {album.type || "Album"} •{" "}
-                            {album.artist || "Unknown Artist"}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </>
-                )}
+            <div className="space-y-2">
+              {libraryItems.map((item) => {
+                const linkPath =
+                  item.type === "album"
+                    ? `/albums/${item._id}`
+                    : `/playlists/${item._id}`;
 
-                {myPlaylists.length > 0 && (
-                  <>
-                    <h3 className="text-sm font-semibold text-zinc-300 px-2 mt-4">
-                      Playlists
-                    </h3>
-                    {myPlaylists.map(
-                      (
-                        playlist: Playlist // Уточнен тип для playlist
-                      ) => (
-                        <Link
-                      
-                          to={`/playlists/${playlist._id}`}
-                          key={playlist._id}
-                          className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
-                        >
-                          <img
-                            src={
-                              playlist.imageUrl || "/default_playlist_cover.png"
-                            }
-                            alt={playlist.title}
-                            className="size-12 rounded-md flex-shrink-0 object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/default_playlist_cover.png";
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-md truncate text-white">
-                              {playlist.title || "Untitled Playlist"}
-                            </p>
-                            <p className="text-sm text-zinc-400 truncate">
-                              Playlist • {playlist.owner?.fullName || "Unknown"}{" "}
-                            </p>
-                          </div>
-                        </Link>
-                      )
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+                const subtitle =
+                  item.type === "album"
+                    ? `Album • ${item.artist || "Unknown Artist"}`
+                    : `Playlist • ${item.owner?.fullName || "Unknown"}`;
+
+                const fallbackImage =
+                  item.type === "album"
+                    ? "/default-album-cover.png"
+                    : "/default_playlist_cover.png";
+
+                return (
+                  <Link
+                    to={linkPath}
+                    key={item._id}
+                    className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
+                  >
+                    <img
+                      src={item.imageUrl || fallbackImage}
+                      alt={item.title}
+                      className="size-12 rounded-md flex-shrink-0 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = fallbackImage;
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-md truncate text-white">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-zinc-400 truncate">
+                        {subtitle}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </ScrollArea>
         )}
       </div>
+
       <CreatePlaylistDialog
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}

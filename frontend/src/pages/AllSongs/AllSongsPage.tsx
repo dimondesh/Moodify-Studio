@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import PlayButton from "../../pages/HomePage/PlayButton";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import type { Song } from "../../types/index";
@@ -11,6 +11,7 @@ const AllSongsPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   const initialSongs = location.state?.songs;
   const pageTitle = location.state?.title || "Все песни";
@@ -71,8 +72,9 @@ const AllSongsPage = () => {
               onClick={() => {
                 if (song.albumId) {
                   const albumIdStr = String(song.albumId);
+
                   if (albumIdStr.length > 0) {
-                    window.location.href = `/albums/${albumIdStr}`;
+                    navigate(`/albums/${albumIdStr}`); // Используем navigate вместо window.location.href
                     return;
                   }
                 }

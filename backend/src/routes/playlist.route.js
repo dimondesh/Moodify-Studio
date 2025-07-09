@@ -31,7 +31,4 @@ router.delete("/:id", deletePlaylist); // Delete a playlist
 router.post("/:id/songs", addSongToPlaylist); // Add a song to a playlist
 router.delete("/:playlistId/songs/:songId", removeSongFromPlaylist); // Remove a song from a playlist
 
-router.post("/:id/like", likePlaylist); // Like a playlist
-router.delete("/:id/unlike", unlikePlaylist); // Unlike a playlist (fixed route name)
-
 export default router;

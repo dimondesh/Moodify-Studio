@@ -168,6 +168,8 @@ export const getPlaylistsInLibrary = async (req, res, next) => {
     const library = await Library.findOne({ userId }).populate({
       path: "playlists.playlistId", // Правильный путь для популяции
       model: "Playlist", // Указываем модель, если имя поля не совпадает с ref напрямую
+      match: { isPublic: true }, // фильтрация прямо в populate
+
       populate: {
         path: "owner", // Популируем владельца плейлиста
         select: "fullName imageUrl", // Выбираем только нужные поля владельца
@@ -205,6 +207,7 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
     const userId = req.user?.id;
     console.log("UserId from req.user:", userId);
     const { playlistId } = req.body; // Получаем playlistId из тела запроса
+    const playlistToUpdate = await Playlist.findById(playlistId);
 
     if (!userId || !playlistId) {
       return res.status(400).json({ message: "Missing userId or playlistId" });
@@ -231,11 +234,15 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
 
     if (exists) {
       // Если существует, удаляем его из массива
+
       library.playlists = library.playlists.filter(
         (p) => p.playlistId?.toString() !== playlistId
       );
       message = "Playlist removed from library";
       isAdded = false;
+      if (playlistToUpdate.likes > 0) {
+        playlistToUpdate.likes -= 1;
+      }
     } else {
       // Если не существует, добавляем его
       library.playlists.push({
@@ -244,8 +251,10 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
       });
       message = "Playlist added to library";
       isAdded = true;
+      playlistToUpdate.likes += 1;
     }
 
+    await playlistToUpdate.save();
     await library.save(); // Сохраняем изменения в библиотеке
 
     res.json({ success: true, isAdded, message }); // Отправляем статус успеха и информацию о том, был ли добавлен

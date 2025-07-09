@@ -135,10 +135,10 @@ export const getPlaylistById = async (req, res, next) => {
     }
 
     // Проверка доступа для приватных плейлистов
+    console.log("playlist owner", playlist.owner);
     if (
       !playlist.isPublic &&
-      playlist.owner.toString() !== req.user.id &&
-      !req.user.isAdmin
+      playlist.owner._id.toString() !== req.user.id.toString()
     ) {
       return res
         .status(403)
@@ -167,7 +167,7 @@ export const updatePlaylist = async (req, res, next) => {
     }
 
     // Проверка, является ли пользователь владельцем или админом
-    if (playlist.owner.toString() !== req.user.id && !req.user.isAdmin) {
+    if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
       });
@@ -202,7 +202,7 @@ export const deletePlaylist = async (req, res, next) => {
     }
 
     // Проверка, является ли пользователь владельцем или админом
-    if (playlist.owner.toString() !== req.user.id && !req.user.isAdmin) {
+    if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
       });
@@ -240,7 +240,8 @@ export const addSongToPlaylist = async (req, res, next) => {
     }
 
     // Проверка, является ли пользователь владельцем или админом
-    if (playlist.owner.toString() !== req.user.id && !req.user.isAdmin) {
+    console.log("/////////////////////", req.user.id);
+    if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
       });
@@ -275,7 +276,7 @@ export const removeSongFromPlaylist = async (req, res, next) => {
     }
 
     // Проверка, является ли пользователь владельцем или админом
-    if (playlist.owner.toString() !== req.user.id && !req.user.isAdmin) {
+    if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
       });

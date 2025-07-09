@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Album, Song, Playlist } from "../types"; // Импортируем Playlist
+import type { Album, Song, LibraryPlaylist } from "../types"; // Импортируем Playlist
 
 interface LibraryStore {
   albums: Album[];
   likedSongs: Song[];
-  playlists: Playlist[]; // <-- НОВОЕ: Добавляем массив плейлистов в библиотеке
+  playlists: LibraryPlaylist[]; // <-- НОВОЕ: Добавляем массив плейлистов в библиотеке
   isLoading: boolean;
   error: string | null;
   fetchLibrary: () => Promise<void>; // Переименуем, чтобы она получала все элементы библиотеки

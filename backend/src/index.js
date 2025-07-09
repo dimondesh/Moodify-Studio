@@ -18,6 +18,7 @@ import cron from "node-cron";
 import fs from "fs";
 import libraryRoutes from "./routes/library.route.js";
 import { protectRoute } from "./middleware/auth.middleware.js";
+import { Playlist } from "./models/playlist.model.js"; // путь под себя
 
 dotenv.config();
 

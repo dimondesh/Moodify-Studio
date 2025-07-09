@@ -14,6 +14,7 @@ const LibraryPage = () => {
   const {
     likedSongs,
     albums,
+    playlists,
     isLoading: isLoadingLibrary,
     error: libraryError,
     fetchLibrary,
@@ -70,7 +71,7 @@ const LibraryPage = () => {
           _id: album._id,
           title: album.title,
           imageUrl: album.imageUrl,
-          createdAt: new Date(album.createdAt),
+          createdAt: new Date(album.addedAt),
           type: "album",
           artist: album.artist,
         } as LibraryItem)
@@ -81,11 +82,22 @@ const LibraryPage = () => {
           _id: playlist._id,
           title: playlist.title,
           imageUrl: playlist.imageUrl,
-          createdAt: new Date(playlist.createdAt),
+          createdAt: new Date(playlist.updatedAt),
           type: "playlist",
           owner: playlist.owner,
         } as LibraryItem)
     ), // Use LibraryItem directly here
+    ...playlists.map(
+      (playlist) =>
+        ({
+          _id: playlist._id,
+          title: playlist.title,
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(playlist.addedAt),
+          type: "playlist",
+          owner: playlist.owner,
+        } as LibraryItem)
+    ),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (

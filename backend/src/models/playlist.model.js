@@ -18,6 +18,11 @@ const playlistSchema = new mongoose.Schema(
       default:
         "https://res.cloudinary.com/your-cloud-name/image/upload/v1/default_playlist_image.png", // TODO: Замените на вашу дефолтную картинку плейлиста в Cloudinary
     },
+    likes: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -33,12 +38,6 @@ const playlistSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    likes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
   },
   { timestamps: true }
 );

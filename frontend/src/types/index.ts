@@ -26,7 +26,7 @@ export interface Album {
   createdAt: string;
   updatedAt: string;
   // 💡 Добавим опциональное поле addedAt для альбомов в библиотеке
-  addedAt?: string;
+  addedAt: string;
 }
 
 export interface Stats {
@@ -82,7 +82,7 @@ export interface Playlist {
   owner: User; // Ссылка на владельца плейлиста
   songs: Song[]; // Массив песен в плейлисте
   imageUrl?: string; // Обложка плейлиста
-  likes: string[]; // Массив ID пользователей, которые лайкнули плейлист
+  likes: number; // Массив ID пользователей, которые лайкнули плейлист
   createdAt: string;
   updatedAt: string;
 }
@@ -114,3 +114,7 @@ export interface PlaylistItem extends BaseLibraryItem {
 
 // Объединяющий тип для всех элементов библиотеки
 export type LibraryItem = LikedSongsItem | AlbumItem | PlaylistItem;
+
+export interface LibraryPlaylist extends Playlist {
+  addedAt: string; // Дата, когда юзер добавил чужой плейлист в свою библиотеку
+}

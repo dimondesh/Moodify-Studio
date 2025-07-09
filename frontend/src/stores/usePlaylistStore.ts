@@ -114,7 +114,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           "Content-Type": "multipart/form-data",
         },
       });
-      toast.success("Playlist created successfully!");
       get().fetchMyPlaylists(); // Обновить список плейлистов после создания
       set({ isLoading: false });
       return response.data;
@@ -124,7 +123,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         error: err.response?.data?.message || "Failed to create playlist",
         isLoading: false,
       });
-      toast.error("Failed to create playlist.");
       return undefined;
     }
   },
@@ -145,7 +143,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           "Content-Type": "multipart/form-data",
         },
       });
-      toast.success("Playlist updated successfully!");
       get().fetchMyPlaylists(); // Обновить список плейлистов после обновления
       set({ isLoading: false });
       return response.data;
@@ -155,7 +152,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         error: err.response?.data?.message || "Failed to update playlist",
         isLoading: false,
       });
-      toast.error("Failed to update playlist.");
       return undefined;
     }
   },
@@ -164,7 +160,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${id}`);
-      toast.success("Playlist deleted successfully!");
       get().fetchMyPlaylists(); // Обновить список плейлистов после удаления
       set({ isLoading: false });
     } catch (err: any) {
@@ -173,7 +168,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         error: err.response?.data?.message || "Failed to delete playlist",
         isLoading: false,
       });
-      toast.error("Failed to delete playlist.");
     }
   },
 
@@ -181,7 +175,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post(`/playlists/${playlistId}/songs`, { songId });
-      toast.success("Song added to playlist!");
       get().fetchPlaylistDetails(playlistId); // Обновляем детали текущего плейлиста
       set({ isLoading: false });
     } catch (err: any) {
@@ -190,7 +183,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         error: err.response?.data?.message || "Failed to add song to playlist",
         isLoading: false,
       });
-      toast.error("Failed to add song to playlist.");
     }
   },
 
@@ -198,7 +190,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${playlistId}/songs/${songId}`);
-      toast.success("Song removed from playlist!");
       get().fetchPlaylistDetails(playlistId); // Обновляем детали текущего плейлиста
       set({ isLoading: false });
     } catch (err: any) {
@@ -208,7 +199,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           err.response?.data?.message || "Failed to remove song from playlist",
         isLoading: false,
       });
-      toast.error("Failed to remove song from playlist.");
     }
   },
 

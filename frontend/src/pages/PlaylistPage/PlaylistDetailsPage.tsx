@@ -17,6 +17,8 @@ import {
   X,
   Clock,
   Heart,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
@@ -61,7 +63,6 @@ const formatDuration = (seconds: number): string => {
 
 const PlaylistDetailsPage = () => {
   const { playlistId } = useParams<{ playlistId: string }>();
-  const navigate = useNavigate();
   const {
     currentPlaylist,
     error,
@@ -71,6 +72,7 @@ const PlaylistDetailsPage = () => {
     removeSongFromPlaylist,
   } = usePlaylistStore();
 
+  const navigate = useNavigate();
   const { user: authUser } = useAuthStore();
   const {
     playlists: libraryPlaylists,
@@ -285,7 +287,7 @@ const PlaylistDetailsPage = () => {
     queue[0]?._id === currentPlaylist.songs[0]?._id; // Check if this playlist is the current queue
 
   return (
-    <div className="h-[calc(100vh-100px)]">
+    <div className="h-full">
       <ScrollArea className="h-full rounded-md pb-24 md:pb-0">
         <div className="relative min-h-screen">
           <div
@@ -316,11 +318,22 @@ const PlaylistDetailsPage = () => {
                   </p>
                 )}
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100 mt-2">
+                  {isOwner ? (
+                    <>
+                      {currentPlaylist.isPublic ? (
+                        <Unlock className="size-3.5" />
+                      ) : (
+                        <Lock className="size-3.5" />
+                      )}
+                    </>
+                  ) : (
+                    <></>
+                  )}
                   <span className="font-semibold text-white flex items-center">
                     <img
                       src={currentPlaylist.owner.imageUrl}
                       className="w-4 h-4 rounded-full mr-1"
-                      alt=""
+                      alt={currentPlaylist.owner.fullName}
                     />
                     {currentPlaylist.owner?.fullName || "Unknown User"}
                   </span>
@@ -334,6 +347,13 @@ const PlaylistDetailsPage = () => {
                         • {formattedDuration}
                       </span>
                     </>
+                  )}
+                  {currentPlaylist.likes > 0 ? (
+                    <span className="hidden lg:inline">
+                      • {currentPlaylist.likes} saved
+                    </span>
+                  ) : (
+                    <></>
                   )}
                 </div>
               </div>
@@ -453,12 +473,14 @@ const PlaylistDetailsPage = () => {
             <div className="bg-black/20 backdrop-blur-sm">
               {/* Table Header */}
               <div
-                className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[25px_3.6fr_0.5fr_2.5fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
+                className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
               >
-                <div className="pl-4">#</div>
+                <div className="">#</div>
                 <div>Title</div>
-                <div className="hidden md:flex justify-between">Date Added</div>
+                <div className="hidden md:flex justify-between ">
+                  Date Added
+                </div>
                 <div className="flex items-center justify-center">
                   <Clock className="h-4 w-4" />
                 </div>
