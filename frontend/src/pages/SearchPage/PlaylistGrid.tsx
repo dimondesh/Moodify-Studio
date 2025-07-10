@@ -47,9 +47,10 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
                 <img
                   src={playlist.imageUrl || "/default_playlist_cover.png"} // Используем дефолтную обложку для плейлистов
                   alt={playlist.title}
-                  className=" w-full h-full object-contain transition-transform duration-300 hover:scale-105" // object-cover для плейлистов
-                  onError={() => {
-                    console.log("image error");
+                  className=" w-auto h-auto object-cover transition-transform duration-300 hover:scale-105" // object-cover для плейлистов
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/default_playlist_cover.png";
                   }}
                 />
               </div>
