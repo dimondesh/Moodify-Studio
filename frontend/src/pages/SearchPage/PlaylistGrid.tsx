@@ -43,11 +43,11 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
             onClick={() => navigate(`/playlists/${playlist._id}`)} // Переход на страницу деталей плейлиста
           >
             <div className="relative mb-4">
-              <div className="object-contain md:object-cover aspect-square rounded-md shadow-lg overflow-hidden">
+              <div className=" aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
                   src={playlist.imageUrl || "/default_playlist_cover.png"} // Используем дефолтную обложку для плейлистов
                   alt={playlist.title}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" // object-cover для плейлистов
+                  className="object-contain md:object-cover w-full h-full transition-transform duration-300 hover:scale-105" // object-cover для плейлистов
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/default_playlist_cover.png";
