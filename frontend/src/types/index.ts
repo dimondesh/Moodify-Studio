@@ -22,7 +22,7 @@ export interface Album {
   imageUrl: string;
   releaseYear: number;
   songs: Song[];
-  type: string | "Album";
+  type: "album";
   createdAt: string;
   updatedAt: string;
   // 💡 Добавим опциональное поле addedAt для альбомов в библиотеке
@@ -81,6 +81,7 @@ export interface Playlist {
   isPublic: boolean;
   owner: User; // Ссылка на владельца плейлиста
   songs: Song[]; // Массив песен в плейлисте
+  type: "playlist";
   imageUrl?: string; // Обложка плейлиста
   likes: number; // Массив ID пользователей, которые лайкнули плейлист
   createdAt: string;

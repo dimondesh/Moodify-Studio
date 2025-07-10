@@ -56,7 +56,7 @@ const LeftSidebar = () => {
   const libraryItems: LibraryItem[] = [
     ...albums.map((album) => ({
       _id: album._id,
-      type: "album",
+      type: "album" as const,
       title: album.title,
       imageUrl: album.imageUrl,
       createdAt: new Date(album.addedAt),
@@ -65,7 +65,7 @@ const LeftSidebar = () => {
 
     ...myPlaylists.map((playlist) => ({
       _id: playlist._id,
-      type: "playlist",
+      type: "playlist" as const,
       title: playlist.title,
       imageUrl: playlist.imageUrl,
       createdAt: new Date(playlist.updatedAt),
@@ -74,7 +74,7 @@ const LeftSidebar = () => {
 
     ...playlists.map((playlist) => ({
       _id: playlist._id,
-      type: "playlist",
+      type: "playlist" as const,
       title: playlist.title,
       imageUrl: playlist.imageUrl,
       createdAt: new Date(playlist.addedAt),
@@ -187,7 +187,9 @@ const LeftSidebar = () => {
                 const subtitle =
                   item.type === "album"
                     ? `Album • ${item.artist || "Unknown Artist"}`
-                    : `Playlist • ${item.owner?.fullName || "Unknown"}`;
+                    : item.type === "playlist"
+                    ? `Playlist • ${item.owner?.fullName || "Unknown"}`
+                    : "";
 
                 const fallbackImage =
                   item.type === "album"
