@@ -12,27 +12,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea"; // Убедитесь, что у вас есть Textarea
+import { Textarea } from "@/components/ui/textarea"; // Ensure you have Textarea
 import { usePlaylistStore } from "@/stores/usePlaylistStore";
-import { Playlist } from "@/types"; // Импортируем тип Playlist
+import { Playlist } from "@/types"; // Import Playlist type
 import toast from "react-hot-toast";
 
 interface EditPlaylistDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  playlist: Playlist | null; // Текущий плейлист для редактирования
-  onSuccess: () => void; // Добавляем onSuccess пропс
+  playlist: Playlist | null; // Current playlist for editing
+  onSuccess: () => void; // Add onSuccess prop
 }
 
 export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
   isOpen,
   onClose,
   playlist,
-  onSuccess, // Принимаем onSuccess
+  onSuccess, // Accept onSuccess
 }) => {
   const [title, setTitle] = useState(playlist?.title || "");
   const [description, setDescription] = useState(playlist?.description || "");
-  // Используем оператор нулевого слияния (??) для isPublic, чтобы корректно обрабатывать undefined/null
+  // Use nullish coalescing operator (??) for isPublic to correctly handle undefined/null
   const [isPublic, setIsPublic] = useState(playlist?.isPublic ?? false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
@@ -42,16 +42,16 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
 
   const { updatePlaylist, isLoading } = usePlaylistStore();
 
-  // Обновление состояния формы при изменении пропса playlist
+  // Update form state when the playlist prop changes
   useEffect(() => {
     if (playlist) {
       setTitle(playlist.title);
       setDescription(playlist.description || "");
-      setIsPublic(playlist.isPublic ?? false); // Убедитесь, что обрабатывает undefined/null
-      setImageFile(null); // Сбросить выбранный файл при смене плейлиста
+      setIsPublic(playlist.isPublic ?? false); // Ensure it handles undefined/null
+      setImageFile(null); // Reset selected file when playlist changes
       setImagePreviewUrl(playlist.imageUrl || null);
     } else {
-      // Сбросить форму, если плейлист стал null (например, при создании нового)
+      // Reset form if playlist becomes null (e.g., when creating a new one)
       setTitle("");
       setDescription("");
       setIsPublic(false);
@@ -64,20 +64,20 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file)); // Для предпросмотра
+      setImagePreviewUrl(URL.createObjectURL(file)); // For preview
     } else {
       setImageFile(null);
-      setImagePreviewUrl(playlist?.imageUrl || null); // Вернуть к исходному, если файл отменен
+      setImagePreviewUrl(playlist?.imageUrl || null); // Revert to original if file is canceled
     }
   };
 
   const handleSubmit = useCallback(async () => {
     if (!playlist) {
-      toast.error("Не выбран плейлист для редактирования.");
+      toast.error("No playlist selected for editing.");
       return;
     }
     if (!title.trim()) {
-      toast.error("Название плейлиста не может быть пустым.");
+      toast.error("Playlist title cannot be empty.");
       return;
     }
 
@@ -90,13 +90,13 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
         imageFile
       );
       if (updated) {
-        toast.success("Плейлист успешно обновлен!");
-        onSuccess(); // Вызываем onSuccess для обновления данных в родительском компоненте
-        onClose(); // Закрыть диалог
+        toast.success("Playlist updated successfully!");
+        onSuccess(); // Call onSuccess to update data in the parent component
+        onClose(); // Close the dialog
       }
     } catch (error) {
-      // Ошибка уже обрабатывается в usePlaylistStore и показывается тост
-      console.error("Ошибка при обновлении плейлиста в диалоге:", error);
+      // Error is already handled in usePlaylistStore and toast is shown
+      console.error("Error updating playlist in dialog:", error);
     }
   }, [
     playlist,
@@ -106,11 +106,11 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
     imageFile,
     updatePlaylist,
     onClose,
-    onSuccess, // Добавляем onSuccess в зависимости
+    onSuccess, // Add onSuccess to dependencies
   ]);
 
   const handleClose = useCallback(() => {
-    // Сброс состояния формы к исходным значениям плейлиста при закрытии без сохранения
+    // Reset form state to initial playlist values when closing without saving
     if (playlist) {
       setTitle(playlist.title);
       setDescription(playlist.description || "");
@@ -125,38 +125,35 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
       setImagePreviewUrl(null);
     }
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Очистить input файла
+      fileInputRef.current.value = ""; // Clear file input
     }
     onClose();
   }, [onClose, playlist]);
 
   if (!playlist) {
-    return null; // Не рендерим диалог, если нет плейлиста для редактирования
+    return null; // Do not render the dialog if no playlist is available for editing
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700">
         {" "}
-        {/* Добавлены стили */}
+        {/* Styles added */}
         <DialogHeader>
-          <DialogTitle className="text-white">
-            Редактировать плейлист
-          </DialogTitle>{" "}
-          {/* Перевод */}
+          <DialogTitle className="text-white">Edit Playlist</DialogTitle>{" "}
+          {/* Translation */}
           <DialogDescription className="text-zinc-400">
             {" "}
-            {/* Перевод */}
-            Внесите изменения в свой плейлист здесь. Нажмите сохранить, когда
-            закончите.
+            {/* Translation */}
+            Make changes to your playlist here. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right text-white">
               {" "}
-              {/* Перевод и цвет текста */}
-              Название
+              {/* Translation and text color */}
+              Title
             </Label>
             <Input
               id="title"
@@ -169,8 +166,8 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right text-white">
               {" "}
-              {/* Перевод и цвет текста */}
-              Описание
+              {/* Translation and text color */}
+              Description
             </Label>
             <Textarea
               id="description"
@@ -178,14 +175,14 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               className="col-span-3 min-h-[80px] bg-zinc-800 text-white border-zinc-700 rounded-md p-2 focus:ring-green-500 focus:border-green-500"
               rows={3}
-              placeholder="Краткое описание плейлиста" // Добавлен placeholder
+              placeholder="A brief description of the playlist" // Placeholder added
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="image" className="text-right text-white">
               {" "}
-              {/* Перевод и цвет текста */}
-              Обложка
+              {/* Translation and text color */}
+              Cover
             </Label>
             <div className="col-span-3">
               <Input
@@ -199,30 +196,30 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
               {imagePreviewUrl && (
                 <img
                   src={imagePreviewUrl}
-                  alt="Предпросмотр обложки" // Перевод
-                  className="w-24 h-24 object-cover rounded-md mt-2" // Увеличен отступ
+                  alt="Cover preview" // Translation
+                  className="w-24 h-24 object-cover rounded-md mt-2" // Increased margin
                 />
               )}
             </div>
           </div>
-          {/* ИСПРАВЛЕНО: Для Switch используем flex, а не grid-cols */}
+          {/* FIXED: For Switch, use flex, not grid-cols */}
           <div className="flex items-center justify-between col-span-full mt-2">
             <Label htmlFor="public" className="text-white">
               {" "}
-              {/* Перевод и цвет текста */}
-              Публичный
+              {/* Translation and text color */}
+              Public
             </Label>
             <Switch
               id="public"
               checked={isPublic}
               onCheckedChange={setIsPublic}
-              className="data-[state=checked]:bg-green-500" // Стили shadcn
+              className="data-[state=checked]:bg-green-500" // Shadcn styles
             />
           </div>
         </div>
         <DialogFooter className="mt-6">
           {" "}
-          {/* Увеличен отступ */}
+          {/* Increased margin */}
           <Button
             onClick={handleClose}
             variant="outline"
@@ -230,8 +227,8 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
             className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
           >
             {" "}
-            {/* Добавлены стили */}
-            Отмена {/* Перевод */}
+            {/* Styles added */}
+            Cancel {/* Translation */}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -239,9 +236,8 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             {" "}
-            {/* Добавлены стили */}
-            {isLoading ? "Сохранение..." : "Сохранить изменения"}{" "}
-            {/* Перевод */}
+            {/* Styles added */}
+            {isLoading ? "Saving..." : "Save Changes"} {/* Translation */}
           </Button>
         </DialogFooter>
       </DialogContent>
