@@ -16,13 +16,13 @@ import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
 import toast from "react-hot-toast";
-import { Playlist } from "../../types"; // Убедитесь, что тип Playlist импортирован
+import { Playlist } from "../../types"; // Ensure the Playlist type is imported
 
 interface CreatePlaylistDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: Playlist | null; // Опциональный пропс для редактирования существующего плейлиста
-  onSuccess?: () => void; // Колбэк после успешного создания/обновления
+  initialData?: Playlist | null; // Optional prop for editing an existing playlist
+  onSuccess?: () => void; // Callback after successful creation/update
 }
 
 export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
@@ -34,7 +34,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
     initialData?.description || ""
-  ); // Исправлено: убедитесь, что description является строкой
+  ); // Fixed: ensure description is a string
   const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
@@ -42,18 +42,18 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { createPlaylist, updatePlaylist, isLoading } = usePlaylistStore(); // Используем isLoading из стора для общей индикации
+  const { createPlaylist, updatePlaylist, isLoading } = usePlaylistStore(); // Use isLoading from the store for general indication
 
   useEffect(() => {
-    // Сброс формы и обновление начальных данных при открытии диалога или изменении initialData
+    // Reset form and update initial data when the dialog opens or initialData changes
     if (initialData) {
-      setTitle(initialData.title || ""); // Добавлено || "" для безопасности, хотя title обычно обязателен
-      setDescription(initialData.description || ""); // ИСПРАВЛЕНО: Безопасный доступ к description
+      setTitle(initialData.title || ""); // Added || "" for safety, although title is usually required
+      setDescription(initialData.description || ""); // FIXED: Safe access to description
       setIsPublic(initialData.isPublic);
       setImagePreviewUrl(initialData.imageUrl || null);
-      setImageFile(null); // Очищаем файловый ввод при редактировании существующего плейлиста
+      setImageFile(null); // Clear file input when editing an existing playlist
     } else {
-      // Очистка формы для режима создания
+      // Clear form for creation mode
       setTitle("");
       setDescription("");
       setIsPublic(false);
@@ -66,10 +66,10 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file)); // Создаем URL для предварительного просмотра
+      setImagePreviewUrl(URL.createObjectURL(file)); // Create a URL for preview
     } else {
       setImageFile(null);
-      setImagePreviewUrl(initialData?.imageUrl || null); // Возвращаемся к начальному изображению, если очищено
+      setImagePreviewUrl(initialData?.imageUrl || null); // Revert to initial image if cleared
     }
   };
 
@@ -78,14 +78,14 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
     setIsSubmitting(true);
 
     if (!title.trim()) {
-      toast.error("Название плейлиста не может быть пустым.");
+      toast.error("Playlist title cannot be empty.");
       setIsSubmitting(false);
       return;
     }
 
     try {
       if (initialData) {
-        // Редактирование существующего плейлиста
+        // Editing an existing playlist
         await updatePlaylist(
           initialData._id,
           title,
@@ -93,30 +93,26 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           isPublic,
           imageFile
         );
-        toast.success("Плейлист успешно обновлен!");
+        toast.success("Playlist updated successfully!");
       } else {
-        // Создание нового плейлиста
+        // Creating a new playlist
         await createPlaylist(title, description, isPublic, imageFile);
-        toast.success("Плейлист успешно создан!");
+        toast.success("Playlist created successfully!");
       }
-      onClose(); // Закрываем диалог при успехе
+      onClose(); // Close the dialog on success
       if (onSuccess) {
-        onSuccess(); // Вызываем колбэк успеха
+        onSuccess(); // Call the success callback
       }
     } catch (error) {
-      // Обработка ошибок уже есть в usePlaylistStore с помощью toast
-      console.error("Операция с плейлистом не удалась:", error);
+      // Error handling is already present in usePlaylistStore with toast
+      console.error("Playlist operation failed:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const dialogTitle = initialData
-    ? "Редактировать плейлист"
-    : "Создать новый плейлист";
-  const submitButtonText = initialData
-    ? "Сохранить изменения"
-    : "Создать плейлист";
+  const dialogTitle = initialData ? "Edit Playlist" : "Create New Playlist";
+  const submitButtonText = initialData ? "Save Changes" : "Create Playlist";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -125,14 +121,14 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           <DialogTitle className="text-white">{dialogTitle}</DialogTitle>
           <DialogDescription className="text-zinc-400">
             {initialData
-              ? "Внесите изменения в свой плейлист."
-              : "Введите данные для нового плейлиста."}
+              ? "Make changes to your playlist."
+              : "Enter details for your new playlist."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right text-white">
-              Название
+              Title
             </Label>
             <Input
               id="title"
@@ -144,7 +140,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right text-white">
-              Описание
+              Description
             </Label>
             <Textarea
               id="description"
@@ -156,7 +152,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="isPublic" className="text-right text-white">
-              Публичный
+              Public
             </Label>
             <Switch
               id="isPublic"
@@ -167,7 +163,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="image" className="text-right text-white">
-              Обложка
+              Cover
             </Label>
             <Input
               id="image"
@@ -181,7 +177,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
             <div className="flex justify-center">
               <img
                 src={imagePreviewUrl}
-                alt="Предпросмотр обложки"
+                alt="Cover preview"
                 className="max-w-[150px] max-h-[150px] rounded-md object-cover"
               />
             </div>
@@ -194,8 +190,8 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
             >
               {isSubmitting
                 ? initialData
-                  ? "Сохранение..."
-                  : "Создание..."
+                  ? "Saving..."
+                  : "Creating..."
                 : submitButtonText}
             </Button>
           </DialogFooter>

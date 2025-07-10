@@ -1,6 +1,6 @@
 // frontend/src/pages/LibraryPage/LibraryPage.tsx
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
 // Named imports for stores
@@ -9,6 +9,11 @@ import { usePlaylistStore } from "../../stores/usePlaylistStore";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 // Import LibraryItem, Song, Album, Playlist, User from your central types file
 import { LibraryItem } from "../../types";
+import { Button } from "@/components/ui/button";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "../../lib/firebase";
+import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
+import { Plus } from "lucide-react";
 
 const LibraryPage = () => {
   const {
@@ -42,6 +47,8 @@ const LibraryPage = () => {
 
   // Directly use combinedError as the errorMessage, as it's already a string or null
   const errorMessage = combinedError;
+  const [user] = useAuthState(auth);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   if (isLoading) return <LibraryGridSkeleton />;
 
@@ -110,9 +117,22 @@ const LibraryPage = () => {
             aria-hidden="true"
           />
           <div className="relative z-10">
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
-              Your Library
-            </h1>
+            <div className="flex justify-between items-baseline">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
+                Your Library
+              </h1>
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-zinc-800 "
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  title="Create new playlist"
+                >
+                  <Plus className="size-6" />
+                </Button>
+              )}
+            </div>
 
             <div className="flex flex-col gap-2">
               {libraryItems.length === 0 ? (
@@ -178,6 +198,10 @@ const LibraryPage = () => {
           </div>
         </div>
       </ScrollArea>
+      <CreatePlaylistDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
     </div>
   );
 };

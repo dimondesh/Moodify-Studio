@@ -288,7 +288,7 @@ const PlaylistDetailsPage = () => {
 
   return (
     <div className="h-full">
-      <ScrollArea className="h-full rounded-md pb-24 md:pb-0">
+      <ScrollArea className="h-full rounded-md md:pb-0">
         <div className="relative min-h-screen">
           <div
             className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80
