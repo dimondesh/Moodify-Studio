@@ -22,7 +22,7 @@ export interface Album {
   imageUrl: string;
   releaseYear: number;
   songs: Song[];
-  type: "album";
+  type: string;
   createdAt: string;
   updatedAt: string;
   // 💡 Добавим опциональное поле addedAt для альбомов в библиотеке
@@ -105,6 +105,7 @@ export interface LikedSongsItem extends BaseLibraryItem {
 export interface AlbumItem extends BaseLibraryItem {
   type: "album";
   artist: string;
+  albumType?: string; // ADDED: To store the specific type like "EP", "Single", etc.
 }
 
 // Конкретный тип для плейлистов

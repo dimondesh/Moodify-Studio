@@ -56,11 +56,12 @@ const LeftSidebar = () => {
   const libraryItems: LibraryItem[] = [
     ...albums.map((album) => ({
       _id: album._id,
-      type: "album" as const,
+      type: "album" as const, // This type is hardcoded as 'album', ensure your backend 'album.type' is also reflected here if it varies.
       title: album.title,
       imageUrl: album.imageUrl,
       createdAt: new Date(album.addedAt),
       artist: album.artist,
+      albumType: album.type, // Add albumType here
     })),
 
     ...myPlaylists.map((playlist) => ({
@@ -184,9 +185,12 @@ const LeftSidebar = () => {
                     ? `/albums/${item._id}`
                     : `/playlists/${item._id}`;
 
+                // Modified subtitle to display albumType
                 const subtitle =
                   item.type === "album"
-                    ? `Album • ${item.artist || "Unknown Artist"}`
+                    ? `${item.albumType || "Album"} • ${
+                        item.artist || "Unknown Artist"
+                      }`
                     : item.type === "playlist"
                     ? `Playlist • ${item.owner?.fullName || "Unknown"}`
                     : "";
