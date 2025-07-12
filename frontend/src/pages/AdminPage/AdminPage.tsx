@@ -1,4 +1,4 @@
-import { Album, Home, Music } from "lucide-react";
+import { Album, Home, Music, Users2 } from "lucide-react"; // Импортируем Users2
 import {
   Tabs,
   TabsContent,
@@ -10,6 +10,7 @@ import DashboardStats from "./DashboardStats";
 import Header from "./Header";
 import SongsTabContent from "./SongsTabContent";
 import AlbumsTabContent from "./AlbumsTabContent";
+import ArtistsTabContent from "./ArtistsTabContent"; // НОВОЕ: Импортируем ArtistsTabContent
 import { useEffect } from "react";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Button } from "../../components/ui/button";
@@ -17,12 +18,14 @@ import { useNavigate } from "react-router-dom";
 
 const AdminPage = () => {
   const { isAdmin, isLoading } = useAuthStore();
-  const { fetchAlbums, fetchSongs, fetchStats } = useMusicStore();
+  const { fetchAlbums, fetchSongs, fetchStats, fetchArtists } = useMusicStore(); // НОВОЕ: Добавляем fetchArtists
+
   useEffect(() => {
     fetchAlbums();
     fetchSongs();
     fetchStats();
-  }, [fetchAlbums, fetchSongs, fetchStats]);
+    fetchArtists(); // НОВОЕ: Загружаем артистов при монтировании
+  }, [fetchAlbums, fetchSongs, fetchStats, fetchArtists]);
 
   const navigate = useNavigate();
   if (!isAdmin && !isLoading)
@@ -61,12 +64,24 @@ const AdminPage = () => {
             <Album className="mr-2 size-4" />
             Albums
           </TabsTrigger>
+          <TabsTrigger
+            value="artists" // НОВОЕ: Вкладка для артистов
+            className="data-[state=active]:bg-zinc-700"
+          >
+            <Users2 className="mr-2 size-4" />
+            Artists
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="songs">
           <SongsTabContent />
         </TabsContent>
         <TabsContent value="albums">
           <AlbumsTabContent />
+        </TabsContent>
+        <TabsContent value="artists">
+          {" "}
+          {/* НОВОЕ: Контент для вкладки артистов */}
+          <ArtistsTabContent />
         </TabsContent>
       </Tabs>
     </div>

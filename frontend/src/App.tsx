@@ -16,6 +16,7 @@ import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
 import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
+import ArtistPage from "./pages/ArtistPage/ArtistPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -59,6 +60,7 @@ function App() {
             path="/playlists/:playlistId"
             element={<PlaylistDetailsPage />}
           />
+          <Route path="/artists/:id" element={<ArtistPage />} />
         </Route>
       </Routes>
       <Toaster />

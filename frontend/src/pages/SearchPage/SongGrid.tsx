@@ -1,9 +1,12 @@
-import { useState } from "react";
+// frontend/src/pages/SongGrid.tsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Song } from "../../types";
 import PlayButton from "../HomePage/PlayButton";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+import { useMusicStore } from "../../stores/useMusicStore";
+import { getArtistNames } from "../../lib/utils"; // <-- Импорт новой функции
 
 type SectionGridProps = {
   title: string;
@@ -14,6 +17,13 @@ type SectionGridProps = {
 const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { artists, fetchArtists } = useMusicStore();
+
+  useEffect(() => {
+    fetchArtists();
+  }, [fetchArtists]);
+
+  // УДАЛИТЕ эту вспомогательную функцию getArtistNames, она теперь импортируется
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -53,7 +63,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={song.imageUrl}
+                  src={song.imageUrl || "/default-song-cover.png"}
                   alt={song.title}
                   className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
@@ -65,7 +75,12 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
               <PlayButton song={song} />
             </div>
             <h3 className="font-medium mb-2 truncate">{song.title}</h3>
-            <p className="text-sm text-zinc-400 truncate">{song.artist}</p>
+            <p className="text-sm text-zinc-400 truncate">
+              {getArtistNames(
+                song.artist.map((artist) => artist._id),
+                artists // <-- Передача artists для резолва ID
+              )}
+            </p>
           </div>
         ))}
       </div>

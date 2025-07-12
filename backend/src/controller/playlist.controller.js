@@ -1,8 +1,7 @@
-// backend/src/controller/playlist.controller.js
 import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
-import { Library } from "../models/library.model.js"; // <-- НОВОЕ: Импортируем модель Library
+import { Library } from "../models/library.model.js";
 
 import cloudinary from "../lib/cloudinary.js";
 
@@ -10,7 +9,7 @@ const uploadImageToCloudinary = async (file) => {
   try {
     const result = await cloudinary.uploader.upload(file.tempFilePath, {
       resource_type: "image",
-      folder: "playlist_covers", // Создаем отдельную папку для обложек плейлистов
+      folder: "playlist_covers",
     });
     return result.secure_url;
   } catch (error) {
@@ -19,23 +18,19 @@ const uploadImageToCloudinary = async (file) => {
   }
 };
 
-// @desc    Create a new playlist
-// @route   POST /api/playlists
-// @access  Private
 export const createPlaylist = async (req, res, next) => {
   try {
     const { title, description, isPublic } = req.body;
-    const ownerId = req.user.id; // Получаем ID пользователя из req.user, установленного middleware protectRoute
+    const ownerId = req.user.id;
 
     if (!title) {
       return res.status(400).json({ message: "Playlist title is required" });
     }
 
     let imageUrl =
-      "https://res.cloudinary.com/your-cloud-name/image/upload/v1/default_playlist_image.png"; // Default image
+      "https://res.cloudinary.com/your-cloud-name/image/upload/v1/default_playlist_image.png";
     if (req.files && req.files.image) {
-      // <--- ИЗМЕНЕНО С imageFile НА image
-      imageUrl = await uploadImageToCloudinary(req.files.image); // <--- ИЗМЕНЕНО С imageFile НА image
+      imageUrl = await uploadImageToCloudinary(req.files.image);
     }
 
     const playlist = new Playlist({
@@ -43,13 +38,12 @@ export const createPlaylist = async (req, res, next) => {
       description,
       imageUrl,
       owner: ownerId,
-      isPublic: isPublic === "true", // Convert string to boolean
+      isPublic: isPublic === "true",
       songs: [],
     });
 
     await playlist.save();
 
-    // Добавляем плейлист в список созданных плейлистов пользователя
     await User.findByIdAndUpdate(ownerId, {
       $push: { playlists: playlist._id },
     });
@@ -61,58 +55,64 @@ export const createPlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Get all playlists for authenticated user (created by user AND added to library)
-// @route   GET /api/playlists/my
-// @access  Private
 export const getMyPlaylists = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // 1. Получаем плейлисты, созданные пользователем
     const createdPlaylists = await Playlist.find({ owner: userId })
       .populate("owner", "fullName imageUrl")
-      .populate("songs")
-      .lean(); // Используем .lean() для получения простых JS объектов
-
-    // 2. Получаем плейлисты, добавленные пользователем в его библиотеку (через модель Library)
-    const userLibrary = await Library.findOne({ userId })
       .populate({
-        path: "playlists.playlistId", // Путь к популируемому полю в массиве
-        model: "Playlist", // Модель для популяции
+        path: "songs", // Популируем песни
         populate: {
-          path: "owner", // Внутри популированного плейлиста, популируем его владельца
-          select: "fullName imageUrl",
+          path: "artist", // И внутри каждой песни популируем артиста
+          model: "Artist",
+          select: "name imageUrl",
         },
       })
-      .lean(); // Используем .lean()
+      .lean();
+
+    const userLibrary = await Library.findOne({ userId })
+      .populate({
+        path: "playlists.playlistId",
+        model: "Playlist",
+        populate: [
+          {
+            path: "owner",
+            select: "fullName imageUrl",
+          },
+          {
+            path: "songs", // Популируем песни внутри плейлиста из библиотеки
+            populate: {
+              path: "artist", // И внутри этих песен популируем артиста
+              model: "Artist",
+              select: "name imageUrl",
+            },
+          },
+        ],
+      })
+      .lean();
 
     const addedPlaylists = userLibrary
       ? userLibrary.playlists
-          .filter((item) => item.playlistId && item.playlistId._doc) // Убеждаемся, что плейлист был успешно популирован
+          .filter((item) => item.playlistId) // Убеждаемся, что playlistId существует
           .map((item) => ({
-            ...item.playlistId._doc, // Разворачиваем данные популированного плейлиста
-            addedAt: item.addedAt, // Добавляем поле addedAt из Library
+            ...item.playlistId, // Разворачиваем данные популированного плейлиста (уже .lean())
+            addedAt: item.addedAt,
           }))
       : [];
 
-    // 3. Объединяем два списка и удаляем дубликаты (если один и тот же плейлист и создан, и добавлен)
     const combinedPlaylistsMap = new Map();
 
-    // Сначала добавляем созданные плейлисты
     createdPlaylists.forEach((p) => {
       combinedPlaylistsMap.set(p._id.toString(), p);
     });
 
-    // Затем добавляем добавленные плейлисты. Если _id уже есть, Map обновит запись.
-    // Если созданный плейлист был также добавлен в библиотеку,
-    // версия из Library (с addedAt) заменит версию created.
     addedPlaylists.forEach((p) => {
       combinedPlaylistsMap.set(p._id.toString(), p);
     });
 
     const allMyPlaylists = Array.from(combinedPlaylistsMap.values());
 
-    // Отправляем объединенный список
     res.status(200).json(allMyPlaylists);
   } catch (error) {
     console.error("Error in getMyPlaylists:", error);
@@ -120,22 +120,25 @@ export const getMyPlaylists = async (req, res, next) => {
   }
 };
 
-// @desc    Get a single playlist by ID
-// @route   GET /api/playlists/:id
-// @access  Public (but private playlists only for owner or admin)
 export const getPlaylistById = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
     const playlist = await Playlist.findById(playlistId)
       .populate("owner", "fullName imageUrl")
-      .populate("songs");
+      .populate({
+        path: "songs", // Популируем песни
+        populate: {
+          path: "artist", // И внутри каждой песни популируем артиста
+          model: "Artist",
+          select: "name imageUrl",
+        },
+      })
+      .lean(); // Добавляем .lean() для получения простых JS объектов
 
     if (!playlist) {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
-    // Проверка доступа для приватных плейлистов
-    console.log("playlist owner", playlist.owner);
     if (
       !playlist.isPublic &&
       playlist.owner._id.toString() !== req.user.id.toString()
@@ -152,9 +155,6 @@ export const getPlaylistById = async (req, res, next) => {
   }
 };
 
-// @desc    Update a playlist (title, description, imageUrl, isPublic)
-// @route   PUT /api/playlists/:id
-// @access  Private (only owner or admin)
 export const updatePlaylist = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
@@ -166,7 +166,6 @@ export const updatePlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
-    // Проверка, является ли пользователь владельцем или админом
     if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
@@ -175,7 +174,7 @@ export const updatePlaylist = async (req, res, next) => {
 
     if (title) playlist.title = title;
     if (description) playlist.description = description;
-    if (isPublic !== undefined) playlist.isPublic = isPublic === "true"; // Convert string to boolean
+    if (isPublic !== undefined) playlist.isPublic = isPublic === "true";
 
     if (req.files && req.files.image) {
       playlist.imageUrl = await uploadImageToCloudinary(req.files.image);
@@ -189,9 +188,6 @@ export const updatePlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Delete a playlist
-// @route   DELETE /api/playlists/:id
-// @access  Private (only owner or admin)
 export const deletePlaylist = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
@@ -201,7 +197,6 @@ export const deletePlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
-    // Проверка, является ли пользователь владельцем или админом
     if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
@@ -209,7 +204,6 @@ export const deletePlaylist = async (req, res, next) => {
     }
 
     await Playlist.findByIdAndDelete(playlistId);
-    // Также можно удалить ссылку на этот плейлист из модели User
     await User.findByIdAndUpdate(playlist.owner, {
       $pull: { playlists: playlist._id },
     });
@@ -221,9 +215,6 @@ export const deletePlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Add a song to a playlist
-// @route   POST /api/playlists/:id/songs
-// @access  Private (only owner or admin)
 export const addSongToPlaylist = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
@@ -239,7 +230,6 @@ export const addSongToPlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Song not found" });
     }
 
-    // Проверка, является ли пользователь владельцем или админом
     console.log("/////////////////////", req.user.id);
     if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
@@ -247,7 +237,6 @@ export const addSongToPlaylist = async (req, res, next) => {
       });
     }
 
-    // Проверяем, есть ли уже песня в плейлисте
     if (playlist.songs.includes(songId)) {
       return res.status(400).json({ message: "Song already in playlist" });
     }
@@ -262,9 +251,6 @@ export const addSongToPlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Remove a song from a playlist
-// @route   DELETE /api/playlists/:playlistId/songs/:songId
-// @access  Private (only owner or admin)
 export const removeSongFromPlaylist = async (req, res, next) => {
   try {
     const { playlistId, songId } = req.params;
@@ -275,7 +261,6 @@ export const removeSongFromPlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
-    // Проверка, является ли пользователь владельцем или админом
     if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
@@ -299,9 +284,6 @@ export const removeSongFromPlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Like a playlist
-// @route   POST /api/playlists/:id/like
-// @access  Private
 export const likePlaylist = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
@@ -313,11 +295,15 @@ export const likePlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
+    // ИЗМЕНЕНО: likes теперь должен быть массивом ObjectId, а не числом
+    // Проверяем, есть ли userId в массиве likes
     if (playlist.likes.includes(userId)) {
-      return res.status(400).json({ message: "Playlist already liked" });
+      return res
+        .status(400)
+        .json({ message: "Playlist already liked by this user" });
     }
 
-    playlist.likes.push(userId);
+    playlist.likes.push(userId); // Добавляем userId в массив likes
     await playlist.save();
 
     res.status(200).json({ message: "Playlist liked successfully", playlist });
@@ -327,9 +313,6 @@ export const likePlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Unlike a playlist
-// @route   DELETE /api/playlists/:id/unlike
-// @access  Private
 export const unlikePlaylist = async (req, res, next) => {
   try {
     const playlistId = req.params.id;
@@ -342,6 +325,7 @@ export const unlikePlaylist = async (req, res, next) => {
     }
 
     const initialLikeCount = playlist.likes.length;
+    // ИЗМЕНЕНО: фильтруем userId из массива likes
     playlist.likes = playlist.likes.filter((id) => id.toString() !== userId);
 
     if (playlist.likes.length === initialLikeCount) {
@@ -361,14 +345,19 @@ export const unlikePlaylist = async (req, res, next) => {
   }
 };
 
-// @desc    Get all public playlists
-// @route   GET /api/playlists/public
-// @access  Public
 export const getPublicPlaylists = async (req, res, next) => {
   try {
     const publicPlaylists = await Playlist.find({ isPublic: true })
       .populate("owner", "fullName imageUrl")
-      .populate("songs");
+      .populate({
+        path: "songs", // Популируем песни
+        populate: {
+          path: "artist", // И внутри каждой песни популируем артиста
+          model: "Artist",
+          select: "name imageUrl",
+        },
+      })
+      .lean(); // Добавляем .lean()
     res.status(200).json(publicPlaylists);
   } catch (error) {
     console.error("Error in getPublicPlaylists:", error);

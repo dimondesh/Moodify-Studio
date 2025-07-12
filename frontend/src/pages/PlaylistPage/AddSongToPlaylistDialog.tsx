@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePlaylistStore } from "@/stores/usePlaylistStore";
-import { Song } from "@/types";
+import { Song, Artist } from "@/types"; // Импортируем Artist
 import toast from "react-hot-toast";
 import { Label } from "@/components/ui/label";
 
@@ -27,6 +27,25 @@ interface AddSongToPlaylistDialogProps {
   onClose: () => void;
   songToAdd: Song | null;
 }
+
+// Вспомогательная функция для получения имен артистов из массива объектов Artist
+const getArtistNames = (artistsInput: Artist[] | undefined) => {
+  if (!artistsInput || artistsInput.length === 0) {
+    return "Unknown Artist";
+  }
+
+  const names = artistsInput
+    .map((artist) => {
+      // Проверяем, что это объект Artist и у него есть свойство name
+      if (typeof artist === "object" && artist !== null && "name" in artist) {
+        return artist.name;
+      }
+      return null; // Если по какой-то причине объект некорректен
+    })
+    .filter(Boolean); // Удаляем все null значения
+
+  return names.join(", ") || "Unknown Artist";
+};
 
 export const AddSongToPlaylistDialog: React.FC<
   AddSongToPlaylistDialogProps
@@ -56,8 +75,10 @@ export const AddSongToPlaylistDialog: React.FC<
     try {
       await addSongToPlaylist(selectedPlaylistId, songToAdd._id);
       onClose();
+      toast.success(`"${songToAdd.title}" added to playlist!`);
     } catch (error) {
       console.error("Error adding song to playlist in dialog:", error);
+      toast.error("Failed to add song to playlist.");
     }
   }, [songToAdd, selectedPlaylistId, addSongToPlaylist, onClose]);
 
@@ -79,7 +100,9 @@ export const AddSongToPlaylistDialog: React.FC<
           <div className="flex flex-col gap-2">
             <h4 className="font-semibold">Song:</h4>
             <p className="text-sm text-gray-500">
-              {songToAdd ? `${songToAdd.title} by ${songToAdd.artist}` : "N/A"}
+              {songToAdd
+                ? `${songToAdd.title} by ${getArtistNames(songToAdd.artist)}`
+                : "N/A"}
             </p>
           </div>
 

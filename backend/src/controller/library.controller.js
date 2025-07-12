@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Library } from "../models/library.model.js";
 import { Playlist } from "../models/playlist.model.js"; // Убедитесь, что импортировали модель Playlist
+import { Song } from "../models/song.model.js"; // <-- ДОБАВЛЕНО: Импортируем модель Song
 
 export const getLibraryAlbums = async (req, res, next) => {
   try {
@@ -41,22 +42,30 @@ export const getLikedSongs = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const library = await Library.findOne({ userId }).populate({
-      path: "likedSongs.songId",
-      model: "Song",
-    });
+    const library = await Library.findOne({ userId })
+      .populate({
+        path: "likedSongs.songId",
+        model: "Song",
+        populate: {
+          // <-- Заполняем поле 'artist' внутри каждой лайкнутой песни
+          path: "artist",
+          model: "Artist", // Укажите вашу модель Artist
+          select: "name imageUrl", // Выбираем только нужные поля артиста
+        },
+      })
+      .lean(); // <-- Используем .lean() для получения простых JS объектов
 
     if (!library) {
       return res.json({ songs: [] });
     }
 
     const songs = library.likedSongs
-      .filter((item) => item.songId && item.songId._doc)
+      .filter((item) => item.songId) // <-- ИЗМЕНЕНО: Удалено ._doc, так как .lean() возвращает простые объекты
       .sort(
         (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
       )
       .map((item) => ({
-        ...item.songId._doc,
+        ...item.songId, // <-- ИЗМЕНЕНО: Удалено ._doc, так как .lean() возвращает простые объекты
         likedAt: item.addedAt,
       }));
 
@@ -136,20 +145,34 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
       (s) => s.songId?.toString() === songId
     );
 
+    let isLikedStatus;
+    let returnedSong = null; // <-- Для хранения заполненной песни
+
     if (exists) {
       library.likedSongs = library.likedSongs.filter(
         (s) => s.songId?.toString() !== songId
       );
+      isLikedStatus = false;
     } else {
       library.likedSongs.push({
         songId: new mongoose.Types.ObjectId(songId),
         addedAt: new Date(),
       });
+      isLikedStatus = true;
+      // <-- Запрашиваем и заполняем песню, если она только что была лайкнута
+      returnedSong = await Song.findById(songId)
+        .populate({
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
+        })
+        .lean();
     }
 
     await library.save();
 
-    res.json({ success: true, isLiked: !exists });
+    // <-- Возвращаем заполненную песню (если она была добавлена)
+    res.json({ success: true, isLiked: isLikedStatus, song: returnedSong });
   } catch (err) {
     console.error("❌ toggleSongLikeInLibrary error:", err);
     next(err);

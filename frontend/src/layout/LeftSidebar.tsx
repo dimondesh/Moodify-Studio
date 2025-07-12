@@ -1,3 +1,5 @@
+// /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
+
 import {
   Heart,
   HomeIcon,
@@ -18,7 +20,8 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
 import { HeadphonesIcon } from "lucide-react";
 import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
-import { LibraryItem } from "../types";
+import { LibraryItem, AlbumItem, PlaylistItem, Artist } from "../types";
+import { useMusicStore } from "../stores/useMusicStore";
 
 const LeftSidebar = () => {
   const {
@@ -37,18 +40,40 @@ const LeftSidebar = () => {
   } = usePlaylistStore();
 
   const [user, loadingUser, authError] = useAuthState(auth);
-
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
     if (user && !loadingUser) {
       fetchLibrary();
       fetchMyPlaylists();
     }
-  }, [fetchLibrary, fetchMyPlaylists, user, loadingUser]);
+    fetchArtists();
+  }, [fetchLibrary, fetchMyPlaylists, user, loadingUser, fetchArtists]);
+
+  // ИЗМЕНЕНО: Обновлено определение функции getArtistNames, чтобы принимать Artist[]
+  const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
+    if (!artistsData || artistsData.length === 0) return "Unknown Artist";
+
+    const names = artistsData
+      .map((item) => {
+        if (typeof item === "string") {
+          // Если это ID артиста (строка)
+          const artist = artists.find((a) => a._id === item);
+          return artist ? artist.name : null;
+        } else if (item && typeof item === "object" && "name" in item) {
+          // Если это объект Artist
+          return (item as Artist).name; // Приводим тип к Artist, чтобы получить доступ к name
+        }
+        return null;
+      })
+      .filter(Boolean); // Отфильтровываем null-значения
+
+    return names.join(", ") || "Unknown Artist";
+  };
 
   const isLoading = isLoadingLibrary || isLoadingPlaylists || loadingUser;
-
   const combinedError = libraryError || playlistsError || authError;
   const errorMessage = combinedError ? String(combinedError) : null;
 
@@ -56,12 +81,12 @@ const LeftSidebar = () => {
   const libraryItems: LibraryItem[] = [
     ...albums.map((album) => ({
       _id: album._id,
-      type: "album" as const, // This type is hardcoded as 'album', ensure your backend 'album.type' is also reflected here if it varies.
+      type: "album" as const,
       title: album.title,
       imageUrl: album.imageUrl,
-      createdAt: new Date(album.addedAt),
-      artist: album.artist,
-      albumType: album.type, // Add albumType here
+      createdAt: new Date(album.addedAt ?? new Date()),
+      artist: album.artist, // album.artist теперь Artist[], это корректно для AlbumItem
+      albumType: album.type,
     })),
 
     ...myPlaylists.map((playlist) => ({
@@ -69,7 +94,7 @@ const LeftSidebar = () => {
       type: "playlist" as const,
       title: playlist.title,
       imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.updatedAt),
+      createdAt: new Date(playlist.updatedAt ?? new Date()),
       owner: playlist.owner,
     })),
 
@@ -78,7 +103,7 @@ const LeftSidebar = () => {
       type: "playlist" as const,
       title: playlist.title,
       imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.addedAt),
+      createdAt: new Date(playlist.addedAt ?? new Date()),
       owner: playlist.owner,
     })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -185,14 +210,16 @@ const LeftSidebar = () => {
                     ? `/albums/${item._id}`
                     : `/playlists/${item._id}`;
 
-                // Modified subtitle to display albumType
                 const subtitle =
                   item.type === "album"
                     ? `${item.albumType || "Album"} • ${
-                        item.artist || "Unknown Artist"
+                        // ИЗМЕНЕНО: Удален ненужный 'as string[] | undefined'
+                        getArtistNames((item as AlbumItem).artist)
                       }`
                     : item.type === "playlist"
-                    ? `Playlist • ${item.owner?.fullName || "Unknown"}`
+                    ? `Playlist • ${
+                        (item as PlaylistItem).owner?.fullName || "Unknown"
+                      }`
                     : "";
 
                 const fallbackImage =

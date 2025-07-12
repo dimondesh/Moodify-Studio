@@ -2,11 +2,17 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { usePlayerStore } from "../../stores/usePlayerStore";
+import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
 import { Clock, Heart, Pause, Play } from "lucide-react";
 import Equalizer from "../../components/ui/equalizer";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+
+interface Artist {
+  _id: string;
+  name: string;
+}
 
 const formatDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -19,10 +25,31 @@ const LikedSongsPage = () => {
   const { likedSongs, isLoading, error, fetchLikedSongs, toggleSongLike } =
     useLibraryStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
+  const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
     fetchLikedSongs();
-  }, [fetchLikedSongs]);
+    fetchArtists();
+  }, [fetchLikedSongs, fetchArtists]);
+
+  const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
+    if (!artistsInput || artistsInput.length === 0) {
+      return "Unknown Artist";
+    }
+
+    const names = artistsInput
+      .map((artistOrId) => {
+        if (typeof artistOrId === "string") {
+          const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
+          return foundArtist ? foundArtist.name : null;
+        } else {
+          return artistOrId.name;
+        }
+      })
+      .filter(Boolean);
+
+    return names.join(", ") || "Unknown Artist";
+  };
 
   if (isLoading) return <LibraryGridSkeleton />;
 
@@ -205,7 +232,7 @@ const LikedSongsPage = () => {
                                 handleNavigateToAlbum(e, song.albumId)
                               }
                             >
-                              {song.artist}
+                              {getArtistNames(song.artist)}
                             </div>
                           </div>
                         </div>

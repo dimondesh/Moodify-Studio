@@ -1,4 +1,4 @@
-import { Calendar, Music, Trash2 } from "lucide-react";
+import { Calendar, Music, Trash2, Pencil } from "lucide-react";
 import { useEffect } from "react";
 import {
   Table,
@@ -10,13 +10,43 @@ import {
 } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
+import { Artist } from "../../types"; // ИЗМЕНЕНО: Добавлен импорт Artist
 
 const AlbumsTable = () => {
-  const { albums, deleteAlbum, fetchAlbums } = useMusicStore();
+  const { albums, deleteAlbum, fetchAlbums, artists, fetchArtists } =
+    useMusicStore();
 
   useEffect(() => {
     fetchAlbums();
-  }, [fetchAlbums]);
+    fetchArtists();
+  }, [fetchAlbums, fetchArtists]);
+
+  // ИЗМЕНЕНО: Функция getArtistNames теперь принимает Artist[] | string[]
+  const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
+    if (
+      !artistsData ||
+      artistsData.length === 0 ||
+      !artists || // Убедимся, что 'artists' из useMusicStore доступен
+      artists.length === 0
+    )
+      return "N/A";
+
+    const names = artistsData
+      .map((item) => {
+        if (typeof item === "string") {
+          // Если это ID, ищем артиста по ID
+          const artist = artists.find((a) => a._id === item);
+          return artist ? artist.name : null;
+        } else if (item && typeof item === "object" && "name" in item) {
+          // Если это объект Artist, берем имя напрямую
+          return (item as Artist).name;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    return names.join(", ") || "N/A";
+  };
 
   return (
     <Table>
@@ -24,7 +54,7 @@ const AlbumsTable = () => {
         <TableRow className="hover:bg-zinc-800/50 border-zinc-700/50">
           <TableHead className="w-[50px]"></TableHead>
           <TableHead>Title</TableHead>
-          <TableHead>Artist</TableHead>
+          <TableHead>Artists</TableHead>
           <TableHead>Release Year</TableHead>
           <TableHead>Songs</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -40,13 +70,17 @@ const AlbumsTable = () => {
               <img
                 src={album.imageUrl}
                 alt={album.title}
-                className="w-10 h-10 rounded object-cover"
+                className="h-10 w-10 rounded-md object-cover"
               />
             </TableCell>
-            <TableCell className="font-medium">{album.title}</TableCell>
-            <TableCell>{album.artist}</TableCell>
-            <TableCell>
-              <span className="inline-flex items-center gap-1 text-zinc-400">
+            <TableCell className="font-medium text-white">
+              {album.title}
+            </TableCell>
+            <TableCell className="text-zinc-400">
+              {getArtistNames(album.artist)}
+            </TableCell>
+            <TableCell className="text-zinc-400">
+              <span className="inline-flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
                 {album.releaseYear}
               </span>
@@ -59,6 +93,13 @@ const AlbumsTable = () => {
             </TableCell>
             <TableCell className="text-right">
               <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

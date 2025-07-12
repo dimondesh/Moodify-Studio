@@ -1,8 +1,10 @@
-import { useState } from "react";
+// AlbumGrid.tsx
+import { useState } from "react"; // useEffect и useMusicStore больше не нужны здесь
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import type { Album } from "../../types";
+import type { Album, Artist } from "../../types"; // Импортируем Artist
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+// import { useMusicStore } from "../../stores/useMusicStore"; // Больше не нужен
 
 type AlbumGridProps = {
   title: string;
@@ -13,6 +15,30 @@ type AlbumGridProps = {
 const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  // const { artists, fetchArtists } = useMusicStore(); // Больше не нужен
+  // useEffect(() => { // Больше не нужен
+  //   fetchArtists();
+  // }, [fetchArtists]);
+
+  // Вспомогательная функция для получения имен артистов
+  // Теперь она ожидает массив объектов Artist, как определено в Song/Album type
+  const getArtistNames = (artistsInput: Artist[] | undefined) => {
+    if (!artistsInput || artistsInput.length === 0) {
+      return "Unknown Artist";
+    }
+
+    const names = artistsInput
+      .map((artist) => {
+        // Проверяем, что это объект Artist и у него есть свойство name
+        if (typeof artist === "object" && artist !== null && "name" in artist) {
+          return artist.name;
+        }
+        return null; // Если по какой-то причине объект некорректен
+      })
+      .filter(Boolean); // Удаляем все null значения
+
+    return names.join(", ") || "Unknown Artist";
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -54,7 +80,10 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
               </div>
             </div>
             <h3 className="font-medium mb-2 truncate">{album.title}</h3>
-            <p className="text-sm text-zinc-400 truncate">{album.artist}</p>
+            <p className="text-sm text-zinc-400 truncate">
+              {/* Передаем album.artist напрямую, так как ожидается массив объектов Artist */}
+              {getArtistNames(album.artist)}
+            </p>
           </div>
         ))}
       </div>

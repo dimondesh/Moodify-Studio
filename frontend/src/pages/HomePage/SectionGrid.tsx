@@ -3,13 +3,20 @@ import { Button } from "../../components/ui/button";
 import type { Song } from "../../types";
 import PlayButton from "./PlayButton";
 import SectionGridSkeleton from "./SectionGridSkeleton";
+import { useMusicStore } from "../../stores/useMusicStore";
+import { useEffect } from "react";
+
+interface Artist {
+  _id: string;
+  name: string;
+}
 
 type SectionGridProps = {
   title: string;
   songs: Song[] | null | undefined;
   isLoading: boolean;
   apiEndpoint?: string;
-  showAllPath: string;
+  showAllPath?: string;
 };
 
 const SectionGrid = ({
@@ -19,6 +26,30 @@ const SectionGrid = ({
   apiEndpoint,
 }: SectionGridProps) => {
   const navigate = useNavigate();
+  const { artists, fetchArtists } = useMusicStore();
+
+  useEffect(() => {
+    fetchArtists();
+  }, [fetchArtists]);
+
+  const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
+    if (!artistsInput || artistsInput.length === 0) {
+      return "Unknown artist";
+    }
+
+    const names = artistsInput
+      .map((artistOrId) => {
+        if (typeof artistOrId === "string") {
+          const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
+          return foundArtist ? foundArtist.name : null;
+        } else {
+          return artistOrId.name;
+        }
+      })
+      .filter(Boolean);
+
+    return names.join(", ") || "Unknown artist";
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -92,7 +123,7 @@ const SectionGrid = ({
               {song.title || "No title"}
             </h3>
             <p className="text-sm text-zinc-400 truncate">
-              {song.artist || "Unknown artist"}
+              {getArtistNames(song.artist)}
             </p>
           </div>
         ))}

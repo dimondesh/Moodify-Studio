@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"; // Добавлен useEffect
 import { axiosInstance } from "../../lib/axios";
 import {
   Dialog,
@@ -23,25 +23,25 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import { MultiSelect } from "../../components/ui/multi-select"; // Импортируем MultiSelect
 
 interface NewSong {
   title: string;
-  artist: string;
+  artistIds: string[]; // ИЗМЕНЕНО: теперь массив строк для MultiSelect
   album: string;
-
   releaseYear: number;
 }
 
 const AddSongDialog = () => {
-  const { albums } = useMusicStore();
+  const { albums, artists, fetchAlbums, fetchArtists } = useMusicStore(); // Добавлены artists и fetchArtists
   const [songDialogOpen, setSongDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]); // Состояние для выбранных артистов
 
   const [newSong, setNewSong] = useState<NewSong>({
     title: "",
-    artist: "",
+    artistIds: [], // ИЗМЕНЕНО: инициализируем пустым массивом
     album: "",
-
     releaseYear: new Date().getFullYear(),
   });
 
@@ -56,6 +56,14 @@ const AddSongDialog = () => {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // ИЗМЕНЕНО: Загружаем артистов и альбомы при открытии диалога
+  useEffect(() => {
+    if (songDialogOpen) {
+      fetchArtists();
+      fetchAlbums();
+    }
+  }, [songDialogOpen, fetchArtists, fetchAlbums]);
+
   const handleSubmit = async () => {
     setIsLoading(true);
 
@@ -63,11 +71,16 @@ const AddSongDialog = () => {
       if (!files.audio || !files.image) {
         return toast.error("Please upload both audio and image files");
       }
+      if (selectedArtistIds.length === 0) {
+        // Проверка на наличие выбранных артистов
+        return toast.error("Please select at least one artist.");
+      }
 
       const formData = new FormData();
 
       formData.append("title", newSong.title);
-      formData.append("artist", newSong.artist);
+      // ИЗМЕНЕНО: Отправляем artistIds как JSON-строку
+      formData.append("artistIds", JSON.stringify(selectedArtistIds));
 
       if (newSong.album && newSong.album !== "none") {
         formData.append("albumId", newSong.album);
@@ -78,26 +91,30 @@ const AddSongDialog = () => {
       formData.append("imageFile", files.image);
 
       await axiosInstance.post("/admin/songs", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        // УДАЛЕНО: Больше не нужно явно указывать Content-Type для FormData в Axios
+        // headers: {
+        //   "Content-Type": "multipart/form-data",
+        // },
       });
 
       setNewSong({
         title: "",
-        artist: "",
+        artistIds: [], // Сброс состояния
         album: "",
-
         releaseYear: new Date().getFullYear(),
       });
-
+      setSelectedArtistIds([]); // Сброс выбранных артистов
       setFiles({
         audio: null,
         image: null,
       });
+      setSongDialogOpen(false); // Закрываем диалог
       toast.success("Song added successfully");
     } catch (error: any) {
-      toast.error("Failed to add song: " + error.message);
+      toast.error(
+        "Failed to add song: " +
+          (error.response?.data?.message || error.message) // Улучшенное сообщение об ошибке
+      );
     } finally {
       setIsLoading(false);
     }
@@ -201,17 +218,20 @@ const AddSongDialog = () => {
                 setNewSong({ ...newSong, title: e.target.value })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
+              placeholder="Enter song title" // Добавлен placeholder
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Artist</label>
-            <Input
-              value={newSong.artist}
-              onChange={(e) =>
-                setNewSong({ ...newSong, artist: e.target.value })
-              }
-              className="bg-zinc-800 border-zinc-700 text-zinc-400"
+            <label className="text-sm font-medium text-white">Artists</label>
+            <MultiSelect // ИЗМЕНЕНО: Используем MultiSelect
+              defaultValue={selectedArtistIds}
+              onValueChange={setSelectedArtistIds}
+              options={artists.map((artist) => ({
+                label: artist.name,
+                value: artist._id,
+              }))}
+              placeholder="Select artists"
             />
           </div>
 
@@ -231,6 +251,7 @@ const AddSongDialog = () => {
                 })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
+              placeholder="Enter release year" // Добавлен placeholder
             />
           </div>
 
@@ -267,13 +288,33 @@ const AddSongDialog = () => {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => setSongDialogOpen(false)}
+            onClick={() => {
+              setSongDialogOpen(false);
+              // Сброс полей при отмене
+              setNewSong({
+                title: "",
+                artistIds: [],
+                album: "",
+                releaseYear: new Date().getFullYear(),
+              });
+              setSelectedArtistIds([]);
+              setFiles({ audio: null, image: null });
+            }}
             disabled={isLoading}
             className="text-zinc-400"
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              isLoading ||
+              !newSong.title ||
+              selectedArtistIds.length === 0 || // Проверка на выбор артиста
+              !files.audio ||
+              !files.image
+            }
+          >
             {isLoading ? "Uploading..." : "Add Song"}
           </Button>
         </DialogFooter>

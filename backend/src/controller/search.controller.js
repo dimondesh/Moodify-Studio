@@ -1,81 +1,83 @@
 import { Song } from "../models/song.model.js";
 import { Album } from "../models/album.model.js";
-import { Playlist } from "../models/playlist.model.js"; // Импортируем модель Playlist
+import { Playlist } from "../models/playlist.model.js";
+import { Artist } from "../models/artist.model.js";
 
 export const searchSongs = async (req, res, next) => {
   try {
     const { q } = req.query;
 
     if (!q || q.trim() === "") {
-      // Возвращаем пустые массивы для всех типов, если запрос пуст
-      return res.json({ songs: [], albums: [], playlists: [] });
+      return res.json({ songs: [], albums: [], playlists: [], artists: [] });
     }
 
     const regex = new RegExp(q.trim(), "i");
 
-    // Выполняем все запросы параллельно для лучшей производительности
+    const matchingArtists = await Artist.find({ name: regex }).limit(50).lean();
+    const matchingArtistIds = matchingArtists.map((artist) => artist._id);
+
     const [songsRaw, albumsRaw, playlistsRaw] = await Promise.all([
       Song.find({
-        $or: [{ title: regex }, { artist: regex }],
+        $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
       })
+        .populate("artist", "name imageUrl") // <-- ИЗМЕНЕНО: Заполняем артиста полным объектом
+        .populate("albumId", "title imageUrl")
         .limit(50)
         .lean(),
 
       Album.find({
-        $or: [{ title: regex }, { artist: regex }],
+        $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
       })
+        .populate("artist", "name imageUrl") // <-- ИЗМЕНЕНО: Заполняем артиста полным объектом
         .limit(50)
         .lean(),
 
-      // <-- НОВАЯ ЧАСТЬ: ПОИСК ПУБЛИЧНЫХ ПЛЕЙЛИСТОВ
       Playlist.find({
-        isPublic: true, // Ищем только публичные плейлисты
-        $or: [
-          { title: regex },
-          { description: regex },
-          // Если вы хотите искать по владельцу, нужно будет сделать Populate
-          // и добавить owner.fullName, но это усложнит запрос.
-          // Для начала, поиск по названию и описанию плейлиста достаточен.
-        ],
+        isPublic: true,
+        $or: [{ title: regex }, { description: regex }],
       })
-        .populate("owner", "fullName") // Загружаем информацию о владельце (только fullName)
+        .populate("owner", "fullName")
         .limit(50)
         .lean(),
     ]);
 
-    // Форматируем результаты песен
     const songs = songsRaw.map((song) => ({
       ...song,
-      albumId: song.albumId ? song.albumId.toString() : null, // Убедитесь, что albumId корректно обрабатывается
+      // artist теперь уже популирован, поэтому просто используем его
+      // artists: song.artist ? song.artist.map((a) => a.name) : [], // <-- УДАЛЕНО: Больше не преобразуем в массив имен
+      albumId: song.albumId ? song.albumId._id.toString() : null,
+      albumTitle: song.albumId ? song.albumId.title : null,
+      albumImageUrl: song.albumId ? song.albumId.imageUrl : null,
       _id: song._id.toString(),
     }));
 
-    // Форматируем результаты альбомов
     const albums = albumsRaw.map((album) => ({
       ...album,
+      // artist теперь уже популирован, поэтому просто используем его
+      // artist: album.artist ? album.artist.map((a) => a.name) : [], // <-- УДАЛЕНО: Больше не преобразуем в массив имен
       _id: album._id.toString(),
     }));
 
-    // <-- НОВАЯ ЧАСТЬ: ФОРМАТИРУЕМ РЕЗУЛЬТАТЫ ПЛЕЙЛИСТОВ
     const playlists = playlistsRaw.map((playlist) => ({
       ...playlist,
       _id: playlist._id.toString(),
-      // Убедитесь, что owner форматируется корректно, если это объект
       owner: playlist.owner
         ? {
             _id: playlist.owner._id.toString(),
             fullName: playlist.owner.fullName,
           }
         : null,
-      // Песни в плейлисте могут быть большими, возможно, вам не нужны все данные о песнях здесь.
-      // Если вам нужны только _id песен, можно сделать map:
-      songs: playlist.songs ? playlist.songs.map((s) => s.toString()) : [], // Если songs это массив ObjectId
-      // Если songs уже populated, тогда нужно другое форматирование
+      songs: playlist.songs ? playlist.songs.map((s) => s.toString()) : [],
     }));
 
-    // Возвращаем все три типа данных
-    return res.json({ songs, albums, playlists });
+    const artists = matchingArtists.map((artist) => ({
+      ...artist,
+      _id: artist._id.toString(),
+    }));
+
+    return res.json({ songs, albums, playlists, artists });
   } catch (error) {
+    console.error("Search controller error:", error);
     next(error);
   }
 };

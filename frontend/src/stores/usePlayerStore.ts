@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
-import { useChatStore } from "./useChatStore";
-import { useAuthStore } from "./useAuthStore";
+// import { useChatStore } from "./useChatStore"; // Этот импорт больше не нужен здесь для socket.emit
+// import { useAuthStore } from "./useAuthStore"; // Этот импорт больше не нужен здесь для socket.emit
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -74,8 +74,8 @@ export const usePlayerStore = create<PlayerStore>()(
         if (songs.length === 0) return;
 
         const isShuffle = get().isShuffle;
-        const { user: authUser } = useAuthStore.getState();
-        const currentUserId = authUser?.id;
+        // const { user: authUser } = useAuthStore.getState(); // Больше не нужно
+        // const currentUserId = authUser?.id; // Больше не нужно
 
         if (isShuffle) {
           const newShuffleHistory = shuffleQueue(songs.length);
@@ -97,13 +97,13 @@ export const usePlayerStore = create<PlayerStore>()(
           const firstIndex = newShuffleHistory[0];
           const firstSong = songs[firstIndex];
 
-          const socket = useChatStore.getState().socket;
-          if (currentUserId && socket.connected) {
-            socket.emit("update_activity", {
-              userId: currentUserId,
-              activity: `${firstSong.title}   ${firstSong.artist}`,
-            });
-          }
+          // const socket = useChatStore.getState().socket; // Больше не нужно
+          // if (currentUserId && socket.connected) {
+          //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+          //     userId: currentUserId,
+          //     activity: `${firstSong.title}   ${firstSong.artist}`,
+          //   });
+          // }
 
           set({
             queue: songs,
@@ -116,13 +116,13 @@ export const usePlayerStore = create<PlayerStore>()(
         } else {
           const song = songs[startIndex];
 
-          const socket = useChatStore.getState().socket;
-          if (currentUserId && socket.connected) {
-            socket.emit("update_activity", {
-              userId: currentUserId,
-              activity: `${song.title}   ${song.artist}`,
-            });
-          }
+          // const socket = useChatStore.getState().socket; // Больше не нужно
+          // if (currentUserId && socket.connected) {
+          //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+          //     userId: currentUserId,
+          //     activity: `${song.title}   ${song.artist}`,
+          //   });
+          // }
 
           set({
             queue: songs,
@@ -138,16 +138,16 @@ export const usePlayerStore = create<PlayerStore>()(
       setCurrentSong: (song: Song | null) => {
         if (!song) return;
 
-        const { user: authUser } = useAuthStore.getState();
-        const currentUserId = authUser?.id;
+        // const { user: authUser } = useAuthStore.getState(); // Больше не нужно
+        // const currentUserId = authUser?.id; // Больше не нужно
 
-        const socket = useChatStore.getState().socket;
-        if (currentUserId && socket.connected) {
-          socket.emit("update_activity", {
-            userId: currentUserId,
-            activity: `${song.title}   ${song.artist}`,
-          });
-        }
+        // const socket = useChatStore.getState().socket; // Больше не нужно
+        // if (currentUserId && socket.connected) {
+        //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+        //     userId: currentUserId,
+        //     activity: `${song.title}   ${song.artist}`,
+        //   });
+        // }
 
         const songIndex = get().queue.findIndex((s) => s._id === song._id);
 
@@ -161,20 +161,20 @@ export const usePlayerStore = create<PlayerStore>()(
       togglePlay: () => {
         const willStartPlaying = !get().isPlaying;
 
-        const currentSong = get().currentSong;
-        const { user: authUser } = useAuthStore.getState();
-        const currentUserId = authUser?.id;
+        // const currentSong = get().currentSong; // Больше не нужно здесь для socket.emit
+        // const { user: authUser } = useAuthStore.getState(); // Больше не нужно
+        // const currentUserId = authUser?.id; // Больше не нужно
 
-        const socket = useChatStore.getState().socket;
-        if (currentUserId && socket.connected) {
-          socket.emit("update_activity", {
-            userId: currentUserId,
-            activity:
-              willStartPlaying && currentSong
-                ? ` ${currentSong.title}   ${currentSong.artist}`
-                : "Idle",
-          });
-        }
+        // const socket = useChatStore.getState().socket; // Больше не нужно
+        // if (currentUserId && socket.connected) {
+        //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+        //     userId: currentUserId,
+        //     activity:
+        //       willStartPlaying && currentSong
+        //         ? ` ${currentSong.title}   ${currentSong.artist}`
+        //         : "Idle",
+        //   });
+        // }
 
         set({
           isPlaying: willStartPlaying,
@@ -234,8 +234,8 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
-        const { user: authUser } = useAuthStore.getState();
-        const currentUserId = authUser?.id;
+        // const { user: authUser } = useAuthStore.getState(); // Больше не нужно
+        // const currentUserId = authUser?.id; // Больше не нужно
 
         if (repeatMode === "one") {
           set({ repeatMode: "all" });
@@ -247,13 +247,13 @@ export const usePlayerStore = create<PlayerStore>()(
             const nextIndex = shuffleHistory[nextPointer];
 
             const nextSong = queue[nextIndex];
-            const socket = useChatStore.getState().socket;
-            if (currentUserId && socket.connected) {
-              socket.emit("update_activity", {
-                userId: currentUserId,
-                activity: `${nextSong.title}   ${nextSong.artist}`,
-              });
-            }
+            // const socket = useChatStore.getState().socket; // Больше не нужно
+            // if (currentUserId && socket.connected) {
+            //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+            //     userId: currentUserId,
+            //     activity: `${nextSong.title}   ${nextSong.artist}`,
+            //   });
+            // }
 
             set({
               currentSong: nextSong,
@@ -264,25 +264,25 @@ export const usePlayerStore = create<PlayerStore>()(
           } else {
             if (repeatMode === "off") {
               set({ isPlaying: false });
-              const socket = useChatStore.getState().socket;
-              if (currentUserId && socket.connected) {
-                socket.emit("update_activity", {
-                  userId: currentUserId,
-                  activity: "Idle",
-                });
-              }
+              // const socket = useChatStore.getState().socket; // Больше не нужно
+              // if (currentUserId && socket.connected) {
+              //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+              //     userId: currentUserId,
+              //     activity: "Idle",
+              //   });
+              // }
             } else {
               const newShuffleHistory = shuffleQueue(queue.length);
               const firstIndex = newShuffleHistory[0];
               const firstSong = queue[firstIndex];
 
-              const socket = useChatStore.getState().socket;
-              if (currentUserId && socket.connected) {
-                socket.emit("update_activity", {
-                  userId: currentUserId,
-                  activity: `${firstSong.title}   ${firstSong.artist}`,
-                });
-              }
+              // const socket = useChatStore.getState().socket; // Больше не нужно
+              // if (currentUserId && socket.connected) {
+              //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+              //     userId: currentUserId,
+              //     activity: `${firstSong.title}   ${firstSong.artist}`,
+              //   });
+              // }
 
               set({
                 currentSong: firstSong,
@@ -300,26 +300,26 @@ export const usePlayerStore = create<PlayerStore>()(
               nextIndex = 0;
             } else {
               set({ isPlaying: false });
-              const socket = useChatStore.getState().socket;
-              if (currentUserId && socket.connected) {
-                socket.emit("update_activity", {
-                  userId: currentUserId,
-                  activity: "Idle",
-                });
-              }
+              // const socket = useChatStore.getState().socket; // Больше не нужно
+              // if (currentUserId && socket.connected) {
+              //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+              //     userId: currentUserId,
+              //     activity: "Idle",
+              //   });
+              // }
               return;
             }
           }
 
           const nextSong = queue[nextIndex];
 
-          const socket = useChatStore.getState().socket;
-          if (currentUserId && socket.connected) {
-            socket.emit("update_activity", {
-              userId: currentUserId,
-              activity: `${nextSong.title}   ${nextSong.artist}`,
-            });
-          }
+          // const socket = useChatStore.getState().socket; // Больше не нужно
+          // if (currentUserId && socket.connected) {
+          //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+          //     userId: currentUserId,
+          //     activity: `${nextSong.title}   ${nextSong.artist}`,
+          //   });
+          // }
 
           set({
             currentSong: nextSong,
@@ -339,8 +339,8 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
-        const { user: authUser } = useAuthStore.getState();
-        const currentUserId = authUser?.id;
+        // const { user: authUser } = useAuthStore.getState(); // Больше не нужно
+        // const currentUserId = authUser?.id; // Больше не нужно
 
         if (repeatMode === "one") {
           set({ repeatMode: "all" });
@@ -352,13 +352,13 @@ export const usePlayerStore = create<PlayerStore>()(
             const prevIndex = shuffleHistory[prevPointer];
 
             const prevSong = queue[prevIndex];
-            const socket = useChatStore.getState().socket;
-            if (currentUserId && socket.connected) {
-              socket.emit("update_activity", {
-                userId: currentUserId,
-                activity: `${prevSong.title}   ${prevSong.artist}`,
-              });
-            }
+            // const socket = useChatStore.getState().socket; // Больше не нужно
+            // if (currentUserId && socket.connected) {
+            //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+            //     userId: currentUserId,
+            //     activity: `${prevSong.title}   ${prevSong.artist}`,
+            //   });
+            // }
 
             set({
               currentSong: prevSong,
@@ -368,13 +368,13 @@ export const usePlayerStore = create<PlayerStore>()(
             });
           } else {
             set({ isPlaying: false });
-            const socket = useChatStore.getState().socket;
-            if (currentUserId && socket.connected) {
-              socket.emit("update_activity", {
-                userId: currentUserId,
-                activity: "Idle",
-              });
-            }
+            // const socket = useChatStore.getState().socket; // Больше не нужно
+            // if (currentUserId && socket.connected) {
+            //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+            //     userId: currentUserId,
+            //     activity: "Idle",
+            //   });
+            // }
           }
         } else {
           let prevIndex = currentIndex - 1;
@@ -383,26 +383,26 @@ export const usePlayerStore = create<PlayerStore>()(
               prevIndex = queue.length - 1;
             } else {
               set({ isPlaying: false });
-              const socket = useChatStore.getState().socket;
-              if (currentUserId && socket.connected) {
-                socket.emit("update_activity", {
-                  userId: currentUserId,
-                  activity: "Idle",
-                });
-              }
+              // const socket = useChatStore.getState().socket; // Больше не нужно
+              // if (currentUserId && socket.connected) {
+              //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+              //     userId: currentUserId,
+              //     activity: "Idle",
+              //   });
+              // }
               return;
             }
           }
 
           const prevSong = queue[prevIndex];
 
-          const socket = useChatStore.getState().socket;
-          if (currentUserId && socket.connected) {
-            socket.emit("update_activity", {
-              userId: currentUserId,
-              activity: `${prevSong.title}   ${prevSong.artist}`,
-            });
-          }
+          // const socket = useChatStore.getState().socket; // Больше не нужно
+          // if (currentUserId && socket.connected) {
+          //   socket.emit("update_activity", { // ЭТОТ ВЫЗОВ УДАЛЕН
+          //     userId: currentUserId,
+          //     activity: `${prevSong.title}   ${prevSong.artist}`,
+          //   });
+          // }
 
           set({
             currentSong: prevSong,
@@ -437,6 +437,8 @@ export const usePlayerStore = create<PlayerStore>()(
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
+            // АГРЕССИВНО СБРАСЫВАЕМ currentSong, чтобы принудительно загрузить свежие данные
+            persistedState.currentSong = null; // <-- НОВОЕ КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ
             persistedState.isPlaying = false;
             persistedState.isFullScreenPlayerOpen = false;
           }

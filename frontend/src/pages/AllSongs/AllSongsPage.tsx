@@ -1,3 +1,4 @@
+// frontend/src/pages/AllSongsPage.tsx
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PlayButton from "../../pages/HomePage/PlayButton";
@@ -5,6 +6,9 @@ import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"
 import type { Song } from "../../types/index";
 import axios from "axios";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
+import { useMusicStore } from "../../stores/useMusicStore";
+import { getArtistNames } from "../../lib/utils"; // <-- Импорт новой функции
+
 const AllSongsPage = () => {
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,20 +21,25 @@ const AllSongsPage = () => {
   const pageTitle = location.state?.title || "Все песни";
   const apiEndpoint = location.state?.apiEndpoint;
 
+  const { artists, fetchArtists } = useMusicStore();
+
   useEffect(() => {
     if (initialSongs && initialSongs.length > 0) {
       setSongs(initialSongs);
       setIsLoading(false);
-      return;
-    }
-
-    if (apiEndpoint) {
+    } else if (apiEndpoint) {
       const fetchSongs = async () => {
         try {
           const response = await axios.get(apiEndpoint, {
             withCredentials: true,
           });
-          setSongs(response.data.songs || response.data.albums);
+          const fetchedData = response.data.songs || response.data.albums;
+          if (Array.isArray(fetchedData)) {
+            setSongs(fetchedData);
+          } else {
+            console.error("Fetched data is not an array:", fetchedData);
+            setError("Некорректный формат данных.");
+          }
         } catch (err) {
           console.error("Ошибка при загрузке всех песен:", err);
           setError("Не удалось загрузить песни.");
@@ -43,7 +52,10 @@ const AllSongsPage = () => {
       setIsLoading(false);
       setError("Нет доступных данных для отображения.");
     }
-  }, [initialSongs, apiEndpoint]);
+    fetchArtists();
+  }, [initialSongs, apiEndpoint, fetchArtists]);
+
+  // УДАЛИТЕ эту вспомогательную функцию getArtistNames, она теперь импортируется
 
   if (isLoading) return <SectionGridSkeleton />;
   if (error) return <div className="p-4 text-red-500">Ошибка: {error}</div>;
@@ -58,11 +70,7 @@ const AllSongsPage = () => {
 
   return (
     <ScrollArea className="h-[calc(100vh-190px)] w-full rounded-md pr-4">
-      {" "}
-      {/* Задаем высоту и отступы */}
       <div className="p-4 pt-0">
-        {" "}
-        {/* Убираем верхний паддинг, так как ScrollArea уже дает свой */}
         <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {songs.map((song) => (
@@ -74,7 +82,7 @@ const AllSongsPage = () => {
                   const albumIdStr = String(song.albumId);
 
                   if (albumIdStr.length > 0) {
-                    navigate(`/albums/${albumIdStr}`); // Используем navigate вместо window.location.href
+                    navigate(`/albums/${albumIdStr}`);
                     return;
                   }
                 }
@@ -102,13 +110,14 @@ const AllSongsPage = () => {
                 {song.title || "No title"}
               </h3>
               <p className="text-sm text-zinc-400 truncate">
-                {song.artist || "Unknown artist"}
+                {getArtistNames(song.artist, artists)}{" "}
+                {/* <-- Передача artists */}
               </p>
             </div>
           ))}
         </div>
       </div>
-      <ScrollBar orientation="vertical" /> {/* Добавляем ScrollBar */}
+      <ScrollBar orientation="vertical" />
     </ScrollArea>
   );
 };

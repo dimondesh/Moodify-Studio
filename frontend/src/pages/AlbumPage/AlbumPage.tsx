@@ -3,8 +3,6 @@ import { useParams } from "react-router-dom";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
-import { format } from "date-fns";
-
 import {
   CheckCircle2,
   Clock,
@@ -16,11 +14,49 @@ import {
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
+import { format } from "date-fns";
+
+// Импортируем типы из центрального файла типов (убедитесь, что Artist, Song, Album там определены)
+import type { Artist } from "../../types"; // Убедитесь, что Artist тоже импортирован
 
 const formatDuration = (seconds: number) => {
+  if (isNaN(seconds) || seconds < 0) return "0:00"; // Добавлена проверка на NaN и отрицательные значения
   const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+// Вспомогательная функция для безопасного извлечения имен артистов
+// Эта функция обрабатывает Artist | string | (Artist | string)[]
+const getArtistNames = (
+  artistData: Artist | string | (Artist | string)[] | undefined
+): string => {
+  if (!artistData || (Array.isArray(artistData) && artistData.length === 0)) {
+    return "Unknown Artist";
+  }
+
+  // Если это массив артистов (заполненных объектов или ID)
+  if (Array.isArray(artistData)) {
+    return artistData
+      .map((item) => {
+        if (typeof item === "object" && item !== null && "name" in item) {
+          return item.name;
+        }
+        return String(item); // Если это ID (строка) или не объект с именем
+      })
+      .filter(Boolean) // Удаляем пустые строки, если таковые появятся
+      .join(", ");
+  }
+  // Если это одиночный объект артиста (заполненный)
+  if (
+    typeof artistData === "object" &&
+    artistData !== null &&
+    "name" in artistData
+  ) {
+    return artistData.name;
+  }
+  // Если это просто строка (ID или имя)
+  return String(artistData);
 };
 
 const AlbumPage = () => {
@@ -108,7 +144,8 @@ const AlbumPage = () => {
                 </h1>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100">
                   <span className="font-medium text-white">
-                    {currentAlbum.artist}
+                    {/* ИЗМЕНЕНО: Использование getArtistNames для альбома */}
+                    {getArtistNames(currentAlbum.artist)}
                   </span>
                   <span>
                     • {currentAlbum.songs.length}{" "}
@@ -226,14 +263,15 @@ const AlbumPage = () => {
                             >
                               {song.title}
                             </div>
-                            <div className="text-zinc-400">{song.artist}</div>
+                            {/* ИЗМЕНЕНО: Использование getArtistNames для песни */}
+                            <div className="text-zinc-400">
+                              {getArtistNames(song.artist)}
+                            </div>
                           </div>
                         </div>
-                        <div className="items-center hidden md:flex justify-baseline">
-                          {" "}
-                          {/* Скрываем на мобильных */}
+                        <div className="items-center hidden md:flex justify-baseline text-xs">
                           {song.createdAt
-                            ? format(new Date(song.createdAt), "MMM dd, yyyy") // Keep full date format for clarity, but hidden on mobile
+                            ? format(new Date(song.createdAt), "MMM dd, yyyy")
                             : "N/A"}
                         </div>
                         <div className="flex items-center">

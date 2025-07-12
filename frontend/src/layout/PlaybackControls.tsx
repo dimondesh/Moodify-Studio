@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
+
 import {
   Heart,
   Laptop2,
@@ -28,6 +29,10 @@ import {
   DialogPortal,
   DialogTitle,
 } from "../components/ui/dialog";
+import { useChatStore } from "../stores/useChatStore";
+
+// Импортируем тип Artist, чтобы getArtistNames могла работать корректно.
+import { getArtistNames } from "@/lib/utils";
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -169,16 +174,25 @@ const PlaybackControls = () => {
     playAlbum,
   ]);
 
+  // Добавлен отдельный useEffect для управления воспроизведением и паузой
+  // и для отправки активности
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) {
-      if (isPlaying) {
-        audio.play().catch((e) => console.warn("Error playing audio:", e));
-      } else {
-        audio.pause();
-      }
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play().catch((e) => console.warn("Error playing audio:", e));
+    } else {
+      audio.pause();
     }
-  }, [isPlaying]);
+
+    // Эмиттируем активность через Socket.IO при изменении currentSong или isPlaying
+    const socket = useChatStore.getState().socket;
+    if (socket) {
+      const songIdToSend = currentSong && isPlaying ? currentSong._id : null;
+      socket.emit("update_activity", { songId: songIdToSend });
+    }
+  }, [isPlaying, currentSong]);
 
   const [previousVolume, setPreviousVolume] = useState(75);
 
@@ -245,7 +259,8 @@ const PlaybackControls = () => {
                   {currentSong.title}
                 </div>
                 <div className="text-xs text-zinc-400 truncate">
-                  {currentSong.artist}
+                  {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
+                  {getArtistNames(currentSong.artist)}
                 </div>
               </div>
             </div>
@@ -301,7 +316,7 @@ const PlaybackControls = () => {
             >
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
-                {currentSong?.artist || "Unknown Artist"}
+                {getArtistNames(currentSong?.artist) || "Unknown Artist"}
               </DialogTitle>
 
               <div className="flex justify-between items-center w-full mb-4">
@@ -345,7 +360,8 @@ const PlaybackControls = () => {
                     {currentSong?.title || "No song playing"}
                   </h2>
                   <p className="text-zinc-400 text-base">
-                    {currentSong?.artist || "Unknown Artist"}
+                    {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
+                    {getArtistNames(currentSong.artist)}
                   </p>
                 </div>
                 {currentSong && (
@@ -508,31 +524,30 @@ const PlaybackControls = () => {
                 alt={currentSong.title}
                 className="w-14 h-14 object-cover rounded-md"
               />
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="flex flex-col">
-                  <div className="font-medium truncate hover:underline cursor-pointer">
-                    {currentSong.title}
-                  </div>
-                  <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
-                    {currentSong.artist}
-                  </div>
+              <div className="flex flex-col">
+                <div className="font-medium truncate hover:underline cursor-pointer">
+                  {currentSong.title}
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={`hover:text-white ${
-                    isSongLiked(currentSong._id)
-                      ? "text-violet-500"
-                      : "text-zinc-400"
-                  }`}
-                  onClick={handleToggleLike}
-                  title={
-                    isSongLiked(currentSong._id) ? "Unlike song" : "Like song"
-                  }
-                >
-                  <Heart className="h-4 w-4 fill-current" />
-                </Button>
+                <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
+                  {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
+                  {getArtistNames(currentSong.artist)}
+                </div>
               </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={`hover:text-white ${
+                  isSongLiked(currentSong._id)
+                    ? "text-violet-500"
+                    : "text-zinc-400"
+                }`}
+                onClick={handleToggleLike}
+                title={
+                  isSongLiked(currentSong._id) ? "Unlike song" : "Like song"
+                }
+              >
+                <Heart className="h-4 w-4 fill-current" />
+              </Button>
             </>
           )}
         </div>

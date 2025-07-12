@@ -1,5 +1,8 @@
+// /home/dmytro/VS_Projects/Moodify/frontend/src/pages/AdminPage/AddAlbumDialog.tsx
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../../lib/axios";
 import {
@@ -20,20 +23,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { useMusicStore } from "../../stores/useMusicStore";
+import { MultiSelect } from "../../components/ui/multi-select";
 
 const AddAlbumDialog = () => {
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { artists, fetchArtists, fetchAlbums } = useMusicStore();
+  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
+
   const [newAlbum, setNewAlbum] = useState({
     title: "",
-    artist: "",
     releaseYear: new Date().getFullYear(),
     type: "Album",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (albumDialogOpen) {
+      fetchArtists();
+    }
+  }, [albumDialogOpen, fetchArtists]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,34 +60,42 @@ const AddAlbumDialog = () => {
 
     try {
       if (!imageFile) {
-        return toast.error("Please upload an image");
+        return toast.error("Please upload an image for the album.");
+      }
+      if (selectedArtistIds.length === 0) {
+        return toast.error("Please select at least one artist.");
       }
 
       const formData = new FormData();
       formData.append("title", newAlbum.title);
-      formData.append("artist", newAlbum.artist);
+      // ИЗМЕНЕНО: Отправляем artistIds как JSON-строку
+      formData.append("artistIds", JSON.stringify(selectedArtistIds));
       formData.append("releaseYear", newAlbum.releaseYear.toString());
       formData.append("type", newAlbum.type);
-
       formData.append("imageFile", imageFile);
 
       await axiosInstance.post("/admin/albums", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        // УДАЛЕНО: Больше не нужно явно указывать Content-Type для FormData в Axios
+        // headers: {
+        //   "Content-Type": "multipart/form-data",
+        // },
       });
 
       setNewAlbum({
         title: "",
-        artist: "",
         releaseYear: new Date().getFullYear(),
         type: "Album",
       });
+      setSelectedArtistIds([]);
       setImageFile(null);
       setAlbumDialogOpen(false);
-      toast.success("Album created successfully");
+      toast.success("Album created successfully!");
+      fetchAlbums();
     } catch (error: any) {
-      toast.error("Failed to create album: " + error.message);
+      toast.error(
+        "Failed to create album: " +
+          (error.response?.data?.message || error.message)
+      );
     } finally {
       setIsLoading(false);
     }
@@ -131,14 +152,16 @@ const AddAlbumDialog = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Artist</label>
-            <Input
-              value={newAlbum.artist}
-              onChange={(e) =>
-                setNewAlbum({ ...newAlbum, artist: e.target.value })
-              }
-              className="bg-zinc-800 border-zinc-700"
-              placeholder="Enter artist name"
+            <label className="text-sm font-medium">Artists</label>
+            <MultiSelect
+              // Исправлено: используем defaultValue и onValueChange
+              defaultValue={selectedArtistIds}
+              onValueChange={setSelectedArtistIds}
+              options={artists.map((artist) => ({
+                label: artist.name,
+                value: artist._id,
+              }))}
+              placeholder="Select artists"
             />
           </div>
           <div className="space-y-2">
@@ -172,6 +195,7 @@ const AddAlbumDialog = () => {
               <SelectContent className="bg-zinc-800 border-zinc-700">
                 <SelectItem value="Album">Album</SelectItem>
                 <SelectItem value="EP">EP</SelectItem>
+                <SelectItem value="Single">Single</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -189,7 +213,10 @@ const AddAlbumDialog = () => {
             onClick={handleSubmit}
             className="bg-violet-500 hover:bg-violet-600 text-zinc-200"
             disabled={
-              isLoading || !imageFile || !newAlbum.title || !newAlbum.artist
+              isLoading ||
+              !imageFile ||
+              !newAlbum.title ||
+              selectedArtistIds.length === 0
             }
           >
             {isLoading ? "Creating..." : "Add Album"}

@@ -1,19 +1,21 @@
-// frontend/src/pages/LibraryPage/LibraryPage.tsx
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
-// Named imports for stores
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
+import { useMusicStore } from "../../stores/useMusicStore";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
-// Import LibraryItem, Song, Album, Playlist, User from your central types file
 import { LibraryItem } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
 import { Plus } from "lucide-react";
+
+interface Artist {
+  _id: string;
+  name: string;
+}
 
 const LibraryPage = () => {
   const {
@@ -31,24 +33,42 @@ const LibraryPage = () => {
     error: playlistsError,
     fetchMyPlaylists,
   } = usePlaylistStore();
+  const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
     fetchLibrary();
     fetchLikedSongs();
     fetchMyPlaylists();
-  }, [fetchLibrary, fetchLikedSongs, fetchMyPlaylists]);
+    fetchArtists();
+  }, [fetchLibrary, fetchLikedSongs, fetchMyPlaylists, fetchArtists]);
 
   const isLoading = isLoadingLibrary || isLoadingPlaylists;
 
-  // Assume errors from stores are string | null.
-  // Combine errors; if both are null, result is null. If one is a string, it will be the result.
   const combinedError: string | null =
     (libraryError as string | null) || (playlistsError as string | null);
 
-  // Directly use combinedError as the errorMessage, as it's already a string or null
   const errorMessage = combinedError;
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
+    if (!artistsInput || artistsInput.length === 0) {
+      return "Unknown Artist";
+    }
+
+    const names = artistsInput
+      .map((artistOrId) => {
+        if (typeof artistOrId === "string") {
+          const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
+          return foundArtist ? foundArtist.name : null;
+        } else {
+          return artistOrId.name;
+        }
+      })
+      .filter(Boolean);
+
+    return names.join(", ") || "Unknown Artist";
+  };
 
   if (isLoading) return <LibraryGridSkeleton />;
 
@@ -69,20 +89,20 @@ const LibraryPage = () => {
       type: "liked-songs",
       title: "Liked Songs",
       imageUrl: "/liked.png",
-      createdAt: new Date(0), // Placeholder date, can be adjusted if real "liked songs" date is available
+      createdAt: new Date(0),
       songsCount: likedSongs.length,
-    } as LibraryItem, // Use LibraryItem directly here, it will discriminate based on 'type'
+    } as LibraryItem,
     ...albums.map(
       (album) =>
         ({
           _id: album._id,
           title: album.title,
           imageUrl: album.imageUrl,
-          createdAt: new Date(album.addedAt),
+          createdAt: new Date(album.addedAt || 0), // Исправлено: добавлено || 0
           type: "album",
           artist: album.artist,
         } as LibraryItem)
-    ), // Use LibraryItem directly here
+    ),
     ...myPlaylists.map(
       (playlist) =>
         ({
@@ -93,7 +113,7 @@ const LibraryPage = () => {
           type: "playlist",
           owner: playlist.owner,
         } as LibraryItem)
-    ), // Use LibraryItem directly here
+    ),
     ...playlists.map(
       (playlist) =>
         ({
@@ -153,10 +173,9 @@ const LibraryPage = () => {
                     coverImageUrl = item.imageUrl;
                   } else if (item.type === "album") {
                     linkPath = `/albums/${item._id}`;
-                    subtitle = `Album • ${item.artist}`;
+                    subtitle = `Album • ${getArtistNames(item.artist)}`;
                     coverImageUrl = item.imageUrl || "/default-album-cover.png";
                   } else {
-                    // item.type === "playlist"
                     linkPath = `/playlists/${item._id}`;
                     subtitle = `Playlist • ${
                       item.owner?.fullName || "Unknown"

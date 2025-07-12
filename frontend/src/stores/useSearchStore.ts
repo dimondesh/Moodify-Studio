@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { Playlist, Song, Album } from "../types"; // Импортируем Playlist
+import { Playlist, Song, Album, Artist } from "../types"; // Импортируем Artist
 
-// Обновленный интерфейс SearchState для включения playlists
+// Обновленный интерфейс SearchState для включения artists
 interface SearchState {
   query: string;
   songs: Song[];
   albums: Album[];
-  playlists: Playlist[]; // Добавляем плейлисты
+  playlists: Playlist[];
+  artists: Artist[]; // Добавляем артистов
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;
@@ -19,7 +20,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   query: "",
   songs: [],
   albums: [],
-  playlists: [], // Инициализируем пустое поле для плейлистов
+  playlists: [],
+  artists: [], // Инициализируем пустое поле для артистов
   loading: false,
   error: null,
 
@@ -31,22 +33,23 @@ export const useSearchStore = create<SearchState>((set) => ({
         songs: [],
         albums: [],
         playlists: [],
+        artists: [], // Очищаем и артистов
         loading: false,
         error: null,
         query: "",
-      }); // Очищаем и плейлисты
+      });
       return;
     }
 
     set({ loading: true, error: null, query: q });
 
     try {
-      // Предполагаем, что ваш бэкенд будет возвращать плейлисты по маршруту /search
       const res = await axiosInstance.get("/search", { params: { q } });
       set({
         songs: res.data.songs || [],
         albums: res.data.albums || [],
-        playlists: res.data.playlists || [], // Обновляем состояние плейлистов
+        playlists: res.data.playlists || [],
+        artists: res.data.artists || [], // Обновляем состояние артистов
         loading: false,
       });
     } catch (e: any) {

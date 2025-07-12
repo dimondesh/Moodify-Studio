@@ -21,7 +21,7 @@ import {
   Unlock,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
-import { Song, Playlist } from "../../types";
+import { Song, Playlist, Artist } from "../../types"; // Импортируем Artist
 import { useAuthStore } from "../../stores/useAuthStore";
 import {
   Dialog,
@@ -52,13 +52,31 @@ import {
 } from "../../components/ui/dropdown-menu";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
-import Equalizer from "../../components/ui/equalizer"; // Ensure this path is correct
+import Equalizer from "../../components/ui/equalizer";
 
 // Helper function for duration formatting
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+// Вспомогательная функция для получения имен артистов из массива объектов Artist
+const getArtistNames = (artistsInput: Artist[] | undefined) => {
+  if (!artistsInput || artistsInput.length === 0) {
+    return "Unknown Artist";
+  }
+
+  const names = artistsInput
+    .map((artist) => {
+      if (typeof artist === "object" && artist !== null && "name" in artist) {
+        return artist.name;
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  return names.join(", ") || "Unknown Artist";
 };
 
 const PlaylistDetailsPage = () => {
@@ -136,10 +154,9 @@ const PlaylistDetailsPage = () => {
     if (
       isPlaying &&
       currentSong &&
-      // Check if the current song belongs to this playlist's queue
       queue.length > 0 &&
       currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
-      queue[0]?._id === currentPlaylist.songs[0]?._id // Check if this playlist is the current queue
+      queue[0]?._id === currentPlaylist.songs[0]?._id
     ) {
       togglePlay();
     } else {
@@ -276,7 +293,7 @@ const PlaylistDetailsPage = () => {
   const remainingSeconds = totalDurationSeconds % 60;
   const formattedDuration = `${totalMinutes}:${remainingSeconds
     .toString()
-    .padStart(2, "0")}`; // Format as M:SS
+    .padStart(2, "0")}`;
 
   const isCurrentPlaylistPlaying =
     isPlaying &&
@@ -284,7 +301,7 @@ const PlaylistDetailsPage = () => {
     queue.length > 0 &&
     currentSong &&
     currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
-    queue[0]?._id === currentPlaylist.songs[0]?._id; // Check if this playlist is the current queue
+    queue[0]?._id === currentPlaylist.songs[0]?._id;
 
   return (
     <div className="h-full">
@@ -296,7 +313,6 @@ const PlaylistDetailsPage = () => {
             aria-hidden="true"
           />
           <div className="relative z-10">
-            {/* Header section with cover and details - Adjusted to match AlbumPage */}
             <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
               <img
                 src={currentPlaylist.imageUrl || "/default_playlist_cover.png"}
@@ -304,11 +320,7 @@ const PlaylistDetailsPage = () => {
                 className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
               />
               <div className="flex flex-col justify-end flex-grow">
-                <p className="text-xs sm:text-sm font-medium">
-                  {" "}
-                  {/* Added uppercase */}
-                  Playlist
-                </p>
+                <p className="text-xs sm:text-sm font-medium">Playlist</p>
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
                   {currentPlaylist.title}
                 </h1>
@@ -359,12 +371,11 @@ const PlaylistDetailsPage = () => {
               </div>
             </div>
 
-            {/* Action buttons - Adjusted to match AlbumPage */}
             <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-6">
               {currentPlaylist.songs.length > 0 && (
                 <Button
                   size="icon"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105" // Violet color
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105"
                   onClick={handlePlayPlaylist}
                   title={isCurrentPlaylistPlaying ? "Pause" : "Play"}
                 >
@@ -469,9 +480,7 @@ const PlaylistDetailsPage = () => {
               )}
             </div>
 
-            {/* Table Section - Adjusted to match AlbumPage */}
             <div className="bg-black/20 backdrop-blur-sm">
-              {/* Table Header */}
               <div
                 className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
@@ -487,7 +496,6 @@ const PlaylistDetailsPage = () => {
                 <div className="hidden md:block"></div>
               </div>
 
-              {/* Songs List - Adjusted to match AlbumPage */}
               <div className="px-4 sm:px-6">
                 <div className="space-y-2 py-4">
                   {currentPlaylist.songs.map((song, index) => {
@@ -509,7 +517,6 @@ const PlaylistDetailsPage = () => {
                       text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
                       ${isCurrentSong ? "bg-white/10" : ""}`}
                       >
-                        {/* Number / Playback Indicator */}
                         <div className="flex items-center justify-center">
                           {isCurrentSong && isPlaying ? (
                             <div className="z-10">
@@ -526,7 +533,6 @@ const PlaylistDetailsPage = () => {
                           )}
                         </div>
 
-                        {/* Title and Artist */}
                         <div className="flex items-center gap-3">
                           <img
                             src={song.imageUrl || "/default-song-cover.png"}
@@ -541,35 +547,31 @@ const PlaylistDetailsPage = () => {
                           <div className="flex flex-col overflow-hidden">
                             <div
                               className={`font-medium truncate ${
-                                isCurrentSong ? "text-violet-400" : "text-white" // Violet color
+                                isCurrentSong ? "text-violet-400" : "text-white"
                               }`}
                             >
                               {song.title}
                             </div>
                             <div className="text-zinc-400 text-xs sm:text-sm truncate">
-                              {song.artist}
+                              {getArtistNames(song.artist)} {/* <-- ИЗМЕНЕНО */}
                             </div>
                           </div>
                         </div>
-                        {/* Date Added (hidden on small screens) */}
                         <div className="items-center hidden md:flex justify-baseline text-xs">
                           {song.createdAt
-                            ? format(new Date(song.createdAt), "MMM dd, yyyy") // Keep full date format for clarity, but hidden on mobile
+                            ? format(new Date(song.createdAt), "MMM dd, yyyy")
                             : "N/A"}
                         </div>
-                        {/* Duration */}
                         <div className="flex items-center text-xs sm:text-sm flex-shrink-0">
                           {formatDuration(song.duration)}
                         </div>
-                        {/* Like and Delete Buttons */}
                         <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
-                          {/* Like Button */}
                           <Button
                             size="icon"
                             variant="ghost"
                             className={`rounded-full size-6 sm:size-7 ${
                               songIsLiked
-                                ? "text-violet-500 hover:text-violet-400" // Violet color
+                                ? "text-violet-500 hover:text-violet-400"
                                 : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                             }`}
                             onClick={(e) => {
@@ -580,11 +582,10 @@ const PlaylistDetailsPage = () => {
                           >
                             <Heart
                               className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                                songIsLiked ? "fill-violet-500" : "" // Violet fill
+                                songIsLiked ? "fill-violet-500" : ""
                               }`}
                             />
                           </Button>
-                          {/* Delete Button (only for playlist owner) */}
                           {isOwner && (
                             <Button
                               variant="ghost"
@@ -610,7 +611,6 @@ const PlaylistDetailsPage = () => {
         </div>
       </ScrollArea>
 
-      {/* Edit Playlist Dialog */}
       {currentPlaylist && (
         <EditPlaylistDialog
           isOpen={isEditDialogOpen}
@@ -620,7 +620,6 @@ const PlaylistDetailsPage = () => {
         />
       )}
 
-      {/* Add Song Dialog */}
       <Dialog open={isAddSongDialogOpen} onOpenChange={setIsAddSongDialogOpen}>
         <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900 text-white border-zinc-700">
           <DialogHeader>
@@ -655,7 +654,7 @@ const PlaylistDetailsPage = () => {
                           {song.title}
                         </span>
                         <span className="text-sm text-zinc-400 truncate">
-                          {song.artist}
+                          {getArtistNames(song.artist)} {/* <-- ИЗМЕНЕНО */}
                         </span>
                       </div>
                       <Button
@@ -679,7 +678,6 @@ const PlaylistDetailsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Song Confirmation Dialog */}
       <AlertDialog
         open={!!songToDeleteId}
         onOpenChange={(open) => {

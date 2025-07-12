@@ -4,9 +4,45 @@ import { useEffect } from "react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { useAuthStore } from "../stores/useAuthStore";
+
+// Импортируем тип Artist, чтобы getArtistNames могла работать корректно.
+// Убедитесь, что ваш файл 'types' находится по этому пути или укажите верный.
+import type { Artist } from "../types/index";
+
+// Вспомогательная функция для безопасного извлечения имен артистов
+// Скопирована из PlaybackControls.tsx для единообразия и обработки разных форматов.
+// В FriendsActivity.tsx она будет использоваться для artistDisplayData,
+// которая теперь должна быть строкой (именем или ID)
+const getArtistNames = (
+  artistData: (Artist | string) | (Artist | string)[] | undefined
+): string => {
+  if (!artistData) {
+    return "Unknown Artist";
+  }
+
+  // Преобразуем один элемент в массив, чтобы всегда работать с массивом
+  const artistsArray = Array.isArray(artistData) ? artistData : [artistData];
+
+  if (artistsArray.length === 0) {
+    return "Unknown Artist";
+  }
+
+  return artistsArray
+    .map((item) => {
+      // Проверяем, является ли элемент объектом и имеет ли свойство 'name'
+      if (typeof item === "object" && item !== null && "name" in item) {
+        return item.name;
+      }
+      // Если это строка (ID) или объект без 'name', возвращаем строковое представление
+      return String(item);
+    })
+    .join(", ");
+};
+
 const FriendsActivity = () => {
   const { users, fetchUsers, onlineUsers, userActivities } = useChatStore();
   const { user: authUser, isLoading: loadingAuthUser } = useAuthStore();
+
   useEffect(() => {
     if (authUser && authUser.id && !loadingAuthUser) {
       fetchUsers();
@@ -62,11 +98,12 @@ const FriendsActivity = () => {
               const isPlaying = activity && activity !== "Idle";
 
               let songTitle = "";
-              let artistName = "";
+              let artistName = ""; // Теперь artistName будет строкой (именем или ID)
+
               if (isPlaying) {
                 const parts = activity.split("   ");
                 songTitle = parts[0] || "";
-                artistName = parts[1] || "";
+                artistName = parts[1] || ""; // Получаем строку, которая должна быть именем артиста
               }
 
               return (
@@ -114,7 +151,14 @@ const FriendsActivity = () => {
                             {songTitle}
                           </div>
                           <div className="text-xs text-zinc-400 truncate">
-                            {artistName}
+                            {/* Здесь artistName уже должен быть строкой с именем артиста,
+                                 потому что бэкенд его правильно сформировал.
+                                 getArtistNames здесь не нужна, так как мы не работаем с объектами Artist.
+                                 Но если вы хотите использовать её для единообразия и дополнительной защиты,
+                                 то она должна быть адаптирована для приема просто строки.
+                                 Я оставлю ее, но она будет просто возвращать переданную строку.
+                            */}
+                            {getArtistNames(artistName)}
                           </div>
                         </div>
                       ) : (

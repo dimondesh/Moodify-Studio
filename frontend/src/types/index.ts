@@ -1,9 +1,23 @@
 // frontend/src/types/index.ts
 
+export interface Artist {
+  _id: string;
+  name: string;
+  bio?: string; // Опционально
+  imageUrl: string;
+  songs: Song[]; // ИЗМЕНЕНО: Теперь массив объектов Song, так как бэкенд их populate'ит
+  albums: Album[]; // ИЗМЕНЕНО: Теперь массив объектов Album, так как бэкенд их populate'ит
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Song {
   _id: string;
   title: string;
-  artist: string;
+  // ИЗМЕНЕНО: теперь массив объектов Artist (для удобства отображения)
+  // или массив строк (для передачи ID на бэкенд)
+  artist: Artist[]; // <-- Убедитесь, что это Artist[]
   albumId: string | null;
   imageUrl: string;
   audioUrl: string;
@@ -11,22 +25,22 @@ export interface Song {
   createdAt: string;
   updatedAt: string;
   albumTitle?: string;
-  // 💡 Добавим опциональное поле likedAt, так как оно будет только у лайкнутых песен
   likedAt?: string;
 }
 
 export interface Album {
   _id: string;
   title: string;
-  artist: string;
+  // ИЗМЕНЕНО: теперь массив объектов Artist (для удобства отображения)
+  // или массив строк (для передачи ID на бэкенд)
+  artist: Artist[]; // <-- Убедитесь, что это Artist[]
   imageUrl: string;
   releaseYear: number;
   songs: Song[];
   type: string;
   createdAt: string;
   updatedAt: string;
-  // 💡 Добавим опциональное поле addedAt для альбомов в библиотеке
-  addedAt: string;
+  addedAt?: string; // Сделаем опциональным, так как не всегда будет
 }
 
 export interface Stats {
@@ -50,8 +64,8 @@ export interface User {
   firebaseUid: string;
   fullName: string;
   imageUrl: string;
-  email: string; // Добавить email, если используется в AuthStore или отображается
-  isAdmin?: boolean; // Добавить опциональное поле isAdmin
+  email: string;
+  isAdmin?: boolean;
   playlists?: Playlist[];
 }
 
@@ -59,19 +73,17 @@ export interface SearchState {
   query: string;
   songs: Song[];
   albums: Album[];
-  playlists: Playlist[]; // <-- ЭТО ВАЖНО: должно быть здесь
-
+  playlists: Playlist[];
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;
   search: (q: string) => Promise<void>;
 }
 
-// 💡 ОБНОВЛЕННЫЙ ИНТЕРФЕЙС UserLibrary для соответствия бэкенду
 export interface UserLibrary {
   userId: string;
-  likedSongs: Song[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Song (включая likedAt)
-  albums: Album[]; // 💡 ИСПРАВЛЕНО: Теперь массив полных объектов Album (включая addedAt)
+  likedSongs: Song[];
+  albums: Album[];
 }
 
 export interface Playlist {
@@ -79,11 +91,11 @@ export interface Playlist {
   title: string;
   description?: string;
   isPublic: boolean;
-  owner: User; // Ссылка на владельца плейлиста
-  songs: Song[]; // Массив песен в плейлисте
+  owner: User;
+  songs: Song[];
   type: "playlist";
-  imageUrl?: string; // Обложка плейлиста
-  likes: number; // Массив ID пользователей, которые лайкнули плейлист
+  imageUrl?: string;
+  likes: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,31 +104,27 @@ export interface BaseLibraryItem {
   _id: string;
   title: string;
   imageUrl?: string | null;
-  createdAt: Date; // Используем Date здесь, так как мы преобразуем при создании
+  createdAt: Date;
 }
 
-// Конкретный тип для "Liked Songs"
 export interface LikedSongsItem extends BaseLibraryItem {
   type: "liked-songs";
   songsCount: number;
 }
 
-// Конкретный тип для альбомов
 export interface AlbumItem extends BaseLibraryItem {
   type: "album";
-  artist: string;
-  albumType?: string; // ADDED: To store the specific type like "EP", "Single", etc.
+  // ИЗМЕНЕНО: теперь массив объектов Artist, чтобы соответствовать Song и Album
+  artist: Artist[];
+  albumType?: string;
 }
-
-// Конкретный тип для плейлистов
 export interface PlaylistItem extends BaseLibraryItem {
   type: "playlist";
-  owner: User; // Важно, чтобы здесь был тип User
+  owner: User;
 }
 
-// Объединяющий тип для всех элементов библиотеки
 export type LibraryItem = LikedSongsItem | AlbumItem | PlaylistItem;
 
 export interface LibraryPlaylist extends Playlist {
-  addedAt: string; // Дата, когда юзер добавил чужой плейлист в свою библиотеку
+  addedAt: string;
 }

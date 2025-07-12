@@ -1,8 +1,9 @@
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
+import { Song } from "../models/song.model.js";
+import { Artist } from "../models/artist.model.js";
 import { firebaseAdmin } from "./firebase.js";
-
 
 export const initializeSocket = (server) => {
   const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
@@ -17,6 +18,7 @@ export const initializeSocket = (server) => {
 
   const userSockets = new Map();
   const userActivities = new Map();
+
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
 
@@ -72,18 +74,84 @@ export const initializeSocket = (server) => {
     }
 
     userSockets.set(userId, socket.id);
-    userActivities.set(userId, "Idle");
+    userActivities.set(userId, "Idle"); // Изначально пользователь неактивен
 
     io.emit("user_connected", userId);
 
-    socket.emit("users_online", Array.from(userSockets.keys()));
-    socket.emit("activities", Array.from(userActivities.entries()));
+    io.emit("users_online", Array.from(userSockets.keys()));
+    // При новом подключении отправляем все текущие активности
+    io.emit("activities", Array.from(userActivities.entries()));
 
     console.log(`User ${userId} (MongoDB _id) connected via Socket.IO`);
 
-    socket.on("update_activity", ({ activity }) => {
-      userActivities.set(userId, activity);
-      io.emit("activity_updated", { userId, activity });
+    // ОБНОВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ АКТИВНОСТИ
+    socket.on("update_activity", async ({ songId }) => {
+      console.log(
+        `[Socket] Received update_activity for userId: ${userId}, songId: ${songId}`
+      );
+      let activityString = "Idle"; // По умолчанию "Idle"
+
+      if (songId) {
+        try {
+          // Находим песню и заполняем информацию об артисте
+          // Убедитесь, что 'artist' в вашей модели Song ссылается на модель Artist
+          const song = await Song.findById(songId).populate({
+            path: "artist", // Имя поля в вашей модели Song, которое хранит ссылки на Artist(ов)
+            model: "Artist", // Имя вашей модели Artist (например, 'Artist', 'artists' и т.д.)
+            select: "name", // Выбираем только имя, чтобы избежать больших объектов
+          });
+
+          console.log(
+            `[Socket] Song found: ${song ? song.title : "None"}, Artist data:`,
+            song ? song.artist : "None"
+          );
+
+          if (song && song.artist) {
+            let artistNames;
+            // Проверяем, является ли song.artist массивом (для нескольких артистов)
+            if (Array.isArray(song.artist)) {
+              artistNames = song.artist.map((a) => a.name).join(", ");
+            } else if (
+              song.artist &&
+              typeof song.artist === "object" &&
+              "name" in song.artist
+            ) {
+              // Если это одиночный объект артиста
+              artistNames = song.artist.name;
+            } else {
+              // Если это не объект с именем (например, просто ID, хотя populate должен был его заполнить)
+              // В таком случае, это скорее всего означает, что populate не сработал или данные некорректны
+              console.warn(
+                `[Socket] Unexpected artist format for song ${song.title}:`,
+                song.artist
+              );
+              artistNames = "Unknown Artist";
+            }
+            activityString = `${song.title}   ${artistNames}`;
+            console.log(`[Socket] Formatted activity: ${activityString}`);
+          } else if (song) {
+            activityString = `${song.title}   Unknown Artist`; // Если артист не найден, но песня есть
+            console.log(
+              `[Socket] Formatted activity (no artist): ${activityString}`
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Ошибка при получении данных песни для активности:",
+            error
+          );
+          activityString = "Unknown Activity (Error)"; // Обработка ошибок БД
+        }
+      } else {
+        // Если songId не пришел (пользователь поставил на паузу, перестал слушать и т.д.)
+        activityString = "Idle";
+      }
+
+      userActivities.set(userId, activityString);
+      io.emit("activity_updated", { userId, activity: activityString });
+      console.log(
+        `[Socket] Emitting activity_updated: ${userId}, ${activityString}`
+      );
     });
 
     socket.on("send_message", async (data) => {
@@ -126,7 +194,7 @@ export const initializeSocket = (server) => {
 
       if (userSockets.has(userId)) {
         userSockets.delete(userId);
-        userActivities.delete(userId);
+        userActivities.delete(userId); // Удаляем активность при отключении
         io.emit("user_disconnected", userId);
       }
     });
