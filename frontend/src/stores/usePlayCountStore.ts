@@ -7,7 +7,7 @@ interface PlayCountStore {
   incrementPlayCount: (songId: string) => Promise<void>;
 }
 
-export const usePlayCountStore = create<PlayCountStore>((set) => ({
+export const usePlayCountStore = create<PlayCountStore>(() => ({
   incrementPlayCount: async (songId: string) => {
     try {
       await axiosInstance.post(`/songs/${songId}/play`);
