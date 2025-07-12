@@ -7,6 +7,8 @@ export interface Artist {
   imageUrl: string;
   songs: Song[]; // ИЗМЕНЕНО: Теперь массив объектов Song, так как бэкенд их populate'ит
   albums: Album[]; // ИЗМЕНЕНО: Теперь массив объектов Album, так как бэкенд их populate'ит
+  addedAt?: string; // <--- ДОБАВЛЕНО: Это поле приходит из библиотеки для followedArtists
+  bannerUrl?: string; // <--- Убедитесь, что это поле присутствует
 
   createdAt: string;
   updatedAt: string;
@@ -22,6 +24,7 @@ export interface Song {
   imageUrl: string;
   audioUrl: string;
   duration: number; // in seconds
+  playCount: number; // <-- НОВОЕ ПОЛЕ
   createdAt: string;
   updatedAt: string;
   albumTitle?: string;
@@ -74,6 +77,7 @@ export interface SearchState {
   songs: Song[];
   albums: Album[];
   playlists: Playlist[];
+  artists: Artist[]; // <-- ДОБАВЛЕНО: Артисты в результатах поиска
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;
@@ -123,7 +127,18 @@ export interface PlaylistItem extends BaseLibraryItem {
   owner: User;
 }
 
-export type LibraryItem = LikedSongsItem | AlbumItem | PlaylistItem;
+export interface FollowedArtistItem extends BaseLibraryItem {
+  // <-- НОВЫЙ ТИП
+  type: "artist";
+  artistId: string; // ID артиста
+  addedAt?: string; // <-- ЭТУ СТРОКУ НУЖНО ДОБАВИТЬ/ПРОВЕРИТЬ
+}
+
+export type LibraryItem =
+  | LikedSongsItem
+  | AlbumItem
+  | PlaylistItem
+  | FollowedArtistItem; // <-- ОБНОВЛЕНО
 
 export interface LibraryPlaylist extends Playlist {
   addedAt: string;

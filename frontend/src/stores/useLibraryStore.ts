@@ -1,50 +1,55 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Album, Song, LibraryPlaylist } from "../types"; // Импортируем Playlist
+import type { Album, Song, LibraryPlaylist, Artist } from "../types";
 
 interface LibraryStore {
   albums: Album[];
   likedSongs: Song[];
-  playlists: LibraryPlaylist[]; // <-- НОВОЕ: Добавляем массив плейлистов в библиотеке
+  playlists: LibraryPlaylist[];
+  followedArtists: Artist[]; // <-- НОВОЕ: Массив подписанных артистов (объектов Artist)
   isLoading: boolean;
   error: string | null;
-  fetchLibrary: () => Promise<void>; // Переименуем, чтобы она получала все элементы библиотеки
-  fetchLikedSongs: () => Promise<void>; // Оставляем для лайкнутых песен
+  fetchLibrary: () => Promise<void>;
+  fetchLikedSongs: () => Promise<void>;
+  fetchFollowedArtists: () => Promise<void>; // <-- НОВОЕ
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
-  // НОВОЕ: Функция для добавления/удаления плейлиста из библиотеки
   togglePlaylist: (playlistId: string) => Promise<void>;
+  toggleArtistFollow: (artistId: string) => Promise<void>; // <-- НОВОЕ
   isSongLiked: (songId: string) => boolean;
+  isArtistFollowed: (artistId: string) => boolean; // <-- НОВАЯ ФУНКЦИЯ
 }
 
 export const useLibraryStore = create<LibraryStore>((set, get) => ({
   albums: [],
   likedSongs: [],
-  playlists: [], // <-- Инициализируем
+  playlists: [],
+  followedArtists: [], // <-- Инициализируем
   isLoading: false,
   error: null,
 
   fetchLibrary: async () => {
     set({ isLoading: true, error: null });
     try {
-      console.log("useLibraryStore: Attempting to fetch library data..."); // Лог 6
+      console.log("useLibraryStore: Attempting to fetch library data...");
 
-      // Предполагаем, что /library/all возвращает все элементы библиотеки
-      // Или, если у вас отдельные эндпоинты, вызывайте их здесь
-      const [albumsRes, likedSongsRes, playlistsRes] = await Promise.all([
-        axiosInstance.get("/library/albums"),
-        axiosInstance.get("/library/liked-songs"),
-        axiosInstance.get("/library/playlists"),
-      ]);
+      const [albumsRes, likedSongsRes, playlistsRes, followedArtistsRes] =
+        await Promise.all([
+          axiosInstance.get("/library/albums"),
+          axiosInstance.get("/library/liked-songs"),
+          axiosInstance.get("/library/playlists"),
+          axiosInstance.get("/library/artists"), // <-- НОВОЕ
+        ]);
 
       set({
         albums: albumsRes.data.albums || [],
         likedSongs: likedSongsRes.data.songs || [],
-        playlists: playlistsRes.data.playlists || [], // <-- Устанавливаем плейлисты
+        playlists: playlistsRes.data.playlists || [],
+        followedArtists: followedArtistsRes.data.artists || [], // <-- Устанавливаем подписанных артистов
         isLoading: false,
       });
-      console.log("useLibraryStore: Library data fetched successfully."); // Лог 7
+      console.log("useLibraryStore: Library data fetched successfully.");
     } catch (err: any) {
       set({
         error: err.message || "Failed to fetch library",
@@ -54,8 +59,6 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   fetchLikedSongs: async () => {
-    // Эту функцию можно оставить, если она нужна для более специфичных запросов,
-    // но fetchLibrary теперь будет получать все.
     set({ isLoading: true, error: null });
     try {
       const res = await axiosInstance.get("/library/liked-songs");
@@ -68,10 +71,24 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
   },
 
+  fetchFollowedArtists: async () => {
+    // <-- НОВАЯ ФУНКЦИЯ
+    set({ isLoading: true, error: null });
+    try {
+      const res = await axiosInstance.get("/library/artists");
+      set({ followedArtists: res.data.artists, isLoading: false });
+    } catch (err: any) {
+      set({
+        error: err.message || "Failed to fetch followed artists",
+        isLoading: false,
+      });
+    }
+  },
+
   toggleAlbum: async (albumId: string) => {
     try {
       await axiosInstance.post("/library/albums/toggle", { albumId });
-      await get().fetchLibrary(); // Обновляем всю библиотеку после изменения
+      await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle album error", err);
       set({ error: "Failed to toggle album" });
@@ -84,13 +101,9 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         await axiosInstance.post("/library/songs/toggle-like", { songId })
       ).data;
 
-      // Оптимистичное обновление или полный рефетч
       if (isLiked) {
-        // Если лайкнули, добавить песню в likedSongs (если ее там нет)
-        // Или просто сделать рефетч для простоты
-        await get().fetchLikedSongs(); // Рефетч лайкнутых песен
+        await get().fetchLikedSongs();
       } else {
-        // Если дизлайкнули, удалить песню из likedSongs
         set((state) => ({
           likedSongs: state.likedSongs.filter((song) => song._id !== songId),
         }));
@@ -101,18 +114,44 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
   },
 
-  // НОВАЯ ФУНКЦИЯ: Добавление/удаление плейлиста из библиотеки
   togglePlaylist: async (playlistId: string) => {
     try {
-      await axiosInstance.post("/library/playlists/toggle", { playlistId }); // Предполагаем такой эндпоинт
-      await get().fetchLibrary(); // Обновляем всю библиотеку после изменения
+      await axiosInstance.post("/library/playlists/toggle", { playlistId });
+      await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle playlist error", err);
       set({ error: "Failed to toggle playlist in library" });
     }
   },
 
+  toggleArtistFollow: async (artistId: string) => {
+    // <-- НОВАЯ ФУНКЦИЯ
+    try {
+      const { isFollowed } = (
+        await axiosInstance.post("/library/artists/toggle", { artistId })
+      ).data;
+
+      if (isFollowed) {
+        await get().fetchFollowedArtists();
+      } else {
+        set((state) => ({
+          followedArtists: state.followedArtists.filter(
+            (artist) => artist._id !== artistId
+          ),
+        }));
+      }
+    } catch (err) {
+      console.error("Toggle artist follow error", err);
+      set({ error: "Failed to toggle artist follow" });
+    }
+  },
+
   isSongLiked: (songId: string) => {
     return get().likedSongs.some((song) => song._id === songId);
+  },
+
+  isArtistFollowed: (artistId: string) => {
+    // <-- НОВАЯ ФУНКЦИЯ
+    return get().followedArtists.some((artist) => artist._id === artistId);
   },
 }));

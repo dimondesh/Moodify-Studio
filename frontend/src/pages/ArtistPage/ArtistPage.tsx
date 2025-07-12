@@ -5,13 +5,17 @@ import axios from "axios";
 import { Button } from "../../components/ui/button";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import AlbumGrid from "../SearchPage/AlbumGrid";
-import { Play, Heart, MoreHorizontal } from "lucide-react";
+import { Play, Heart, UserPlus, UserCheck, Pause } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
+import toast from "react-hot-toast";
+
 import { useLibraryStore } from "../../stores/useLibraryStore";
+import Equalizer from "../../components/ui/equalizer";
 
 // Импортируем типы из центрального файла типов
 import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
+import { usePlayCountStore } from "@/stores/usePlayCountStore";
 
 const ArtistPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +23,18 @@ const ArtistPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { playAlbum } = usePlayerStore();
-  const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
+  const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
+    usePlayerStore();
+  const { incrementPlayCount } = usePlayCountStore();
+
+  const {
+    isSongLiked,
+    toggleSongLike,
+    fetchLikedSongs,
+    isArtistFollowed,
+    toggleArtistFollow,
+    fetchFollowedArtists,
+  } = useLibraryStore();
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -53,7 +67,8 @@ const ArtistPage = () => {
 
     fetchArtistData();
     fetchLikedSongs();
-  }, [id, fetchLikedSongs]);
+    fetchFollowedArtists();
+  }, [id, fetchLikedSongs, fetchFollowedArtists]);
 
   if (loading) {
     return (
@@ -82,20 +97,42 @@ const ArtistPage = () => {
   const allArtistSongs: Song[] = artist.songs || [];
   const allArtistAlbums: Album[] = artist.albums || [];
 
-  const popularSongs = [...allArtistSongs].slice(0, 5);
+  const popularSongs = allArtistSongs.slice(0, 5);
 
   const albums = allArtistAlbums.filter((album) => album.type === "Album");
   const singlesAndEps = allArtistAlbums.filter(
     (album) => album.type === "Single" || album.type === "EP"
   );
 
+  const isAnyPopularSongPlaying =
+    isPlaying && popularSongs.some((song) => song._id === currentSong?._id);
+
   const handlePlayArtistSongs = () => {
-    if (allArtistSongs.length > 0) {
-      playAlbum(allArtistSongs, 0);
+    if (popularSongs.length === 0) {
+      toast.error("No popular songs available to play.");
+      return;
+    }
+
+    if (isAnyPopularSongPlaying) {
+      togglePlay();
+    } else {
+      playAlbum(popularSongs, 0);
+      if (popularSongs[0]) {
+        incrementPlayCount(popularSongs[0]._id);
+      }
     }
   };
 
-  // Вспомогательная функция для безопасного извлечения имен артистов
+  const handlePlaySpecificSong = (song: Song, index: number) => {
+    if (currentSong?._id === song._id) {
+      togglePlay();
+    } else {
+      setCurrentSong(song);
+      playAlbum(popularSongs, index);
+    }
+    incrementPlayCount(song._id);
+  };
+
   const getArtistNames = (
     artistData: (Artist | string)[] | undefined
   ): string => {
@@ -104,116 +141,190 @@ const ArtistPage = () => {
     }
     return artistData
       .map((item) => {
-        // Проверяем, является ли элемент объектом и имеет ли свойство 'name'
         if (typeof item === "object" && item !== null && "name" in item) {
           return item.name;
         }
-        // Если это строка (ID) или объект без 'name', возвращаем строковое представление
         return String(item);
       })
       .join(", ");
   };
 
+  const handleToggleFollow = async () => {
+    if (!artist) return;
+    try {
+      await toggleArtistFollow(artist._id);
+      toast.success(
+        isArtistFollowed(artist._id)
+          ? `Вы отписались от ${artist.name}`
+          : `Вы подписались на ${artist.name}`
+      );
+    } catch (e) {
+      toast.error("Не удалось изменить статус подписки.");
+      console.error("Error toggling artist follow:", e);
+    }
+  };
+
   return (
-    <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-violet-900/50 to-zinc-950">
+    <main className="rounded-md overflow-hidden h-full bg-zinc-950">
       <ScrollArea className="h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-220px)] lg:h-[calc(100vh-170px)] w-full pb-20 md:pb-0">
-        {/* Шапка артиста */}
-        <div className="px-6 relative p-4 sm:p-6 pb-24  flex items-end gap-6 bg-gradient-to-t from-zinc-900 to-transparent">
-          <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex-shrink-0">
-            <img
-              src={artist.imageUrl || "/default-artist-cover.png"}
-              alt={artist.name}
-              className="w-full h-full object-cover rounded-full shadow-2xl"
-            />
-          </div>
-          <div className="flex flex-col justify-end">
-            <p className="text-sm font-bold text-white mb-2">Artist</p>
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-4 leading-tight">
+        <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
+          {/* Фон (баннер или аватарка как фон, либо градиент на десктопе) */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage:
+                window.innerWidth >= 1024
+                  ? artist.bannerUrl
+                    ? `url(${artist.bannerUrl})` // ✅ десктоп с баннером
+                    : "linear-gradient(to bottom, #333, #111)" // ❌ десктоп без баннера
+                  : `url(${artist.imageUrl || "/default-artist-cover.png"})`, // ✅ мобила/планшет — всегда аватарка
+            }}
+          />
+
+          {/* Затемнение поверх фона */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
+
+          {/* ✅ Десктоп: отображать аватарку-кружок, если нет баннера */}
+          {!artist.bannerUrl && artist.imageUrl && (
+            <div className="hidden lg:block absolute bottom-10 left-10 z-10">
+              <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
+                <img
+                  src={artist.imageUrl}
+                  alt={artist.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Контент: имя артиста и кнопки */}
+          <div
+            className={`
+      relative z-10 h-full flex flex-col justify-end
+      px-6 sm:px-10 pb-6 sm:pb-10
+      ${!artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""}
+    `}
+          >
+            <p className="text-white text-sm font-semibold uppercase mb-2">
+              Artist
+            </p>
+            <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
               {artist.name}
             </h1>
-          </div>
-        </div>
 
-        {/* Кнопки действий */}
-        <div className="px-6 py-4 flex items-center gap-4">
-          <Button
-            className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
-            onClick={handlePlayArtistSongs}
-            title={`Play all songs by ${artist.name}`}
-          >
-            <Play className="h-7 w-7 fill-current" />
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white"
-          >
-            Follow
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-zinc-400 hover:text-white"
-          >
-            <MoreHorizontal className="h-6 w-6" />
-          </Button>
+            <div className="mt-4 flex items-center gap-4">
+              <Button
+                className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
+                onClick={handlePlayArtistSongs}
+                title={
+                  isAnyPopularSongPlaying
+                    ? "Pause"
+                    : `Play all songs by ${artist.name}`
+                }
+              >
+                {isAnyPopularSongPlaying ? (
+                  <Pause className="h-7 w-7 fill-current" />
+                ) : (
+                  <Play className="h-7 w-7 fill-current" />
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
+                onClick={handleToggleFollow}
+              >
+                {isArtistFollowed(artist._id) ? (
+                  <>
+                    <UserCheck className="h-5 w-5" />
+                    Following
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-5 w-5" />
+                    Follow
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Секция "Popular" - ручной рендеринг для кнопки "лайка" */}
         {popularSongs.length > 0 && (
-          <div className="px-6 py-4">
+          <div className="px-6 md:px-10 py-4">
             <h2 className="text-2xl font-bold text-white mb-4">Popular</h2>
             <div className="grid grid-cols-1 gap-4">
-              {popularSongs.map((song, index) => (
-                <div
-                  key={song._id}
-                  className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer"
-                  onClick={() =>
-                    playAlbum(
-                      allArtistSongs,
-                      allArtistSongs.findIndex((s) => s._id === song._id)
-                    )
-                  }
-                >
-                  <span className="text-zinc-400 w-4 text-center">
-                    {index + 1}
-                  </span>
-                  <div className="w-12 h-12 flex-shrink-0">
-                    <img
-                      src={song.imageUrl || "/default-song-cover.png"}
-                      alt={song.title}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium truncate">
-                      {song.title}
-                    </p>
-                    {/* Используем вспомогательную функцию для получения имен артистов */}
-                    <p className="text-zinc-400 text-sm truncate">
-                      {getArtistNames(song.artist)}
-                    </p>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`hover:text-white ${
-                      isSongLiked(song._id)
-                        ? "text-violet-500"
-                        : "text-zinc-400"
-                    } w-8 h-8`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleSongLike(song._id);
-                    }}
-                    title={isSongLiked(song._id) ? "Unlike song" : "Like song"}
+              {popularSongs.map((song, index) => {
+                const isCurrentSong = currentSong?._id === song._id;
+                return (
+                  <div
+                    key={song._id}
+                    className="flex items-center md:px-4 gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer "
+                    onClick={() => handlePlaySpecificSong(song, index)}
                   >
-                    <Heart className="h-4 w-4 fill-current" />
-                  </Button>
-                  <span className="text-zinc-400 text-sm ml-2">
-                    {formatTime(song.duration)}
-                  </span>
-                </div>
-              ))}
+                    <div className="flex items-center justify-center w-4">
+                      {" "}
+                      {/* Контейнер для номера/эквалайзера */}
+                      {isCurrentSong && isPlaying ? (
+                        <div className="z-10">
+                          <Equalizer />
+                        </div>
+                      ) : (
+                        <span className="group-hover:hidden">{index + 1}</span>
+                      )}
+                      {!isCurrentSong && (
+                        <Play className="h-4 w-4 hidden group-hover:block" />
+                      )}
+                    </div>
+
+                    <div className="w-12 h-12 flex-shrink-0">
+                      <img
+                        src={song.imageUrl || "/default-song-cover.png"}
+                        alt={song.title}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`font-medium ${
+                          isCurrentSong ? "text-violet-400" : "text-white"
+                        } truncate`}
+                      >
+                        {song.title}
+                      </p>
+                      <p className="text-zinc-400 text-sm truncate">
+                        {getArtistNames(song.artist)}
+                      </p>
+                    </div>
+                    {/* Отображение счетчика прослушиваний */}
+                    <span className="text-zinc-400 text-sm ml-2 hidden sm:block">
+                      {song.playCount?.toLocaleString() || 0} plays
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`hover:text-white ${
+                        isSongLiked(song._id)
+                          ? "text-violet-500"
+                          : "text-zinc-400"
+                      } w-8 h-8`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSongLike(song._id);
+                      }}
+                      title={
+                        isSongLiked(song._id) ? "Unlike song" : "Like song"
+                      }
+                    >
+                      <Heart className="h-4 w-4 fill-current" />
+                    </Button>
+                    <span className="text-zinc-400 text-sm ml-2">
+                      {formatTime(song.duration)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -234,7 +345,6 @@ const ArtistPage = () => {
           )}
         </div>
 
-        {/* Можно добавить секцию "About" или "Bio" если у артиста есть поле bio */}
         {artist.bio && (
           <div className="px-6 py-4">
             <h2 className="text-2xl font-bold text-white mb-4">

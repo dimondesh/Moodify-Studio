@@ -20,13 +20,21 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
 import { HeadphonesIcon } from "lucide-react";
 import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
-import { LibraryItem, AlbumItem, PlaylistItem, Artist } from "../types";
+import {
+  LibraryItem,
+  AlbumItem,
+  PlaylistItem,
+  Artist,
+  LikedSongsItem,
+  FollowedArtistItem,
+} from "../types";
 import { useMusicStore } from "../stores/useMusicStore";
 
 const LeftSidebar = () => {
   const {
     albums,
     playlists, // добавленные в библиотеку
+      followedArtists, // Добавлено для подписанных артистов
     fetchLibrary,
     isLoading: isLoadingLibrary,
     error: libraryError,
@@ -52,23 +60,20 @@ const LeftSidebar = () => {
     fetchArtists();
   }, [fetchLibrary, fetchMyPlaylists, user, loadingUser, fetchArtists]);
 
-  // ИЗМЕНЕНО: Обновлено определение функции getArtistNames, чтобы принимать Artist[]
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (!artistsData || artistsData.length === 0) return "Unknown Artist";
 
     const names = artistsData
       .map((item) => {
         if (typeof item === "string") {
-          // Если это ID артиста (строка)
           const artist = artists.find((a) => a._id === item);
           return artist ? artist.name : null;
         } else if (item && typeof item === "object" && "name" in item) {
-          // Если это объект Artist
-          return (item as Artist).name; // Приводим тип к Artist, чтобы получить доступ к name
+          return (item as Artist).name;
         }
         return null;
       })
-      .filter(Boolean); // Отфильтровываем null-значения
+      .filter(Boolean);
 
     return names.join(", ") || "Unknown Artist";
   };
@@ -77,36 +82,74 @@ const LeftSidebar = () => {
   const combinedError = libraryError || playlistsError || authError;
   const errorMessage = combinedError ? String(combinedError) : null;
 
-  // 📌 Объединяем всё в общий список LibraryItem[]
-  const libraryItems: LibraryItem[] = [
-    ...albums.map((album) => ({
-      _id: album._id,
-      type: "album" as const,
-      title: album.title,
-      imageUrl: album.imageUrl,
-      createdAt: new Date(album.addedAt ?? new Date()),
-      artist: album.artist, // album.artist теперь Artist[], это корректно для AlbumItem
-      albumType: album.type,
-    })),
+  // --- Логика дедупликации плейлистов ---
+  const allPlaylistsMap = new Map<string, PlaylistItem>();
 
-    ...myPlaylists.map((playlist) => ({
+  (myPlaylists || []).forEach((playlist) => {
+    allPlaylistsMap.set(playlist._id, {
       _id: playlist._id,
       type: "playlist" as const,
       title: playlist.title,
       imageUrl: playlist.imageUrl,
       createdAt: new Date(playlist.updatedAt ?? new Date()),
       owner: playlist.owner,
+    });
+  });
+
+  (playlists || []).forEach((playlist) => {
+    if (!allPlaylistsMap.has(playlist._id)) {
+      allPlaylistsMap.set(playlist._id, {
+        _id: playlist._id,
+        type: "playlist" as const,
+        title: playlist.title,
+        imageUrl: playlist.imageUrl,
+        createdAt: new Date(playlist.addedAt ?? new Date()),
+        owner: playlist.owner,
+      });
+    }
+  });
+
+  const uniquePlaylists = Array.from(allPlaylistsMap.values());
+  // --- КОНЕЦ ЛОГИКИ ДЕДУПЛИКАЦИИ ---
+
+  // 📌 Объединяем все элементы библиотеки в общий список LibraryItem[]
+  const libraryItems: LibraryItem[] = [
+    ...(albums || []).map((album) => ({
+      _id: album._id,
+      type: "album" as const,
+      title: album.title,
+      imageUrl: album.imageUrl,
+      createdAt: new Date(album.addedAt ?? new Date()),
+      artist: album.artist,
+      albumType: album.type,
     })),
 
-    ...playlists.map((playlist) => ({
-      _id: playlist._id,
-      type: "playlist" as const,
-      title: playlist.title,
-      imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.addedAt ?? new Date()),
-      owner: playlist.owner,
+    ...uniquePlaylists,
+
+    // Добавляем подписанных артистов с использованием addedAt для createdAt
+    ...(followedArtists || []).map((artist) => ({
+      _id: artist._id,
+      type: "artist" as const,
+      title: artist.name, // Явно используем artist.name
+      imageUrl: artist.imageUrl,
+      // ИСПОЛЬЗУЕМ artist.addedAt, которое теперь есть в типе Artist
+      createdAt: new Date(artist.addedAt || artist.createdAt), // Используем addedAt, если есть, иначе createdAt артиста
+      artistId: artist._id,
     })),
-  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // УДАЛЕНО: Liked Songs больше не рендерятся в этом списке
+    // ...(likedSongs.length > 0
+    //   ? [
+    //       {
+    //         _id: "liked-songs",
+    //         type: "liked-songs",
+    //         title: "Liked Songs",
+    //         imageUrl: "/liked.png",
+    //         songsCount: likedSongs.length,
+    //         createdAt: new Date(likedSongs[0]?.likedAt || Date.now()),
+    //       } as LikedSongsItem,
+    //     ]
+    //   : []),
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Сортируем по дате создания/добавления
 
   return (
     <div className="h-full flex flex-col gap-2">
@@ -205,27 +248,46 @@ const LeftSidebar = () => {
           <ScrollArea className="flex-1 h-full pb-7">
             <div className="space-y-2">
               {libraryItems.map((item) => {
-                const linkPath =
-                  item.type === "album"
-                    ? `/albums/${item._id}`
-                    : `/playlists/${item._id}`;
+                let linkPath: string;
+                let subtitle: string;
+                let fallbackImage: string;
+                let imageClass = "rounded-md"; // По умолчанию квадратные
 
-                const subtitle =
-                  item.type === "album"
-                    ? `${item.albumType || "Album"} • ${
-                        // ИЗМЕНЕНО: Удален ненужный 'as string[] | undefined'
-                        getArtistNames((item as AlbumItem).artist)
-                      }`
-                    : item.type === "playlist"
-                    ? `Playlist • ${
-                        (item as PlaylistItem).owner?.fullName || "Unknown"
-                      }`
-                    : "";
-
-                const fallbackImage =
-                  item.type === "album"
-                    ? "/default-album-cover.png"
-                    : "/default_playlist_cover.png";
+                if (item.type === "album") {
+                  const albumItem = item as AlbumItem; // Явное приведение
+                  linkPath = `/albums/${albumItem._id}`;
+                  subtitle = `${
+                    albumItem.albumType || "Album"
+                  } • ${getArtistNames(albumItem.artist)}`;
+                  fallbackImage = "/default-album-cover.png";
+                } else if (item.type === "playlist") {
+                  const playlistItem = item as PlaylistItem; // Явное приведение
+                  linkPath = `/playlists/${playlistItem._id}`;
+                  subtitle = `Playlist • ${
+                    playlistItem.owner?.fullName || "Unknown"
+                  }`;
+                  fallbackImage = "/default_playlist_cover.png";
+                } else if (item.type === "liked-songs") {
+                  // Этот блок больше не должен вызываться, т.к. LikedSongsItem удален из libraryItems
+                  // Но оставлен для полноты, если вдруг тип попадет сюда
+                  const likedItem = item as LikedSongsItem;
+                  linkPath = "/liked-songs";
+                  subtitle = `Playlist • ${likedItem.songsCount} ${
+                    likedItem.songsCount !== 1 ? "songs" : "song"
+                  }`;
+                  fallbackImage = "/liked.png";
+                } else if (item.type === "artist") {
+                  const artistItem = item as FollowedArtistItem; // Явное приведение
+                  linkPath = `/artists/${artistItem._id}`;
+                  subtitle = `Artist`;
+                  fallbackImage = "/default-artist-cover.png";
+                  imageClass = "rounded-full"; // Круглые аватарки для артистов
+                } else {
+                  // Fallback для неизвестных типов, хотя LibraryItem должен покрывать все
+                  linkPath = "#";
+                  subtitle = "";
+                  fallbackImage = "/default-cover.png";
+                }
 
                 return (
                   <Link
@@ -236,7 +298,7 @@ const LeftSidebar = () => {
                     <img
                       src={item.imageUrl || fallbackImage}
                       alt={item.title}
-                      className="size-12 rounded-md flex-shrink-0 object-cover"
+                      className={`size-12 object-cover ${imageClass} flex-shrink-0`} // Применяем imageClass
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = fallbackImage;
                       }}

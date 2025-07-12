@@ -15,6 +15,11 @@ const artistSchema = new mongoose.Schema(
       required: false,
       default: "",
     },
+    bannerUrl: {
+      type: String,
+      required: false,
+      default: null,
+    },
     songs: [
       {
         type: mongoose.Schema.Types.ObjectId,

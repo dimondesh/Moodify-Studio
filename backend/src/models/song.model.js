@@ -5,15 +5,20 @@ const songSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
-    // Изменено: теперь это массив ссылок на модель Artist
     artist: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Artist",
-        required: true, // Каждый трек должен быть связан хотя бы с одним артистом
+        required: true,
       },
     ],
+    albumId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Album",
+      default: null, // Может быть синглом без альбома
+    },
     imageUrl: {
       type: String,
       required: true,
@@ -23,21 +28,23 @@ const songSchema = new mongoose.Schema(
       required: true,
     },
     duration: {
-      type: Number,
+      type: Number, // Длительность в секундах
       required: true,
     },
-    albumId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Album",
-      required: false,
+    playCount: {
+      // <-- НОВОЕ ПОЛЕ
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   { timestamps: true }
 );
 
-// Добавление индексов
+// Добавление индексов для оптимизации поиска
 songSchema.index({ title: 1 });
 songSchema.index({ artist: 1 });
 songSchema.index({ albumId: 1 });
+songSchema.index({ playCount: -1 }); // Индекс для сортировки по популярности
 
 export const Song = mongoose.model("Song", songSchema);

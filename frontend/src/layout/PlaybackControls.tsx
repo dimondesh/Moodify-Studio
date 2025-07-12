@@ -316,7 +316,7 @@ const PlaybackControls = () => {
             >
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
-                {getArtistNames(currentSong?.artist) || "Unknown Artist"}
+                {getArtistNames(currentSong.artist)}
               </DialogTitle>
 
               <div className="flex justify-between items-center w-full mb-4">

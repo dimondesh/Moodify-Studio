@@ -578,20 +578,29 @@ export const createArtist = async (req, res, next) => {
     }
 
     const { name, bio } = req.body;
+    const imageFile = req.files ? req.files.imageFile : null; // Основное изображение
+    const bannerFile = req.files ? req.files.bannerFile : null; // <--- НОВОЕ: Файл баннера
 
     if (!name) {
       return res.status(400).json({ message: "Artist name is required." });
     }
-    if (!req.files || !req.files.imageFile) {
+    if (!imageFile) {
       return res.status(400).json({ message: "Artist image is required." });
     }
 
-    const imageUrl = await uploadToCloudinary(req.files.imageFile, "artists");
+    const imageUrl = await uploadToCloudinary(imageFile, "artists");
+    let bannerUrl = null; // Инициализируем bannerUrl как null
+
+    if (bannerFile) {
+      // Если файл баннера предоставлен, загружаем его
+      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners"); // <--- Загрузка баннера
+    }
 
     const newArtist = new Artist({
       name,
       bio,
       imageUrl,
+      bannerUrl, // <--- Сохраняем bannerUrl
     });
     await newArtist.save();
 
@@ -618,6 +627,7 @@ export const updateArtist = async (req, res, next) => {
     const { id } = req.params;
     const { name, bio } = req.body;
     const imageFile = req.files ? req.files.imageFile : null;
+    const bannerFile = req.files ? req.files.bannerFile : null; // <--- НОВОЕ: Файл баннера
 
     const artist = await Artist.findById(id);
     if (!artist) {
@@ -625,7 +635,9 @@ export const updateArtist = async (req, res, next) => {
     }
 
     let imageUrl = artist.imageUrl;
+    let bannerUrl = artist.bannerUrl; // Сохраняем текущий URL баннера
 
+    // Обновление основного изображения
     if (imageFile) {
       if (artist.imageUrl) {
         await deleteFromCloudinary(extractPublicId(artist.imageUrl));
@@ -633,9 +645,26 @@ export const updateArtist = async (req, res, next) => {
       imageUrl = await uploadToCloudinary(imageFile, "artists");
     }
 
+    // Обновление баннера
+    if (bannerFile) {
+      // Если предоставлен новый файл баннера
+      if (artist.bannerUrl) {
+        // Если старый баннер существует, удаляем его
+        await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
+      }
+      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners"); // Загружаем новый баннер
+    } else if (req.body.bannerUrl === null || req.body.bannerUrl === "") {
+      // Если баннер явно удален (передано null/пустая строка)
+      if (artist.bannerUrl) {
+        await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
+      }
+      bannerUrl = null; // Устанавливаем баннер в null
+    }
+
     artist.name = name || artist.name;
     artist.bio = bio !== undefined ? bio : artist.bio;
     artist.imageUrl = imageUrl;
+    artist.bannerUrl = bannerUrl; // <--- Сохраняем обновленный bannerUrl
 
     await artist.save();
     res.status(200).json(artist);
@@ -668,6 +697,10 @@ export const deleteArtist = async (req, res, next) => {
     // 1. Удаление изображения артиста из Cloudinary
     if (artist.imageUrl) {
       await deleteFromCloudinary(extractPublicId(artist.imageUrl));
+    }
+    // 1.1. Удаление баннера артиста из Cloudinary (НОВОЕ)
+    if (artist.bannerUrl) {
+      await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
     }
 
     // 2. Удаление всех песен, связанных с этим артистом, из Cloudinary и БД

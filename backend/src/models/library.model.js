@@ -1,5 +1,3 @@
-// backend/models/Library.js (или Library.ts)
-
 import mongoose from "mongoose";
 
 const librarySchema = new mongoose.Schema(
@@ -8,20 +6,8 @@ const librarySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
+      unique: true, // У каждого пользователя может быть только одна библиотека
     },
-    songs: [
-      {
-        songId: { type: mongoose.Schema.Types.ObjectId, ref: "Song" },
-        addedAt: { type: Date, default: Date.now },
-      },
-    ],
-    albums: [
-      {
-        albumId: { type: mongoose.Schema.Types.ObjectId, ref: "Album" },
-        addedAt: { type: Date, default: Date.now },
-      },
-    ],
     likedSongs: [
       {
         songId: {
@@ -35,10 +21,44 @@ const librarySchema = new mongoose.Schema(
         },
       },
     ],
+    albums: [
+      {
+        albumId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Album",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     playlists: [
       {
-        playlistId: { type: mongoose.Schema.Types.ObjectId, ref: "Playlist" },
-        addedAt: { type: Date, default: Date.now },
+        playlistId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Playlist",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    followedArtists: [
+      // <-- НОВОЕ ПОЛЕ: для отслеживания подписанных артистов
+      {
+        artistId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Artist",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },

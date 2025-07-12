@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { Library } from "../models/library.model.js";
-import { Playlist } from "../models/playlist.model.js"; // Убедитесь, что импортировали модель Playlist
-import { Song } from "../models/song.model.js"; // <-- ДОБАВЛЕНО: Импортируем модель Song
+import { Playlist } from "../models/playlist.model.js";
+import { Song } from "../models/song.model.js";
+import { Artist } from "../models/artist.model.js"; // Импортируем модель Artist
 
 export const getLibraryAlbums = async (req, res, next) => {
   try {
@@ -16,6 +17,11 @@ export const getLibraryAlbums = async (req, res, next) => {
 
     if (!library) {
       return res.json({ albums: [] });
+    }
+
+    // Убедимся, что albums является массивом
+    if (!library.albums) {
+      library.albums = [];
     }
 
     const albums = library.albums
@@ -47,25 +53,29 @@ export const getLikedSongs = async (req, res, next) => {
         path: "likedSongs.songId",
         model: "Song",
         populate: {
-          // <-- Заполняем поле 'artist' внутри каждой лайкнутой песни
           path: "artist",
-          model: "Artist", // Укажите вашу модель Artist
-          select: "name imageUrl", // Выбираем только нужные поля артиста
+          model: "Artist",
+          select: "name imageUrl",
         },
       })
-      .lean(); // <-- Используем .lean() для получения простых JS объектов
+      .lean();
 
     if (!library) {
       return res.json({ songs: [] });
     }
 
+    // Убедимся, что likedSongs является массивом
+    if (!library.likedSongs) {
+      library.likedSongs = [];
+    }
+
     const songs = library.likedSongs
-      .filter((item) => item.songId) // <-- ИЗМЕНЕНО: Удалено ._doc, так как .lean() возвращает простые объекты
+      .filter((item) => item.songId)
       .sort(
         (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
       )
       .map((item) => ({
-        ...item.songId, // <-- ИЗМЕНЕНО: Удалено ._doc, так как .lean() возвращает простые объекты
+        ...item.songId,
         likedAt: item.addedAt,
       }));
 
@@ -97,6 +107,11 @@ export const toggleAlbumInLibrary = async (req, res, next) => {
       {},
       { upsert: true, new: true }
     );
+
+    // Убедимся, что albums является массивом перед использованием
+    if (!library.albums) {
+      library.albums = [];
+    }
 
     const exists = library.albums.some(
       (a) => a.albumId?.toString() === albumId
@@ -141,12 +156,16 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
+    // Убедимся, что likedSongs является массивом перед использованием
+    if (!library.likedSongs) {
+      library.likedSongs = [];
+    }
+
     const exists = library.likedSongs.some(
       (s) => s.songId?.toString() === songId
     );
 
     let isLikedStatus;
-    let returnedSong = null; // <-- Для хранения заполненной песни
 
     if (exists) {
       library.likedSongs = library.likedSongs.filter(
@@ -159,20 +178,11 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
         addedAt: new Date(),
       });
       isLikedStatus = true;
-      // <-- Запрашиваем и заполняем песню, если она только что была лайкнута
-      returnedSong = await Song.findById(songId)
-        .populate({
-          path: "artist",
-          model: "Artist",
-          select: "name imageUrl",
-        })
-        .lean();
     }
 
     await library.save();
 
-    // <-- Возвращаем заполненную песню (если она была добавлена)
-    res.json({ success: true, isLiked: isLikedStatus, song: returnedSong });
+    res.json({ success: true, isLiked: isLikedStatus });
   } catch (err) {
     console.error("❌ toggleSongLikeInLibrary error:", err);
     next(err);
@@ -189,13 +199,13 @@ export const getPlaylistsInLibrary = async (req, res, next) => {
     }
 
     const library = await Library.findOne({ userId }).populate({
-      path: "playlists.playlistId", // Правильный путь для популяции
-      model: "Playlist", // Указываем модель, если имя поля не совпадает с ref напрямую
-      match: { isPublic: true }, // фильтрация прямо в populate
+      path: "playlists.playlistId",
+      model: "Playlist",
+      match: { isPublic: true },
 
       populate: {
-        path: "owner", // Популируем владельца плейлиста
-        select: "fullName imageUrl", // Выбираем только нужные поля владельца
+        path: "owner",
+        select: "fullName imageUrl",
       },
     });
 
@@ -203,15 +213,20 @@ export const getPlaylistsInLibrary = async (req, res, next) => {
       return res.json({ playlists: [] });
     }
 
+    // Убедимся, что playlists является массивом
+    if (!library.playlists) {
+      library.playlists = [];
+    }
+
     const playlists = library.playlists
-      .filter((item) => item.playlistId && item.playlistId._doc) // Убеждаемся, что playlistId существует и популирован
+      .filter((item) => item.playlistId && item.playlistId._doc)
       .map((item) => ({
-        ...item.playlistId._doc, // Разворачиваем популированный документ плейлиста
-        addedAt: item.addedAt, // Добавляем дату добавления из Library
+        ...item.playlistId._doc,
+        addedAt: item.addedAt,
       }))
       .sort(
         (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
-      ); // Сортируем по дате добавления
+      );
 
     res.json({ playlists });
   } catch (err) {
@@ -220,16 +235,13 @@ export const getPlaylistsInLibrary = async (req, res, next) => {
   }
 };
 
-// @desc    Add/Remove playlist from user's library
-// @route   POST /api/library/playlists/toggle
-// @access  Private
 export const togglePlaylistInLibrary = async (req, res, next) => {
   try {
     console.log("▶️ togglePlaylistInLibrary called with:", req.body);
 
     const userId = req.user?.id;
     console.log("UserId from req.user:", userId);
-    const { playlistId } = req.body; // Получаем playlistId из тела запроса
+    const { playlistId } = req.body;
     const playlistToUpdate = await Playlist.findById(playlistId);
 
     if (!userId || !playlistId) {
@@ -240,14 +252,17 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid playlistId format" });
     }
 
-    // Находим или создаем запись в библиотеке пользователя
     const library = await Library.findOneAndUpdate(
       { userId },
-      {}, // Пустой объект обновления, если upsert: true, создаст новый документ
-      { upsert: true, new: true } // upsert: true создаст документ, если не найден; new: true вернет обновленный/новый документ
+      {},
+      { upsert: true, new: true }
     );
 
-    // Проверяем, существует ли плейлист уже в библиотеке
+    // Убедимся, что playlists является массивом перед использованием
+    if (!library.playlists) {
+      library.playlists = [];
+    }
+
     const exists = library.playlists.some(
       (p) => p.playlistId?.toString() === playlistId
     );
@@ -256,8 +271,6 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
     let isAdded;
 
     if (exists) {
-      // Если существует, удаляем его из массива
-
       library.playlists = library.playlists.filter(
         (p) => p.playlistId?.toString() !== playlistId
       );
@@ -267,7 +280,6 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
         playlistToUpdate.likes -= 1;
       }
     } else {
-      // Если не существует, добавляем его
       library.playlists.push({
         playlistId: new mongoose.Types.ObjectId(playlistId),
         addedAt: new Date(),
@@ -278,11 +290,137 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
     }
 
     await playlistToUpdate.save();
-    await library.save(); // Сохраняем изменения в библиотеке
+    await library.save();
 
-    res.json({ success: true, isAdded, message }); // Отправляем статус успеха и информацию о том, был ли добавлен
+    res.json({ success: true, isAdded, message });
   } catch (err) {
     console.error("❌ togglePlaylistInLibrary error:", err);
+    next(err);
+  }
+};
+
+// @desc    Toggle artist in user's library
+// @route   POST /api/library/artists/toggle
+// @access  Private
+export const toggleArtistInLibrary = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    const { artistId } = req.body;
+
+    if (!userId || !artistId) {
+      return res.status(400).json({ message: "Missing userId or artistId" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(artistId)) {
+      return res.status(400).json({ message: "Invalid artistId format" });
+    }
+
+    const library = await Library.findOneAndUpdate(
+      { userId },
+      {},
+      { upsert: true, new: true }
+    );
+
+    // Убедимся, что followedArtists является массивом перед использованием
+    if (!library.followedArtists) {
+      library.followedArtists = [];
+    }
+
+    const exists = library.followedArtists.some(
+      (a) => a.artistId?.toString() === artistId
+    );
+
+    let isFollowedStatus;
+
+    if (exists) {
+      library.followedArtists = library.followedArtists.filter(
+        (a) => a.artistId?.toString() !== artistId
+      );
+      isFollowedStatus = false;
+    } else {
+      library.followedArtists.push({
+        artistId: new mongoose.Types.ObjectId(artistId),
+        addedAt: new Date(),
+      });
+      isFollowedStatus = true;
+    }
+
+    await library.save();
+
+    res.json({ success: true, isFollowed: isFollowedStatus });
+  } catch (err) {
+    console.error("❌ toggleArtistInLibrary error:", err);
+    next(err);
+  }
+};
+
+// @desc    Get followed artists for authenticated user
+// @route   GET /api/library/artists
+// @access  Private
+export const getFollowedArtists = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const library = await Library.findOne({ userId })
+      .populate({
+        path: "followedArtists.artistId",
+        model: "Artist",
+        select: "name imageUrl createdAt", // Убеждаемся, что createdAt выбрано
+      })
+      .lean();
+
+    if (!library) {
+      console.log("No library found for user:", userId);
+      return res.json({ artists: [] });
+    }
+
+    // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Убедимся, что followedArtists является массивом
+    if (!library.followedArtists) {
+      console.log(
+        "library.followedArtists is undefined. Initializing to empty array."
+      );
+      library.followedArtists = [];
+    }
+
+    console.log(
+      "Fetched library.followedArtists before filter:",
+      JSON.stringify(library.followedArtists, null, 2)
+    );
+
+    const artists = library.followedArtists
+      .filter((item) => {
+        if (!item.artistId) {
+          console.log("Filtering out item with missing artistId:", item);
+          return false;
+        }
+        if (typeof item.artistId !== "object" || !item.artistId._id) {
+          console.log("Filtering out malformed artistId item:", item.artistId);
+          return false;
+        }
+        return true;
+      })
+      .sort(
+        (a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime()
+      )
+      .map((item) => {
+        console.log("Processing artist item:", JSON.stringify(item, null, 2));
+        return {
+          _id: item.artistId._id,
+          name: item.artistId.name,
+          imageUrl: item.artistId.imageUrl,
+          createdAt: item.artistId.createdAt || new Date().toISOString(), // Добавляем createdAt, с запасным вариантом
+          addedAt: item.addedAt, // Это поле из Library, не из Artist
+        };
+      });
+
+    console.log("Final processed artists:", JSON.stringify(artists, null, 2));
+
+    res.json({ artists });
+  } catch (err) {
+    console.error("❌ Error in getFollowedArtists:", err);
     next(err);
   }
 };

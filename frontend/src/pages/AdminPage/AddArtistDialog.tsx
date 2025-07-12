@@ -20,7 +20,8 @@ import { useMusicStore } from "../../stores/useMusicStore"; // Чтобы обн
 const AddArtistDialog = () => {
   const [artistDialogOpen, setArtistDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null); // Для основной картинки
+  const bannerInputRef = useRef<HTMLInputElement>(null); // Для баннера
   const { fetchArtists } = useMusicStore(); // Для обновления списка
 
   const [newArtist, setNewArtist] = useState({
@@ -29,6 +30,7 @@ const AddArtistDialog = () => {
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null); // Состояние для файла баннера
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,18 +39,31 @@ const AddArtistDialog = () => {
     }
   };
 
+  const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+    }
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
 
     try {
       if (!imageFile) {
-        return toast.error("Please upload an image for the artist.");
+        toast.error("Please upload an image for the artist.");
+        setIsLoading(false); // Убедимся, что isLoading сброшен
+        return;
       }
 
       const formData = new FormData();
       formData.append("name", newArtist.name);
       formData.append("bio", newArtist.bio); // Добавляем биографию
       formData.append("imageFile", imageFile);
+      if (bannerFile) {
+        // Добавляем файл баннера, если он выбран
+        formData.append("bannerFile", bannerFile);
+      }
 
       await axiosInstance.post("/admin/artists", formData, {
         headers: {
@@ -58,6 +73,7 @@ const AddArtistDialog = () => {
 
       setNewArtist({ name: "", bio: "" });
       setImageFile(null);
+      setBannerFile(null); // Сбрасываем файл баннера
       setArtistDialogOpen(false);
       toast.success("Artist created successfully!");
       fetchArtists(); // Обновляем список артистов
@@ -87,29 +103,58 @@ const AddArtistDialog = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 text-zinc-200">
+          {/* Поле для основной картинки артиста (обязательное) */}
           <input
             type="file"
-            ref={fileInputRef}
+            ref={imageInputRef}
             onChange={handleImageSelect}
             accept="image/*"
             className="hidden"
           />
           <div
             className="flex items-center justify-center p-6 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => imageInputRef.current?.click()}
           >
             <div className="text-center">
               <div className="p-3 bg-zinc-800 rounded-full inline-block mb-2">
                 <Upload className="h-6 w-6 text-zinc-400" />
               </div>
               <div className="text-sm text-zinc-400 mb-2">
-                {imageFile ? imageFile.name : "Upload artist image"}
+                {imageFile ? imageFile.name : "Upload artist image (required)"}
               </div>
               <Button variant="outline" size="sm" className="text-xs">
-                Choose File
+                Choose Image
               </Button>
             </div>
           </div>
+
+          {/* Поле для баннера артиста (опциональное) */}
+          <input
+            type="file"
+            ref={bannerInputRef}
+            onChange={handleBannerSelect}
+            accept="image/*"
+            className="hidden"
+          />
+          <div
+            className="flex items-center justify-center p-6 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer"
+            onClick={() => bannerInputRef.current?.click()}
+          >
+            <div className="text-center">
+              <div className="p-3 bg-zinc-800 rounded-full inline-block mb-2">
+                <Upload className="h-6 w-6 text-zinc-400" />
+              </div>
+              <div className="text-sm text-zinc-400 mb-2">
+                {bannerFile
+                  ? bannerFile.name
+                  : "Upload banner image (optional)"}
+              </div>
+              <Button variant="outline" size="sm" className="text-xs">
+                Choose Banner
+              </Button>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Artist Name</label>
             <Input

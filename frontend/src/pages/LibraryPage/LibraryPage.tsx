@@ -5,23 +5,26 @@ import { useLibraryStore } from "../../stores/useLibraryStore";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
 import { useMusicStore } from "../../stores/useMusicStore";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
-import { LibraryItem } from "../../types";
+import {
+  LibraryItem,
+  AlbumItem,
+  PlaylistItem,
+  Artist,
+  LikedSongsItem,
+  FollowedArtistItem,
+} from "../../types";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
 import { Plus } from "lucide-react";
 
-interface Artist {
-  _id: string;
-  name: string;
-}
-
 const LibraryPage = () => {
   const {
     likedSongs,
     albums,
     playlists,
+    followedArtists, // НОВОЕ: подписанные артисты
     isLoading: isLoadingLibrary,
     error: libraryError,
     fetchLibrary,
@@ -83,48 +86,75 @@ const LibraryPage = () => {
     );
   }
 
+  // --- НОВОЕ: Логика дедупликации плейлистов ---
+  const allPlaylistsMap = new Map<string, PlaylistItem>();
+
+  // Добавляем плейлисты, созданные пользователем (приоритет)
+  (myPlaylists || []).forEach((playlist) => {
+    allPlaylistsMap.set(playlist._id, {
+      _id: playlist._id,
+      type: "playlist",
+      title: playlist.title,
+      imageUrl: playlist.imageUrl,
+      createdAt: new Date(playlist.updatedAt),
+      owner: playlist.owner,
+    });
+  });
+
+  // Добавляем плейлисты из библиотеки, если их еще нет в Map
+  (playlists || []).forEach((playlist) => {
+    if (!allPlaylistsMap.has(playlist._id)) {
+      allPlaylistsMap.set(playlist._id, {
+        _id: playlist._id,
+        type: "playlist",
+        title: playlist.title,
+        imageUrl: playlist.imageUrl,
+        createdAt: new Date(playlist.addedAt),
+        owner: playlist.owner,
+      });
+    }
+  });
+
+  const uniquePlaylists = Array.from(allPlaylistsMap.values());
+  // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
+  // Объединяем все элементы библиотеки и сортируем по дате добавления
   const libraryItems: LibraryItem[] = [
-    {
-      _id: "liked-songs",
-      type: "liked-songs",
-      title: "Liked Songs",
-      imageUrl: "/liked.png",
-      createdAt: new Date(0),
-      songsCount: likedSongs.length,
-    } as LibraryItem,
-    ...albums.map(
+    ...(albums || []).map(
       (album) =>
         ({
           _id: album._id,
           title: album.title,
           imageUrl: album.imageUrl,
-          createdAt: new Date(album.addedAt || 0), // Исправлено: добавлено || 0
+          createdAt: new Date(album.addedAt || 0),
           type: "album",
           artist: album.artist,
-        } as LibraryItem)
+        } as AlbumItem)
     ),
-    ...myPlaylists.map(
-      (playlist) =>
+    ...uniquePlaylists, // ИСПОЛЬЗУЕМ ДЕДУПЛИЦИРОВАННЫЕ ПЛЕЙЛИСТЫ ЗДЕСЬ
+    ...(followedArtists || []).map(
+      (artist) =>
         ({
-          _id: playlist._id,
-          title: playlist.title,
-          imageUrl: playlist.imageUrl,
-          createdAt: new Date(playlist.updatedAt),
-          type: "playlist",
-          owner: playlist.owner,
-        } as LibraryItem)
+          _id: artist._id,
+          title: artist.name, // Используем artist.name
+          imageUrl: artist.imageUrl,
+          createdAt: new Date(artist.addedAt || artist.createdAt), // Используем artist.addedAt, если есть, иначе artist.createdAt
+          type: "artist",
+          artistId: artist._id,
+        } as FollowedArtistItem)
     ),
-    ...playlists.map(
-      (playlist) =>
-        ({
-          _id: playlist._id,
-          title: playlist.title,
-          imageUrl: playlist.imageUrl,
-          createdAt: new Date(playlist.addedAt),
-          type: "playlist",
-          owner: playlist.owner,
-        } as LibraryItem)
-    ),
+    ...(likedSongs.length > 0
+      ? [
+          {
+            _id: "liked-songs",
+            type: "liked-songs",
+            title: "Liked Songs",
+            imageUrl: "/liked.png",
+            createdAt: new Date(likedSongs[0]?.likedAt || Date.now()),
+            songsCount: likedSongs.length,
+          } as LikedSongsItem,
+        ]
+      : []),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
@@ -160,58 +190,84 @@ const LibraryPage = () => {
                   No items in your library yet.
                 </p>
               ) : (
-                libraryItems.map((item) => {
-                  let linkPath: string;
-                  let subtitle: string;
-                  let coverImageUrl: string | null | undefined = item.imageUrl;
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {libraryItems.map((item) => {
+                    let linkPath: string;
+                    let subtitle: string;
+                    let coverImageUrl: string | null | undefined =
+                      item.imageUrl;
+                    let imageClass = "rounded-md";
 
-                  if (item.type === "liked-songs") {
-                    linkPath = "/liked-songs";
-                    subtitle = `Playlist • ${item.songsCount} ${
-                      item.songsCount !== 1 ? "songs" : "song"
-                    }`;
-                    coverImageUrl = item.imageUrl;
-                  } else if (item.type === "album") {
-                    linkPath = `/albums/${item._id}`;
-                    subtitle = `Album • ${getArtistNames(item.artist)}`;
-                    coverImageUrl = item.imageUrl || "/default-album-cover.png";
-                  } else {
-                    linkPath = `/playlists/${item._id}`;
-                    subtitle = `Playlist • ${
-                      item.owner?.fullName || "Unknown"
-                    }`;
-                    coverImageUrl =
-                      item.imageUrl || "/default_playlist_cover.png";
-                  }
+                    if (item.type === "liked-songs") {
+                      const likedItem = item as LikedSongsItem;
+                      linkPath = "/liked-songs";
+                      subtitle = `Playlist • ${likedItem.songsCount} ${
+                        likedItem.songsCount !== 1 ? "songs" : "song"
+                      }`;
+                      coverImageUrl = item.imageUrl;
+                    } else if (item.type === "album") {
+                      const albumItem = item as AlbumItem;
+                      linkPath = `/albums/${albumItem._id}`;
+                      subtitle = `Album • ${getArtistNames(albumItem.artist)}`;
+                      coverImageUrl =
+                        item.imageUrl || "/default-album-cover.png";
+                    } else if (item.type === "playlist") {
+                      const playlistItem = item as PlaylistItem;
+                      linkPath = `/playlists/${playlistItem._id}`;
+                      subtitle = `Playlist • ${
+                        playlistItem.owner?.fullName || "Unknown"
+                      }`;
+                      coverImageUrl =
+                        item.imageUrl || "/default_playlist_cover.png";
+                    } else if (item.type === "artist") {
+                      const artistItem = item as FollowedArtistItem;
+                      linkPath = `/artists/${artistItem._id}`;
+                      subtitle = `Artist`;
+                      coverImageUrl =
+                        item.imageUrl || "/default-artist-cover.png";
+                      imageClass = "rounded-full";
+                    } else {
+                      linkPath = "#";
+                      subtitle = "";
+                      coverImageUrl = "/default-cover.png";
+                    }
 
-                  return (
-                    <Link
-                      key={item._id}
-                      to={linkPath}
-                      className="bg-zinc-900 rounded-md p-2 flex items-center gap-4 hover:bg-zinc-800 transition-colors duration-200 cursor-pointer shadow-lg"
-                    >
-                      <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
-                        <img
-                          src={coverImageUrl || "/default_playlist_cover.png"}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              item.type === "album"
-                                ? "/default-album-cover.png"
-                                : "/default_playlist_cover.png";
-                          }}
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <h2 className="text-base font-bold text-white truncate">
+                    return (
+                      <Link
+                        key={item._id}
+                        to={linkPath}
+                        className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
+                      >
+                        <div className="relative mb-4">
+                          <div
+                            className={`aspect-square shadow-lg overflow-hidden ${imageClass}`}
+                          >
+                            <img
+                              src={
+                                coverImageUrl || "/default_playlist_cover.png"
+                              }
+                              alt={item.title}
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  item.type === "album" ||
+                                  item.type === "artist"
+                                    ? "/default-album-cover.png"
+                                    : "/default_playlist_cover.png";
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <h3 className="font-medium mb-1 truncate text-white">
                           {item.title}
-                        </h2>
-                        <p className="text-sm text-zinc-400">{subtitle}</p>
-                      </div>
-                    </Link>
-                  );
-                })
+                        </h3>
+                        <p className="text-sm text-zinc-400 truncate">
+                          {subtitle}
+                        </p>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
