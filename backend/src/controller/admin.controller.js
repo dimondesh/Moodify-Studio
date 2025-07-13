@@ -66,12 +66,13 @@ export const createSong = async (req, res, next) => {
         .json({ message: "Access denied. Admin privileges required." });
     }
 
-    if (!req.files || !req.files.audioFile || !req.files.imageFile) {
-      return res.status(400).json({ message: "Please upload all files" });
+    // ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем наличие imageFile и instrumentalFile
+    if (!req.files || !req.files.instrumentalFile || !req.files.imageFile) {
+      return res
+        .status(400)
+        .json({ message: "Please upload instrumental audio and image files" });
     }
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Переименовываем artistIds во что-то временное для парсинга
-    // и получаем остальные поля
     const {
       title,
       artistIds: artistIdsJsonString,
@@ -81,33 +82,21 @@ export const createSong = async (req, res, next) => {
 
     let artistIds;
     try {
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Пытаемся распарсить JSON-строку
       artistIds = artistIdsJsonString ? JSON.parse(artistIdsJsonString) : [];
-      // Убедитесь, что после парсинга это действительно массив
       if (!Array.isArray(artistIds)) {
-        artistIds = []; // Если парсинг не удался или это не массив, устанавливаем пустой массив
+        artistIds = [];
       }
     } catch (e) {
       console.error("Failed to parse artistIds JSON:", e);
-      artistIds = []; // В случае ошибки парсинга, устанавливаем пустой массив
+      artistIds = [];
     }
 
     if (!artistIds || artistIds.length === 0) {
-      console.log(
-        "Validation Failed: artistIds is invalid or empty (after parsing)."
-      );
-      console.log("Value of artistIds (parsed):", artistIds);
-      console.log(
-        "Is artistIds an array (after parsing)?",
-        Array.isArray(artistIds)
-      );
-      console.log("Length of artistIds (after parsing):", artistIds?.length);
       return res
         .status(400)
         .json({ message: "At least one Artist ID is required." });
     }
 
-    // Проверяем существование всех артистов
     const existingArtists = await Artist.find({ _id: { $in: artistIds } });
     if (existingArtists.length !== artistIds.length) {
       return res
@@ -117,17 +106,28 @@ export const createSong = async (req, res, next) => {
 
     let duration = 0;
     try {
-      const metadata = await mm.parseFile(req.files.audioFile.tempFilePath);
+      // ИЗМЕНЕНИЕ ЗДЕСЬ: Парсим метаданные инструментальной дорожки
+      const metadata = await mm.parseFile(
+        req.files.instrumentalFile.tempFilePath
+      );
       duration = Math.floor(metadata.format.duration || 0);
     } catch (err) {
-      console.error("Error parsing audio metadata:", err);
-      throw new Error("Invalid audio file");
+      console.error("Error parsing instrumental audio metadata:", err);
+      throw new Error("Invalid instrumental audio file");
     }
 
-    const audioUrl = await uploadToCloudinary(
-      req.files.audioFile,
-      "songs/audio"
+    // ИЗМЕНЕНИЕ ЗДЕСЬ: Загружаем инструментал и, если есть, вокал
+    const instrumentalUrl = await uploadToCloudinary(
+      req.files.instrumentalFile,
+      "songs/instrumentals"
     );
+    let vocalsUrl = null;
+    if (req.files.vocalsFile) {
+      vocalsUrl = await uploadToCloudinary(
+        req.files.vocalsFile,
+        "songs/vocals"
+      );
+    }
     const imageUrl = await uploadToCloudinary(
       req.files.imageFile,
       "songs/images"
@@ -138,7 +138,7 @@ export const createSong = async (req, res, next) => {
     if (!albumId || albumId === "none" || albumId === "") {
       const newAlbum = new Album({
         title,
-        artist: artistIds, // Передаем массив artistIds
+        artist: artistIds,
         imageUrl,
         releaseYear: releaseYear || new Date().getFullYear(),
         songs: [],
@@ -147,13 +147,12 @@ export const createSong = async (req, res, next) => {
       await newAlbum.save();
       finalAlbumId = newAlbum._id;
 
-      await updateArtistsContent(artistIds, newAlbum._id, "albums"); // Добавляем альбом артистам
+      await updateArtistsContent(artistIds, newAlbum._id, "albums");
     } else {
       const existingAlbum = await Album.findById(albumId);
       if (!existingAlbum) {
         return res.status(404).json({ message: "Album not found." });
       }
-      // Проверяем, что альбом принадлежит хотя бы одному из указанных артистов
       const albumArtists = existingAlbum.artist.map((id) => id.toString());
       const hasCommonArtist = artistIds.some((id) => albumArtists.includes(id));
       if (!hasCommonArtist) {
@@ -166,8 +165,9 @@ export const createSong = async (req, res, next) => {
 
     const song = new Song({
       title,
-      artist: artistIds, // Сохраняем массив ID артистов
-      audioUrl,
+      artist: artistIds,
+      instrumentalUrl, // <-- ИЗМЕНЕНО
+      vocalsUrl, // <-- НОВОЕ
       imageUrl,
       duration,
       albumId: finalAlbumId,
@@ -181,7 +181,7 @@ export const createSong = async (req, res, next) => {
       });
     }
 
-    await updateArtistsContent(artistIds, song._id, "songs"); // Добавляем песню артистам
+    await updateArtistsContent(artistIds, song._id, "songs");
 
     res.status(201).json(song);
   } catch (error) {
@@ -199,8 +199,10 @@ export const updateSong = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { title, artistIds, albumId } = req.body; // Ожидаем artistIds (массив строк)
-    const audioFile = req.files ? req.files.audioFile : null;
+    const { title, artistIds, albumId } = req.body;
+    // ИЗМЕНЕНИЕ ЗДЕСЬ: Отдельные файлы для инструментала, вокала и изображения
+    const instrumentalFile = req.files ? req.files.instrumentalFile : null;
+    const vocalsFile = req.files ? req.files.vocalsFile : null; // НОВОЕ
     const imageFile = req.files ? req.files.imageFile : null;
 
     const song = await Song.findById(id);
@@ -208,7 +210,6 @@ export const updateSong = async (req, res, next) => {
       return res.status(404).json({ message: "Song not found." });
     }
 
-    // Обновляем артистов
     if (artistIds && Array.isArray(artistIds) && artistIds.length > 0) {
       const existingArtists = await Artist.find({ _id: { $in: artistIds } });
       if (existingArtists.length !== artistIds.length) {
@@ -220,13 +221,11 @@ export const updateSong = async (req, res, next) => {
       const oldArtistIds = song.artist.map((id) => id.toString());
       const newArtistIds = artistIds;
 
-      // Удаляем песню из старых артистов, которых нет в новом списке
       const artistsToRemove = oldArtistIds.filter(
         (oldId) => !newArtistIds.includes(oldId)
       );
       await removeContentFromArtists(artistsToRemove, song._id, "songs");
 
-      // Добавляем песню к новым артистам, которых не было в старом списке
       const artistsToAdd = newArtistIds.filter(
         (newId) => !oldArtistIds.includes(newId)
       );
@@ -243,18 +242,34 @@ export const updateSong = async (req, res, next) => {
         .json({ message: "Song must have at least one artist." });
     }
 
-    // Обновляем аудиофайл
-    if (audioFile) {
-      if (song.audioUrl) {
-        await deleteFromCloudinary(extractPublicId(song.audioUrl));
+    // ИЗМЕНЕНИЕ ЗДЕСЬ: Обновляем инструментальную дорожку
+    if (instrumentalFile) {
+      if (song.instrumentalUrl) {
+        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
       }
-      song.audioUrl = await uploadToCloudinary(audioFile, "songs/audio");
+      song.instrumentalUrl = await uploadToCloudinary(
+        instrumentalFile,
+        "songs/instrumentals"
+      );
       try {
-        const metadata = await mm.parseFile(audioFile.tempFilePath);
+        const metadata = await mm.parseFile(instrumentalFile.tempFilePath);
         song.duration = Math.floor(metadata.format.duration || 0);
       } catch (err) {
-        console.error("Error parsing new audio metadata:", err);
+        console.error("Error parsing new instrumental metadata:", err);
       }
+    }
+
+    // НОВОЕ: Обновляем вокальную дорожку
+    // Если vocalsFile загружен
+    if (vocalsFile) {
+      if (song.vocalsUrl) {
+        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      }
+      song.vocalsUrl = await uploadToCloudinary(vocalsFile, "songs/vocals");
+    } else if (req.body.clearVocals === "true" && song.vocalsUrl) {
+      // Если фронтенд явно указал очистить вокал
+      await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      song.vocalsUrl = null;
     }
 
     // Обновляем изображение
@@ -265,10 +280,8 @@ export const updateSong = async (req, res, next) => {
       song.imageUrl = await uploadToCloudinary(imageFile, "songs/images");
     }
 
-    // Обновляем альбом
     if (albumId !== undefined) {
       if (song.albumId && song.albumId.toString() !== albumId) {
-        // Удаляем из старого альбома
         await Album.findByIdAndUpdate(song.albumId, {
           $pull: { songs: song._id },
         });
@@ -278,7 +291,6 @@ export const updateSong = async (req, res, next) => {
         if (!newAlbum) {
           return res.status(404).json({ message: "New album not found." });
         }
-        // Проверяем, что новый альбом принадлежит хотя бы одному из текущих артистов песни
         const songArtists = song.artist.map((id) => id.toString());
         const albumArtists = newAlbum.artist.map((id) => id.toString());
         const hasCommonArtist = songArtists.some((id) =>
@@ -291,14 +303,13 @@ export const updateSong = async (req, res, next) => {
               "Cannot move song to an album of a different or unrelated artist.",
           });
         }
-        // Если песня уже есть в этом альбоме, не добавляем её повторно
         if (!newAlbum.songs.includes(song._id)) {
           newAlbum.songs.push(song._id);
           await newAlbum.save();
         }
         song.albumId = albumId;
       } else {
-        song.albumId = null; // Убираем альбом
+        song.albumId = null;
       }
     }
 
@@ -328,8 +339,13 @@ export const deleteSong = async (req, res, next) => {
     }
 
     // Удаление из Cloudinary
-    if (song.audioUrl) {
-      await deleteFromCloudinary(extractPublicId(song.audioUrl));
+    if (song.instrumentalUrl) {
+      // <-- ИЗМЕНЕНО
+      await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+    }
+    if (song.vocalsUrl) {
+      // <-- НОВОЕ
+      await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
     }
     if (song.imageUrl) {
       await deleteFromCloudinary(extractPublicId(song.imageUrl));
@@ -358,9 +374,9 @@ export const deleteSong = async (req, res, next) => {
 // --- CRUD для ALBUMS ---
 
 export const createAlbum = async (req, res, next) => {
-  console.log("🚀 Reached createAlbum route"); // Логирование добавлено
-  console.log("req.body:", req.body); // Логирование добавлено
-  console.log("req.files:", req.files); // Логирование добавлено
+  console.log("🚀 Reached createAlbum route");
+  console.log("req.body:", req.body);
+  console.log("req.files:", req.files);
 
   try {
     if (!req.user || !req.user.isAdmin) {
@@ -369,7 +385,6 @@ export const createAlbum = async (req, res, next) => {
         .json({ message: "Access denied. Admin privileges required." });
     }
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Переименовываем artistIds во что-то временное для парсинга
     const {
       title,
       artistIds: artistIdsJsonString,
@@ -379,28 +394,16 @@ export const createAlbum = async (req, res, next) => {
 
     let artistIds;
     try {
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Пытаемся распарсить JSON-строку
       artistIds = artistIdsJsonString ? JSON.parse(artistIdsJsonString) : [];
-      // Убедитесь, что после парсинга это действительно массив
       if (!Array.isArray(artistIds)) {
-        artistIds = []; // Если парсинг не удался или это не массив, устанавливаем пустой массив
+        artistIds = [];
       }
     } catch (e) {
       console.error("Failed to parse artistIds JSON:", e);
-      artistIds = []; // В случае ошибки парсинга, устанавливаем пустой массив
+      artistIds = [];
     }
 
     if (!artistIds || artistIds.length === 0) {
-      console.log(
-        "Validation Failed: artistIds is invalid or empty (after parsing)."
-      );
-      console.log("Value of artistIds (parsed):", artistIds);
-      console.log(
-        "Is artistIds an array (after parsing)?",
-        Array.isArray(artistIds)
-      );
-      console.log("Length of artistIds (after parsing):", artistIds?.length);
-
       return res
         .status(400)
         .json({ message: "At least one Artist ID is required." });
@@ -414,7 +417,6 @@ export const createAlbum = async (req, res, next) => {
     }
 
     if (!req.files || !req.files.imageFile) {
-      // Добавим более информативный лог, если файл не загружен
       console.log("Validation Failed: No imageFile uploaded.");
       console.log("req.files status:", req.files);
       return res.status(400).json({ message: "No imageFile uploaded" });
@@ -424,14 +426,14 @@ export const createAlbum = async (req, res, next) => {
 
     const album = new Album({
       title,
-      artist: artistIds, // Теперь artistIds будет гарантированно массивом
+      artist: artistIds,
       imageUrl,
       releaseYear,
       type,
     });
     await album.save();
 
-    await updateArtistsContent(artistIds, album._id, "albums"); // Добавляем альбом артистам
+    await updateArtistsContent(artistIds, album._id, "albums");
 
     res.status(201).json(album);
   } catch (error) {
@@ -449,7 +451,7 @@ export const updateAlbum = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { title, artistIds, releaseYear, type } = req.body; // Ожидаем artistIds (массив строк)
+    const { title, artistIds, releaseYear, type } = req.body;
     const imageFile = req.files ? req.files.imageFile : null;
 
     const album = await Album.findById(id);
@@ -457,7 +459,6 @@ export const updateAlbum = async (req, res, next) => {
       return res.status(404).json({ message: "Album not found." });
     }
 
-    // Обновляем артистов
     if (artistIds && Array.isArray(artistIds) && artistIds.length > 0) {
       const existingArtists = await Artist.find({ _id: { $in: artistIds } });
       if (existingArtists.length !== artistIds.length) {
@@ -469,27 +470,17 @@ export const updateAlbum = async (req, res, next) => {
       const oldArtistIds = album.artist.map((id) => id.toString());
       const newArtistIds = artistIds;
 
-      // Удаляем альбом из старых артистов, которых нет в новом списке
       const artistsToRemove = oldArtistIds.filter(
         (oldId) => !newArtistIds.includes(oldId)
       );
       await removeContentFromArtists(artistsToRemove, album._id, "albums");
 
-      // Добавляем альбом к новым артистам, которых не было в старом списке
       const artistsToAdd = newArtistIds.filter(
         (newId) => !oldArtistIds.includes(newId)
       );
       await updateArtistsContent(artistsToAdd, album._id, "albums");
 
       album.artist = newArtistIds;
-
-      // Важно: Если артисты альбома меняются, нужно убедиться, что все песни в этом альбоме
-      // также привязаны к новым артистам (или хотя бы к одному из них).
-      // Это сложная логика, пока оставим так: песни в альбоме могут иметь своих артистов,
-      // не обязательно совпадающих с артистами альбома. Если артист песни не входит
-      // в артистов альбома, это может быть нелогично, но технически возможно.
-      // Для упрощения, не будем трогать artistIds песен при смене artistIds альбома.
-      // Если нужно strict-соответствие, то логика будет сложнее.
     } else if (
       artistIds &&
       Array.isArray(artistIds) &&
@@ -500,7 +491,6 @@ export const updateAlbum = async (req, res, next) => {
         .json({ message: "Album must have at least one artist." });
     }
 
-    // Обновляем изображение
     if (imageFile) {
       if (album.imageUrl) {
         await deleteFromCloudinary(extractPublicId(album.imageUrl));
@@ -536,27 +526,28 @@ export const deleteAlbum = async (req, res, next) => {
       return res.status(404).json({ message: "Album not found." });
     }
 
-    // Удаление изображения альбома из Cloudinary
     if (album.imageUrl) {
       await deleteFromCloudinary(extractPublicId(album.imageUrl));
     }
 
-    // Удаление всех песен, принадлежащих этому альбому, из Cloudinary и БД
     const songsInAlbum = await Song.find({ albumId: id });
     for (const song of songsInAlbum) {
-      if (song.audioUrl) {
-        await deleteFromCloudinary(extractPublicId(song.audioUrl));
+      if (song.instrumentalUrl) {
+        // <-- ИЗМЕНЕНО
+        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+      }
+      if (song.vocalsUrl) {
+        // <-- НОВОЕ
+        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
       }
-      // Также удаляем ссылку на песню из артистов
       await removeContentFromArtists(song.artist, song._id, "songs");
     }
 
-    await Song.deleteMany({ albumId: id }); // Удаляем песни из БД
+    await Song.deleteMany({ albumId: id });
 
-    // Удаление альбома из списка альбомов артистов
     await removeContentFromArtists(album.artist, album._id, "albums");
 
     await Album.findByIdAndDelete(id);
@@ -578,8 +569,8 @@ export const createArtist = async (req, res, next) => {
     }
 
     const { name, bio } = req.body;
-    const imageFile = req.files ? req.files.imageFile : null; // Основное изображение
-    const bannerFile = req.files ? req.files.bannerFile : null; // <--- НОВОЕ: Файл баннера
+    const imageFile = req.files ? req.files.imageFile : null;
+    const bannerFile = req.files ? req.files.bannerFile : null;
 
     if (!name) {
       return res.status(400).json({ message: "Artist name is required." });
@@ -589,18 +580,17 @@ export const createArtist = async (req, res, next) => {
     }
 
     const imageUrl = await uploadToCloudinary(imageFile, "artists");
-    let bannerUrl = null; // Инициализируем bannerUrl как null
+    let bannerUrl = null;
 
     if (bannerFile) {
-      // Если файл баннера предоставлен, загружаем его
-      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners"); // <--- Загрузка баннера
+      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners");
     }
 
     const newArtist = new Artist({
       name,
       bio,
       imageUrl,
-      bannerUrl, // <--- Сохраняем bannerUrl
+      bannerUrl,
     });
     await newArtist.save();
 
@@ -627,7 +617,7 @@ export const updateArtist = async (req, res, next) => {
     const { id } = req.params;
     const { name, bio } = req.body;
     const imageFile = req.files ? req.files.imageFile : null;
-    const bannerFile = req.files ? req.files.bannerFile : null; // <--- НОВОЕ: Файл баннера
+    const bannerFile = req.files ? req.files.bannerFile : null;
 
     const artist = await Artist.findById(id);
     if (!artist) {
@@ -635,9 +625,8 @@ export const updateArtist = async (req, res, next) => {
     }
 
     let imageUrl = artist.imageUrl;
-    let bannerUrl = artist.bannerUrl; // Сохраняем текущий URL баннера
+    let bannerUrl = artist.bannerUrl;
 
-    // Обновление основного изображения
     if (imageFile) {
       if (artist.imageUrl) {
         await deleteFromCloudinary(extractPublicId(artist.imageUrl));
@@ -645,26 +634,22 @@ export const updateArtist = async (req, res, next) => {
       imageUrl = await uploadToCloudinary(imageFile, "artists");
     }
 
-    // Обновление баннера
     if (bannerFile) {
-      // Если предоставлен новый файл баннера
       if (artist.bannerUrl) {
-        // Если старый баннер существует, удаляем его
         await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
       }
-      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners"); // Загружаем новый баннер
+      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners");
     } else if (req.body.bannerUrl === null || req.body.bannerUrl === "") {
-      // Если баннер явно удален (передано null/пустая строка)
       if (artist.bannerUrl) {
         await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
       }
-      bannerUrl = null; // Устанавливаем баннер в null
+      bannerUrl = null;
     }
 
     artist.name = name || artist.name;
     artist.bio = bio !== undefined ? bio : artist.bio;
     artist.imageUrl = imageUrl;
-    artist.bannerUrl = bannerUrl; // <--- Сохраняем обновленный bannerUrl
+    artist.bannerUrl = bannerUrl;
 
     await artist.save();
     res.status(200).json(artist);
@@ -707,8 +692,13 @@ export const deleteArtist = async (req, res, next) => {
     // и удаление этих песен из всех альбомов, в которых они могли быть
     const songsOfArtist = await Song.find({ artist: artist._id });
     for (const song of songsOfArtist) {
-      if (song.audioUrl) {
-        await deleteFromCloudinary(extractPublicId(song.audioUrl));
+      if (song.instrumentalUrl) {
+        // <-- ИЗМЕНЕНО
+        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+      }
+      if (song.vocalsUrl) {
+        // <-- НОВОЕ
+        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
