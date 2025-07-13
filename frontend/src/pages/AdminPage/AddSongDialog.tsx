@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { useEffect, useRef, useState } from "react"; // Добавлен useEffect
+import { useEffect, useRef, useState } from "react";
 import { axiosInstance } from "../../lib/axios";
 import {
   Dialog,
@@ -23,40 +23,44 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { MultiSelect } from "../../components/ui/multi-select"; // Импортируем MultiSelect
+import { MultiSelect } from "../../components/ui/multi-select";
 
 interface NewSong {
   title: string;
-  artistIds: string[]; // ИЗМЕНЕНО: теперь массив строк для MultiSelect
+  artistIds: string[];
   album: string;
   releaseYear: number;
 }
 
 const AddSongDialog = () => {
-  const { albums, artists, fetchAlbums, fetchArtists } = useMusicStore(); // Добавлены artists и fetchArtists
+  const { albums, artists, fetchAlbums, fetchArtists } = useMusicStore();
   const [songDialogOpen, setSongDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]); // Состояние для выбранных артистов
+  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
 
   const [newSong, setNewSong] = useState<NewSong>({
     title: "",
-    artistIds: [], // ИЗМЕНЕНО: инициализируем пустым массивом
+    artistIds: [],
     album: "",
     releaseYear: new Date().getFullYear(),
   });
 
+  // ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем instrumentalFile и vocalsFile
   const [files, setFiles] = useState<{
-    audio: File | null;
-    image: File | null;
+    instrumentalFile: File | null; // <-- ИЗМЕНЕНО
+    vocalsFile: File | null; // <-- НОВОЕ: Для вокальной дорожки
+    imageFile: File | null; // <-- ИЗМЕНЕНО
   }>({
-    audio: null,
-    image: null,
+    instrumentalFile: null,
+    vocalsFile: null,
+    imageFile: null,
   });
 
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  // ИЗМЕНЕНИЕ ЗДЕСЬ: Отдельные рефы для инструментала и вокала
+  const instrumentalInputRef = useRef<HTMLInputElement>(null); // <-- ИЗМЕНЕНО
+  const vocalsInputRef = useRef<HTMLInputElement>(null); // <-- НОВОЕ
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // ИЗМЕНЕНО: Загружаем артистов и альбомы при открытии диалога
   useEffect(() => {
     if (songDialogOpen) {
       fetchArtists();
@@ -68,18 +72,17 @@ const AddSongDialog = () => {
     setIsLoading(true);
 
     try {
-      if (!files.audio || !files.image) {
-        return toast.error("Please upload both audio and image files");
+      // ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем instrumentalFile и imageFile
+      if (!files.instrumentalFile || !files.imageFile) {
+        return toast.error("Please upload instrumental audio and image files");
       }
       if (selectedArtistIds.length === 0) {
-        // Проверка на наличие выбранных артистов
         return toast.error("Please select at least one artist.");
       }
 
       const formData = new FormData();
 
       formData.append("title", newSong.title);
-      // ИЗМЕНЕНО: Отправляем artistIds как JSON-строку
       formData.append("artistIds", JSON.stringify(selectedArtistIds));
 
       if (newSong.album && newSong.album !== "none") {
@@ -87,33 +90,34 @@ const AddSongDialog = () => {
       }
       formData.append("releaseYear", newSong.releaseYear.toString());
 
-      formData.append("audioFile", files.audio);
-      formData.append("imageFile", files.image);
+      // ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем instrumentalFile и vocalsFile
+      formData.append("instrumentalFile", files.instrumentalFile);
+      if (files.vocalsFile) {
+        formData.append("vocalsFile", files.vocalsFile); // Добавляем вокал только если он выбран
+      }
+      formData.append("imageFile", files.imageFile);
 
-      await axiosInstance.post("/admin/songs", formData, {
-        // УДАЛЕНО: Больше не нужно явно указывать Content-Type для FormData в Axios
-        // headers: {
-        //   "Content-Type": "multipart/form-data",
-        // },
-      });
+      await axiosInstance.post("/admin/songs", formData);
 
       setNewSong({
         title: "",
-        artistIds: [], // Сброс состояния
+        artistIds: [],
         album: "",
         releaseYear: new Date().getFullYear(),
       });
-      setSelectedArtistIds([]); // Сброс выбранных артистов
+      setSelectedArtistIds([]);
+      // ИЗМЕНЕНИЕ ЗДЕСЬ: Сброс всех файлов
       setFiles({
-        audio: null,
-        image: null,
+        instrumentalFile: null,
+        vocalsFile: null,
+        imageFile: null,
       });
-      setSongDialogOpen(false); // Закрываем диалог
+      setSongDialogOpen(false);
       toast.success("Song added successfully");
     } catch (error: any) {
       toast.error(
         "Failed to add song: " +
-          (error.response?.data?.message || error.message) // Улучшенное сообщение об ошибке
+          (error.response?.data?.message || error.message)
       );
     } finally {
       setIsLoading(false);
@@ -138,39 +142,28 @@ const AddSongDialog = () => {
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <input
-            type="file"
-            accept="audio/*"
-            ref={audioInputRef}
-            hidden
-            onChange={(e) =>
-              setFiles((prev) => ({ ...prev, audio: e.target.files![0] }))
-            }
-          />
-
-          <input
-            type="file"
-            ref={imageInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={(e) =>
-              setFiles((prev) => ({ ...prev, image: e.target.files![0] }))
-            }
-          />
-
-          {/* image upload area */}
+          {/* Image upload area */}
           <div
             className="flex items-center justify-center p-6 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer"
             onClick={() => imageInputRef.current?.click()}
           >
+            <input
+              type="file"
+              accept="image/*"
+              ref={imageInputRef}
+              hidden
+              onChange={(e) =>
+                setFiles((prev) => ({ ...prev, imageFile: e.target.files![0] }))
+              }
+            />
             <div className="text-center">
-              {files.image ? (
+              {files.imageFile ? (
                 <div className="space-y-2">
                   <div className="text-sm text-emerald-500">
                     Image selected:
                   </div>
                   <div className="text-xs text-zinc-400">
-                    {files.image.name.slice(0, 20)}
+                    {files.imageFile.name.slice(0, 20)}
                   </div>
                 </div>
               ) : (
@@ -193,23 +186,79 @@ const AddSongDialog = () => {
             </div>
           </div>
 
-          {/* Audio upload */}
+          {/* Instrumental Audio upload */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Audio File</label>
+            <label className="text-sm font-medium text-white">
+              Instrumental File (Required)
+            </label>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => audioInputRef.current?.click()}
+                onClick={() => instrumentalInputRef.current?.click()}
                 className="w-full text-zinc-200"
               >
-                {files.audio
-                  ? files.audio.name.slice(0, 20)
-                  : "Choose Audio File"}
+                {files.instrumentalFile
+                  ? files.instrumentalFile.name.slice(0, 20)
+                  : "Choose Instrumental File"}
               </Button>
+              <input
+                type="file"
+                accept="audio/*"
+                ref={instrumentalInputRef}
+                hidden
+                onChange={(e) =>
+                  setFiles((prev) => ({
+                    ...prev,
+                    instrumentalFile: e.target.files![0],
+                  }))
+                }
+              />
             </div>
           </div>
 
-          {/* other fields */}
+          {/* Vocals Audio upload (Optional) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">
+              Vocals File (Optional)
+            </label>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => vocalsInputRef.current?.click()}
+                className="w-full text-zinc-200"
+              >
+                {files.vocalsFile
+                  ? files.vocalsFile.name.slice(0, 20)
+                  : "Choose Vocals File (Optional)"}
+              </Button>
+              <input
+                type="file"
+                accept="audio/*"
+                ref={vocalsInputRef}
+                hidden
+                onChange={(e) =>
+                  setFiles((prev) => ({
+                    ...prev,
+                    vocalsFile: e.target.files![0],
+                  }))
+                }
+              />
+              {files.vocalsFile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setFiles((prev) => ({ ...prev, vocalsFile: null }))
+                  }
+                  className="text-red-500 hover:bg-red-900"
+                >
+                  X
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Other fields */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">Title</label>
             <Input
@@ -218,13 +267,13 @@ const AddSongDialog = () => {
                 setNewSong({ ...newSong, title: e.target.value })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
-              placeholder="Enter song title" // Добавлен placeholder
+              placeholder="Enter song title"
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">Artists</label>
-            <MultiSelect // ИЗМЕНЕНО: Используем MultiSelect
+            <MultiSelect
               defaultValue={selectedArtistIds}
               onValueChange={setSelectedArtistIds}
               options={artists.map((artist) => ({
@@ -251,7 +300,7 @@ const AddSongDialog = () => {
                 })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
-              placeholder="Enter release year" // Добавлен placeholder
+              placeholder="Enter release year"
             />
           </div>
 
@@ -290,7 +339,6 @@ const AddSongDialog = () => {
             variant="outline"
             onClick={() => {
               setSongDialogOpen(false);
-              // Сброс полей при отмене
               setNewSong({
                 title: "",
                 artistIds: [],
@@ -298,7 +346,12 @@ const AddSongDialog = () => {
                 releaseYear: new Date().getFullYear(),
               });
               setSelectedArtistIds([]);
-              setFiles({ audio: null, image: null });
+              // ИЗМЕНЕНИЕ ЗДЕСЬ: Сброс всех файлов
+              setFiles({
+                instrumentalFile: null,
+                vocalsFile: null,
+                imageFile: null,
+              });
             }}
             disabled={isLoading}
             className="text-zinc-400"
@@ -310,9 +363,9 @@ const AddSongDialog = () => {
             disabled={
               isLoading ||
               !newSong.title ||
-              selectedArtistIds.length === 0 || // Проверка на выбор артиста
-              !files.audio ||
-              !files.image
+              selectedArtistIds.length === 0 ||
+              !files.instrumentalFile || // <-- ИЗМЕНЕНО
+              !files.imageFile
             }
           >
             {isLoading ? "Uploading..." : "Add Song"}

@@ -1,5 +1,3 @@
-// frontend/src/types/index.ts
-
 export interface Artist {
   _id: string;
   name: string;
@@ -22,7 +20,8 @@ export interface Song {
   artist: Artist[]; // <-- Убедитесь, что это Artist[]
   albumId: string | null;
   imageUrl: string;
-  audioUrl: string;
+  instrumentalUrl: string; // <-- ИЗМЕНЕНО: Теперь instrumentalUrl
+  vocalsUrl?: string; // <-- НОВОЕ ПОЛЕ: Опциональная вокальная дорожка
   duration: number; // in seconds
   playCount: number; // <-- НОВОЕ ПОЛЕ
   createdAt: string;

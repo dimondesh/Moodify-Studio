@@ -125,7 +125,6 @@ const PlaylistDetailsPage = () => {
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
     : false;
-  console.log(isInLibrary, "////////////////////////////////");
   useEffect(() => {
     const loadPlaylist = async () => {
       setLocalIsLoading(true);

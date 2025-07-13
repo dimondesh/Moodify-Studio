@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// frontend/src/stores/usePlayerStore.ts
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
-import { usePlayCountStore } from "./usePlayCountStore"; // ИМПОРТ ИЗ НОВОГО ФАЙЛА
+import { usePlayCountStore } from "./usePlayCountStore";
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -10,29 +11,28 @@ interface PlayerStore {
   queue: Song[];
   currentIndex: number;
   repeatMode: "off" | "all" | "one";
-
   isShuffle: boolean;
-
   shuffleHistory: number[];
   shufflePointer: number;
   isFullScreenPlayerOpen: boolean;
+  vocalsVolume: number; // Громкость вокала (0-100), относительная
+  masterVolume: number; // Общая громкость (0-100)
+  currentTime: number; // <-- НОВОЕ ПОЛЕ: Текущее время воспроизведения
+  duration: number; // <-- НОВОЕ ПОЛЕ: Общая длительность трека
+
   setRepeatMode: (mode: "off" | "all" | "one") => void;
-
   toggleShuffle: () => void;
-
   initializeQueue: (songs: Song[]) => void;
-
   playAlbum: (songs: Song[], startIndex?: number) => void;
-
   setCurrentSong: (song: Song | null) => void;
-
   togglePlay: () => void;
-
   playNext: () => void;
-
   playPrevious: () => void;
-
   setIsFullScreenPlayerOpen: (isOpen: boolean) => void;
+  setVocalsVolume: (volume: number) => void;
+  setMasterVolume: (volume: number) => void;
+  setCurrentTime: (time: number) => void; // <-- НОВАЯ ФУНКЦИЯ
+  setDuration: (duration: number) => void; // <-- НОВАЯ ФУНКЦИЯ
 }
 
 const shuffleQueue = (length: number) => {
@@ -52,13 +52,14 @@ export const usePlayerStore = create<PlayerStore>()(
       queue: [],
       currentIndex: -1,
       repeatMode: "off",
-
       isShuffle: false,
-
       shuffleHistory: [],
       shufflePointer: -1,
-
       isFullScreenPlayerOpen: false,
+      vocalsVolume: 100,
+      masterVolume: 75,
+      currentTime: 0, // <-- Инициализация
+      duration: 0, // <-- Инициализация
 
       initializeQueue: (songs: Song[]) => {
         set({
@@ -67,6 +68,8 @@ export const usePlayerStore = create<PlayerStore>()(
           currentIndex: get().currentIndex === -1 ? 0 : get().currentIndex,
           shuffleHistory: [],
           shufflePointer: -1,
+          currentTime: 0, // Сброс
+          duration: 0, // Сброс
         });
       },
 
@@ -79,9 +82,7 @@ export const usePlayerStore = create<PlayerStore>()(
 
         if (isShuffle) {
           const newShuffleHistory = shuffleQueue(songs.length);
-
           const currentIndex = startIndex;
-
           const currentPosInShuffle = newShuffleHistory.indexOf(currentIndex);
 
           if (currentPosInShuffle !== -1) {
@@ -102,6 +103,8 @@ export const usePlayerStore = create<PlayerStore>()(
             isPlaying: true,
             shuffleHistory: newShuffleHistory,
             shufflePointer: 0,
+            currentTime: 0, // Сброс
+            duration: 0, // Сброс
           });
         } else {
           targetIndex = startIndex;
@@ -112,6 +115,8 @@ export const usePlayerStore = create<PlayerStore>()(
             isPlaying: true,
             shuffleHistory: [],
             shufflePointer: -1,
+            currentTime: 0, // Сброс
+            duration: 0, // Сброс
           });
         }
 
@@ -120,8 +125,7 @@ export const usePlayerStore = create<PlayerStore>()(
           currentIndex: targetIndex,
           isPlaying: true,
         });
-        // Увеличиваем счетчик прослушиваний при начале воспроизведения
-        usePlayCountStore.getState().incrementPlayCount(songToPlay._id); // <-- НОВОЕ
+        usePlayCountStore.getState().incrementPlayCount(songToPlay._id);
       },
 
       setCurrentSong: (song: Song | null) => {
@@ -133,9 +137,10 @@ export const usePlayerStore = create<PlayerStore>()(
           currentSong: song,
           isPlaying: true,
           currentIndex: songIndex !== -1 ? songIndex : get().currentIndex,
+          currentTime: 0, // Сброс
+          duration: 0, // Сброс
         });
-        // Увеличиваем счетчик прослушиваний при установке новой песни
-        usePlayCountStore.getState().incrementPlayCount(song._id); // <-- НОВОЕ
+        usePlayCountStore.getState().incrementPlayCount(song._id);
       },
 
       togglePlay: () => {
@@ -164,11 +169,10 @@ export const usePlayerStore = create<PlayerStore>()(
             }
 
             const newShuffleHistory = shuffleQueue(queueLength);
-
             const currentIndex =
               state.currentIndex >= 0 ? state.currentIndex : 0;
-
             const currentPosInShuffle = newShuffleHistory.indexOf(currentIndex);
+
             if (currentPosInShuffle !== -1) {
               [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] = [
                 newShuffleHistory[currentPosInShuffle],
@@ -199,25 +203,25 @@ export const usePlayerStore = create<PlayerStore>()(
         } = get();
 
         if (repeatMode === "one") {
-          set({ repeatMode: "all" });
+          set({ repeatMode: "all" }); // Это действие вызовет перезапуск трека в AudioPlayer
         }
 
         if (isShuffle) {
           if (shufflePointer < shuffleHistory.length - 1) {
             const nextPointer = shufflePointer + 1;
             const nextIndex = shuffleHistory[nextPointer];
-
             const nextSong = queue[nextIndex];
             set({
               currentSong: nextSong,
               currentIndex: nextIndex,
               isPlaying: true,
-              shufflePointer: nextPointer,
+              currentTime: 0, // Сброс
+              duration: 0, // Сброс
             });
-            usePlayCountStore.getState().incrementPlayCount(nextSong._id); // <-- НОВОЕ
+            usePlayCountStore.getState().incrementPlayCount(nextSong._id);
           } else {
             if (repeatMode === "off") {
-              set({ isPlaying: false });
+              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
             } else {
               const newShuffleHistory = shuffleQueue(queue.length);
               const firstIndex = newShuffleHistory[0];
@@ -228,8 +232,10 @@ export const usePlayerStore = create<PlayerStore>()(
                 isPlaying: true,
                 shuffleHistory: newShuffleHistory,
                 shufflePointer: 0,
+                currentTime: 0, // Сброс
+                duration: 0, // Сброс
               });
-              usePlayCountStore.getState().incrementPlayCount(firstSong._id); // <-- НОВОЕ
+              usePlayCountStore.getState().incrementPlayCount(firstSong._id);
             }
           }
         } else {
@@ -238,7 +244,7 @@ export const usePlayerStore = create<PlayerStore>()(
             if (repeatMode === "all") {
               nextIndex = 0;
             } else {
-              set({ isPlaying: false });
+              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
               return;
             }
           }
@@ -248,8 +254,10 @@ export const usePlayerStore = create<PlayerStore>()(
             currentSong: nextSong,
             currentIndex: nextIndex,
             isPlaying: true,
+            currentTime: 0, // Сброс
+            duration: 0, // Сброс
           });
-          usePlayCountStore.getState().incrementPlayCount(nextSong._id); // <-- НОВОЕ
+          usePlayCountStore.getState().incrementPlayCount(nextSong._id);
         }
       },
 
@@ -264,24 +272,25 @@ export const usePlayerStore = create<PlayerStore>()(
         } = get();
 
         if (repeatMode === "one") {
-          set({ repeatMode: "all" });
+          set({ repeatMode: "all" }); // Это действие вызовет перезапуск трека в AudioPlayer
         }
 
         if (isShuffle) {
           if (shufflePointer > 0) {
             const prevPointer = shufflePointer - 1;
             const prevIndex = shuffleHistory[prevPointer];
-
             const prevSong = queue[prevIndex];
             set({
               currentSong: prevSong,
               currentIndex: prevIndex,
               isPlaying: true,
               shufflePointer: prevPointer,
+              currentTime: 0, // Сброс
+              duration: 0, // Сброс
             });
-            usePlayCountStore.getState().incrementPlayCount(prevSong._id); // <-- НОВОЕ
+            usePlayCountStore.getState().incrementPlayCount(prevSong._id);
           } else {
-            set({ isPlaying: false });
+            set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
           }
         } else {
           let prevIndex = currentIndex - 1;
@@ -289,26 +298,30 @@ export const usePlayerStore = create<PlayerStore>()(
             if (repeatMode === "all") {
               prevIndex = queue.length - 1;
             } else {
-              set({ isPlaying: false });
+              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
               return;
             }
           }
 
           const prevSong = queue[prevIndex];
-
           set({
             currentSong: prevSong,
             currentIndex: prevIndex,
             isPlaying: true,
+            currentTime: 0, // Сброс
+            duration: 0, // Сброс
           });
-          usePlayCountStore.getState().incrementPlayCount(prevSong._id); // <-- НОВОЕ
+          usePlayCountStore.getState().incrementPlayCount(prevSong._id);
         }
       },
 
       setRepeatMode: (mode) => set({ repeatMode: mode }),
-
       setIsFullScreenPlayerOpen: (isOpen: boolean) =>
         set({ isFullScreenPlayerOpen: isOpen }),
+      setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
+      setMasterVolume: (volume) => set({ masterVolume: volume }),
+      setCurrentTime: (time) => set({ currentTime: time }), // Реализация
+      setDuration: (duration) => set({ duration: duration }), // Реализация
     }),
     {
       name: "music-player-storage",
@@ -322,16 +335,21 @@ export const usePlayerStore = create<PlayerStore>()(
         isShuffle: state.isShuffle,
         shuffleHistory: state.shuffleHistory,
         shufflePointer: state.shufflePointer,
+        vocalsVolume: state.vocalsVolume,
+        masterVolume: state.masterVolume,
       }),
-      onRehydrateStorage: (_state) => {
+      onRehydrateStorage: () => {
         return (persistedState, error) => {
           if (error) {
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
+            // При перезагрузке сбрасываем состояние воспроизведения
             persistedState.currentSong = null;
             persistedState.isPlaying = false;
             persistedState.isFullScreenPlayerOpen = false;
+            persistedState.currentTime = 0; // Сбрасываем и время
+            persistedState.duration = 0; // Сбрасываем и длительность
           }
         };
       },

@@ -23,16 +23,22 @@ const songSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    audioUrl: {
+    // audioUrl теперь будет использоваться как instrumentalUrl
+    instrumentalUrl: {
+      // <-- ИЗМЕНЕНО: Переименовано с audioUrl
       type: String,
       required: true,
+    },
+    vocalsUrl: {
+      // <-- НОВОЕ ПОЛЕ: Для вокальной дорожки, необязательное
+      type: String,
+      default: null, // По умолчанию null, если вокала нет
     },
     duration: {
       type: Number, // Длительность в секундах
       required: true,
     },
     playCount: {
-      // <-- НОВОЕ ПОЛЕ
       type: Number,
       default: 0,
       min: 0,

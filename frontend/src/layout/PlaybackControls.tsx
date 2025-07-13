@@ -7,7 +7,6 @@ import {
   Heart,
   Laptop2,
   ListMusic,
-  Mic2,
   Pause,
   Play,
   Repeat,
@@ -21,6 +20,7 @@ import {
   VolumeX,
   ChevronDown,
   Maximize,
+  Sliders,
 } from "lucide-react";
 import { Slider } from "../components/ui/slider";
 import {
@@ -29,9 +29,14 @@ import {
   DialogPortal,
   DialogTitle,
 } from "../components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 import { useChatStore } from "../stores/useChatStore";
 
-// Импортируем тип Artist, чтобы getArtistNames могла работать корректно.
 import { getArtistNames } from "@/lib/utils";
 
 const formatTime = (seconds: number) => {
@@ -57,14 +62,24 @@ const PlaybackControls = () => {
     playAlbum,
     isFullScreenPlayerOpen,
     setIsFullScreenPlayerOpen,
+    vocalsVolume,
+    setVocalsVolume,
+    masterVolume, // <-- ДОБАВЛЕНО
+    setMasterVolume, // <-- ДОБАВЛЕНО
   } = usePlayerStore();
 
   const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
 
-  const [volume, setVolume] = useState(75);
+  // Удаляем локальный state `volume`, так как теперь используем `masterVolume` из стора
+  // const [volume, setVolume] = useState(75);
+
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const instrumentalAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Используем локальный стейт для предыдущей общей громкости при муте/размуте
+  const [previousMasterVolume, setPreviousMasterVolume] =
+    useState(masterVolume); // <-- Используем masterVolume
 
   const [isCompactView, setIsCompactView] = useState(false);
 
@@ -93,41 +108,28 @@ const PlaybackControls = () => {
   };
 
   useEffect(() => {
-    audioRef.current = document.querySelector("audio");
-    const audio = audioRef.current;
-    if (!audio) {
-      console.warn("Audio element not found!");
+    // В этом useEffect теперь только слушатели событий и обновление времени/длительности
+    // Управление громкостью instrumentalAudio.volume теперь происходит через usePlayerStore.masterVolume в AudioPlayer.tsx
+    instrumentalAudioRef.current = document.querySelector(
+      "#instrumental-audio-element"
+    );
+    const instrumentalAudio = instrumentalAudioRef.current;
+    if (!instrumentalAudio) {
+      console.warn("Instrumental audio element not found!");
       return;
     }
 
-    if (currentSong) {
-      if (audio.src !== currentSong.audioUrl) {
-        audio.src = currentSong.audioUrl;
-        audio.load();
-      }
-      if (isPlaying) {
-        audio.play().catch((e) => console.warn("Audio playback failed:", e));
-      } else {
-        audio.pause();
-      }
-    } else {
-      audio.pause();
-      audio.src = "";
-    }
+    const updateTime = () => setCurrentTime(instrumentalAudio.currentTime);
+    const updateDuration = () => setDuration(instrumentalAudio.duration);
 
-    audio.volume = volume / 100;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("canplaythrough", updateDuration);
+    instrumentalAudio.addEventListener("timeupdate", updateTime);
+    instrumentalAudio.addEventListener("loadedmetadata", updateDuration);
+    instrumentalAudio.addEventListener("canplaythrough", updateDuration);
 
     const handleEnded = () => {
       if (repeatMode === "one") {
-        audio.currentTime = 0;
-        audio.play().catch(console.warn);
+        instrumentalAudio.currentTime = 0;
+        instrumentalAudio.play().catch(console.warn);
       } else if (repeatMode === "all") {
         if (usePlayerStore.getState().isShuffle) {
           if (
@@ -155,38 +157,29 @@ const PlaybackControls = () => {
       }
     };
 
-    audio.addEventListener("ended", handleEnded);
+    instrumentalAudio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", updateDuration);
-      audio.removeEventListener("canplaythrough", updateDuration);
-      audio.removeEventListener("ended", handleEnded);
+      instrumentalAudio.removeEventListener("timeupdate", updateTime);
+      instrumentalAudio.removeEventListener("loadedmetadata", updateDuration);
+      instrumentalAudio.removeEventListener("canplaythrough", updateDuration);
+      instrumentalAudio.removeEventListener("ended", handleEnded);
     };
-  }, [
-    currentSong,
-    isPlaying,
-    repeatMode,
-    volume,
-    queue,
-    currentIndex,
-    playNext,
-    playAlbum,
-  ]);
+  }, [repeatMode, queue, currentIndex, playNext, playAlbum]);
 
-  // Добавлен отдельный useEffect для управления воспроизведением и паузой
-  // и для отправки активности
+  // Отдельный useEffect для управления воспроизведением/паузой и отправки активности
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    const instrumentalAudio = instrumentalAudioRef.current;
+    if (!instrumentalAudio) return;
 
     if (isPlaying) {
-      audio.play().catch((e) => console.warn("Error playing audio:", e));
+      instrumentalAudio
+        .play()
+        .catch((e) => console.warn("Error playing instrumental audio:", e));
     } else {
-      audio.pause();
+      instrumentalAudio.pause();
     }
 
-    // Эмиттируем активность через Socket.IO при изменении currentSong или isPlaying
     const socket = useChatStore.getState().socket;
     if (socket) {
       const songIdToSend = currentSong && isPlaying ? currentSong._id : null;
@@ -194,29 +187,26 @@ const PlaybackControls = () => {
     }
   }, [isPlaying, currentSong]);
 
-  const [previousVolume, setPreviousVolume] = useState(75);
-
   const toggleMute = () => {
-    if (volume > 0) {
-      setPreviousVolume(volume);
-      setVolume(0);
-      if (audioRef.current) audioRef.current.volume = 0;
+    if (masterVolume > 0) {
+      // <-- Используем masterVolume
+      setPreviousMasterVolume(masterVolume); // <-- Сохраняем masterVolume
+      setMasterVolume(0); // <-- Устанавливаем masterVolume в 0
     } else {
-      setVolume(previousVolume);
-      if (audioRef.current) audioRef.current.volume = previousVolume / 100;
+      setMasterVolume(previousMasterVolume); // <-- Возвращаем предыдущий masterVolume
     }
   };
 
   const renderVolumeIcon = () => {
-    if (volume === 0) return <VolumeX className="h-4 w-4" />;
-    if (volume <= 33) return <Volume className="h-4 w-4" />;
-    if (volume <= 66) return <Volume1 className="h-4 w-4" />;
+    if (masterVolume === 0) return <VolumeX className="h-4 w-4" />; // <-- Используем masterVolume
+    if (masterVolume <= 33) return <Volume className="h-4 w-4" />; // <-- Используем masterVolume
+    if (masterVolume <= 66) return <Volume1 className="h-4 w-4" />; // <-- Используем masterVolume
     return <Volume2 className="h-4 w-4" />;
   };
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
+    if (instrumentalAudioRef.current) {
+      instrumentalAudioRef.current.currentTime = value[0];
     }
   };
 
@@ -234,8 +224,6 @@ const PlaybackControls = () => {
   if (isCompactView) {
     return (
       <>
-        <audio id="player-audio-element" />
-
         {!isFullScreenPlayerOpen && (
           <footer className="fixed bottom-16 left-0 right-0 h-16 sm:h-20 bg-zinc-800 border-t border-zinc-700 px-3 sm:px-4 flex items-center justify-between z-[61]">
             <div
@@ -259,7 +247,6 @@ const PlaybackControls = () => {
                   {currentSong.title}
                 </div>
                 <div className="text-xs text-zinc-400 truncate">
-                  {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
                   {getArtistNames(currentSong.artist)}
                 </div>
               </div>
@@ -360,7 +347,6 @@ const PlaybackControls = () => {
                     {currentSong?.title || "No song playing"}
                   </h2>
                   <p className="text-zinc-400 text-base">
-                    {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
                     {getArtistNames(currentSong.artist)}
                   </p>
                 </div>
@@ -416,9 +402,9 @@ const PlaybackControls = () => {
                   variant="ghost"
                   className="hover:text-white text-zinc-400"
                   onClick={() => {
-                    if (!audioRef.current) return;
-                    if (audioRef.current.currentTime > 3) {
-                      audioRef.current.currentTime = 0;
+                    if (!instrumentalAudioRef.current) return;
+                    if (instrumentalAudioRef.current.currentTime > 3) {
+                      instrumentalAudioRef.current.currentTime = 0;
                     } else {
                       playPrevious();
                     }
@@ -463,13 +449,43 @@ const PlaybackControls = () => {
               </div>
 
               <div className="flex items-center justify-between w-full pb-4 px-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="hover:text-white text-zinc-400"
-                >
-                  <ListMusic className="h-5 w-5" />
-                </Button>
+                {currentSong.vocalsUrl ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="hover:text-white text-zinc-400"
+                        title="Adjust vocals volume"
+                      >
+                        <Sliders className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      side="top"
+                      align="start"
+                      className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem className="focus:bg-transparent">
+                        <div className="flex items-center w-full gap-2">
+                          <span className="text-sm text-zinc-400 w-8 mr-2">
+                            Vocals
+                          </span>
+                          <Slider
+                            value={[vocalsVolume]}
+                            max={100}
+                            step={1}
+                            className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                            onValueChange={(value) => setVocalsVolume(value[0])}
+                          />
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <div className="w-10 h-10"></div>
+                )}
 
                 <div className="flex items-center gap-2 justify-end">
                   <Button
@@ -481,17 +497,14 @@ const PlaybackControls = () => {
                     {renderVolumeIcon()}
                   </Button>
                   <Slider
-                    value={[volume]}
+                    value={[masterVolume]} // <-- Используем masterVolume
                     max={100}
                     step={1}
                     className="w-24 hover:cursor-grab active:cursor-grabbing"
                     onValueChange={(value) => {
                       const newVolume = value[0];
-                      setVolume(newVolume);
-                      if (newVolume > 0) setPreviousVolume(newVolume);
-                      if (audioRef.current) {
-                        audioRef.current.volume = newVolume / 100;
-                      }
+                      setMasterVolume(newVolume); // <-- Обновляем masterVolume в сторе
+                      if (newVolume > 0) setPreviousMasterVolume(newVolume); // <-- Обновляем предыдущий masterVolume
                     }}
                   />
                   <Button
@@ -513,8 +526,6 @@ const PlaybackControls = () => {
   // ДЕСКТОПНЫЙ ПЛЕЕР
   return (
     <footer className="h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40">
-      <audio id="player-audio-element" />
-
       <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
         <div className="flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
@@ -529,7 +540,6 @@ const PlaybackControls = () => {
                   {currentSong.title}
                 </div>
                 <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
-                  {/* ИСПОЛЬЗУЕМ getArtistNames ЗДЕСЬ */}
                   {getArtistNames(currentSong.artist)}
                 </div>
               </div>
@@ -569,9 +579,9 @@ const PlaybackControls = () => {
               variant="ghost"
               className="hover:text-white text-zinc-400"
               onClick={() => {
-                if (!audioRef.current) return;
-                if (audioRef.current.currentTime > 3) {
-                  audioRef.current.currentTime = 0;
+                if (!instrumentalAudioRef.current) return;
+                if (instrumentalAudioRef.current.currentTime > 3) {
+                  instrumentalAudioRef.current.currentTime = 0;
                 } else {
                   playPrevious();
                 }
@@ -632,13 +642,45 @@ const PlaybackControls = () => {
           </div>
         </div>
         <div className="flex items-center gap-4 min-w-[180px] w-[30%] justify-end">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="hover:text-white text-zinc-400"
-          >
-            <Mic2 className="h-4 w-4" />
-          </Button>
+          {currentSong.vocalsUrl ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="hover:text-white text-zinc-400"
+                  title="Adjust vocals volume"
+                  disabled={!currentSong}
+                >
+                  <Sliders className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="end"
+                className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DropdownMenuItem className="focus:bg-transparent">
+                  <div className="flex items-center w-full gap-2">
+                    <span className="text-sm text-zinc-400 w-8 mr-2">
+                      Vocals
+                    </span>
+                    <Slider
+                      value={[vocalsVolume]}
+                      max={100}
+                      step={1}
+                      className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                      onValueChange={(value) => setVocalsVolume(value[0])}
+                    />
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="w-10 h-10"></div>
+          )}
+
           <Button
             size="icon"
             variant="ghost"
@@ -663,17 +705,14 @@ const PlaybackControls = () => {
               {renderVolumeIcon()}
             </Button>
             <Slider
-              value={[volume]}
+              value={[masterVolume]} // <-- Используем masterVolume
               max={100}
               step={1}
               className="w-24 hover:cursor-grab active:cursor-grabbing"
               onValueChange={(value) => {
                 const newVolume = value[0];
-                setVolume(newVolume);
-                if (newVolume > 0) setPreviousVolume(newVolume);
-                if (audioRef.current) {
-                  audioRef.current.volume = newVolume / 100;
-                }
+                setMasterVolume(newVolume); // <-- Обновляем masterVolume в сторе
+                if (newVolume > 0) setPreviousMasterVolume(newVolume); // <-- Обновляем предыдущий masterVolume
               }}
             />
           </div>
