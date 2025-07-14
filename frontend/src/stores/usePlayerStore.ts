@@ -4,7 +4,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
-import { usePlayCountStore } from "./usePlayCountStore";
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -167,7 +166,6 @@ export const usePlayerStore = create<PlayerStore>()(
           };
           set(newState);
 
-          usePlayCountStore.getState().incrementPlayCount(songToPlay._id);
           return newState;
         });
       },
@@ -218,7 +216,6 @@ export const usePlayerStore = create<PlayerStore>()(
           };
           set(newState);
 
-          usePlayCountStore.getState().incrementPlayCount(song._id);
           return newState;
         });
       },
@@ -359,7 +356,6 @@ export const usePlayerStore = create<PlayerStore>()(
           shuffleHistory: newShuffleHistory,
           shufflePointer: newShufflePointer,
         });
-        usePlayCountStore.getState().incrementPlayCount(nextSong._id);
       },
 
       playPrevious: () => {
@@ -421,7 +417,6 @@ export const usePlayerStore = create<PlayerStore>()(
           isPlaying: true,
           shufflePointer: newShufflePointer,
         });
-        usePlayCountStore.getState().incrementPlayCount(prevSong._id);
       },
 
       setRepeatMode: (mode) => set({ repeatMode: mode }),

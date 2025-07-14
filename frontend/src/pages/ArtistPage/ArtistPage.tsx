@@ -15,7 +15,6 @@ import Equalizer from "../../components/ui/equalizer";
 // Импортируем типы из центрального файла типов
 import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
-import { usePlayCountStore } from "@/stores/usePlayCountStore";
 
 const ArtistPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +24,6 @@ const ArtistPage = () => {
 
   const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
     usePlayerStore();
-  const { incrementPlayCount } = usePlayCountStore();
 
   const {
     isSongLiked,
@@ -117,9 +115,6 @@ const ArtistPage = () => {
       togglePlay();
     } else {
       playAlbum(popularSongs, 0);
-      if (popularSongs[0]) {
-        incrementPlayCount(popularSongs[0]._id);
-      }
     }
   };
 
@@ -130,7 +125,6 @@ const ArtistPage = () => {
       setCurrentSong(song);
       playAlbum(popularSongs, index);
     }
-    incrementPlayCount(song._id);
   };
 
   const getArtistNames = (
