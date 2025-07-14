@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
+import { usePlayCountStore } from "@/stores/usePlayCountStore";
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -13,24 +14,17 @@ const AudioPlayer = () => {
   const vocalsGainNodeRef = useRef<GainNode | null>(null);
   const masterGainNodeRef = useRef<GainNode | null>(null);
 
-  // --- Рефы для хранения декодированных аудио-буферов ---
   const instrumentalBufferRef = useRef<AudioBuffer | null>(null);
   const vocalsBufferRef = useRef<AudioBuffer | null>(null);
 
-  // --- Рефы для отслеживания времени воспроизведения ---
-  const startTimeRef = useRef(0); // Время AudioContext, когда трек начал играть
-  const offsetTimeRef = useRef(0); // Смещение в треке (для перемотки)
+  const startTimeRef = useRef(0);
+  const offsetTimeRef = useRef(0);
 
-  // --- Реф для предотвращения повторной загрузки той же песни ---
   const prevCurrentSongIdRef = useRef<string | null>(null);
-
-  // --- НОВЫЙ РЕФ: Для отслеживания ID последнего активного запроса на загрузку ---
   const currentLoadRequestIdRef = useRef<string | null>(null);
 
-  // --- Состояние для отслеживания готовности AudioContext ---
   const [isAudioContextReady, setIsAudioContextReady] = useState(false);
 
-  // --- Получение состояния и функций из Zustand Store ---
   const {
     currentSong,
     isPlaying,
@@ -44,15 +38,19 @@ const AudioPlayer = () => {
     duration,
   } = usePlayerStore();
 
+  const incrementPlayCount = usePlayCountStore(
+    (state) => state.incrementPlayCount
+  );
+
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
 
-  // --- Эффект 1: Инициализация AudioContext и GainNodes ---
+  // Новый реф для защиты от повторного инкремента
+  const playCountIncrementedRef = useRef(false);
+
+  // --- Эффект 1 ---
   useEffect(() => {
     if (audioContextRef.current) {
-      console.log(
-        "AudioContext already exists. Setting isAudioContextReady to true."
-      );
       setIsAudioContextReady(true);
       return;
     }
@@ -68,7 +66,6 @@ const AudioPlayer = () => {
 
     try {
       audioContextRef.current = new AudioContextClass();
-      console.log("AudioContext created.");
       setIsAudioContextReady(true);
 
       masterGainNodeRef.current = audioContextRef.current.createGain();
@@ -86,14 +83,9 @@ const AudioPlayer = () => {
 
     const audioContext = audioContextRef.current;
     const resumeContext = () => {
-      if (audioContext && (audioContext.state as string) === "suspended") {
+      if (audioContext && audioContext.state === "suspended") {
         audioContext
           .resume()
-          .then(() => {
-            console.log(
-              "AudioContext resumed successfully by user interaction."
-            );
-          })
           .catch((err) => console.error("Error resuming AudioContext:", err));
       }
     };
@@ -109,12 +101,11 @@ const AudioPlayer = () => {
 
       if (
         audioContextRef.current &&
-        (audioContextRef.current.state as string) !== "closed"
+        audioContextRef.current.state !== "closed"
       ) {
         audioContextRef.current
           .close()
           .then(() => {
-            console.log("AudioContext closed during cleanup.");
             audioContextRef.current = null;
             setIsAudioContextReady(false);
           })
@@ -123,12 +114,9 @@ const AudioPlayer = () => {
     };
   }, []);
 
-  // --- Эффект 2: Загрузка и декодирование аудио-файлов (при изменении currentSong) ---
+  // --- Эффект 2 ---
   useEffect(() => {
     if (!isAudioContextReady) {
-      console.warn(
-        "Effect 2: AudioContext not ready, skipping audio buffer loading."
-      );
       instrumentalBufferRef.current = null;
       vocalsBufferRef.current = null;
       setDuration(0);
@@ -137,12 +125,7 @@ const AudioPlayer = () => {
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || (audioContext.state as string) === "closed") {
-      console.warn(
-        "Effect 2: AudioContext is not ready or closed during song change, cannot load audio."
-      );
-      return;
-    }
+    if (!audioContext || audioContext.state === "closed") return;
 
     if (!currentSong) {
       instrumentalBufferRef.current = null;
@@ -150,28 +133,19 @@ const AudioPlayer = () => {
       setDuration(0);
       setCurrentTime(0);
       prevCurrentSongIdRef.current = null;
-      currentLoadRequestIdRef.current = null; // Сбрасываем ID запроса
+      currentLoadRequestIdRef.current = null;
       return;
     }
 
-    // Если песня не изменилась, нет необходимости заново загружать буферы.
     if (
       prevCurrentSongIdRef.current === currentSong._id &&
       instrumentalBufferRef.current
     ) {
-      console.log(
-        `Effect 2: Song ${currentSong.title} already loaded, skipping.`
-      );
       return;
     }
 
-    // Генерируем уникальный ID для текущего запроса на загрузку
-    const loadRequestId = Date.now().toString(); // Простое уникальное ID
+    const loadRequestId = Date.now().toString();
     currentLoadRequestIdRef.current = loadRequestId;
-    console.log(
-      `Effect 2: Starting new load request for ${currentSong.title} with ID: ${loadRequestId}`
-    );
-
     prevCurrentSongIdRef.current = currentSong._id;
 
     const instrumentalUrl = currentSong.instrumentalUrl;
@@ -180,30 +154,22 @@ const AudioPlayer = () => {
     const loadAudio = async (url: string): Promise<AudioBuffer> => {
       const response = await fetch(url);
       const arrayBuffer = await response.arrayBuffer();
-      if (!audioContext || (audioContext.state as string) === "closed") {
-        throw new Error("AudioContext was closed during fetch/decode process.");
+      if (!audioContext || audioContext.state === "closed") {
+        throw new Error("AudioContext closed during fetch/decode.");
       }
       return audioContext.decodeAudioData(arrayBuffer);
     };
 
     const fetchAndDecodeAudio = async () => {
-      // Останавливаем старые источники, если они активны, при смене песни.
-      // ЭТО ВАЖНО: Мы делаем это *сразу*, как только начинается новая загрузка.
       if (instrumentalSourceRef.current) {
         instrumentalSourceRef.current.stop();
         instrumentalSourceRef.current.disconnect();
         instrumentalSourceRef.current = null;
-        console.log(
-          "Effect 2: Previous instrumental source stopped due to new song load."
-        );
       }
       if (vocalsSourceRef.current) {
         vocalsSourceRef.current.stop();
         vocalsSourceRef.current.disconnect();
         vocalsSourceRef.current = null;
-        console.log(
-          "Effect 2: Previous vocals source stopped due to new song load."
-        );
       }
 
       try {
@@ -212,45 +178,21 @@ const AudioPlayer = () => {
           vocalsUrl ? loadAudio(vocalsUrl) : Promise.resolve(null),
         ]);
 
-        // !!! КЛЮЧЕВАЯ ПРОВЕРКА !!!
-        // Убеждаемся, что этот запрос на загрузку все еще актуален.
-        // Если currentLoadRequestIdRef.current отличается, значит, между началом загрузки
-        // и ее завершением пользователь переключил трек еще раз.
-        if (currentLoadRequestIdRef.current !== loadRequestId) {
-          console.warn(
-            `Effect 2: Load request ID ${loadRequestId} is outdated. Ignoring results for ${currentSong.title}. Current active ID: ${currentLoadRequestIdRef.current}`
-          );
-          return; // Игнорируем устаревший результат
-        }
+        if (currentLoadRequestIdRef.current !== loadRequestId) return;
 
-        if (!audioContext || (audioContext.state as string) === "closed") {
-          console.warn(
-            "Effect 2: AudioContext closed during audio loading, aborting."
-          );
-          return;
-        }
+        if (!audioContext || audioContext.state === "closed") return;
 
         instrumentalBufferRef.current = instrumentalBuffer;
         vocalsBufferRef.current = vocalsBuffer;
 
+        playCountIncrementedRef.current = false; // сброс счётчика при новой песне
+
         setDuration(Math.floor(instrumentalBuffer.duration));
         setCurrentTime(0);
         offsetTimeRef.current = 0;
-        startTimeRef.current = 0; // Сбрасываем startTime, чтобы при Play трек начинался с 0
-
-        console.log(
-          `Effect 2: Buffers loaded and valid for ${currentSong.title}. Duration: ${instrumentalBuffer.duration} seconds.`
-        );
+        startTimeRef.current = 0;
       } catch (error) {
-        // !!! КЛЮЧЕВАЯ ПРОВЕРКА ПРИ ОШИБКЕ !!!
-        // Если произошла ошибка, но это уже устаревший запрос, не сбрасываем состояние.
-        if (currentLoadRequestIdRef.current !== loadRequestId) {
-          console.warn(
-            `Effect 2: Error in outdated load request ID ${loadRequestId}. Ignoring. Current active ID: ${currentLoadRequestIdRef.current}`
-          );
-          return;
-        }
-
+        if (currentLoadRequestIdRef.current !== loadRequestId) return;
         console.error("Effect 2: Error loading or decoding audio:", error);
         usePlayerStore.setState({ isPlaying: false });
         instrumentalBufferRef.current = null;
@@ -263,35 +205,23 @@ const AudioPlayer = () => {
     fetchAndDecodeAudio();
 
     return () => {
-      // Очистка при смене песни/размонтировании: просто обнуляем буферы.
-      // Источники были остановлены выше при начале новой загрузки.
-      console.log(`Effect 2 CLEANUP for song ${currentSong.title}.`);
       instrumentalBufferRef.current = null;
       vocalsBufferRef.current = null;
-      // Важно: не сбрасываем currentLoadRequestIdRef.current здесь,
-      // так как следующий эффект уже мог установить новый ID.
     };
   }, [currentSong, isAudioContextReady, setDuration, setCurrentTime]);
 
-  // --- Эффект 3: Управление воспроизведением (Play/Pause/Seek) ---
+  // --- Эффект 3 ---
   useEffect(() => {
     if (
       !isAudioContextReady ||
       !currentSong ||
       !instrumentalBufferRef.current
     ) {
-      // console.warn("EFFECT 3: Cannot manage playback - context/song/buffers not ready."); // Слишком много логов
       return;
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || (audioContext.state as string) === "closed") {
-      console.warn("EFFECT 3: AudioContext is closed, cannot manage playback.");
-      return;
-    }
-
-    // console.log(`EFFECT 3 TRIGGERED - isPlaying: ${isPlaying}, playerStoreCurrentTime: ${playerStoreCurrentTime}`); // Слишком много логов
-    // console.log(`Current instrumentalSourceRef.current: ${instrumentalSourceRef.current ? "EXISTS" : "NULL"}`);
+    if (!audioContext || audioContext.state === "closed") return;
 
     const managePlayback = async () => {
       if (isPlaying) {
@@ -303,34 +233,20 @@ const AudioPlayer = () => {
           Math.abs(playerStoreCurrentTime - expectedCurrentTime) > 1 &&
           playerStoreCurrentTime >= 0;
 
-        // console.log(`  Playback State: PLAYING. Expected: ${expectedCurrentTime}, PlayerStore: ${playerStoreCurrentTime}, IsSeeking: ${isSeeking}`); // Слишком много логов
-
         if (isSeeking || !instrumentalSourceRef.current) {
-          // Останавливаем существующие источники перед созданием новых, если они есть.
           if (instrumentalSourceRef.current) {
             instrumentalSourceRef.current.stop();
             instrumentalSourceRef.current.disconnect();
             instrumentalSourceRef.current = null;
-            console.log(
-              "  EFFECT 3: Previous instrumental source stopped for new playback/seek."
-            );
           }
           if (vocalsSourceRef.current) {
             vocalsSourceRef.current.stop();
             vocalsSourceRef.current.disconnect();
             vocalsSourceRef.current = null;
-            console.log(
-              "  EFFECT 3: Previous vocals source stopped for new playback/seek."
-            );
           }
 
-          console.log(
-            `  EFFECT 3: Creating and starting new playback sources (IsSeeking: ${isSeeking}, SourceExists: ${!!instrumentalSourceRef.current}).`
-          );
-
-          if ((audioContext.state as string) === "suspended") {
+          if (audioContext.state === "suspended") {
             await audioContext.resume();
-            console.log("  EFFECT 3: AudioContext resumed for new playback.");
           }
 
           offsetTimeRef.current = playerStoreCurrentTime;
@@ -350,10 +266,8 @@ const AudioPlayer = () => {
             newVocalsSource.buffer = vocalsBufferRef.current;
             newVocalsSource.connect(vocalsGainNodeRef.current);
             vocalsSourceRef.current = newVocalsSource;
-          } else {
-            if (vocalsGainNodeRef.current) {
-              vocalsGainNodeRef.current.gain.value = 0;
-            }
+          } else if (vocalsGainNodeRef.current) {
+            vocalsGainNodeRef.current.gain.value = 0;
           }
 
           newInstrumentalSource.start(
@@ -367,11 +281,13 @@ const AudioPlayer = () => {
             );
           }
 
+          if (!playCountIncrementedRef.current) {
+            incrementPlayCount(currentSong._id);
+            playCountIncrementedRef.current = true;
+          }
+
           newInstrumentalSource.onended = (event) => {
             if (event.target === instrumentalSourceRef.current) {
-              console.log(
-                "  EFFECT 3: Instrumental audio ended. Handling song end."
-              );
               if (instrumentalSourceRef.current) {
                 instrumentalSourceRef.current.stop();
                 instrumentalSourceRef.current.disconnect();
@@ -394,43 +310,25 @@ const AudioPlayer = () => {
           };
         } else if (audioContext.state === "suspended") {
           await audioContext.resume();
-          console.log(
-            "  EFFECT 3: AudioContext resumed from suspended state (isPlaying is true, source exists)."
-          );
-        } else {
-          // console.log("  EFFECT 3: Playback already active and no seeking detected. No action needed for this render."); // Слишком много логов
         }
       } else {
-        // isPlaying === false (PAUSED state)
-        console.log("  EFFECT 3: Playback State: PAUSED.");
         if (instrumentalSourceRef.current) {
           instrumentalSourceRef.current.stop();
           instrumentalSourceRef.current.disconnect();
           instrumentalSourceRef.current = null;
-          console.log(
-            "  EFFECT 3: Instrumental source stopped and disconnected due to pause."
-          );
         }
         if (vocalsSourceRef.current) {
           vocalsSourceRef.current.stop();
           vocalsSourceRef.current.disconnect();
           vocalsSourceRef.current = null;
-          console.log(
-            "  EFFECT 3: Vocals source stopped and disconnected due to pause."
-          );
         }
-        if ((audioContext.state as string) === "running") {
+        if (audioContext.state === "running") {
           offsetTimeRef.current +=
             audioContext.currentTime - startTimeRef.current;
           if (offsetTimeRef.current < 0) offsetTimeRef.current = 0;
           setCurrentTime(Math.floor(offsetTimeRef.current));
           audioContext
             .suspend()
-            .then(() => {
-              console.log(
-                "  EFFECT 3: AudioContext suspended by play/pause toggle."
-              );
-            })
             .catch((err) =>
               console.error("Error suspending AudioContext:", err)
             );
@@ -439,10 +337,6 @@ const AudioPlayer = () => {
     };
 
     managePlayback();
-
-    return () => {
-      // console.log("EFFECT 3 CLEANUP CALLED. instrumentalSourceRef.current at cleanup:", instrumentalSourceRef.current ? "EXISTS" : "NULL"); // Слишком много логов
-    };
   }, [
     isPlaying,
     playerStoreCurrentTime,
@@ -452,9 +346,10 @@ const AudioPlayer = () => {
     repeatMode,
     setCurrentTime,
     duration,
+    incrementPlayCount,
   ]);
 
-  // --- Эффект 4: Управление громкостью (Master и Vocals) ---
+  // --- Эффект 4 ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 
@@ -468,22 +363,12 @@ const AudioPlayer = () => {
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
-  // --- Эффект 5: Обновление текущего времени в Zustand Store ---
+  // --- Эффект 5 ---
   useEffect(() => {
-    if (!isAudioContextReady) {
-      console.warn(
-        "Effect 5: AudioContext not ready, skipping time update loop."
-      );
-      return;
-    }
+    if (!isAudioContextReady) return;
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || (audioContext.state as string) === "closed") {
-      console.warn(
-        "Effect 5: AudioContext is closed, skipping time update loop."
-      );
-      return;
-    }
+    if (!audioContext || audioContext.state === "closed") return;
 
     let animationFrameId: number;
 
@@ -491,7 +376,7 @@ const AudioPlayer = () => {
       if (
         isPlayingRef.current &&
         instrumentalSourceRef.current &&
-        (audioContext.state as string) === "running"
+        audioContext.state === "running"
       ) {
         const elapsed = audioContext.currentTime - startTimeRef.current;
         const newTime = Math.floor(offsetTimeRef.current + elapsed);
@@ -513,11 +398,9 @@ const AudioPlayer = () => {
       animationFrameId = requestAnimationFrame(updateCurrentTimeLoop);
     };
 
-    console.log("Effect 5: Starting time update loop.");
     animationFrameId = requestAnimationFrame(updateCurrentTimeLoop);
 
     return () => {
-      console.log("Effect 5: Stopping time update loop.");
       cancelAnimationFrame(animationFrameId);
     };
   }, [isAudioContextReady, duration, setCurrentTime]);
