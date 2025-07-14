@@ -218,7 +218,8 @@ const LibraryPage = () => {
                         playlistItem.owner?.fullName || "Unknown"
                       }`;
                       coverImageUrl =
-                        item.imageUrl || "/default_playlist_cover.png";
+                        item.imageUrl ||
+                        "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
                     } else if (item.type === "artist") {
                       const artistItem = item as FollowedArtistItem;
                       linkPath = `/artists/${artistItem._id}`;
@@ -229,7 +230,8 @@ const LibraryPage = () => {
                     } else {
                       linkPath = "#";
                       subtitle = "";
-                      coverImageUrl = "/default-cover.png";
+                      coverImageUrl =
+                        "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
                     }
 
                     return (
@@ -244,7 +246,8 @@ const LibraryPage = () => {
                           >
                             <img
                               src={
-                                coverImageUrl || "/default_playlist_cover.png"
+                                coverImageUrl ||
+                                "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png"
                               }
                               alt={item.title}
                               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
@@ -252,8 +255,8 @@ const LibraryPage = () => {
                                 (e.target as HTMLImageElement).src =
                                   item.type === "album" ||
                                   item.type === "artist"
-                                    ? "/default-album-cover.png"
-                                    : "/default_playlist_cover.png";
+                                    ? "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png"
+                                    : "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png ";
                               }}
                             />
                           </div>

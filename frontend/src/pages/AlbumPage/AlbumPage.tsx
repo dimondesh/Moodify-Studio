@@ -132,7 +132,7 @@ const AlbumPage = () => {
                 className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "/default-song-cover.png";
+                    "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
                 }}
               />
               <div className="flex flex-col justify-end text-center sm:text-left">

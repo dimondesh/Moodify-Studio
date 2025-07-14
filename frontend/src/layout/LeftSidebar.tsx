@@ -34,7 +34,7 @@ const LeftSidebar = () => {
   const {
     albums,
     playlists, // добавленные в библиотеку
-      followedArtists, // Добавлено для подписанных артистов
+    followedArtists, // Добавлено для подписанных артистов
     fetchLibrary,
     isLoading: isLoadingLibrary,
     error: libraryError,
@@ -266,7 +266,7 @@ const LeftSidebar = () => {
                   subtitle = `Playlist • ${
                     playlistItem.owner?.fullName || "Unknown"
                   }`;
-                  fallbackImage = "/default_playlist_cover.png";
+                  fallbackImage = "/default-album-cover.png";
                 } else if (item.type === "liked-songs") {
                   // Этот блок больше не должен вызываться, т.к. LikedSongsItem удален из libraryItems
                   // Но оставлен для полноты, если вдруг тип попадет сюда
@@ -280,13 +280,13 @@ const LeftSidebar = () => {
                   const artistItem = item as FollowedArtistItem; // Явное приведение
                   linkPath = `/artists/${artistItem._id}`;
                   subtitle = `Artist`;
-                  fallbackImage = "/default-artist-cover.png";
+                  fallbackImage = "/default-album-cover.png";
                   imageClass = "rounded-full"; // Круглые аватарки для артистов
                 } else {
                   // Fallback для неизвестных типов, хотя LibraryItem должен покрывать все
                   linkPath = "#";
                   subtitle = "";
-                  fallbackImage = "/default-cover.png";
+                  fallbackImage = "/default-album-cover.png";
                 }
 
                 return (

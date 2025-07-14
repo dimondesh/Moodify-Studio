@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 // frontend/src/stores/usePlayerStore.ts
 
 import { create } from "zustand";
@@ -8,17 +9,17 @@ import { usePlayCountStore } from "./usePlayCountStore";
 interface PlayerStore {
   currentSong: Song | null;
   isPlaying: boolean;
-  queue: Song[];
-  currentIndex: number;
+  queue: Song[]; // Оригинальная очередь
+  currentIndex: number; // Индекс в оригинальной очереди
   repeatMode: "off" | "all" | "one";
   isShuffle: boolean;
-  shuffleHistory: number[];
-  shufflePointer: number;
+  shuffleHistory: number[]; // История индексов из оригинальной очереди
+  shufflePointer: number; // Указатель на текущий индекс в shuffleHistory
   isFullScreenPlayerOpen: boolean;
-  vocalsVolume: number; // Громкость вокала (0-100), относительная
-  masterVolume: number; // Общая громкость (0-100)
-  currentTime: number; // <-- НОВОЕ ПОЛЕ: Текущее время воспроизведения
-  duration: number; // <-- НОВОЕ ПОЛЕ: Общая длительность трека
+  vocalsVolume: number;
+  masterVolume: number;
+  currentTime: number;
+  duration: number;
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -31,10 +32,11 @@ interface PlayerStore {
   setIsFullScreenPlayerOpen: (isOpen: boolean) => void;
   setVocalsVolume: (volume: number) => void;
   setMasterVolume: (volume: number) => void;
-  setCurrentTime: (time: number) => void; // <-- НОВАЯ ФУНКЦИЯ
-  setDuration: (duration: number) => void; // <-- НОВАЯ ФУНКЦИЯ
+  setCurrentTime: (time: number) => void;
+  setDuration: (duration: number) => void;
 }
 
+// Вспомогательная функция для перемешивания массива индексов
 const shuffleQueue = (length: number) => {
   const arr = Array.from({ length }, (_, i) => i);
   for (let i = arr.length - 1; i > 0; i--) {
@@ -58,101 +60,177 @@ export const usePlayerStore = create<PlayerStore>()(
       isFullScreenPlayerOpen: false,
       vocalsVolume: 100,
       masterVolume: 75,
-      currentTime: 0, // <-- Инициализация
-      duration: 0, // <-- Инициализация
+      currentTime: 0,
+      duration: 0,
 
       initializeQueue: (songs: Song[]) => {
-        set({
-          queue: songs,
-          currentSong: get().currentSong || songs[0],
-          currentIndex: get().currentIndex === -1 ? 0 : get().currentIndex,
-          shuffleHistory: [],
-          shufflePointer: -1,
-          currentTime: 0, // Сброс
-          duration: 0, // Сброс
+        set((state) => {
+          const newQueue = songs;
+          const currentSong =
+            state.currentSong &&
+            newQueue.some((s) => s._id === state.currentSong!._id)
+              ? state.currentSong
+              : newQueue.length > 0
+              ? newQueue[0]
+              : null;
+
+          const currentIndex = currentSong
+            ? newQueue.findIndex((s) => s._id === currentSong._id)
+            : -1;
+
+          let newShuffleHistory = state.shuffleHistory;
+          let newShufflePointer = state.shufflePointer;
+
+          if (state.isShuffle && newQueue.length > 0) {
+            newShuffleHistory = shuffleQueue(newQueue.length);
+            if (currentSong && currentIndex !== -1) {
+              const currentPosInShuffle =
+                newShuffleHistory.indexOf(currentIndex);
+              if (currentPosInShuffle !== -1) {
+                [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
+                  [
+                    newShuffleHistory[currentPosInShuffle],
+                    newShuffleHistory[0],
+                  ];
+              } else {
+                newShuffleHistory.unshift(currentIndex);
+                newShuffleHistory.pop();
+              }
+              newShufflePointer = 0;
+            } else {
+              newShufflePointer = -1;
+            }
+          } else {
+            newShuffleHistory = [];
+            newShufflePointer = -1;
+          }
+
+          return {
+            queue: newQueue,
+            currentSong: currentSong,
+            currentIndex: currentIndex,
+            shuffleHistory: newShuffleHistory,
+            shufflePointer: newShufflePointer,
+          };
         });
       },
 
       playAlbum: (songs: Song[], startIndex = 0) => {
-        if (songs.length === 0) return;
-
-        const isShuffle = get().isShuffle;
-        let songToPlay: Song;
-        let targetIndex: number;
-
-        if (isShuffle) {
-          const newShuffleHistory = shuffleQueue(songs.length);
-          const currentIndex = startIndex;
-          const currentPosInShuffle = newShuffleHistory.indexOf(currentIndex);
-
-          if (currentPosInShuffle !== -1) {
-            [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] = [
-              newShuffleHistory[currentPosInShuffle],
-              newShuffleHistory[0],
-            ];
-          } else {
-            newShuffleHistory.unshift(currentIndex);
-            newShuffleHistory.pop();
-          }
-
-          targetIndex = newShuffleHistory[0];
-          songToPlay = songs[targetIndex];
-
+        if (songs.length === 0) {
           set({
-            queue: songs,
-            isPlaying: true,
-            shuffleHistory: newShuffleHistory,
-            shufflePointer: 0,
-            currentTime: 0, // Сброс
-            duration: 0, // Сброс
-          });
-        } else {
-          targetIndex = startIndex;
-          songToPlay = songs[targetIndex];
-
-          set({
-            queue: songs,
-            isPlaying: true,
+            currentSong: null,
+            isPlaying: false,
+            queue: [],
+            currentIndex: -1,
             shuffleHistory: [],
             shufflePointer: -1,
-            currentTime: 0, // Сброс
-            duration: 0, // Сброс
           });
+          return;
         }
 
-        set({
-          currentSong: songToPlay,
-          currentIndex: targetIndex,
-          isPlaying: true,
+        set((state) => {
+          const isShuffle = state.isShuffle;
+          let songToPlay: Song;
+          let targetIndexInQueue: number;
+          let newShuffleHistory: number[] = [];
+          let newShufflePointer: number = -1;
+
+          if (isShuffle) {
+            newShuffleHistory = shuffleQueue(songs.length);
+            const currentPosInShuffle = newShuffleHistory.indexOf(startIndex);
+            if (currentPosInShuffle !== -1) {
+              [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] = [
+                newShuffleHistory[currentPosInShuffle],
+                newShuffleHistory[0],
+              ];
+            } else {
+              newShuffleHistory.unshift(startIndex);
+              newShuffleHistory.pop();
+            }
+            newShufflePointer = 0;
+            targetIndexInQueue = newShuffleHistory[newShufflePointer];
+            songToPlay = songs[targetIndexInQueue];
+          } else {
+            targetIndexInQueue = startIndex;
+            songToPlay = songs[targetIndexInQueue];
+            newShuffleHistory = [];
+            newShufflePointer = -1;
+          }
+
+          const newState = {
+            queue: songs,
+            isPlaying: true,
+            currentSong: songToPlay,
+            currentIndex: targetIndexInQueue,
+            shuffleHistory: newShuffleHistory,
+            shufflePointer: newShufflePointer,
+          };
+          set(newState);
+
+          usePlayCountStore.getState().incrementPlayCount(songToPlay._id);
+          return newState;
         });
-        usePlayCountStore.getState().incrementPlayCount(songToPlay._id);
       },
 
       setCurrentSong: (song: Song | null) => {
-        if (!song) return;
+        if (!song) {
+          set({
+            currentSong: null,
+            isPlaying: false,
+            currentIndex: -1,
+            currentTime: 0,
+            duration: 0,
+          });
+          return;
+        }
 
-        const songIndex = get().queue.findIndex((s) => s._id === song._id);
+        set((state) => {
+          const songIndex = state.queue.findIndex((s) => s._id === song._id);
+          let newShufflePointer = state.shufflePointer;
+          let newShuffleHistory = state.shuffleHistory;
 
-        set({
-          currentSong: song,
-          isPlaying: true,
-          currentIndex: songIndex !== -1 ? songIndex : get().currentIndex,
-          currentTime: 0, // Сброс
-          duration: 0, // Сброс
+          if (state.isShuffle) {
+            if (songIndex !== -1) {
+              newShuffleHistory = shuffleQueue(state.queue.length);
+              const currentPos = newShuffleHistory.indexOf(songIndex);
+              if (currentPos !== -1) {
+                [newShuffleHistory[0], newShuffleHistory[currentPos]] = [
+                  newShuffleHistory[currentPos],
+                  newShuffleHistory[0],
+                ];
+              } else {
+                newShuffleHistory.unshift(songIndex);
+                newShuffleHistory.pop();
+              }
+              newShufflePointer = 0;
+            } else {
+              newShuffleHistory = [];
+              newShufflePointer = -1;
+            }
+          }
+
+          const newState = {
+            currentSong: song,
+            isPlaying: true,
+            currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
+            shuffleHistory: newShuffleHistory,
+            shufflePointer: newShufflePointer,
+          };
+          set(newState);
+
+          usePlayCountStore.getState().incrementPlayCount(song._id);
+          return newState;
         });
-        usePlayCountStore.getState().incrementPlayCount(song._id);
       },
 
       togglePlay: () => {
-        const willStartPlaying = !get().isPlaying;
-        set({
-          isPlaying: willStartPlaying,
-        });
+        set((state) => ({ isPlaying: !state.isPlaying }));
       },
 
       toggleShuffle: () => {
         set((state) => {
-          if (state.isShuffle) {
+          const newShuffleMode = !state.isShuffle;
+          if (!newShuffleMode) {
             return {
               isShuffle: false,
               shuffleHistory: [],
@@ -169,24 +247,26 @@ export const usePlayerStore = create<PlayerStore>()(
             }
 
             const newShuffleHistory = shuffleQueue(queueLength);
-            const currentIndex =
-              state.currentIndex >= 0 ? state.currentIndex : 0;
-            const currentPosInShuffle = newShuffleHistory.indexOf(currentIndex);
+            const currentIndex = state.currentIndex;
 
-            if (currentPosInShuffle !== -1) {
-              [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] = [
-                newShuffleHistory[currentPosInShuffle],
-                newShuffleHistory[0],
-              ];
-            } else {
-              newShuffleHistory.unshift(currentIndex);
-              newShuffleHistory.pop();
+            if (currentIndex !== -1) {
+              const currentPosInShuffle =
+                newShuffleHistory.indexOf(currentIndex);
+              if (currentPosInShuffle !== -1) {
+                [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
+                  [
+                    newShuffleHistory[currentPosInShuffle],
+                    newShuffleHistory[0],
+                  ];
+              } else {
+                newShuffleHistory.unshift(currentIndex);
+                newShuffleHistory.pop();
+              }
             }
-
             return {
               isShuffle: true,
               shuffleHistory: newShuffleHistory,
-              shufflePointer: 0,
+              shufflePointer: currentIndex !== -1 ? 0 : -1,
             };
           }
         });
@@ -202,63 +282,84 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
-        if (repeatMode === "one") {
-          set({ repeatMode: "all" }); // Это действие вызовет перезапуск трека в AudioPlayer
+        if (queue.length === 0) {
+          // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь пуста ---
+          set({ isPlaying: false });
+          return;
         }
 
+        if (repeatMode === "one") {
+          set({ repeatMode: "all" });
+        }
+
+        let nextIndexInQueue: number;
+        let newShufflePointer: number = shufflePointer;
+        let newShuffleHistory: number[] = [...shuffleHistory];
+
         if (isShuffle) {
-          if (shufflePointer < shuffleHistory.length - 1) {
-            const nextPointer = shufflePointer + 1;
-            const nextIndex = shuffleHistory[nextPointer];
-            const nextSong = queue[nextIndex];
-            set({
-              currentSong: nextSong,
-              currentIndex: nextIndex,
-              isPlaying: true,
-              currentTime: 0, // Сброс
-              duration: 0, // Сброс
-            });
-            usePlayCountStore.getState().incrementPlayCount(nextSong._id);
-          } else {
-            if (repeatMode === "off") {
-              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
+          if (newShuffleHistory.length === 0) {
+            newShuffleHistory = shuffleQueue(queue.length);
+            const currentSongQueueIndex = queue.findIndex(
+              (s) => s._id === get().currentSong?._id
+            );
+            if (currentSongQueueIndex !== -1) {
+              const currentPosInShuffle = newShuffleHistory.indexOf(
+                currentSongQueueIndex
+              );
+              if (currentPosInShuffle !== -1) {
+                [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
+                  [
+                    newShuffleHistory[currentPosInShuffle],
+                    newShuffleHistory[0],
+                  ];
+              } else {
+                newShuffleHistory.unshift(currentSongQueueIndex);
+                newShuffleHistory.pop();
+              }
+              newShufflePointer = 0;
             } else {
-              const newShuffleHistory = shuffleQueue(queue.length);
-              const firstIndex = newShuffleHistory[0];
-              const firstSong = queue[firstIndex];
-              set({
-                currentSong: firstSong,
-                currentIndex: firstIndex,
-                isPlaying: true,
-                shuffleHistory: newShuffleHistory,
-                shufflePointer: 0,
-                currentTime: 0, // Сброс
-                duration: 0, // Сброс
-              });
-              usePlayCountStore.getState().incrementPlayCount(firstSong._id);
+              newShufflePointer = 0;
             }
           }
-        } else {
-          let nextIndex = currentIndex + 1;
-          if (nextIndex >= queue.length) {
+
+          if (newShufflePointer < newShuffleHistory.length - 1) {
+            newShufflePointer++;
+            nextIndexInQueue = newShuffleHistory[newShufflePointer];
+          } else {
             if (repeatMode === "all") {
-              nextIndex = 0;
+              newShuffleHistory = shuffleQueue(queue.length);
+              newShufflePointer = 0;
+              nextIndexInQueue = newShuffleHistory[newShufflePointer];
             } else {
-              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
+              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь закончилась в режиме "off" ---
+              set({ isPlaying: false });
               return;
             }
           }
-
-          const nextSong = queue[nextIndex];
-          set({
-            currentSong: nextSong,
-            currentIndex: nextIndex,
-            isPlaying: true,
-            currentTime: 0, // Сброс
-            duration: 0, // Сброс
-          });
-          usePlayCountStore.getState().incrementPlayCount(nextSong._id);
+        } else {
+          let potentialNextIndex = currentIndex + 1;
+          if (potentialNextIndex >= queue.length) {
+            if (repeatMode === "all") {
+              nextIndexInQueue = 0;
+            } else {
+              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь закончилась в режиме "off" ---
+              set({ isPlaying: false });
+              return;
+            }
+          } else {
+            nextIndexInQueue = potentialNextIndex;
+          }
         }
+
+        const nextSong = queue[nextIndexInQueue];
+        set({
+          currentSong: nextSong,
+          currentIndex: nextIndexInQueue,
+          isPlaying: true,
+          shuffleHistory: newShuffleHistory,
+          shufflePointer: newShufflePointer,
+        });
+        usePlayCountStore.getState().incrementPlayCount(nextSong._id);
       },
 
       playPrevious: () => {
@@ -271,48 +372,56 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
         } = get();
 
-        if (repeatMode === "one") {
-          set({ repeatMode: "all" }); // Это действие вызовет перезапуск трека в AudioPlayer
+        if (queue.length === 0) {
+          // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь пуста ---
+          set({ isPlaying: false });
+          return;
         }
 
+        if (repeatMode === "one") {
+          set({ repeatMode: "all" });
+        }
+
+        let prevIndexInQueue: number;
+        let newShufflePointer: number = shufflePointer;
+
         if (isShuffle) {
-          if (shufflePointer > 0) {
-            const prevPointer = shufflePointer - 1;
-            const prevIndex = shuffleHistory[prevPointer];
-            const prevSong = queue[prevIndex];
-            set({
-              currentSong: prevSong,
-              currentIndex: prevIndex,
-              isPlaying: true,
-              shufflePointer: prevPointer,
-              currentTime: 0, // Сброс
-              duration: 0, // Сброс
-            });
-            usePlayCountStore.getState().incrementPlayCount(prevSong._id);
+          if (newShufflePointer > 0) {
+            newShufflePointer--;
+            prevIndexInQueue = shuffleHistory[newShufflePointer];
           } else {
-            set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
-          }
-        } else {
-          let prevIndex = currentIndex - 1;
-          if (prevIndex < 0) {
-            if (repeatMode === "all") {
-              prevIndex = queue.length - 1;
+            if (repeatMode === "all" && shuffleHistory.length > 0) {
+              newShufflePointer = shuffleHistory.length - 1;
+              prevIndexInQueue = shuffleHistory[newShufflePointer];
             } else {
-              set({ isPlaying: false, currentTime: 0, duration: 0 }); // Сброс
+              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если дошли до начала и не repeat "all" ---
+              set({ isPlaying: false });
               return;
             }
           }
-
-          const prevSong = queue[prevIndex];
-          set({
-            currentSong: prevSong,
-            currentIndex: prevIndex,
-            isPlaying: true,
-            currentTime: 0, // Сброс
-            duration: 0, // Сброс
-          });
-          usePlayCountStore.getState().incrementPlayCount(prevSong._id);
+        } else {
+          let potentialPrevIndex = currentIndex - 1;
+          if (potentialPrevIndex < 0) {
+            if (repeatMode === "all") {
+              prevIndexInQueue = queue.length - 1;
+            } else {
+              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если дошли до начала и не repeat "all" ---
+              set({ isPlaying: false });
+              return;
+            }
+          } else {
+            prevIndexInQueue = potentialPrevIndex;
+          }
         }
+
+        const prevSong = queue[prevIndexInQueue];
+        set({
+          currentSong: prevSong,
+          currentIndex: prevIndexInQueue,
+          isPlaying: true,
+          shufflePointer: newShufflePointer,
+        });
+        usePlayCountStore.getState().incrementPlayCount(prevSong._id);
       },
 
       setRepeatMode: (mode) => set({ repeatMode: mode }),
@@ -320,8 +429,8 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ isFullScreenPlayerOpen: isOpen }),
       setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
       setMasterVolume: (volume) => set({ masterVolume: volume }),
-      setCurrentTime: (time) => set({ currentTime: time }), // Реализация
-      setDuration: (duration) => set({ duration: duration }), // Реализация
+      setCurrentTime: (time) => set({ currentTime: time }),
+      setDuration: (duration) => set({ duration: duration }),
     }),
     {
       name: "music-player-storage",
@@ -344,12 +453,11 @@ export const usePlayerStore = create<PlayerStore>()(
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
-            // При перезагрузке сбрасываем состояние воспроизведения
             persistedState.currentSong = null;
             persistedState.isPlaying = false;
             persistedState.isFullScreenPlayerOpen = false;
-            persistedState.currentTime = 0; // Сбрасываем и время
-            persistedState.duration = 0; // Сбрасываем и длительность
+            persistedState.currentTime = 0;
+            persistedState.duration = 0;
           }
         };
       },
