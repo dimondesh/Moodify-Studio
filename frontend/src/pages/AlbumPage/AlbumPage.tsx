@@ -15,6 +15,7 @@ import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { format } from "date-fns";
+import { useDominantColor } from "@/hooks/useDominantColor"; // ✅ импортируем твой хук
 
 // Импортируем типы из центрального файла типов (убедитесь, что Artist, Song, Album там определены)
 import type { Artist } from "../../types"; // Убедитесь, что Artist тоже импортирован
@@ -66,7 +67,9 @@ const AlbumPage = () => {
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-
+  const { extractColor } = useDominantColor(); // ✅ берём функцию
+  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const currentAlbumImage = currentAlbum?.imageUrl;
   useEffect(() => {
     if (!currentAlbum) return;
     const exists = albums.some(
@@ -74,7 +77,14 @@ const AlbumPage = () => {
     );
     setInLibrary(exists);
   }, [albums, currentAlbum]);
-
+  ////////////////////////////////////
+  useEffect(() => {
+    if (currentAlbumImage) {
+      extractColor(currentAlbum.imageUrl);
+      console.log(extractColor);
+    }
+  }, [currentAlbum?.imageUrl, currentAlbumImage, extractColor]);
+  /////////////////////////////////////
   const handleToggleAlbum = async () => {
     if (!currentAlbum || isToggling) return;
     setIsToggling(true);
@@ -119,9 +129,11 @@ const AlbumPage = () => {
       <ScrollArea className="h-full rounded-md pb- md:pb-0">
         <div className="relative min-h-screen">
           <div
-            className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80
-      to-zinc-900 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             aria-hidden="true"
+            style={{
+              background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+            }}
           />
           <div className="relative z-10">
             {/* Адаптивный верхний блок с обложкой и информацией */}

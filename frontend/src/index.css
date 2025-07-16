@@ -121,3 +121,13 @@
 }
 
 
+/* Скрывает скроллбар, сохраняя функциональность прокрутки */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Для Webkit-браузеров (Chrome, Safari, Opera) */
+}
+
+/* Для Firefox (не всегда работает идеально для полного скрытия, но может уменьшить видимость) */
+.hide-scrollbar {
+  scrollbar-width: none; /* Для Firefox */
+  -ms-overflow-style: none; /* Для IE/Edge */
+}

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
+import { useDominantColor } from "@/hooks/useDominantColor"; // ✅ импортируем твой хук
 
 import {
   Heart,
@@ -109,6 +110,29 @@ const PlaybackControls = () => {
   // Ref для области, от которой должен работать свайп вниз
   const topSwipeAreaRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
+
+  const { extractColor } = useDominantColor(); // ✅ берём функцию
+  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const currentSongImage = currentSong?.imageUrl;
+  const lastImageUrlRef = useRef<string | null>(null);
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (
+      currentSongImage &&
+      currentSong?.imageUrl &&
+      currentSong.imageUrl !== lastImageUrlRef.current
+    ) {
+      lastImageUrlRef.current = currentSong.imageUrl;
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+      timeoutRef.current = setTimeout(() => {
+        extractColor(currentSong.imageUrl);
+      }, 500);
+    }
+  }, [currentSong?.imageUrl, currentSongImage]);
 
   useEffect(() => {
     fetchLikedSongs();
@@ -288,7 +312,11 @@ const PlaybackControls = () => {
           <DialogPortal>
             <DialogContent
               aria-describedby={undefined}
-              className={`fixed inset-y-0 top-105 w-screen h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
+              className={`fixed inset-y-0 top-105 sm:top-115 w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0 `}
+              style={{
+                background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
+                transition: "background 1s ease-in-out",
+              }}
             >
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
@@ -297,7 +325,7 @@ const PlaybackControls = () => {
 
               {/* ЭТА ОБЛАСТЬ РЕАГИРУЕТ НА СВАЙП ВНИЗ */}
               <div
-                className="flex justify-between items-center w-full mb-4 flex-shrink-0"
+                className="flex justify-between items-center min-w-screen mb-4 flex-shrink-0"
                 ref={topSwipeAreaRef} // Привязываем реф к верхней панели
                 onTouchStart={handleTopAreaTouchStart}
                 onTouchMove={handleTopAreaTouchMove}
@@ -320,9 +348,9 @@ const PlaybackControls = () => {
               {/* onScroll/onTouch* убраны отсюда, т.к. закрытие должно быть только сверху */}
               <div
                 ref={mobilePlayerContentRef} // Реф для проверки scrollTop
-                className="flex-1 flex flex-col items-center overflow-y-auto w-full custom-scrollbar"
+                className="flex-1 flex flex-col items-center overflow-y-auto w-full hide-scrollbar"
               >
-                <div className="flex flex-col items-center justify-center px-4 py-8 flex-shrink-0">
+                <div className="flex flex-col items-center justify-center px-4 py-8 flex-shrink-0 w-full">
                   {currentSong ? (
                     <img
                       src={currentSong.imageUrl || "/default-song-cover.png"}
@@ -518,7 +546,7 @@ const PlaybackControls = () => {
                 </div>
                 {currentSong.lyrics && (
                   <div
-                    className="w-full max-w-xl mx-auto mt-8 flex flex-col items-center flex-shrink-0"
+                    className="w-full  mx-auto mt-8 flex flex-col items-center flex-shrink-0"
                     // Эта общая область div не должна быть onClick для открытия лирики,
                     // чтобы не перехватывать клики на самой лирике, когда пытаешься скроллить.
                     // Вместо этого используем кнопки "Show full lyrics".

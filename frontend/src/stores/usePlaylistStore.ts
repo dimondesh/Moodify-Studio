@@ -10,6 +10,8 @@ interface PlaylistStore {
   currentPlaylist: Playlist | null;
   isLoading: boolean;
   error: string | null;
+  dominantColor: string | null;
+  setDominantColor: (color: string) => void;
 
   fetchMyPlaylists: () => Promise<void>;
   fetchPublicPlaylists: () => Promise<void>;
@@ -49,6 +51,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   currentPlaylist: null,
   isLoading: false,
   error: null,
+  dominantColor: null, // <--- новое поле
+  setDominantColor: (color: string) => set({ dominantColor: color }), // <--
 
   fetchMyPlaylists: async () => {
     set({ isLoading: true, error: null });

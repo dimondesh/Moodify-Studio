@@ -21,6 +21,8 @@ interface PlayerStore {
   duration: number;
   isDesktopLyricsOpen: boolean; // <-- НОВОЕ: Для десктопной страницы текстов
   isMobileLyricsFullScreen: boolean; // <-- НОВОЕ: Для полноэкранных текстов на мобильном
+  dominantColor: string | null;
+  setDominantColor: (color: string) => void;
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -67,6 +69,8 @@ export const usePlayerStore = create<PlayerStore>()(
       duration: 0,
       isDesktopLyricsOpen: false, // Инициализация
       isMobileLyricsFullScreen: false, // Инициализация
+      dominantColor: null, // <--- новое поле
+      setDominantColor: (color: string) => set({ dominantColor: color }), // <--
 
       initializeQueue: (songs: Song[]) => {
         set((state) => {

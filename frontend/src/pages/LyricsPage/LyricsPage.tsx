@@ -6,6 +6,7 @@ import { getArtistNames } from "@/lib/utils";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { useDominantColor } from "@/hooks/useDominantColor"; // ✅ импортируем твой хук
 
 const parseLrc = (lrcContent: string): LyricLine[] => {
   const lines = lrcContent.split("\n");
@@ -51,7 +52,16 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { extractColor } = useDominantColor(); // ✅ берём функцию
+  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const currentSongImage = currentSong?.imageUrl;
 
+  useEffect(() => {
+    if (currentSongImage) {
+      extractColor(currentSong.imageUrl);
+      console.log(extractColor);
+    }
+  }, [currentSong?.imageUrl, currentSongImage, extractColor]);
   // Обновление лирики при изменении песни
   useEffect(() => {
     if (currentSong?.lyrics) {
@@ -182,8 +192,11 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   return (
     <div className="min-h-screen">
       <div
-        className={`flex flex-col items-center justify-start h-[calc(100vh)] p-4 sm:p-8 bg-gradient-to-b from-violet-950  text-white
+        className={`flex flex-col items-center justify-start h-[calc(100vh - 1px)] p-4 sm:p-8  text-white
       ${isMobileFullScreen ? "fixed inset-0 z-[80]" : "w-full"}`}
+        style={{
+          background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+        }}
       >
         <div className="flex justify-between items-center w-full max-w-4xl mb-4">
           <Button

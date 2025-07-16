@@ -53,7 +53,7 @@ import {
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
 import Equalizer from "../../components/ui/equalizer";
-
+import { useDominantColor } from "@/hooks/useDominantColor";
 // Helper function for duration formatting
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -106,6 +106,10 @@ const PlaylistDetailsPage = () => {
   const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
+  const { extractColor } = useDominantColor(); // ✅ берём функцию
+
+  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const currentPlaylistImage = currentPlaylist?.imageUrl;
 
   const {
     songs: searchSongs,
@@ -121,6 +125,15 @@ const PlaylistDetailsPage = () => {
     currentSong,
     queue,
   } = usePlayerStore();
+  useEffect(() => {
+    if (currentPlaylistImage && currentPlaylistImage.trim() !== "") {
+      extractColor(currentPlaylistImage);
+      console.log(extractColor);
+    } else {
+      // Если extractColor сама обновляет состояние, то здесь НЕ вызываем setDominantColor
+      // Можно добавить метод сброса цвета внутри хука useDominantColor, если нужно.
+    }
+  }, [currentPlaylistImage, extractColor]);
 
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
@@ -307,9 +320,11 @@ const PlaylistDetailsPage = () => {
       <ScrollArea className="h-full rounded-md md:pb-0">
         <div className="relative min-h-screen">
           <div
-            className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80
-            to-zinc-900 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             aria-hidden="true"
+            style={{
+              background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+            }}
           />
           <div className="relative z-10">
             <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
