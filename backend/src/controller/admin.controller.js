@@ -66,7 +66,6 @@ export const createSong = async (req, res, next) => {
         .json({ message: "Access denied. Admin privileges required." });
     }
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем наличие imageFile и instrumentalFile
     if (!req.files || !req.files.instrumentalFile || !req.files.imageFile) {
       return res
         .status(400)
@@ -78,6 +77,7 @@ export const createSong = async (req, res, next) => {
       artistIds: artistIdsJsonString,
       albumId,
       releaseYear,
+      lyrics, // --- НОВОЕ: Получаем lyrics из req.body
     } = req.body;
 
     let artistIds;
@@ -106,7 +106,6 @@ export const createSong = async (req, res, next) => {
 
     let duration = 0;
     try {
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Парсим метаданные инструментальной дорожки
       const metadata = await mm.parseFile(
         req.files.instrumentalFile.tempFilePath
       );
@@ -116,7 +115,6 @@ export const createSong = async (req, res, next) => {
       throw new Error("Invalid instrumental audio file");
     }
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Загружаем инструментал и, если есть, вокал
     const instrumentalUrl = await uploadToCloudinary(
       req.files.instrumentalFile,
       "songs/instrumentals"
@@ -166,11 +164,12 @@ export const createSong = async (req, res, next) => {
     const song = new Song({
       title,
       artist: artistIds,
-      instrumentalUrl, // <-- ИЗМЕНЕНО
-      vocalsUrl, // <-- НОВОЕ
+      instrumentalUrl,
+      vocalsUrl,
       imageUrl,
       duration,
       albumId: finalAlbumId,
+      lyrics: lyrics || null, // --- НОВОЕ: Сохраняем lyrics
     });
 
     await song.save();
@@ -199,10 +198,9 @@ export const updateSong = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { title, artistIds, albumId } = req.body;
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Отдельные файлы для инструментала, вокала и изображения
+    const { title, artistIds, albumId, lyrics } = req.body; // --- НОВОЕ: Получаем lyrics из req.body
     const instrumentalFile = req.files ? req.files.instrumentalFile : null;
-    const vocalsFile = req.files ? req.files.vocalsFile : null; // НОВОЕ
+    const vocalsFile = req.files ? req.files.vocalsFile : null;
     const imageFile = req.files ? req.files.imageFile : null;
 
     const song = await Song.findById(id);
@@ -242,7 +240,6 @@ export const updateSong = async (req, res, next) => {
         .json({ message: "Song must have at least one artist." });
     }
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: Обновляем инструментальную дорожку
     if (instrumentalFile) {
       if (song.instrumentalUrl) {
         await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
@@ -259,20 +256,16 @@ export const updateSong = async (req, res, next) => {
       }
     }
 
-    // НОВОЕ: Обновляем вокальную дорожку
-    // Если vocalsFile загружен
     if (vocalsFile) {
       if (song.vocalsUrl) {
         await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       }
       song.vocalsUrl = await uploadToCloudinary(vocalsFile, "songs/vocals");
     } else if (req.body.clearVocals === "true" && song.vocalsUrl) {
-      // Если фронтенд явно указал очистить вокал
       await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       song.vocalsUrl = null;
     }
 
-    // Обновляем изображение
     if (imageFile) {
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
@@ -314,6 +307,7 @@ export const updateSong = async (req, res, next) => {
     }
 
     song.title = title || song.title;
+    song.lyrics = lyrics !== undefined ? lyrics : song.lyrics; // --- НОВОЕ: Обновляем lyrics
 
     await song.save();
     res.status(200).json(song);
@@ -340,16 +334,15 @@ export const deleteSong = async (req, res, next) => {
 
     // Удаление из Cloudinary
     if (song.instrumentalUrl) {
-      // <-- ИЗМЕНЕНО
       await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
     }
     if (song.vocalsUrl) {
-      // <-- НОВОЕ
       await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
     }
     if (song.imageUrl) {
       await deleteFromCloudinary(extractPublicId(song.imageUrl));
     }
+    // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
 
     // Удаление из альбома
     if (song.albumId) {
@@ -533,16 +526,15 @@ export const deleteAlbum = async (req, res, next) => {
     const songsInAlbum = await Song.find({ albumId: id });
     for (const song of songsInAlbum) {
       if (song.instrumentalUrl) {
-        // <-- ИЗМЕНЕНО
         await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
       }
       if (song.vocalsUrl) {
-        // <-- НОВОЕ
         await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
       }
+      // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
       await removeContentFromArtists(song.artist, song._id, "songs");
     }
 
@@ -693,16 +685,15 @@ export const deleteArtist = async (req, res, next) => {
     const songsOfArtist = await Song.find({ artist: artist._id });
     for (const song of songsOfArtist) {
       if (song.instrumentalUrl) {
-        // <-- ИЗМЕНЕНО
         await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
       }
       if (song.vocalsUrl) {
-        // <-- НОВОЕ
         await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
       }
+      // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
       // Удаляем песню из альбома, если она там есть
       if (song.albumId) {
         await Album.findByIdAndUpdate(song.albumId, {

@@ -19,6 +19,8 @@ interface PlayerStore {
   masterVolume: number;
   currentTime: number;
   duration: number;
+  isDesktopLyricsOpen: boolean; // <-- НОВОЕ: Для десктопной страницы текстов
+  isMobileLyricsFullScreen: boolean; // <-- НОВОЕ: Для полноэкранных текстов на мобильном
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -33,6 +35,8 @@ interface PlayerStore {
   setMasterVolume: (volume: number) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  setIsDesktopLyricsOpen: (isOpen: boolean) => void; // <-- НОВОЕ действие
+  setIsMobileLyricsFullScreen: (isOpen: boolean) => void; // <-- НОВОЕ действие
 }
 
 // Вспомогательная функция для перемешивания массива индексов
@@ -61,6 +65,8 @@ export const usePlayerStore = create<PlayerStore>()(
       masterVolume: 75,
       currentTime: 0,
       duration: 0,
+      isDesktopLyricsOpen: false, // Инициализация
+      isMobileLyricsFullScreen: false, // Инициализация
 
       initializeQueue: (songs: Song[]) => {
         set((state) => {
@@ -280,7 +286,6 @@ export const usePlayerStore = create<PlayerStore>()(
         } = get();
 
         if (queue.length === 0) {
-          // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь пуста ---
           set({ isPlaying: false });
           return;
         }
@@ -328,7 +333,6 @@ export const usePlayerStore = create<PlayerStore>()(
               newShufflePointer = 0;
               nextIndexInQueue = newShuffleHistory[newShufflePointer];
             } else {
-              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь закончилась в режиме "off" ---
               set({ isPlaying: false });
               return;
             }
@@ -339,7 +343,6 @@ export const usePlayerStore = create<PlayerStore>()(
             if (repeatMode === "all") {
               nextIndexInQueue = 0;
             } else {
-              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь закончилась в режиме "off" ---
               set({ isPlaying: false });
               return;
             }
@@ -369,7 +372,6 @@ export const usePlayerStore = create<PlayerStore>()(
         } = get();
 
         if (queue.length === 0) {
-          // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если очередь пуста ---
           set({ isPlaying: false });
           return;
         }
@@ -390,7 +392,6 @@ export const usePlayerStore = create<PlayerStore>()(
               newShufflePointer = shuffleHistory.length - 1;
               prevIndexInQueue = shuffleHistory[newShufflePointer];
             } else {
-              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если дошли до начала и не repeat "all" ---
               set({ isPlaying: false });
               return;
             }
@@ -401,7 +402,6 @@ export const usePlayerStore = create<PlayerStore>()(
             if (repeatMode === "all") {
               prevIndexInQueue = queue.length - 1;
             } else {
-              // --- ИЗМЕНЕНИЕ: Просто ставим на паузу, если дошли до начала и не repeat "all" ---
               set({ isPlaying: false });
               return;
             }
@@ -426,14 +426,29 @@ export const usePlayerStore = create<PlayerStore>()(
       setMasterVolume: (volume) => set({ masterVolume: volume }),
       setCurrentTime: (time) => set({ currentTime: time }),
       setDuration: (duration) => set({ duration: duration }),
+      setIsDesktopLyricsOpen: (isOpen) => set({ isDesktopLyricsOpen: isOpen }), // <-- НОВОЕ действие
+      setIsMobileLyricsFullScreen: (isOpen: boolean) => {
+        console.log("Setting isMobileLyricsFullScreen to:", isOpen);
+        set({ isMobileLyricsFullScreen: isOpen });
+      },
     }),
+
     {
       name: "music-player-storage",
       storage: createJSONStorage(() => localStorage),
+      // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: Убираем дублирование currentSong и queue ---
       partialize: (state) => ({
-        currentSong: state.currentSong,
+        currentSong: state.currentSong
+          ? {
+              ...state.currentSong,
+              lyrics: state.currentSong.lyrics, // Убеждаемся, что lyrics сохраняется
+            }
+          : null,
         isPlaying: state.isPlaying,
-        queue: state.queue,
+        queue: state.queue.map((song) => ({
+          ...song,
+          lyrics: song.lyrics, // Убеждаемся, что lyrics сохраняется для каждой песни в очереди
+        })),
         currentIndex: state.currentIndex,
         repeatMode: state.repeatMode,
         isShuffle: state.isShuffle,

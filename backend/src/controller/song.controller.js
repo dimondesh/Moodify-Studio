@@ -4,8 +4,7 @@ export const getAllSongs = async (req, res, next) => {
   try {
     const songs = await Song.find()
       .populate("artist", "name imageUrl")
-      // Добавим instrumentalUrl и vocalsUrl в project, если используете агрегацию в других местах
-      // В find() они будут включены по умолчанию, если не указан select
+      // lyrics будут включены по умолчанию, так как select не указан
       .sort({ createdAt: -1 });
     res.status(200).json({ songs });
   } catch (error) {
@@ -31,9 +30,10 @@ export const getFeaturedSongs = async (req, res, next) => {
           title: 1,
           artist: "$artistDetails",
           imageUrl: 1,
-          instrumentalUrl: 1, // <-- ИЗМЕНЕНО: Добавлено
-          vocalsUrl: 1, // <-- НОВОЕ: Добавлено
+          instrumentalUrl: 1,
+          vocalsUrl: 1,
           albumId: 1,
+          lyrics: 1, // --- НОВОЕ: Добавлено поле lyrics
         },
       },
     ]);
@@ -61,9 +61,10 @@ export const getMadeForYouSongs = async (req, res, next) => {
           title: 1,
           artist: "$artistDetails",
           imageUrl: 1,
-          instrumentalUrl: 1, // <-- ИЗМЕНЕНО: Добавлено
-          vocalsUrl: 1, // <-- НОВОЕ: Добавлено
+          instrumentalUrl: 1,
+          vocalsUrl: 1,
           albumId: 1,
+          lyrics: 1, // --- НОВОЕ: Добавлено поле lyrics
         },
       },
     ]);
@@ -91,9 +92,10 @@ export const getTrendingSongs = async (req, res, next) => {
           title: 1,
           artist: "$artistDetails",
           imageUrl: 1,
-          instrumentalUrl: 1, // <-- ИЗМЕНЕНО: Добавлено
-          vocalsUrl: 1, // <-- НОВОЕ: Добавлено
+          instrumentalUrl: 1,
+          vocalsUrl: 1,
           albumId: 1,
+          lyrics: 1, // --- НОВОЕ: Добавлено поле lyrics
         },
       },
     ]);

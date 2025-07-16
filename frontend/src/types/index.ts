@@ -28,6 +28,7 @@ export interface Song {
   updatedAt: string;
   albumTitle?: string;
   likedAt?: string;
+  lyrics?: string; // <-- НОВОЕ ПОЛЕ: Для хранения текста песни в формате LRC
 }
 
 export interface Album {

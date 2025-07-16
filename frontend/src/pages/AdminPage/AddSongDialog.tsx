@@ -24,12 +24,14 @@ import {
 } from "../../components/ui/select";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { MultiSelect } from "../../components/ui/multi-select";
+import { Textarea } from "../../components/ui/textarea"; // <-- НОВОЕ: Импортируем Textarea
 
 interface NewSong {
   title: string;
   artistIds: string[];
   album: string;
   releaseYear: number;
+  lyrics: string; // <-- НОВОЕ: Добавляем поле lyrics
 }
 
 const AddSongDialog = () => {
@@ -43,22 +45,21 @@ const AddSongDialog = () => {
     artistIds: [],
     album: "",
     releaseYear: new Date().getFullYear(),
+    lyrics: "", // <-- Инициализируем lyrics
   });
 
-  // ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем instrumentalFile и vocalsFile
   const [files, setFiles] = useState<{
-    instrumentalFile: File | null; // <-- ИЗМЕНЕНО
-    vocalsFile: File | null; // <-- НОВОЕ: Для вокальной дорожки
-    imageFile: File | null; // <-- ИЗМЕНЕНО
+    instrumentalFile: File | null;
+    vocalsFile: File | null;
+    imageFile: File | null;
   }>({
     instrumentalFile: null,
     vocalsFile: null,
     imageFile: null,
   });
 
-  // ИЗМЕНЕНИЕ ЗДЕСЬ: Отдельные рефы для инструментала и вокала
-  const instrumentalInputRef = useRef<HTMLInputElement>(null); // <-- ИЗМЕНЕНО
-  const vocalsInputRef = useRef<HTMLInputElement>(null); // <-- НОВОЕ
+  const instrumentalInputRef = useRef<HTMLInputElement>(null);
+  const vocalsInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,7 +73,6 @@ const AddSongDialog = () => {
     setIsLoading(true);
 
     try {
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем instrumentalFile и imageFile
       if (!files.instrumentalFile || !files.imageFile) {
         return toast.error("Please upload instrumental audio and image files");
       }
@@ -89,11 +89,13 @@ const AddSongDialog = () => {
         formData.append("albumId", newSong.album);
       }
       formData.append("releaseYear", newSong.releaseYear.toString());
+      if (newSong.lyrics) {
+        formData.append("lyrics", newSong.lyrics); // <-- НОВОЕ: Добавляем lyrics в FormData
+      }
 
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем instrumentalFile и vocalsFile
       formData.append("instrumentalFile", files.instrumentalFile);
       if (files.vocalsFile) {
-        formData.append("vocalsFile", files.vocalsFile); // Добавляем вокал только если он выбран
+        formData.append("vocalsFile", files.vocalsFile);
       }
       formData.append("imageFile", files.imageFile);
 
@@ -104,9 +106,9 @@ const AddSongDialog = () => {
         artistIds: [],
         album: "",
         releaseYear: new Date().getFullYear(),
+        lyrics: "", // <-- Сбрасываем lyrics
       });
       setSelectedArtistIds([]);
-      // ИЗМЕНЕНИЕ ЗДЕСЬ: Сброс всех файлов
       setFiles({
         instrumentalFile: null,
         vocalsFile: null,
@@ -332,6 +334,22 @@ const AddSongDialog = () => {
               </Select>
             </div>
           </ScrollArea>
+
+          {/* НОВОЕ ПОЛЕ: Lyrics (LRC Format) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">
+              Lyrics (LRC Format, Optional)
+            </label>
+            <Textarea
+              value={newSong.lyrics}
+              onChange={(e) =>
+                setNewSong({ ...newSong, lyrics: e.target.value })
+              }
+              className="bg-zinc-800 border-zinc-700 text-zinc-400 h-32"
+              placeholder="Paste lyrics in LRC format here, e.g., [00:01.23]Line 1"
+            />
+          </div>
+          {/* Конец нового поля */}
         </div>
 
         <DialogFooter>
@@ -344,9 +362,9 @@ const AddSongDialog = () => {
                 artistIds: [],
                 album: "",
                 releaseYear: new Date().getFullYear(),
+                lyrics: "", // <-- Сбрасываем lyrics
               });
               setSelectedArtistIds([]);
-              // ИЗМЕНЕНИЕ ЗДЕСЬ: Сброс всех файлов
               setFiles({
                 instrumentalFile: null,
                 vocalsFile: null,
@@ -364,7 +382,7 @@ const AddSongDialog = () => {
               isLoading ||
               !newSong.title ||
               selectedArtistIds.length === 0 ||
-              !files.instrumentalFile || // <-- ИЗМЕНЕНО
+              !files.instrumentalFile ||
               !files.imageFile
             }
           >

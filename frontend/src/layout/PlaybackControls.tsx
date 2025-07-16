@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react"; // useRef больше не нужен, убран импорт
+// frontend/src/layout/PlaybackControls.tsx
+
+import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
@@ -19,8 +21,8 @@ import {
   Volume2,
   VolumeX,
   ChevronDown,
-  Maximize,
   Sliders,
+  Mic2,
 } from "lucide-react";
 import { Slider } from "../components/ui/slider";
 import {
@@ -46,6 +48,31 @@ const formatTime = (seconds: number) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
+interface LyricLine {
+  time: number; // время в секундах
+  text: string;
+}
+
+const parseLrc = (lrcContent: string): LyricLine[] => {
+  const lines = lrcContent.split("\n");
+  const parsedLyrics: LyricLine[] = [];
+
+  lines.forEach((line) => {
+    const timeMatch = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/);
+    if (timeMatch) {
+      const minutes = parseInt(timeMatch[1], 10);
+      const seconds = parseInt(timeMatch[2], 10);
+      const milliseconds = parseInt(timeMatch[3].padEnd(3, "0"), 10);
+      const timeInSeconds = minutes * 60 + seconds + milliseconds / 1000;
+      const text = line.replace(/\[.*?\]/g, "").trim();
+      parsedLyrics.push({ time: timeInSeconds, text });
+    }
+  });
+
+  parsedLyrics.sort((a, b) => a.time - b.time);
+  return parsedLyrics;
+};
+
 const PlaybackControls = () => {
   const {
     currentSong,
@@ -57,11 +84,11 @@ const PlaybackControls = () => {
     setRepeatMode,
     isShuffle,
     toggleShuffle,
-    // queue, // <-- УДАЛЕНО: не используется напрямую в этом компоненте
-    // currentIndex, // <-- УДАЛЕНО: не используется напрямую в этом компоненте
-    // playAlbum, // <-- УДАЛЕНО: не используется напрямую в этом компоненте
     isFullScreenPlayerOpen,
     setIsFullScreenPlayerOpen,
+    isDesktopLyricsOpen,
+    setIsDesktopLyricsOpen,
+    setIsMobileLyricsFullScreen, // Мы только устанавливаем это состояние
     vocalsVolume,
     setVocalsVolume,
     masterVolume,
@@ -77,6 +104,11 @@ const PlaybackControls = () => {
     useState(masterVolume);
 
   const [isCompactView, setIsCompactView] = useState(false);
+  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
+
+  // Ref для области, от которой должен работать свайп вниз
+  const topSwipeAreaRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
 
   useEffect(() => {
     fetchLikedSongs();
@@ -91,6 +123,14 @@ const PlaybackControls = () => {
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
+
+  useEffect(() => {
+    if (currentSong?.lyrics) {
+      setLyrics(parseLrc(currentSong.lyrics));
+    } else {
+      setLyrics([]);
+    }
+  }, [currentSong]);
 
   const toggleRepeatMode = () => {
     if (repeatMode === "off") {
@@ -136,11 +176,43 @@ const PlaybackControls = () => {
     }
   };
 
+  // НОВЫЙ ОБРАБОТЧИК ДЛЯ TOUCH START В ВЕРХНЕЙ ОБЛАСТИ
+  const handleTopAreaTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  // НОВЫЙ ОБРАБОТЧИК ДЛЯ TOUCH MOVE В ВЕРХНЕЙ ОБЛАСТИ
+  const handleTopAreaTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const currentY = e.touches[0].clientY;
+    const diffY = currentY - touchStartY.current; // Положительное значение = свайп вниз
+
+    // Определяем, насколько далеко от верха находится текущий скролл основного контента
+    // Это важно, чтобы свайп вниз закрывал плеер только когда мы находимся в начале скролла
+    const mainContentScrollTop = mobilePlayerContentRef.current?.scrollTop || 0;
+
+    // Закрываем плеер, если свайп вниз достаточно длинный
+    // И основной контент находится в самом верху (или почти)
+    if (diffY > 50 && mainContentScrollTop <= 5) {
+      setIsFullScreenPlayerOpen(false);
+    }
+  };
+
+  // Реф для основного прокручиваемого контента, чтобы проверять его scrollTop
+  const mobilePlayerContentRef = useRef<HTMLDivElement>(null);
+
   if (!currentSong) {
-    return null;
+    return (
+      <footer
+        className={`h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40
+        ${isCompactView && isFullScreenPlayerOpen ? "hidden" : ""}`}
+      >
+        <div className="flex items-center justify-center h-full text-zinc-500">
+          No song playing
+        </div>
+      </footer>
+    );
   }
 
-  // КОМПАКТНЫЙ ПЛЕЕР ДЛЯ МОБИЛЬНЫХ/ПЛАНШЕТОВ
   if (isCompactView) {
     return (
       <>
@@ -209,24 +281,27 @@ const PlaybackControls = () => {
           </footer>
         )}
 
-        {/* ПОЛНОЭКРАННЫЙ ПЛЕЕР (МОДАЛЬНОЕ ОКНО) */}
         <Dialog
           open={isFullScreenPlayerOpen}
-          onOpenChange={
-            isFullScreenPlayerOpen ? setIsFullScreenPlayerOpen : undefined
-          }
+          onOpenChange={setIsFullScreenPlayerOpen}
         >
           <DialogPortal>
             <DialogContent
               aria-describedby={undefined}
-              className="fixed inset-y-0 top-[calc(100vh-50vh)] w-screen h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0"
+              className={`fixed inset-y-0 top-105 w-screen h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
             >
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
                 {getArtistNames(currentSong.artist)}
               </DialogTitle>
 
-              <div className="flex justify-between items-center w-full mb-4">
+              {/* ЭТА ОБЛАСТЬ РЕАГИРУЕТ НА СВАЙП ВНИЗ */}
+              <div
+                className="flex justify-between items-center w-full mb-4 flex-shrink-0"
+                ref={topSwipeAreaRef} // Привязываем реф к верхней панели
+                onTouchStart={handleTopAreaTouchStart}
+                onTouchMove={handleTopAreaTouchMove}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
@@ -238,203 +313,255 @@ const PlaybackControls = () => {
                 <div className="text-sm font-semibold text-zinc-400 uppercase">
                   {currentSong?.albumTitle || "Now Playing"}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-zinc-400 hover:text-white opacity-0 pointer-events-none"
-                >
-                  <Maximize className="h-6 w-6" />
-                </Button>
+                <div className="w-10 h-10"></div>
               </div>
 
-              <div className="flex-1 flex items-center justify-center px-4 py-8">
-                {currentSong ? (
-                  <img
-                    src={currentSong.imageUrl || "/default-song-cover.png"}
-                    alt={currentSong.title}
-                    className="w-full max-w-md aspect-square object-cover rounded-lg shadow-2xl"
-                  />
-                ) : (
-                  <div className="w-full max-w-md aspect-square bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500">
-                    No song playing
+              {/* ОСНОВНОЕ СОДЕРЖИМОЕ ПОЛНОЭКРАННОГО МОБИЛЬНОГО ПЛЕЕРА */}
+              {/* onScroll/onTouch* убраны отсюда, т.к. закрытие должно быть только сверху */}
+              <div
+                ref={mobilePlayerContentRef} // Реф для проверки scrollTop
+                className="flex-1 flex flex-col items-center overflow-y-auto w-full custom-scrollbar"
+              >
+                <div className="flex flex-col items-center justify-center px-4 py-8 flex-shrink-0">
+                  {currentSong ? (
+                    <img
+                      src={currentSong.imageUrl || "/default-song-cover.png"}
+                      alt={currentSong.title}
+                      className="w-full max-w-md aspect-square object-cover rounded-lg shadow-2xl mb-8"
+                    />
+                  ) : (
+                    <div className="w-full max-w-md aspect-square bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 mb-8">
+                      No song playing
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center w-full mb-4 px-2">
+                    <div className="flex flex-col text-left">
+                      <h2 className="text-2xl font-bold text-white mb-1">
+                        {currentSong?.title || "No song playing"}
+                      </h2>
+                      <p className="text-zinc-400 text-base">
+                        {getArtistNames(currentSong.artist)}
+                      </p>
+                    </div>
+                    {currentSong && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`hover:text-white ${
+                          isSongLiked(currentSong._id)
+                            ? "text-violet-500"
+                            : "text-zinc-400"
+                        }`}
+                        onClick={handleToggleLike}
+                        title={
+                          isSongLiked(currentSong._id)
+                            ? "Unlike song"
+                            : "Like song"
+                        }
+                      >
+                        <Heart className="h-7 w-7 fill-current" />
+                      </Button>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="flex justify-between items-center w-full mb-4 px-2">
-                <div className="flex flex-col text-left">
-                  <h2 className="text-2xl font-bold text-white mb-1">
-                    {currentSong?.title || "No song playing"}
-                  </h2>
-                  <p className="text-zinc-400 text-base">
-                    {getArtistNames(currentSong.artist)}
-                  </p>
-                </div>
-                {currentSong && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`hover:text-white ${
-                      isSongLiked(currentSong._id)
-                        ? "text-violet-500"
-                        : "text-zinc-400"
-                    }`}
-                    onClick={handleToggleLike}
-                    title={
-                      isSongLiked(currentSong._id) ? "Unlike song" : "Like song"
-                    }
-                  >
-                    <Heart className="h-7 w-7 fill-current" />
-                  </Button>
-                )}
-              </div>
+                  <div className="w-full flex items-center gap-2 mb-8 px-2">
+                    <div className="text-xs text-zinc-400">
+                      {formatTime(currentTime)}
+                    </div>
+                    <Slider
+                      value={[currentTime]}
+                      max={duration || 100}
+                      step={1}
+                      className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                      onValueChange={handleSeek}
+                    />
+                    <div className="text-xs text-zinc-400">
+                      {formatTime(duration)}
+                    </div>
+                  </div>
 
-              <div className="w-full flex items-center gap-2 mb-8 px-2">
-                <div className="text-xs text-zinc-400">
-                  {formatTime(currentTime)}
-                </div>
-                <Slider
-                  value={[currentTime]}
-                  max={duration || 100}
-                  step={1}
-                  className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                  onValueChange={handleSeek}
-                />
-                <div className="text-xs text-zinc-400">
-                  {formatTime(duration)}
-                </div>
-              </div>
+                  <div className="flex items-center justify-around w-full mb-8 px-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`hover:text-white ${
+                        isShuffle ? "text-violet-500" : "text-zinc-400"
+                      }`}
+                      onClick={toggleShuffle}
+                      title="Toggle Shuffle"
+                    >
+                      <Shuffle className="h-6 w-6" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="hover:text-white text-zinc-400"
+                      onClick={() => {
+                        if (currentTime > 3) {
+                          setPlayerCurrentTime(0);
+                        } else {
+                          playPrevious();
+                        }
+                      }}
+                    >
+                      <SkipBack className="h-6 w-6 fill-current" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      className="bg-violet-500 hover:bg-violet-400 text-black rounded-full h-16 w-16"
+                      onClick={togglePlay}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-9 w-9 fill-current" />
+                      ) : (
+                        <Play className="h-9 w-9 fill-current" />
+                      )}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="hover:text-white text-zinc-400"
+                      onClick={playNext}
+                    >
+                      <SkipForward className="h-6 w-6 fill-current" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`hover:text-white ${
+                        repeatMode !== "off"
+                          ? "text-violet-500"
+                          : "text-zinc-400"
+                      }`}
+                      onClick={toggleRepeatMode}
+                      title="Toggle Repeat Mode"
+                    >
+                      {repeatMode === "one" ? (
+                        <Repeat1 className="h-6 w-6" />
+                      ) : (
+                        <Repeat className="h-6 w-6" />
+                      )}
+                    </Button>
+                  </div>
 
-              <div className="flex items-center justify-around w-full mb-8 px-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={`hover:text-white ${
-                    isShuffle ? "text-violet-500" : "text-zinc-400"
-                  }`}
-                  onClick={toggleShuffle}
-                  title="Toggle Shuffle"
-                >
-                  <Shuffle className="h-6 w-6" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="hover:text-white text-zinc-400"
-                  onClick={() => {
-                    // Перемотка или переход к предыдущей песне
-                    if (currentTime > 3) {
-                      setPlayerCurrentTime(0); // Перемотка к началу
-                    } else {
-                      playPrevious();
-                    }
-                  }}
-                >
-                  <SkipBack className="h-6 w-6 fill-current" />
-                </Button>
-                <Button
-                  size="icon"
-                  className="bg-violet-500 hover:bg-violet-400 text-black rounded-full h-16 w-16"
-                  onClick={togglePlay}
-                >
-                  {isPlaying ? (
-                    <Pause className="h-9 w-9 fill-current" />
-                  ) : (
-                    <Play className="h-9 w-9 fill-current" />
-                  )}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="hover:text-white text-zinc-400"
-                  onClick={playNext}
-                >
-                  <SkipForward className="h-6 w-6 fill-current" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={`hover:text-white ${
-                    repeatMode !== "off" ? "text-violet-500" : "text-zinc-400"
-                  }`}
-                  onClick={toggleRepeatMode}
-                  title="Toggle Repeat Mode"
-                >
-                  {repeatMode === "one" ? (
-                    <Repeat1 className="h-6 w-6" />
-                  ) : (
-                    <Repeat className="h-6 w-6" />
-                  )}
-                </Button>
-              </div>
+                  <div className="flex items-center justify-between w-full pb-4 px-2">
+                    {currentSong.vocalsUrl ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="hover:text-white text-zinc-400"
+                            title="Adjust vocals volume"
+                          >
+                            <Sliders className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          side="top"
+                          align="start"
+                          className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenuItem className="focus:bg-transparent">
+                            <div className="flex items-center w-full gap-2">
+                              <span className="text-sm text-zinc-400 w-8 mr-2">
+                                Vocals
+                              </span>
+                              <Slider
+                                value={[vocalsVolume]}
+                                max={100}
+                                step={1}
+                                className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                                onValueChange={(value) =>
+                                  setVocalsVolume(value[0])
+                                }
+                              />
+                            </div>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <div className="w-10 h-10"></div>
+                    )}
 
-              <div className="flex items-center justify-between w-full pb-4 px-2">
-                {currentSong.vocalsUrl ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <div className="flex items-center gap-2 justify-end">
                       <Button
                         size="icon"
                         variant="ghost"
                         className="hover:text-white text-zinc-400"
-                        title="Adjust vocals volume"
+                        onClick={toggleMute}
                       >
-                        <Sliders className="h-5 w-5" />
+                        {renderVolumeIcon()}
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      side="top"
-                      align="start"
-                      className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <DropdownMenuItem className="focus:bg-transparent">
-                        <div className="flex items-center w-full gap-2">
-                          <span className="text-sm text-zinc-400 w-8 mr-2">
-                            Vocals
-                          </span>
-                          <Slider
-                            value={[vocalsVolume]}
-                            max={100}
-                            step={1}
-                            className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                            onValueChange={(value) => setVocalsVolume(value[0])}
-                          />
-                        </div>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <div className="w-10 h-10"></div>
-                )}
-
-                <div className="flex items-center gap-2 justify-end">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="hover:text-white text-zinc-400"
-                    onClick={toggleMute}
-                  >
-                    {renderVolumeIcon()}
-                  </Button>
-                  <Slider
-                    value={[masterVolume]}
-                    max={100}
-                    step={1}
-                    className="w-24 hover:cursor-grab active:cursor-grabbing"
-                    onValueChange={(value) => {
-                      const newVolume = value[0];
-                      setMasterVolume(newVolume);
-                      if (newVolume > 0) setPreviousMasterVolume(newVolume);
-                    }}
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="hover:text-white text-zinc-400"
-                  >
-                    <Laptop2 className="h-5 w-5" />
-                  </Button>
+                      <Slider
+                        value={[masterVolume]}
+                        max={100}
+                        step={1}
+                        className="w-24 hover:cursor-grab active:cursor-grabbing"
+                        onValueChange={(value) => {
+                          const newVolume = value[0];
+                          setMasterVolume(newVolume);
+                          if (newVolume > 0) setPreviousMasterVolume(newVolume);
+                        }}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="hover:text-white text-zinc-400"
+                      >
+                        <Laptop2 className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+                {currentSong.lyrics && (
+                  <div
+                    className="w-full max-w-xl mx-auto mt-8 flex flex-col items-center flex-shrink-0"
+                    // Эта общая область div не должна быть onClick для открытия лирики,
+                    // чтобы не перехватывать клики на самой лирике, когда пытаешься скроллить.
+                    // Вместо этого используем кнопки "Show full lyrics".
+                    // onClick={() => setIsMobileLyricsFullScreen(true)}
+                  >
+                    <h3 className="text-xl font-bold mb-4 text-white">
+                      Lyrics Preview
+                    </h3>
+                    <div className="w-full text-center relative cursor-pointer">
+                      {lyrics.slice(0, 5).map((line, index) => (
+                        <p
+                          key={index}
+                          className={`py-0.5 text-base font-bold transition-colors duration-100
+                            ${
+                              currentTime >= line.time &&
+                              (index === lyrics.length - 1 ||
+                                currentTime < lyrics[index + 1].time)
+                                ? "text-violet-400"
+                                : "text-zinc-400"
+                            }`}
+                        >
+                          {line.text}
+                        </p>
+                      ))}
+                      {lyrics.length > 5 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950 to-transparent flex items-end justify-center pb-2">
+                          <Button
+                            variant="ghost"
+                            className="text-violet-400 hover:text-violet-300 text-sm font-bold"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Важно: предотвратить всплытие, чтобы не закрыть сразу
+                              setIsMobileLyricsFullScreen(true); // <-- Здесь вызываем
+                              setIsFullScreenPlayerOpen(false);
+                            }}
+                          >
+                            Show full lyrics
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="h-20 w-full flex-shrink-0"></div>
               </div>
             </DialogContent>
           </DialogPortal>
@@ -443,7 +570,6 @@ const PlaybackControls = () => {
     );
   }
 
-  // ДЕСКТОПНЫЙ ПЛЕЕР
   return (
     <footer className="h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40">
       <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
@@ -561,6 +687,20 @@ const PlaybackControls = () => {
           </div>
         </div>
         <div className="flex items-center gap-4 min-w-[180px] w-[30%] justify-end">
+          {currentSong.lyrics && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className={`hover:text-white ${
+                isDesktopLyricsOpen ? "text-violet-500" : "text-zinc-400"
+              }`}
+              onClick={() => setIsDesktopLyricsOpen(!isDesktopLyricsOpen)}
+              title="Toggle Lyrics Page"
+            >
+              <Mic2 className="h-4 w-4" />
+            </Button>
+          )}
+
           {currentSong.vocalsUrl ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -23,16 +23,13 @@ const songSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // audioUrl теперь будет использоваться как instrumentalUrl
     instrumentalUrl: {
-      // <-- ИЗМЕНЕНО: Переименовано с audioUrl
       type: String,
       required: true,
     },
     vocalsUrl: {
-      // <-- НОВОЕ ПОЛЕ: Для вокальной дорожки, необязательное
       type: String,
-      default: null, // По умолчанию null, если вокала нет
+      default: null,
     },
     duration: {
       type: Number, // Длительность в секундах
@@ -43,6 +40,12 @@ const songSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // --- НОВОЕ ПОЛЕ: lyrics ---
+    lyrics: {
+      type: String, // Для хранения LRC-текста
+      default: null,
+    },
+    // -------------------------
   },
   { timestamps: true }
 );

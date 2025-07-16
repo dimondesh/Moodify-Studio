@@ -24,7 +24,8 @@ const HomePage = () => {
     isLoading: isPlaylistsLoading, // isLoading specifically for playlists
   } = usePlaylistStore(); // Используем PlaylistStore
 
-  const { initializeQueue, toggleShuffle, isShuffle } = usePlayerStore();
+  const { initializeQueue, toggleShuffle, isShuffle, currentSong } =
+    usePlayerStore(); // <--- Добавили currentSong из usePlayerStore
 
   useEffect(() => {
     fetchFeaturedSongs();
@@ -39,7 +40,9 @@ const HomePage = () => {
   ]);
 
   useEffect(() => {
+    // <--- Добавлена проверка: если currentSong уже есть, не инициализируем очередь
     if (
+      currentSong === null && // <--- НОВОЕ УСЛОВИЕ: Инициализируем только если трек не играет
       madeForYouSongs.length > 0 &&
       featuredSongs.length > 0 &&
       trendingSongs.length > 0
@@ -54,6 +57,7 @@ const HomePage = () => {
     trendingSongs,
     isShuffle,
     toggleShuffle,
+    currentSong, // <--- Добавили currentSong в зависимости
   ]);
 
   const getGreeting = () => {
