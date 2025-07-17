@@ -116,8 +116,6 @@ const PlaybackControls = () => {
   const currentSongImage = currentSong?.imageUrl;
   const lastImageUrlRef = useRef<string | null>(null);
 
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
     if (
       currentSongImage &&
@@ -125,15 +123,9 @@ const PlaybackControls = () => {
       currentSong.imageUrl !== lastImageUrlRef.current
     ) {
       lastImageUrlRef.current = currentSong.imageUrl;
-
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-      timeoutRef.current = setTimeout(() => {
-        extractColor(currentSong.imageUrl);
-      }, 500);
+      extractColor(currentSong.imageUrl); // ✅ Вызываем сразу
     }
-  }, [currentSong?.imageUrl, currentSongImage]);
-
+  }, [currentSong?.imageUrl, extractColor]);
   useEffect(() => {
     fetchLikedSongs();
   }, [fetchLikedSongs]);
@@ -312,12 +304,17 @@ const PlaybackControls = () => {
           <DialogPortal>
             <DialogContent
               aria-describedby={undefined}
-              className={`fixed inset-y-0 top-105 sm:top-115 w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0 `}
+              className={`fixed inset-y-0 top-105 w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
               style={{
                 background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
                 transition: "background 1s ease-in-out",
               }}
             >
+              <style>{`
+                button[data-slot="dialog-close"] {
+                  display: none !important;
+                }
+              `}</style>
               <DialogTitle className="sr-only">
                 {currentSong?.title || "Now Playing"} -{" "}
                 {getArtistNames(currentSong.artist)}

@@ -66,19 +66,32 @@ export const createSong = async (req, res, next) => {
         .json({ message: "Access denied. Admin privileges required." });
     }
 
-    if (!req.files || !req.files.instrumentalFile || !req.files.imageFile) {
+    // Проверяем наличие instrumentalFile - это всегда обязательно
+    if (!req.files || !req.files.instrumentalFile) {
       return res
         .status(400)
-        .json({ message: "Please upload instrumental audio and image files" });
+        .json({ message: "Please upload instrumental audio file." });
     }
 
     const {
       title,
       artistIds: artistIdsJsonString,
-      albumId,
+      albumId, // Получаем albumId здесь, чтобы использовать его в условной проверке
       releaseYear,
-      lyrics, // --- НОВОЕ: Получаем lyrics из req.body
+      lyrics,
     } = req.body;
+
+    // ✅ ИЗМЕНЕНО: Условная проверка imageFile.
+    // imageFile обязателен, только если albumId не предоставлен (это сингл)
+    if (
+      (!albumId || albumId === "none" || albumId === "") &&
+      !req.files.imageFile
+    ) {
+      return res.status(400).json({
+        message:
+          "Please upload an image file for the song (required for singles).",
+      });
+    }
 
     let artistIds;
     try {
@@ -126,27 +139,13 @@ export const createSong = async (req, res, next) => {
         "songs/vocals"
       );
     }
-    const imageUrl = await uploadToCloudinary(
-      req.files.imageFile,
-      "songs/images"
-    );
 
+    let songImageUrl; // ✅ НОВОЕ: Переменная для окончательного URL обложки песни
     let finalAlbumId = null;
 
-    if (!albumId || albumId === "none" || albumId === "") {
-      const newAlbum = new Album({
-        title,
-        artist: artistIds,
-        imageUrl,
-        releaseYear: releaseYear || new Date().getFullYear(),
-        songs: [],
-        type: "Single",
-      });
-      await newAlbum.save();
-      finalAlbumId = newAlbum._id;
-
-      await updateArtistsContent(artistIds, newAlbum._id, "albums");
-    } else {
+    // ✅ ИЗМЕНЕНО: Логика определения imageUrl и finalAlbumId
+    if (albumId && albumId !== "none" && albumId !== "") {
+      // Пользователь выбрал существующий альбом
       const existingAlbum = await Album.findById(albumId);
       if (!existingAlbum) {
         return res.status(404).json({ message: "Album not found." });
@@ -159,6 +158,36 @@ export const createSong = async (req, res, next) => {
         });
       }
       finalAlbumId = albumId;
+
+      // Если пользователь загрузил изображение для песни, используем его, иначе - обложку альбома
+      if (req.files.imageFile) {
+        songImageUrl = await uploadToCloudinary(
+          req.files.imageFile,
+          "songs/images"
+        );
+      } else {
+        songImageUrl = existingAlbum.imageUrl; // Берем обложку из альбома
+      }
+    } else {
+      // Это сингл или новый альбом (который будет синглом)
+      // imageFile здесь обязателен по предыдущей проверке, поэтому req.files.imageFile точно есть
+      songImageUrl = await uploadToCloudinary(
+        req.files.imageFile,
+        "songs/images"
+      );
+
+      const newAlbum = new Album({
+        title, // Название сингла = название песни
+        artist: artistIds,
+        imageUrl: songImageUrl, // Обложка сингла = обложка песни
+        releaseYear: releaseYear || new Date().getFullYear(),
+        songs: [],
+        type: "Single", // Всегда "Single" для новых альбомов, созданных через песню
+      });
+      await newAlbum.save();
+      finalAlbumId = newAlbum._id;
+
+      await updateArtistsContent(artistIds, newAlbum._id, "albums");
     }
 
     const song = new Song({
@@ -166,10 +195,10 @@ export const createSong = async (req, res, next) => {
       artist: artistIds,
       instrumentalUrl,
       vocalsUrl,
-      imageUrl,
+      imageUrl: songImageUrl, // ✅ ИЗМЕНЕНО: Используем определенный выше songImageUrl
       duration,
       albumId: finalAlbumId,
-      lyrics: lyrics || null, // --- НОВОЕ: Сохраняем lyrics
+      lyrics: lyrics || null,
     });
 
     await song.save();

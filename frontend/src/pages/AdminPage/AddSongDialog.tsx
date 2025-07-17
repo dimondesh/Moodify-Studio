@@ -73,9 +73,17 @@ const AddSongDialog = () => {
     setIsLoading(true);
 
     try {
-      if (!files.instrumentalFile || !files.imageFile) {
-        return toast.error("Please upload instrumental audio and image files");
+      if (!files.instrumentalFile) {
+        return toast.error("Please upload instrumental audio file.");
       }
+
+      // ✅ ИЗМЕНЕНИЕ ЛОГИКИ ВАЛИДАЦИИ ОБЛОЖКИ
+      const isAlbumSelected = newSong.album && newSong.album !== "none";
+      if (!isAlbumSelected && !files.imageFile) {
+        return toast.error("Please upload an image file for the single.");
+      }
+      // ✅ КОНЕЦ ИЗМЕНЕНИЯ
+
       if (selectedArtistIds.length === 0) {
         return toast.error("Please select at least one artist.");
       }
@@ -90,14 +98,19 @@ const AddSongDialog = () => {
       }
       formData.append("releaseYear", newSong.releaseYear.toString());
       if (newSong.lyrics) {
-        formData.append("lyrics", newSong.lyrics); // <-- НОВОЕ: Добавляем lyrics в FormData
+        formData.append("lyrics", newSong.lyrics);
       }
 
       formData.append("instrumentalFile", files.instrumentalFile);
       if (files.vocalsFile) {
         formData.append("vocalsFile", files.vocalsFile);
       }
-      formData.append("imageFile", files.imageFile);
+      // Добавляем imageFile только если он существует (то есть, если это сингл или загружен вручную)
+      if (files.imageFile) {
+        // ✅ ОБНОВЛЕНО: Отправляем imageFile только если он есть
+        formData.append("imageFile", files.imageFile);
+      }
+      // Если albumId есть, бэкенд сам подставит обложку альбома
 
       await axiosInstance.post("/admin/songs", formData);
 
@@ -106,7 +119,7 @@ const AddSongDialog = () => {
         artistIds: [],
         album: "",
         releaseYear: new Date().getFullYear(),
-        lyrics: "", // <-- Сбрасываем lyrics
+        lyrics: "",
       });
       setSelectedArtistIds([]);
       setFiles({
@@ -125,6 +138,9 @@ const AddSongDialog = () => {
       setIsLoading(false);
     }
   };
+
+  // ✅ НОВОЕ: Перемещаем определение isAlbumSelected сюда, чтобы оно было доступно в JSX
+  const isAlbumSelected = newSong.album && newSong.album !== "none";
 
   return (
     <Dialog open={songDialogOpen} onOpenChange={setSongDialogOpen}>
@@ -146,7 +162,12 @@ const AddSongDialog = () => {
         <div className="space-y-4 py-4">
           {/* Image upload area */}
           <div
-            className="flex items-center justify-center p-6 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer"
+            // ✅ ИЗМЕНЕНО: Добавляем класс, если обложка не обязательна
+            className={`flex items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer ${
+              !isAlbumSelected && !files.imageFile
+                ? "border-red-500"
+                : "border-zinc-700"
+            }`}
             onClick={() => imageInputRef.current?.click()}
           >
             <input
@@ -174,7 +195,8 @@ const AddSongDialog = () => {
                     <Upload className="h-6 w-6 text-zinc-400" />
                   </div>
                   <div className="text-sm text-zinc-400 mb-2">
-                    Upload artwork
+                    Upload artwork {!isAlbumSelected && "(Required)"}{" "}
+                    {/* ✅ НОВОЕ: Показываем, что обязательно */}
                   </div>
                   <Button
                     variant="outline"
@@ -362,7 +384,7 @@ const AddSongDialog = () => {
                 artistIds: [],
                 album: "",
                 releaseYear: new Date().getFullYear(),
-                lyrics: "", // <-- Сбрасываем lyrics
+                lyrics: "",
               });
               setSelectedArtistIds([]);
               setFiles({
@@ -383,7 +405,8 @@ const AddSongDialog = () => {
               !newSong.title ||
               selectedArtistIds.length === 0 ||
               !files.instrumentalFile ||
-              !files.imageFile
+              // ✅ ИЗМЕНЕНО: Новое условие блокировки кнопки
+              (!isAlbumSelected && !files.imageFile)
             }
           >
             {isLoading ? "Uploading..." : "Add Song"}

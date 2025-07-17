@@ -53,13 +53,14 @@ import {
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
 import Equalizer from "../../components/ui/equalizer";
-import { useDominantColor } from "@/hooks/useDominantColor";
+import { FastAverageColor } from "fast-average-color"; // Импортируем FastAverageColor локально
 // Helper function for duration formatting
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
+const fac = new FastAverageColor(); // Создаем экземпляр FastAverageColor вне компонента
 
 // Вспомогательная функция для получения имен артистов из массива объектов Artist
 const getArtistNames = (artistsInput: Artist[] | undefined) => {
@@ -106,11 +107,8 @@ const PlaylistDetailsPage = () => {
   const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
-  const { extractColor } = useDominantColor(); // ✅ берём функцию
-
-  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
-  const currentPlaylistImage = currentPlaylist?.imageUrl;
-
+  const [playlistPageDominantColor, setPlaylistPageDominantColor] =
+    useState("#18181b"); // ✅ НОВОЕ: Локальное состояние для доминантного цвета страницы плейлиста
   const {
     songs: searchSongs,
     loading: searchLoading,
@@ -126,15 +124,24 @@ const PlaylistDetailsPage = () => {
     queue,
   } = usePlayerStore();
   useEffect(() => {
-    if (currentPlaylistImage && currentPlaylistImage.trim() !== "") {
-      extractColor(currentPlaylistImage);
-      console.log(extractColor);
+    const imageUrl = currentPlaylist?.imageUrl;
+    if (imageUrl && imageUrl.trim() !== "") {
+      fac
+        .getColorAsync(imageUrl)
+        .then((color) => {
+          setPlaylistPageDominantColor(color.hex);
+        })
+        .catch((error) => {
+          console.error(
+            "Ошибка при извлечении цвета для страницы плейлиста:",
+            error
+          );
+          setPlaylistPageDominantColor("#18181b"); // Цвет по умолчанию в случае ошибки
+        });
     } else {
-      // Если extractColor сама обновляет состояние, то здесь НЕ вызываем setDominantColor
-      // Можно добавить метод сброса цвета внутри хука useDominantColor, если нужно.
+      setPlaylistPageDominantColor("#18181b"); // Цвет по умолчанию, если нет изображения
     }
-  }, [currentPlaylistImage, extractColor]);
-
+  }, [currentPlaylist?.imageUrl]);
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
     : false;
@@ -323,7 +330,7 @@ const PlaylistDetailsPage = () => {
             className="absolute inset-0 pointer-events-none"
             aria-hidden="true"
             style={{
-              background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+              background: `linear-gradient(to bottom, ${playlistPageDominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
             }}
           />
           <div className="relative z-10">
