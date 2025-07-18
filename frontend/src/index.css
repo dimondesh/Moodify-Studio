@@ -131,3 +131,28 @@
   scrollbar-width: none; /* Для Firefox */
   -ms-overflow-style: none; /* Для IE/Edge */
 }
+/* Базовый стиль для вертикального слайдера */
+.vertical-slider[data-orientation="vertical"] {
+  width: 10px; /* Узкий слайдер */
+  height: 100px; /* Достаточно высокая для диапазона */
+}
+
+/* Стили для ползунка */
+.vertical-slider [data-radix-slider-thumb] {
+    width: 18px; /* Немного больше для удобства */
+    height: 18px;
+    background-color: var(--radix-slider-thumb-bg, #8b5cf6); /* Цвет ползунка */
+    border: 1px solid var(--radix-slider-thumb-border, #8b5cf6);
+    border-radius: 9999px; /* Круглый */
+    cursor: grab;
+}
+
+/* Стили для заполненной части трека (range) */
+.vertical-slider [data-radix-slider-range] {
+    background-color: var(--radix-slider-range-bg, #8b5cf6); /* Цвет заполненной части */
+}
+
+/* Стили для не заполненной части трека (track) */
+.vertical-slider [data-radix-slider-track] {
+    background-color: var(--radix-slider-track-bg, #52525B); /* Цвет трека */
+}

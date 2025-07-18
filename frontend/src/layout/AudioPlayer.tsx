@@ -1,18 +1,8 @@
-// frontend/src/layout/AudioPlayer.tsx
-
+// src/layout/AudioPlayer.tsx
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { usePlayCountStore } from "@/stores/usePlayCountStore";
-
-// Тип для синхронизированной строки текста
-// LyricLine интерфейс может быть вынесен в общий файл типов,
-// если он используется в нескольких местах, но для этой задачи его можно удалить,
-// если он не используется в AudioPlayer вообще.
-// Сейчас он не используется, так что его можно удалить.
-// interface LyricLine {
-//   time: number; // время в секундах
-//   text: string;
-// }
+import { webAudioService } from "../lib/webAudio";
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -22,7 +12,7 @@ const AudioPlayer = () => {
 
   const instrumentalGainNodeRef = useRef<GainNode | null>(null);
   const vocalsGainNodeRef = useRef<GainNode | null>(null);
-  const masterGainNodeRef = useRef<GainNode | null>(null);
+  const masterGainNodeRef = useRef<GainNode | null>(null); // Главный Gain Node для всего микса
 
   const instrumentalBufferRef = useRef<AudioBuffer | null>(null);
   const vocalsBufferRef = useRef<AudioBuffer | null>(null);
@@ -34,6 +24,11 @@ const AudioPlayer = () => {
   const currentLoadRequestIdRef = useRef<string | null>(null);
 
   const [isAudioContextReady, setIsAudioContextReady] = useState(false);
+  // Состояние для отслеживания актуального состояния AudioContext, но уже не используется для дебага UI
+  const [, setAudioContextState] = useState<
+    // Убрал audioContextState из зависимостей рендера
+    AudioContextState | "uninitialized"
+  >("uninitialized");
 
   const {
     currentSong,
@@ -55,35 +50,25 @@ const AudioPlayer = () => {
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
 
-  // Новый реф для защиты от повторного инкремента
   const playCountIncrementedRef = useRef(false);
 
-  // --- Вспомогательная функция для парсинга LRC текста ---
-  // <-- УДАЛЕНО: Функция parseLrc больше не нужна в AudioPlayer
-  // const parseLrc = (lrcContent: string): LyricLine[] => {
-  //   const lines = lrcContent.split("\n");
-  //   const parsedLyrics: LyricLine[] = [];
-
-  //   lines.forEach((line) => {
-  //     const timeMatch = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/);
-  //     if (timeMatch) {
-  //       const minutes = parseInt(timeMatch[1], 10);
-  //       const seconds = parseInt(timeMatch[2], 10);
-  //       const milliseconds = parseInt(timeMatch[3].padEnd(3, "0"), 10);
-  //       const timeInSeconds = minutes * 60 + seconds + milliseconds / 1000;
-  //       const text = line.replace(/\[.*?\]/g, "").trim();
-  //       parsedLyrics.push({ time: timeInSeconds, text });
-  //     }
-  //   });
-
-  //   parsedLyrics.sort((a, b) => a.time - b.time);
-  //   return parsedLyrics;
-  // };
-
-  // --- Эффект 1: Инициализация AudioContext ---
+  // --- Эффект 1: Инициализация AudioContext и WebAudioService ---
   useEffect(() => {
-    if (audioContextRef.current) {
-      setIsAudioContextReady(true);
+    // Если AudioContext уже существует и готов, не переинициализируем, но убедимся, что сервис знает о нем
+    if (
+      audioContextRef.current &&
+      masterGainNodeRef.current &&
+      isAudioContextReady
+    ) {
+      if (!webAudioService.getAudioContext()) {
+        webAudioService.init(
+          audioContextRef.current,
+          masterGainNodeRef.current,
+          audioContextRef.current.destination
+        );
+        webAudioService.applySettingsToGraph();
+      }
+      setAudioContextState(audioContextRef.current.state); // Обновляем состояние, но без рендеринга
       return;
     }
 
@@ -93,23 +78,45 @@ const AudioPlayer = () => {
         .webkitAudioContext;
     if (!AudioContextClass) {
       console.error("Web Audio API is not supported in this browser.");
+      setIsAudioContextReady(false);
+      setAudioContextState("uninitialized");
       return;
     }
 
     try {
-      audioContextRef.current = new AudioContextClass();
-      setIsAudioContextReady(true);
+      const newAudioContext = new AudioContextClass();
+      audioContextRef.current = newAudioContext;
 
-      masterGainNodeRef.current = audioContextRef.current.createGain();
-      masterGainNodeRef.current.connect(audioContextRef.current.destination);
+      masterGainNodeRef.current = newAudioContext.createGain();
+      instrumentalGainNodeRef.current = newAudioContext.createGain();
+      vocalsGainNodeRef.current = newAudioContext.createGain();
 
-      instrumentalGainNodeRef.current = audioContextRef.current.createGain();
       instrumentalGainNodeRef.current.connect(masterGainNodeRef.current);
-
-      vocalsGainNodeRef.current = audioContextRef.current.createGain();
       vocalsGainNodeRef.current.connect(masterGainNodeRef.current);
+
+      // Инициализируем WebAudioService с masterGainNode как входом
+      webAudioService.init(
+        newAudioContext,
+        masterGainNodeRef.current, // Вход для WebAudioService
+        newAudioContext.destination // Выход для WebAudioService
+      );
+      webAudioService.applySettingsToGraph(); // Применяем настройки сразу после инициализации сервиса
+
+      setIsAudioContextReady(true);
+      setAudioContextState(newAudioContext.state);
+
+      // Добавляем слушателя для изменения состояния контекста
+      newAudioContext.onstatechange = () => {
+        setAudioContextState(newAudioContext.state);
+        // Принудительно применяем настройки, если контекст возобновился
+        if (newAudioContext.state === "running") {
+          webAudioService.applySettingsToGraph();
+        }
+      };
     } catch (error) {
       console.error("Failed to create AudioContext:", error);
+      setIsAudioContextReady(false);
+      setAudioContextState("closed");
       return;
     }
 
@@ -122,6 +129,7 @@ const AudioPlayer = () => {
       }
     };
 
+    // Слушатели событий для возобновления контекста
     document.addEventListener("click", resumeContext, { once: true });
     document.addEventListener("keydown", resumeContext, { once: true });
     document.addEventListener("touchstart", resumeContext, { once: true });
@@ -139,7 +147,11 @@ const AudioPlayer = () => {
           .close()
           .then(() => {
             audioContextRef.current = null;
+            masterGainNodeRef.current = null;
+            instrumentalGainNodeRef.current = null;
+            vocalsGainNodeRef.current = null;
             setIsAudioContextReady(false);
+            setAudioContextState("closed");
           })
           .catch((err) => console.error("Error closing AudioContext:", err));
       }
@@ -157,9 +169,21 @@ const AudioPlayer = () => {
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") return;
+    if (!audioContext || audioContext.state === "closed") {
+      return;
+    }
 
     if (!currentSong) {
+      if (instrumentalSourceRef.current) {
+        instrumentalSourceRef.current.stop();
+        instrumentalSourceRef.current.disconnect();
+        instrumentalSourceRef.current = null;
+      }
+      if (vocalsSourceRef.current) {
+        vocalsSourceRef.current.stop();
+        vocalsSourceRef.current.disconnect();
+        vocalsSourceRef.current = null;
+      }
       instrumentalBufferRef.current = null;
       vocalsBufferRef.current = null;
       setDuration(0);
@@ -169,7 +193,6 @@ const AudioPlayer = () => {
       return;
     }
 
-    // Если та же песня и инструментал уже загружен, выходим
     if (
       prevCurrentSongIdRef.current === currentSong._id &&
       instrumentalBufferRef.current
@@ -194,7 +217,6 @@ const AudioPlayer = () => {
     };
 
     const fetchAndDecodeAudio = async () => {
-      // Останавливаем и отключаем предыдущие источники, если они есть
       if (instrumentalSourceRef.current) {
         instrumentalSourceRef.current.stop();
         instrumentalSourceRef.current.disconnect();
@@ -212,15 +234,16 @@ const AudioPlayer = () => {
           vocalsUrl ? loadAudio(vocalsUrl) : Promise.resolve(null),
         ]);
 
-        // Проверка, не был ли инициирован новый запрос на загрузку, пока этот выполнялся
-        if (currentLoadRequestIdRef.current !== loadRequestId) return;
+        if (currentLoadRequestIdRef.current !== loadRequestId) {
+          return;
+        }
 
         if (!audioContext || audioContext.state === "closed") return;
 
         instrumentalBufferRef.current = instrumentalBuffer;
         vocalsBufferRef.current = vocalsBuffer;
 
-        playCountIncrementedRef.current = false; // сброс счётчика при новой песне
+        playCountIncrementedRef.current = false;
 
         setDuration(Math.floor(instrumentalBuffer.duration));
         setCurrentTime(0);
@@ -228,7 +251,7 @@ const AudioPlayer = () => {
         startTimeRef.current = 0;
       } catch (error) {
         if (currentLoadRequestIdRef.current !== loadRequestId) return;
-        console.error("Effect 2: Error loading or decoding audio:", error);
+        console.error("Error loading or decoding audio:", error);
         usePlayerStore.setState({ isPlaying: false });
         instrumentalBufferRef.current = null;
         vocalsBufferRef.current = null;
@@ -240,7 +263,6 @@ const AudioPlayer = () => {
     fetchAndDecodeAudio();
 
     return () => {
-      // Сброс буферов при размонтировании или смене песни
       instrumentalBufferRef.current = null;
       vocalsBufferRef.current = null;
     };
@@ -253,11 +275,23 @@ const AudioPlayer = () => {
       !currentSong ||
       !instrumentalBufferRef.current
     ) {
+      if (instrumentalSourceRef.current) {
+        instrumentalSourceRef.current.stop();
+        instrumentalSourceRef.current.disconnect();
+        instrumentalSourceRef.current = null;
+      }
+      if (vocalsSourceRef.current) {
+        vocalsSourceRef.current.stop();
+        vocalsSourceRef.current.disconnect();
+        vocalsSourceRef.current = null;
+      }
       return;
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") return;
+    if (!audioContext || audioContext.state === "closed") {
+      return;
+    }
 
     const managePlayback = async () => {
       if (isPlaying) {
@@ -270,7 +304,6 @@ const AudioPlayer = () => {
           playerStoreCurrentTime >= 0;
 
         if (isSeeking || !instrumentalSourceRef.current) {
-          // Останавливаем и отключаем текущие источники перед созданием новых
           if (instrumentalSourceRef.current) {
             instrumentalSourceRef.current.stop();
             instrumentalSourceRef.current.disconnect();
@@ -294,7 +327,6 @@ const AudioPlayer = () => {
           newInstrumentalSource.connect(instrumentalGainNodeRef.current!);
           instrumentalSourceRef.current = newInstrumentalSource;
 
-          // Подключаем вокальный трек, если он есть
           if (
             vocalsBufferRef.current &&
             vocalsGainNodeRef.current &&
@@ -305,7 +337,6 @@ const AudioPlayer = () => {
             newVocalsSource.connect(vocalsGainNodeRef.current);
             vocalsSourceRef.current = newVocalsSource;
           } else if (vocalsGainNodeRef.current) {
-            // Если вокала нет или URL пустой, обнуляем гейн для вокала
             vocalsGainNodeRef.current.gain.value = 0;
           }
 
@@ -320,17 +351,13 @@ const AudioPlayer = () => {
             );
           }
 
-          // Инкремент счётчика воспроизведений
           if (!playCountIncrementedRef.current) {
             incrementPlayCount(currentSong._id);
             playCountIncrementedRef.current = true;
           }
 
-          // Обработчик окончания воспроизведения песни
           newInstrumentalSource.onended = (event) => {
-            // Убеждаемся, что это событие от текущего источника
             if (event.target === instrumentalSourceRef.current) {
-              // Останавливаем и отключаем все источники после завершения
               if (instrumentalSourceRef.current) {
                 instrumentalSourceRef.current.stop();
                 instrumentalSourceRef.current.disconnect();
@@ -342,7 +369,6 @@ const AudioPlayer = () => {
                 vocalsSourceRef.current = null;
               }
 
-              // Логика повтора/следующей песни
               if (repeatMode === "one") {
                 usePlayerStore.setState({ isPlaying: true, currentTime: 0 });
               } else if (repeatMode === "all") {
@@ -353,11 +379,9 @@ const AudioPlayer = () => {
             }
           };
         } else if (audioContext.state === "suspended") {
-          // Если контекст приостановлен, но не было перемотки, просто возобновляем
           await audioContext.resume();
         }
       } else {
-        // Если воспроизведение остановлено (isPlaying = false)
         if (instrumentalSourceRef.current) {
           instrumentalSourceRef.current.stop();
           instrumentalSourceRef.current.disconnect();
@@ -369,10 +393,9 @@ const AudioPlayer = () => {
           vocalsSourceRef.current = null;
         }
         if (audioContext.state === "running") {
-          // Сохраняем текущее время воспроизведения перед приостановкой
           offsetTimeRef.current +=
             audioContext.currentTime - startTimeRef.current;
-          if (offsetTimeRef.current < 0) offsetTimeRef.current = 0; // Защита от отрицательного времени
+          if (offsetTimeRef.current < 0) offsetTimeRef.current = 0;
           setCurrentTime(Math.floor(offsetTimeRef.current));
           audioContext
             .suspend()
@@ -398,30 +421,36 @@ const AudioPlayer = () => {
 
   // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
-    if (!isAudioContextReady) return;
+    if (!isAudioContextReady) {
+      return;
+    }
 
     if (masterGainNodeRef.current) {
       masterGainNodeRef.current.gain.value = masterVolume / 100;
     }
-    if (vocalsGainNodeRef.current && currentSong?.vocalsUrl) {
-      vocalsGainNodeRef.current.gain.value = vocalsVolume / 100;
-    } else if (vocalsGainNodeRef.current) {
-      // Если у текущей песни нет вокального URL, обнуляем громкость вокала
-      vocalsGainNodeRef.current.gain.value = 0;
+    if (vocalsGainNodeRef.current) {
+      if (currentSong?.vocalsUrl) {
+        vocalsGainNodeRef.current.gain.value = vocalsVolume / 100;
+      } else {
+        vocalsGainNodeRef.current.gain.value = 0;
+      }
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
   // --- Эффект 5: Обновление текущего времени в сторе (для UI) ---
   useEffect(() => {
-    if (!isAudioContextReady) return;
+    if (!isAudioContextReady) {
+      return;
+    }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") return;
+    if (!audioContext || audioContext.state === "closed") {
+      return;
+    }
 
     let animationFrameId: number;
 
     const updateCurrentTimeLoop = () => {
-      // Обновляем currentTime только если песня играет и контекст активен
       if (
         isPlayingRef.current &&
         instrumentalSourceRef.current &&
@@ -430,7 +459,6 @@ const AudioPlayer = () => {
         const elapsed = audioContext.currentTime - startTimeRef.current;
         const newTime = Math.floor(offsetTimeRef.current + elapsed);
 
-        // Предотвращаем бесконечные обновления, если время уже максимально
         if (duration && newTime > duration) {
           if (usePlayerStore.getState().currentTime !== duration) {
             setCurrentTime(duration);

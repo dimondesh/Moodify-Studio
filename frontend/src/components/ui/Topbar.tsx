@@ -1,6 +1,7 @@
+// src/components/ui/Topbar.tsx
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { LayoutDashboardIcon, Search, LogOut } from "lucide-react";
+import { LayoutDashboardIcon, Search, LogOut, Settings } from "lucide-react"; // Добавили Settings
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
 import { Button, buttonVariants } from "./button";
@@ -12,7 +13,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator, // Может пригодиться для разделения пунктов
 } from "../ui/dropdown-menu";
+
+import WaveAnalyzer from "./WaveAnalyzer"; // Импортируем новый компонент анализатора волны
+
 const Topbar = () => {
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -61,17 +66,20 @@ const Topbar = () => {
 
   return (
     <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md sm:px-6">
-      {/* Лого - скрываем на мобильных, если поиск активен */}
+      {/* Logo and Wave Analyzer - hide on mobile if search is active */}
       <div
         className={`flex gap-3 items-center ${
           isSearchVisible ? "hidden sm:flex" : "flex"
         }`}
       >
         <img src="/Moodify.png" alt="Moodify" className="h-8 w-auto" />
+        {/* Add wave analyzer here */}
+        <WaveAnalyzer width={120} height={30} />{" "}
+        {/* Adjust dimensions to your liking, screenshot shows it narrower */}
       </div>
 
-      {/* Поиск */}
-      {/* На мобильных: иконка Search, при клике появляется input */}
+      {/* Search */}
+      {/* On mobile: Search icon, clicking it reveals the input */}
       <div
         className={`relative flex-1 max-w-lg ${
           isSearchVisible ? "block" : "hidden md:block"
@@ -116,7 +124,7 @@ const Topbar = () => {
         )}
       </div>
 
-      {/* Кнопки справа */}
+      {/* Buttons on the right */}
       <div
         className={`flex items-center gap-4 ${
           isSearchVisible ? "hidden" : "flex"
@@ -141,7 +149,7 @@ const Topbar = () => {
           >
             <LayoutDashboardIcon className="w-4 h-4 mr-2" />
             <span className="hidden md:inline">Admin</span>{" "}
-            {/* Компактнее на sm */}
+            {/* Compact on sm */}
           </Link>
         )}
 
@@ -169,6 +177,19 @@ const Topbar = () => {
                   {user.displayName}
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator className="bg-zinc-700" />{" "}
+              {/* Separator */}
+              <DropdownMenuItem
+                asChild
+                className="p-2 cursor-pointer hover:bg-zinc-700"
+              >
+                <Link to="/settings">
+                  {" "}
+                  {/* Link to settings page */}
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem
                   asChild
@@ -185,7 +206,7 @@ const Topbar = () => {
                 className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                Log Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

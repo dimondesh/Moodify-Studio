@@ -17,6 +17,7 @@ import { useAuthStore } from "./stores/useAuthStore";
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
 import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
 import ArtistPage from "./pages/ArtistPage/ArtistPage";
+import SettingsPage from "./pages/SettingsPage/SettingsPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -49,7 +50,6 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-songs/:category?" element={<AllSongsPage />} />
-
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/albums/:albumId" element={<AlbumPage />} />
           <Route path="*" element={<NotFoundPage />} />
@@ -60,6 +60,8 @@ function App() {
             path="/playlists/:playlistId"
             element={<PlaylistDetailsPage />}
           />
+          <Route path="/settings" element={<SettingsPage />} />{" "}
+          {/* Новый маршрут */}
           <Route path="/artists/:id" element={<ArtistPage />} />
         </Route>
       </Routes>
