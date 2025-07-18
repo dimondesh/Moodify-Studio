@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
 
 import {
@@ -38,17 +37,15 @@ const LeftSidebar = () => {
     followedArtists, // Добавлено для подписанных артистов
     fetchLibrary,
     isLoading: isLoadingLibrary,
-    error: libraryError,
   } = useLibraryStore();
 
   const {
     myPlaylists,
     fetchMyPlaylists,
     isLoading: isLoadingPlaylists,
-    error: playlistsError,
   } = usePlaylistStore();
 
-  const [user, loadingUser, authError] = useAuthState(auth);
+  const [user, loadingUser] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const { artists, fetchArtists } = useMusicStore();
@@ -80,8 +77,6 @@ const LeftSidebar = () => {
   };
 
   const isLoading = isLoadingLibrary || isLoadingPlaylists || loadingUser;
-  const combinedError = libraryError || playlistsError || authError;
-  const errorMessage = combinedError ? String(combinedError) : null;
 
   // --- Логика дедупликации плейлистов ---
   const allPlaylistsMap = new Map<string, PlaylistItem>();
