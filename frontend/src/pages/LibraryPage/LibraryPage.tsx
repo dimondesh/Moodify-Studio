@@ -250,7 +250,7 @@ const LibraryPage = () => {
                                 "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png"
                               }
                               alt={item.title}
-                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                              className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
                                   item.type === "album" ||

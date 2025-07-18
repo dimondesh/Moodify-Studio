@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
 
 import {
@@ -7,6 +8,7 @@ import {
   MessageCircle,
   Search,
   Plus,
+  LibraryIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
@@ -18,7 +20,6 @@ import { useLibraryStore } from "../stores/useLibraryStore";
 import { usePlaylistStore } from "../stores/usePlaylistStore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
-import { HeadphonesIcon } from "lucide-react";
 import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
 import {
   LibraryItem,
@@ -236,10 +237,6 @@ const LeftSidebar = () => {
 
         {isLoading ? (
           <PlaylistSkeleton />
-        ) : errorMessage ? (
-          <p className="text-red-500 px-2">
-            Error loading library: {errorMessage}
-          </p>
         ) : !user ? (
           <LoginPrompt className="flex-1" />
         ) : libraryItems.length === 0 ? (
@@ -343,7 +340,7 @@ const LoginPrompt = ({ className }: { className?: string }) => (
         aria-hidden="true"
       />
       <div className="relative bg-zinc-900 rounded-full p-4">
-        <HeadphonesIcon className="size-8 text-emerald-400" />
+        <LibraryIcon className="size-8 text-emerald-400" />
       </div>
     </div>
 
