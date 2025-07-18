@@ -64,8 +64,8 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <ScrollArea className="h-full">
-      <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-2xl">
+    <ScrollArea className="h-full bg-radial from-violet-950 to-zinc-950">
+      <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-2xl  ">
         <h1 className="text-3xl font-bold text-white mb-6">Audio Settings</h1>
         <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
           {/* Equalizer Section */}
