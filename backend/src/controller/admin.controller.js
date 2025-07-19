@@ -1,3 +1,4 @@
+// backend/src/controller/admin.controller.js
 import { Song } from "../models/song.model.js";
 import { Album } from "../models/album.model.js";
 import { Artist } from "../models/artist.model.js";
@@ -8,13 +9,26 @@ import {
 } from "../lib/deleteFromCloudinary.js";
 import * as mm from "music-metadata";
 
+// --- НОВЫЕ ИМПОРТЫ ДЛЯ АВТОМАТИЗАЦИИ АЛЬБОМА ---
+import { getAlbumDataFromSpotify } from "../lib/spotifyService.js"; // Для данных Spotify
+import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js"; // Для LRC текстов
+import {
+  extractZip,
+  parseTrackFileName,
+  cleanUpTempDir,
+} from "../lib/zipHandler.js"; // Для ZIP
+// uploadToCloudinary уже определен ниже, поэтому отдельный импорт не нужен
+
+import path from "path"; // Для работы с путями файлов
+import fs from "fs/promises"; // Для работы с файловой системой (для удаления временных файлов)
+
 const uploadToCloudinary = async (file, folder) => {
   try {
     const result = await cloudinary.uploader.upload(file.tempFilePath, {
       resource_type: "auto",
       folder: folder,
     });
-    return result.secure_url;
+    return result; // Возвращаем весь объект result, чтобы получить public_id
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);
     throw new Error("Failed to upload file to Cloudinary");
@@ -128,24 +142,30 @@ export const createSong = async (req, res, next) => {
       throw new Error("Invalid instrumental audio file");
     }
 
-    const instrumentalUrl = await uploadToCloudinary(
+    const instrumentalUploadResult = await uploadToCloudinary(
+      // Изменено
       req.files.instrumentalFile,
       "songs/instrumentals"
     );
+    const instrumentalUrl = instrumentalUploadResult.secure_url;
+    const instrumentalPublicId = instrumentalUploadResult.public_id;
+
     let vocalsUrl = null;
+    let vocalsPublicId = null;
     if (req.files.vocalsFile) {
-      vocalsUrl = await uploadToCloudinary(
+      const vocalsUploadResult = await uploadToCloudinary(
+        // Изменено
         req.files.vocalsFile,
         "songs/vocals"
       );
+      vocalsUrl = vocalsUploadResult.secure_url;
+      vocalsPublicId = vocalsUploadResult.public_id;
     }
 
-    let songImageUrl; // ✅ НОВОЕ: Переменная для окончательного URL обложки песни
+    let songImageUrl;
     let finalAlbumId = null;
 
-    // ✅ ИЗМЕНЕНО: Логика определения imageUrl и finalAlbumId
     if (albumId && albumId !== "none" && albumId !== "") {
-      // Пользователь выбрал существующий альбом
       const existingAlbum = await Album.findById(albumId);
       if (!existingAlbum) {
         return res.status(404).json({ message: "Album not found." });
@@ -159,30 +179,25 @@ export const createSong = async (req, res, next) => {
       }
       finalAlbumId = albumId;
 
-      // Если пользователь загрузил изображение для песни, используем его, иначе - обложку альбома
       if (req.files.imageFile) {
-        songImageUrl = await uploadToCloudinary(
-          req.files.imageFile,
-          "songs/images"
-        );
+        songImageUrl = (
+          await uploadToCloudinary(req.files.imageFile, "songs/images")
+        ).secure_url;
       } else {
-        songImageUrl = existingAlbum.imageUrl; // Берем обложку из альбома
+        songImageUrl = existingAlbum.imageUrl;
       }
     } else {
-      // Это сингл или новый альбом (который будет синглом)
-      // imageFile здесь обязателен по предыдущей проверке, поэтому req.files.imageFile точно есть
-      songImageUrl = await uploadToCloudinary(
-        req.files.imageFile,
-        "songs/images"
-      );
+      songImageUrl = (
+        await uploadToCloudinary(req.files.imageFile, "songs/images")
+      ).secure_url;
 
       const newAlbum = new Album({
-        title, // Название сингла = название песни
+        title,
         artist: artistIds,
-        imageUrl: songImageUrl, // Обложка сингла = обложка песни
+        imageUrl: songImageUrl,
         releaseYear: releaseYear || new Date().getFullYear(),
         songs: [],
-        type: "Single", // Всегда "Single" для новых альбомов, созданных через песню
+        type: "Single",
       });
       await newAlbum.save();
       finalAlbumId = newAlbum._id;
@@ -194,8 +209,10 @@ export const createSong = async (req, res, next) => {
       title,
       artist: artistIds,
       instrumentalUrl,
+      instrumentalPublicId,
       vocalsUrl,
-      imageUrl: songImageUrl, // ✅ ИЗМЕНЕНО: Используем определенный выше songImageUrl
+      vocalsPublicId,
+      imageUrl: songImageUrl,
       duration,
       albumId: finalAlbumId,
       lyrics: lyrics || null,
@@ -227,7 +244,7 @@ export const updateSong = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { title, artistIds, albumId, lyrics } = req.body; // --- НОВОЕ: Получаем lyrics из req.body
+    const { title, artistIds, albumId, lyrics } = req.body;
     const instrumentalFile = req.files ? req.files.instrumentalFile : null;
     const vocalsFile = req.files ? req.files.vocalsFile : null;
     const imageFile = req.files ? req.files.imageFile : null;
@@ -270,13 +287,17 @@ export const updateSong = async (req, res, next) => {
     }
 
     if (instrumentalFile) {
-      if (song.instrumentalUrl) {
-        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+      if (song.instrumentalPublicId) {
+        // Использование publicId
+        await deleteFromCloudinary(song.instrumentalPublicId);
       }
-      song.instrumentalUrl = await uploadToCloudinary(
+      const uploadResult = await uploadToCloudinary(
+        // Изменено
         instrumentalFile,
         "songs/instrumentals"
       );
+      song.instrumentalUrl = uploadResult.secure_url;
+      song.instrumentalPublicId = uploadResult.public_id; // Сохраняем publicId
       try {
         const metadata = await mm.parseFile(instrumentalFile.tempFilePath);
         song.duration = Math.floor(metadata.format.duration || 0);
@@ -286,20 +307,33 @@ export const updateSong = async (req, res, next) => {
     }
 
     if (vocalsFile) {
-      if (song.vocalsUrl) {
-        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      if (song.vocalsPublicId) {
+        // Использование publicId
+        await deleteFromCloudinary(song.vocalsPublicId);
       }
-      song.vocalsUrl = await uploadToCloudinary(vocalsFile, "songs/vocals");
+      const uploadResult = await uploadToCloudinary(
+        // Изменено
+        vocalsFile,
+        "songs/vocals"
+      );
+      song.vocalsUrl = uploadResult.secure_url;
+      song.vocalsPublicId = uploadResult.public_id; // Сохраняем publicId
     } else if (req.body.clearVocals === "true" && song.vocalsUrl) {
-      await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      if (song.vocalsPublicId) {
+        // Использование publicId
+        await deleteFromCloudinary(song.vocalsPublicId);
+      }
       song.vocalsUrl = null;
+      song.vocalsPublicId = null;
     }
 
     if (imageFile) {
       if (song.imageUrl) {
-        await deleteFromCloudinary(extractPublicId(song.imageUrl));
+        await deleteFromCloudinary(extractPublicId(song.imageUrl)); // extractPublicId пока оставим, но лучше перевести на publicId напрямую
       }
-      song.imageUrl = await uploadToCloudinary(imageFile, "songs/images");
+      song.imageUrl = (
+        await uploadToCloudinary(imageFile, "songs/images")
+      ).secure_url;
     }
 
     if (albumId !== undefined) {
@@ -336,7 +370,7 @@ export const updateSong = async (req, res, next) => {
     }
 
     song.title = title || song.title;
-    song.lyrics = lyrics !== undefined ? lyrics : song.lyrics; // --- НОВОЕ: Обновляем lyrics
+    song.lyrics = lyrics !== undefined ? lyrics : song.lyrics;
 
     await song.save();
     res.status(200).json(song);
@@ -361,17 +395,17 @@ export const deleteSong = async (req, res, next) => {
       return res.status(404).json({ message: "Song not found." });
     }
 
-    // Удаление из Cloudinary
-    if (song.instrumentalUrl) {
-      await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+    // Удаление из Cloudinary по publicId
+    if (song.instrumentalPublicId) {
+      await deleteFromCloudinary(song.instrumentalPublicId);
     }
-    if (song.vocalsUrl) {
-      await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+    if (song.vocalsPublicId) {
+      await deleteFromCloudinary(song.vocalsPublicId);
     }
     if (song.imageUrl) {
+      // Для imageUrl пока оставим extractPublicId
       await deleteFromCloudinary(extractPublicId(song.imageUrl));
     }
-    // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
 
     // Удаление из альбома
     if (song.albumId) {
@@ -444,7 +478,8 @@ export const createAlbum = async (req, res, next) => {
       return res.status(400).json({ message: "No imageFile uploaded" });
     }
 
-    const imageUrl = await uploadToCloudinary(req.files.imageFile, "albums");
+    const imageUrl = (await uploadToCloudinary(req.files.imageFile, "albums"))
+      .secure_url;
 
     const album = new Album({
       title,
@@ -517,7 +552,9 @@ export const updateAlbum = async (req, res, next) => {
       if (album.imageUrl) {
         await deleteFromCloudinary(extractPublicId(album.imageUrl));
       }
-      album.imageUrl = await uploadToCloudinary(imageFile, "albums");
+      album.imageUrl = (
+        await uploadToCloudinary(imageFile, "albums")
+      ).secure_url;
     }
 
     album.title = title || album.title;
@@ -554,16 +591,17 @@ export const deleteAlbum = async (req, res, next) => {
 
     const songsInAlbum = await Song.find({ albumId: id });
     for (const song of songsInAlbum) {
-      if (song.instrumentalUrl) {
-        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+      if (song.instrumentalPublicId) {
+        // Удаление по publicId
+        await deleteFromCloudinary(song.instrumentalPublicId);
       }
-      if (song.vocalsUrl) {
-        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      if (song.vocalsPublicId) {
+        // Удаление по publicId
+        await deleteFromCloudinary(song.vocalsPublicId);
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
       }
-      // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
       await removeContentFromArtists(song.artist, song._id, "songs");
     }
 
@@ -600,11 +638,13 @@ export const createArtist = async (req, res, next) => {
       return res.status(400).json({ message: "Artist image is required." });
     }
 
-    const imageUrl = await uploadToCloudinary(imageFile, "artists");
+    const imageUrl = (await uploadToCloudinary(imageFile, "artists"))
+      .secure_url;
     let bannerUrl = null;
 
     if (bannerFile) {
-      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners");
+      bannerUrl = (await uploadToCloudinary(bannerFile, "artists/banners"))
+        .secure_url;
     }
 
     const newArtist = new Artist({
@@ -652,14 +692,15 @@ export const updateArtist = async (req, res, next) => {
       if (artist.imageUrl) {
         await deleteFromCloudinary(extractPublicId(artist.imageUrl));
       }
-      imageUrl = await uploadToCloudinary(imageFile, "artists");
+      imageUrl = (await uploadToCloudinary(imageFile, "artists")).secure_url;
     }
 
     if (bannerFile) {
       if (artist.bannerUrl) {
         await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
       }
-      bannerUrl = await uploadToCloudinary(bannerFile, "artists/banners");
+      bannerUrl = (await uploadToCloudinary(bannerFile, "artists/banners"))
+        .secure_url;
     } else if (req.body.bannerUrl === null || req.body.bannerUrl === "") {
       if (artist.bannerUrl) {
         await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
@@ -704,7 +745,7 @@ export const deleteArtist = async (req, res, next) => {
     if (artist.imageUrl) {
       await deleteFromCloudinary(extractPublicId(artist.imageUrl));
     }
-    // 1.1. Удаление баннера артиста из Cloudinary (НОВОЕ)
+    // 1.1. Удаление баннера артиста из Cloudinary
     if (artist.bannerUrl) {
       await deleteFromCloudinary(extractPublicId(artist.bannerUrl));
     }
@@ -713,16 +754,15 @@ export const deleteArtist = async (req, res, next) => {
     // и удаление этих песен из всех альбомов, в которых они могли быть
     const songsOfArtist = await Song.find({ artist: artist._id });
     for (const song of songsOfArtist) {
-      if (song.instrumentalUrl) {
-        await deleteFromCloudinary(extractPublicId(song.instrumentalUrl));
+      if (song.instrumentalPublicId) {
+        await deleteFromCloudinary(song.instrumentalPublicId);
       }
-      if (song.vocalsUrl) {
-        await deleteFromCloudinary(extractPublicId(song.vocalsUrl));
+      if (song.vocalsPublicId) {
+        await deleteFromCloudinary(song.vocalsPublicId);
       }
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
       }
-      // --- НОВОЕ: Тексты песен не хранятся в Cloudinary, поэтому нечего удалять здесь.
       // Удаляем песню из альбома, если она там есть
       if (song.albumId) {
         await Album.findByIdAndUpdate(song.albumId, {
@@ -764,5 +804,255 @@ export const deleteArtist = async (req, res, next) => {
   } catch (error) {
     console.error("Error in deleteArtist:", error);
     next(error);
+  }
+};
+
+// --- НОВЫЙ КОНТРОЛЛЕР ДЛЯ ЗАГРУЗКИ ПОЛНОГО АЛЬБОМА ---
+export const uploadFullAlbumAuto = async (req, res, next) => {
+  console.log("🚀 Reached /admin/albums/upload-full-album route - AUTO UPLOAD");
+  console.log("req.body:", req.body);
+  console.log("req.files:", req.files);
+
+  // if (!req.user || !req.user.isAdmin) {
+  //   return res
+  //     .status(403)
+  //     .json({ message: "Access denied. Admin privileges required." });
+  // }
+
+  const { spotifyAlbumUrl } = req.body;
+  const albumAudioZip = req.files ? req.files.albumAudioZip : null;
+
+  if (!spotifyAlbumUrl) {
+    return res.status(400).json({
+      success: false,
+      message: "Spotify URL альбома не предоставлен.",
+    });
+  }
+  if (!albumAudioZip) {
+    console.error("[AdminController] albumAudioZip не найден в req.files.");
+    return res
+      .status(400)
+      .json({ success: false, message: "ZIP-файл с аудио не загружен." });
+  }
+
+  const tempUnzipDir = path.join(
+    process.cwd(),
+    "temp_unzip_albums",
+    Date.now().toString()
+  );
+
+  try {
+    console.log(
+      `[AdminController] Получение данных Spotify для: ${spotifyAlbumUrl}`
+    );
+    const spotifyAlbumData = await getAlbumDataFromSpotify(spotifyAlbumUrl);
+    if (!spotifyAlbumData) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Не удалось получить данные альбома из Spotify. Проверьте URL или настройки Spotify API.",
+      });
+    }
+
+    console.log(
+      `[AdminController] Начинаем распаковку ZIP: ${albumAudioZip.tempFilePath}`
+    );
+    const extractedFilePaths = await extractZip(
+      albumAudioZip.tempFilePath,
+      tempUnzipDir
+    );
+
+    const trackFilesMap = {};
+    for (const filePath of extractedFilePaths) {
+      const parsed = parseTrackFileName(filePath);
+      if (parsed) {
+        const normalizedSongName = parsed.songName
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
+        if (!trackFilesMap[normalizedSongName]) {
+          trackFilesMap[normalizedSongName] = {};
+        }
+        if (parsed.trackType === "vocals") {
+          trackFilesMap[normalizedSongName].vocalsPath = filePath;
+        } else if (parsed.trackType === "instrumental") {
+          trackFilesMap[normalizedSongName].instrumentalPath = filePath;
+        }
+      }
+    }
+    console.log(
+      "[AdminController] Карта файлов треков:",
+      Object.keys(trackFilesMap)
+    );
+
+    let artistNameFromSpotify = spotifyAlbumData.artists[0].name;
+    let artist = await Artist.findOne({ name: artistNameFromSpotify });
+    if (!artist) {
+      const spotifyArtistImages = spotifyAlbumData.artists[0].images;
+
+      const artistImageUrl =
+        spotifyArtistImages && spotifyArtistImages.length > 0
+          ? spotifyArtistImages[0].url
+          : "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752891776/artist_xtfeje.jpg";
+
+      const artistBannerUrl = artistImageUrl;
+
+      artist = new Artist({
+        name: artistNameFromSpotify,
+        imageUrl: artistImageUrl,
+        bannerUrl: artistBannerUrl,
+      });
+      await artist.save();
+      console.log(`[AdminController] Новый артист создан: ${artist.name}`);
+    } else {
+      console.log(`[AdminController] Артист найден: ${artist.name}`);
+    }
+
+    const totalTracksInAlbum = spotifyAlbumData.total_tracks;
+    let albumType;
+    if (totalTracksInAlbum === 1) {
+      albumType = "Single";
+    } else if (totalTracksInAlbum > 1 && totalTracksInAlbum <= 6) {
+      albumType = "EP";
+    } else {
+      albumType = "Album";
+    }
+    console.log(
+      `[AdminController] Определен тип альбома: ${albumType} (на основе total_tracks: ${totalTracksInAlbum})`
+    );
+
+    const albumImageUrl =
+      spotifyAlbumData.images.length > 0 ? spotifyAlbumData.images[0].url : "";
+    const releaseYear = spotifyAlbumData.release_date
+      ? parseInt(spotifyAlbumData.release_date.split("-")[0])
+      : null;
+
+    const album = new Album({
+      title: spotifyAlbumData.name,
+      artist: [artist._id],
+      imageUrl: albumImageUrl,
+      releaseYear: releaseYear,
+      type: albumType,
+      songs: [],
+    });
+    await album.save();
+    console.log(`[AdminController] Альбом создан: ${album.title}`);
+    await updateArtistsContent([artist._id], album._id, "albums");
+
+    const createdSongs = [];
+    // ===> ИЗМЕНЕНИЕ ЗДЕСЬ: ПРОВЕРЯЕМ, ЯВЛЯЕТСЯ ЛИ spotifyAlbumData.tracks МАССИВОМ ИЛИ ОБЪЕКТОМ С .items <===
+    const tracksToProcess = Array.isArray(spotifyAlbumData.tracks)
+      ? spotifyAlbumData.tracks // Если это уже массив, используем его напрямую
+      : spotifyAlbumData.tracks.items; // Если это объект, берем его свойство items
+
+    for (const spotifyTrack of tracksToProcess) {
+      // <-- ИТЕРИРУЕМ ПО ПРАВИЛЬНОМУ МАССИВУ
+      const songName = spotifyTrack.name;
+      const durationMs = spotifyTrack.duration_ms;
+
+      const normalizedSpotifySongName = songName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+      const filesForTrack = trackFilesMap[normalizedSpotifySongName];
+
+      let vocalsUrl = "";
+      let vocalsPublicId = "";
+      let instrumentalUrl = "";
+      let instrumentalPublicId = "";
+      let lrcText = "";
+
+      console.log(`[AdminController] Обработка трека: ${songName}`);
+
+      if (filesForTrack) {
+        if (filesForTrack.vocalsPath) {
+          const vocalsUpload = await uploadToCloudinary(
+            { tempFilePath: filesForTrack.vocalsPath },
+            "songs/vocals"
+          );
+          vocalsUrl = vocalsUpload.secure_url;
+          vocalsPublicId = vocalsUpload.public_id;
+          console.log(`[AdminController] Вокал загружен для ${songName}`);
+        } else {
+          console.warn(
+            `[AdminController] Вокал файл не найден для трека: ${songName}. Проверьте ZIP.`
+          );
+        }
+
+        if (filesForTrack.instrumentalPath) {
+          const instrumentalUpload = await uploadToCloudinary(
+            { tempFilePath: filesForTrack.instrumentalPath },
+            "songs/instrumentals"
+          );
+          instrumentalUrl = instrumentalUpload.secure_url;
+          instrumentalPublicId = instrumentalUpload.public_id;
+          console.log(
+            `[AdminController] Инструментал загружен для ${songName}`
+          );
+        } else {
+          console.warn(
+            `[AdminController] Инструментал файл не найден для трека: ${songName}. Проверьте ZIP.`
+          );
+        }
+      } else {
+        console.warn(
+          `[AdminController] Аудиофайлы (вокал/инструментал) не найдены в ZIP для трека: ${songName}.`
+        );
+      }
+
+      const songDataForLRC = {
+        artistName: artist.name,
+        songName: songName,
+        albumName: album.title,
+        songDuration: durationMs,
+      };
+      lrcText = await getLrcLyricsFromLrclib(songDataForLRC);
+      if (!lrcText) {
+        console.warn(
+          `[AdminController] Не удалось получить LRC-текст с lrclib.net для трека: ${songName}`
+        );
+      }
+
+      const song = new Song({
+        title: songName,
+        artist: [artist._id],
+        albumId: album._id,
+        vocalsUrl: vocalsUrl || null,
+        vocalsPublicId: vocalsPublicId || null,
+        instrumentalUrl: instrumentalUrl || null,
+        instrumentalPublicId: instrumentalPublicId || null,
+        lyrics: lrcText || "",
+        duration: Math.round(durationMs / 1000),
+        imageUrl: album.imageUrl,
+        releaseYear: album.releaseYear,
+      });
+
+      await song.save();
+      createdSongs.push(song);
+      console.log(`[AdminController] Песня сохранена в БД: ${song.title}`);
+
+      await Album.findByIdAndUpdate(album._id, { $push: { songs: song._id } });
+      await updateArtistsContent([artist._id], song._id, "songs");
+    }
+
+    console.log(
+      `[AdminController] Запускаем очистку временной директории: ${tempUnzipDir}`
+    );
+    await cleanUpTempDir(tempUnzipDir);
+
+    res.status(200).json({
+      success: true,
+      message: `Альбом "${album.title}" (${album.type}) и ${createdSongs.length} треков успешно добавлены!`,
+      album: album,
+      songs: createdSongs.map((s) => ({ title: s.title, id: s._id })),
+    });
+  } catch (error) {
+    console.error(
+      "[AdminController] Критическая ошибка при автоматической загрузке альбома:",
+      error
+    );
+    await cleanUpTempDir(tempUnzipDir);
+    next(error);
+  } finally {
+    // Временный файл, созданный express-fileupload (albumAudioZip.tempFilePath),
+    // обычно удаляется им самим автоматически.
   }
 };

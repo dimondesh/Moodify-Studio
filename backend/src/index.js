@@ -1,5 +1,5 @@
-import express from "express";
 import dotenv from "dotenv";
+import express from "express";
 import { createServer } from "http";
 import { connectDB } from "./lib/db.js";
 import userRoutes from "./routes/user.route.js";
@@ -45,7 +45,7 @@ app.use(
     useTempFiles: true,
     tempFileDir: path.join(__dirname, "temp"),
     createParentPath: true,
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+    limits: { fileSize: 300 * 1024 * 1024 }, // 50 MB
   })
 );
 

@@ -1,6 +1,9 @@
+// frontend/src/pages/AdminPage/AlbumsTabContent.tsx
+
 import { Library } from "lucide-react";
 
 import AddAlbumDialog from "./AddAlbumDialog";
+import AddAlbumFromSpotifyDialog from "./AddAlbumFromSpotifyDialog"; // <-- НОВЫЙ ИМПОРТ
 import {
   Card,
   CardContent,
@@ -22,7 +25,12 @@ const AlbumsTabContent = () => {
             </CardTitle>
             <CardDescription>Manage your album collection</CardDescription>
           </div>
-          <AddAlbumDialog />
+          <div className="flex gap-2">
+            {" "}
+            {/* Добавляем flex-контейнер для кнопок */}
+            <AddAlbumDialog />
+            <AddAlbumFromSpotifyDialog /> {/* <-- НОВАЯ КНОПКА И ДИАЛОГ */}
+          </div>
         </div>
       </CardHeader>
 

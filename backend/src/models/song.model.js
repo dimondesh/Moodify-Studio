@@ -1,3 +1,4 @@
+// backend/src/models/song.model.js
 import mongoose from "mongoose";
 
 const songSchema = new mongoose.Schema(
@@ -23,14 +24,34 @@ const songSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // --- НОВЫЕ ПОЛЯ ДЛЯ PUBLIC_ID ---
+    imagePublicId: {
+      // Добавим для консистентности, если вы захотите управлять обложками песен
+      type: String,
+      default: null,
+    },
+    // -------------------------------
     instrumentalUrl: {
       type: String,
       required: true,
     },
+    instrumentalPublicId: {
+      // <-- ДОБАВЛЕНО
+      type: String,
+      required: true, // Считаем обязательным, если есть URL
+      default: null,
+    },
+
     vocalsUrl: {
       type: String,
       default: null,
     },
+    vocalsPublicId: {
+      // <-- ДОБАВЛЕНО
+      type: String,
+      default: null, // Необязательно, если vocalsUrl null
+    },
+
     duration: {
       type: Number, // Длительность в секундах
       required: true,
@@ -40,12 +61,10 @@ const songSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    // --- НОВОЕ ПОЛЕ: lyrics ---
     lyrics: {
       type: String, // Для хранения LRC-текста
       default: null,
     },
-    // -------------------------
   },
   { timestamps: true }
 );

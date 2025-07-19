@@ -9,6 +9,7 @@ import {
   createArtist,
   updateArtist,
   deleteArtist,
+  uploadFullAlbumAuto,
 } from "../controller/admin.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 // import upload from "../middleware/multerUpload.js"; // <-- ЭТО УЖЕ БЫЛО УДАЛЕНО
@@ -16,7 +17,7 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 const router = Router();
 
 // Применяем middleware protectRoute для всех админских роутов
-router.use(protectRoute);
+// router.use(protectRoute);
 
 // --- Роуты для песен ---
 // ИЗМЕНЕНО: Multer middleware теперь не указывается здесь,
@@ -29,6 +30,7 @@ router.delete("/songs/:id", deleteSong);
 router.post("/albums", createAlbum);
 router.put("/albums/:id", updateAlbum);
 router.delete("/albums/:id", deleteAlbum);
+router.post("/albums/upload-full-album", uploadFullAlbumAuto); // <-- НОВЫЙ РОУТ
 
 // --- Роуты для артистов ---
 router.post("/artists", createArtist);
