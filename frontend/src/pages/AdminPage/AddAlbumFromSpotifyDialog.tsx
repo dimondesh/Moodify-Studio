@@ -40,10 +40,10 @@ const AddAlbumFromSpotifyDialog = () => {
 
     try {
       if (!spotifyAlbumUrl) {
-        return toast.error("Пожалуйста, введите Spotify URL альбома.");
+        return toast.error("Please enter Spotify Album URL.");
       }
       if (!albumAudioZip) {
-        return toast.error("Пожалуйста, загрузите ZIP-архив с аудио.");
+        return toast.error("Please upload ZIP File.");
       }
 
       const formData = new FormData();
@@ -65,12 +65,12 @@ const AddAlbumFromSpotifyDialog = () => {
       setSpotifyAlbumUrl("");
       setAlbumAudioZip(null);
       setDialogOpen(false);
-      toast.success("Альбом успешно добавлен из Spotify!");
+      toast.success("Album successfully added from Spotify!");
       fetchAlbums();
     } catch (error: any) {
-      console.error("Ошибка загрузки альбома из Spotify:", error);
+      console.error("Error uploading album from Spotify:", error);
       toast.error(
-        "Не удалось добавить альбом: " +
+        "Album wasn't added: " +
           (error.response?.data?.message || error.message)
       );
     } finally {
@@ -92,7 +92,7 @@ const AddAlbumFromSpotifyDialog = () => {
             Add Album from Spotify
           </DialogTitle>
           <DialogDescription>
-            Загрузите альбом, используя Spotify URL и ZIP-архив с аудиофайлами.
+            Upload album using Spotify URL and Zip with audio tracks
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 text-zinc-200">
@@ -143,7 +143,7 @@ const AddAlbumFromSpotifyDialog = () => {
                   }}
                   disabled={isLoading}
                 >
-                  Выбрать ZIP-файл
+                  Choose ZIP-file
                 </Button>
               </div>
             </div>
@@ -156,14 +156,14 @@ const AddAlbumFromSpotifyDialog = () => {
             disabled={isLoading}
             className="text-zinc-200"
           >
-            Отмена
+            Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             className="bg-violet-500 hover:bg-violet-600 text-zinc-200"
             disabled={isLoading || !spotifyAlbumUrl || !albumAudioZip}
           >
-            {isLoading ? "Загрузка..." : "Добавить Альбом"}
+            {isLoading ? "Loading..." : "Add Album"}
           </Button>
         </DialogFooter>
       </DialogContent>

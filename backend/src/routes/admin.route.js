@@ -17,7 +17,7 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 const router = Router();
 
 // Применяем middleware protectRoute для всех админских роутов
-// router.use(protectRoute);
+router.use(protectRoute);
 
 // --- Роуты для песен ---
 // ИЗМЕНЕНО: Multer middleware теперь не указывается здесь,

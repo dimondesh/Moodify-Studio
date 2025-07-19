@@ -813,11 +813,11 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
   console.log("req.body:", req.body);
   console.log("req.files:", req.files);
 
-  // if (!req.user || !req.user.isAdmin) {
-  //   return res
-  //     .status(403)
-  //     .json({ message: "Access denied. Admin privileges required." });
-  // }
+  if (!req.user || !req.user.isAdmin) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Admin privileges required." });
+  }
 
   const { spotifyAlbumUrl } = req.body;
   const albumAudioZip = req.files ? req.files.albumAudioZip : null;
