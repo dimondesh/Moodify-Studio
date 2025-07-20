@@ -36,34 +36,34 @@ const uploadToCloudinary = async (file, folder) => {
 };
 
 // Вспомогательная функция для проверки и добавления ID в массивы артистов
-const updateArtistsContent = async (
-  artistIds,
-  contentId,
-  contentType,
-  action = "$push"
-) => {
+const updateArtistsContent = async (artistIds, contentId, contentType) => {
   if (!artistIds || artistIds.length === 0) return;
 
   const updateField = contentType === "songs" ? "songs" : "albums";
 
-  for (const artistId of artistIds) {
-    await Artist.findByIdAndUpdate(artistId, {
-      [action]: { [updateField]: contentId },
-    });
-  }
+  await Artist.updateMany(
+    { _id: { $in: artistIds } }, // Обновляем всех указанных артистов
+    { $addToSet: { [updateField]: contentId } } // Добавляем contentId в соответствующий массив, если его там нет
+  );
+  console.log(
+    `[updateArtistsContent] Successfully updated ${contentType} for artists: ${artistIds}`
+  );
 };
 
 // Вспомогательная функция для проверки и удаления ID из массивов артистов
+// ИЗМЕНЕНО: Использование updateMany с $pull для повышения эффективности
 const removeContentFromArtists = async (artistIds, contentId, contentType) => {
   if (!artistIds || artistIds.length === 0) return;
 
   const updateField = contentType === "songs" ? "songs" : "albums";
 
-  for (const artistId of artistIds) {
-    await Artist.findByIdAndUpdate(artistId, {
-      $pull: { [updateField]: contentId },
-    });
-  }
+  await Artist.updateMany(
+    { _id: { $in: artistIds } }, // Обновляем всех указанных артистов
+    { $pull: { [updateField]: contentId } } // Удаляем contentId из соответствующего массива
+  );
+  console.log(
+    `[removeContentFromArtists] Successfully removed ${contentType} for artists: ${artistIds}`
+  );
 };
 
 // --- CRUD для SONGS ---
@@ -877,6 +877,10 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         } else if (parsed.trackType === "instrumental") {
           trackFilesMap[normalizedSongName].instrumentalPath = filePath;
         }
+        // Обработка LRC-файлов из ZIP
+        if (parsed.trackType === "lrc") {
+          trackFilesMap[normalizedSongName].lrcPath = filePath;
+        }
       }
     }
     console.log(
@@ -884,28 +888,38 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       Object.keys(trackFilesMap)
     );
 
-    let artistNameFromSpotify = spotifyAlbumData.artists[0].name;
-    let artist = await Artist.findOne({ name: artistNameFromSpotify });
-    if (!artist) {
-      const spotifyArtistImages = spotifyAlbumData.artists[0].images;
+    // --- ОБРАБОТКА МНОЖЕСТВА АРТИСТОВ АЛЬБОМА ---
+    const albumArtistIds = [];
+    for (const spotifyArtist of spotifyAlbumData.artists || []) {
+      let artist = await Artist.findOne({ name: spotifyArtist.name });
+      if (!artist) {
+        const spotifyArtistImages = spotifyArtist.images;
+        const artistImageUrl =
+          spotifyArtistImages && spotifyArtistImages.length > 0
+            ? spotifyArtistImages[0].url
+            : "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752891776/artist_xtfeje.jpg";
 
-      const artistImageUrl =
-        spotifyArtistImages && spotifyArtistImages.length > 0
-          ? spotifyArtistImages[0].url
-          : "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752891776/artist_xtfeje.jpg";
+        const artistBannerUrl =
+          spotifyArtistImages && spotifyArtistImages.length > 0
+            ? (
+                spotifyArtistImages.find((img) => img.width > 600) ||
+                spotifyArtistImages[0]
+              ).url
+            : artistImageUrl;
 
-      const artistBannerUrl = artistImageUrl;
-
-      artist = new Artist({
-        name: artistNameFromSpotify,
-        imageUrl: artistImageUrl,
-        bannerUrl: artistBannerUrl,
-      });
-      await artist.save();
-      console.log(`[AdminController] Новый артист создан: ${artist.name}`);
-    } else {
-      console.log(`[AdminController] Артист найден: ${artist.name}`);
+        artist = new Artist({
+          name: spotifyArtist.name,
+          imageUrl: artistImageUrl,
+          bannerUrl: artistBannerUrl,
+        });
+        await artist.save();
+        console.log(`[AdminController] Новый артист создан: ${artist.name}`);
+      } else {
+        console.log(`[AdminController] Артист найден: ${artist.name}`);
+      }
+      albumArtistIds.push(artist._id);
     }
+    // ---------------------------------------------------
 
     const totalTracksInAlbum = spotifyAlbumData.total_tracks;
     let albumType;
@@ -928,7 +942,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
     const album = new Album({
       title: spotifyAlbumData.name,
-      artist: [artist._id],
+      artist: albumArtistIds,
       imageUrl: albumImageUrl,
       releaseYear: releaseYear,
       type: albumType,
@@ -936,16 +950,46 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     });
     await album.save();
     console.log(`[AdminController] Альбом создан: ${album.title}`);
-    await updateArtistsContent([artist._id], album._id, "albums");
+    await updateArtistsContent(albumArtistIds, album._id, "albums");
 
     const createdSongs = [];
-    // ===> ИЗМЕНЕНИЕ ЗДЕСЬ: ПРОВЕРЯЕМ, ЯВЛЯЕТСЯ ЛИ spotifyAlbumData.tracks МАССИВОМ ИЛИ ОБЪЕКТОМ С .items <===
     const tracksToProcess = Array.isArray(spotifyAlbumData.tracks)
-      ? spotifyAlbumData.tracks // Если это уже массив, используем его напрямую
-      : spotifyAlbumData.tracks.items; // Если это объект, берем его свойство items
+      ? spotifyAlbumData.tracks
+      : spotifyAlbumData.tracks.items;
 
     for (const spotifyTrack of tracksToProcess) {
-      // <-- ИТЕРИРУЕМ ПО ПРАВИЛЬНОМУ МАССИВУ
+      // --- ОБРАБОТКА МНОЖЕСТВА АРТИСТОВ ТРЕКА ---
+      const songArtistIds = [];
+      // Убедимся, что spotifyTrack.artists является массивом, даже если он null/undefined
+      for (const spotifyTrackArtist of spotifyTrack.artists || []) {
+        let artist = await Artist.findOne({ name: spotifyTrackArtist.name });
+        if (!artist) {
+          const artistImageUrl =
+            "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752891776/artist_xtfeje.jpg";
+          const artistBannerUrl = artistImageUrl;
+
+          artist = new Artist({
+            name: spotifyTrackArtist.name,
+            imageUrl: artistImageUrl,
+            bannerUrl: artistBannerUrl,
+          });
+          await artist.save();
+          console.log(
+            `[AdminController] Новый артист трека создан: ${artist.name}`
+          );
+        }
+        songArtistIds.push(artist._id);
+      }
+
+      // НОВОЕ ДОБАВЛЕНИЕ: Запасной вариант - использование артистов альбома, если артисты трека не найдены
+      if (songArtistIds.length === 0 && albumArtistIds.length > 0) {
+        console.warn(
+          `[AdminController] Артисты трека не найдены для "${spotifyTrack.name}". Использование артистов альбома в качестве запасного варианта.`
+        );
+        songArtistIds.push(...albumArtistIds);
+      }
+      // ---------------------------------------------------
+
       const songName = spotifyTrack.name;
       const durationMs = spotifyTrack.duration_ms;
 
@@ -992,28 +1036,50 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
             `[AdminController] Инструментал файл не найден для трека: ${songName}. Проверьте ZIP.`
           );
         }
+
+        // Чтение LRC-файла из ZIP, если он есть
+        if (filesForTrack.lrcPath) {
+          try {
+            lrcText = await fs.readFile(filesForTrack.lrcPath, "utf8");
+            console.log(
+              `[AdminController] LRC-текст загружен из ZIP для трека: ${songName}`
+            );
+          } catch (readError) {
+            console.error(
+              `[AdminController] Ошибка чтения LRC-файла из ZIP для ${songName}:`,
+              readError
+            );
+          }
+        }
       } else {
         console.warn(
           `[AdminController] Аудиофайлы (вокал/инструментал) не найдены в ZIP для трека: ${songName}.`
         );
       }
 
-      const songDataForLRC = {
-        artistName: artist.name,
-        songName: songName,
-        albumName: album.title,
-        songDuration: durationMs,
-      };
-      lrcText = await getLrcLyricsFromLrclib(songDataForLRC);
+      // Если LRC не был найден в ZIP, пытаемся получить его из lrclib.net
       if (!lrcText) {
-        console.warn(
-          `[AdminController] Не удалось получить LRC-текст с lrclib.net для трека: ${songName}`
-        );
+        const primaryArtist =
+          songArtistIds.length > 0
+            ? (await Artist.findById(songArtistIds[0])).name
+            : "";
+        const songDataForLRC = {
+          artistName: primaryArtist,
+          songName: songName,
+          albumName: album.title,
+          songDuration: durationMs,
+        };
+        lrcText = await getLrcLyricsFromLrclib(songDataForLRC);
+        if (!lrcText) {
+          console.warn(
+            `[AdminController] Не удалось получить LRC-текст с lrclib.net для трека: ${songName}`
+          );
+        }
       }
 
       const song = new Song({
         title: songName,
-        artist: [artist._id],
+        artist: songArtistIds, // Теперь здесь будут либо артисты трека, либо артисты альбома
         albumId: album._id,
         vocalsUrl: vocalsUrl || null,
         vocalsPublicId: vocalsPublicId || null,
@@ -1030,7 +1096,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       console.log(`[AdminController] Песня сохранена в БД: ${song.title}`);
 
       await Album.findByIdAndUpdate(album._id, { $push: { songs: song._id } });
-      await updateArtistsContent([artist._id], song._id, "songs");
+      await updateArtistsContent(songArtistIds, song._id, "songs"); // Обновляем артистов песни
     }
 
     console.log(

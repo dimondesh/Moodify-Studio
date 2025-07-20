@@ -83,7 +83,7 @@ const AddAlbumFromSpotifyDialog = () => {
       <DialogTrigger asChild>
         <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
           <Plus className="mr-2 h-4 w-4" />
-          Add Album from Spotify
+          From Spotify
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200">

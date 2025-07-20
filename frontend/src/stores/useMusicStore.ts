@@ -26,6 +26,7 @@ interface MusicStore {
   deleteSong: (id: string) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>; // НОВОЕ: Функция для удаления артиста
+  updateArtist: (artistId: string, formData: FormData) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
@@ -89,16 +90,22 @@ export const useMusicStore = create<MusicStore>((set) => ({
       set((state) => ({
         artists: state.artists.filter((artist) => artist._id !== id),
         // Также нужно обновить песни и альбомы, которые были связаны с этим артистом
-        songs: state.songs.map((song) => ({
-          ...song,
-          artist: song.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
-        })).filter(song => song.artist.length > 0), // Удаляем песни, если у них не осталось артистов
-        albums: state.albums.map((album) => ({
-          ...album,
-          artist: album.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
-        })).filter(album => album.artist.length > 0), // Удаляем альбомы, если у них не осталось артистов
+        songs: state.songs
+          .map((song) => ({
+            ...song,
+            artist: song.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
+          }))
+          .filter((song) => song.artist.length > 0), // Удаляем песни, если у них не осталось артистов
+        albums: state.albums
+          .map((album) => ({
+            ...album,
+            artist: album.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
+          }))
+          .filter((album) => album.artist.length > 0), // Удаляем альбомы, если у них не осталось артистов
       }));
-      toast.success("Artist and associated content relationships updated/deleted successfully");
+      toast.success(
+        "Artist and associated content relationships updated/deleted successfully"
+      );
     } catch (error: any) {
       console.log("Error in deleteArtist", error);
       toast.error("Failed to delete artist: " + error.message);
@@ -106,7 +113,31 @@ export const useMusicStore = create<MusicStore>((set) => ({
       set({ isLoading: false });
     }
   },
-
+  updateArtist: async (artistId, formData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.put(
+        `/admin/artists/${artistId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      set((state) => ({
+        artists: state.artists.map((artist) =>
+          artist._id === artistId ? response.data : artist
+        ),
+      }));
+      toast.success("Artist updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating artist:", error);
+      throw error; // Пробрасываем ошибку, чтобы она могла быть обработана в компоненте
+    } finally {
+      set({ isLoading: false });
+    }
+  },
   fetchAlbums: async () => {
     set({ isLoading: true, error: null });
     try {
