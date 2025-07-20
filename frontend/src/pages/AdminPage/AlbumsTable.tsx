@@ -1,4 +1,6 @@
-import { Calendar, Music, Trash2, Pencil } from "lucide-react";
+// frontend/src/pages/AdminPage/AlbumsTable.tsx
+
+import { Calendar, Music, Trash2 } from "lucide-react"; // Удалена Pencil, так как она теперь внутри EditAlbumDialog
 import { useEffect } from "react";
 import {
   Table,
@@ -10,7 +12,8 @@ import {
 } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { Artist } from "../../types"; // ИЗМЕНЕНО: Добавлен импорт Artist
+import { Artist } from "../../types";
+import EditAlbumDialog from "./EditAlbumDialog"; // <-- НОВЫЙ ИМПОРТ
 
 const AlbumsTable = () => {
   const { albums, deleteAlbum, fetchAlbums, artists, fetchArtists } =
@@ -93,13 +96,8 @@ const AlbumsTable = () => {
             </TableCell>
             <TableCell className="text-right">
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                {/* <-- ИСПОЛЬЗУЕМ EditAlbumDialog ЗДЕСЬ */}
+                <EditAlbumDialog album={album} />
                 <Button
                   variant="ghost"
                   size="sm"

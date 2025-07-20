@@ -27,6 +27,7 @@ interface MusicStore {
   deleteAlbum: (id: string) => Promise<void>;
   deleteArtist: (id: string) => Promise<void>; // НОВОЕ: Функция для удаления артиста
   updateArtist: (artistId: string, formData: FormData) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ
+  updateSong: (songId: string, formData: FormData) => Promise<void>; // НОВОЕ: Функция для обновления песни
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
@@ -134,6 +135,31 @@ export const useMusicStore = create<MusicStore>((set) => ({
     } catch (error: any) {
       console.error("Error updating artist:", error);
       throw error; // Пробрасываем ошибку, чтобы она могла быть обработана в компоненте
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  updateSong: async (songId, formData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.put(
+        `/admin/songs/${songId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      set((state) => ({
+        songs: state.songs.map((song) =>
+          song._id === songId ? response.data : song
+        ),
+      }));
+      toast.success("Song updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating song:", error);
+      throw error;
     } finally {
       set({ isLoading: false });
     }
