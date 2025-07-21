@@ -1,10 +1,14 @@
 import React, { useEffect } from "react";
 import {
-  useAudioSettingsStore,
-  defaultFrequencies, // Теперь это 6 частот
+  // Импортируем все необходимые константы и типы из webAudio,
+  // так как они описывают структуру данных, а не сам стор
+  defaultFrequencies,
   equalizerPresets,
   NormalizationMode,
   webAudioService,
+  ReverbRoomSize,
+  reverbIRPaths,
+  useAudioSettingsStore, // Используем useAudioSettingsStore
 } from "../../lib/webAudio";
 import { Label } from "../../components/ui/label";
 import { Slider } from "../../components/ui/slider";
@@ -27,14 +31,19 @@ const SettingsPage: React.FC = () => {
     normalizationMode,
     waveAnalyzerEnabled,
     activePresetName,
+    reverbEnabled,
+    reverbMix,
+    reverbRoomSize,
     setEqualizerEnabled,
     setEqualizerGain,
     setNormalizationMode,
     setWaveAnalyzerEnabled,
     applyPreset,
     resetAudioSettings,
-    // updateCustomPreset, // Больше не нужен здесь, так как логика в сторе
-  } = useAudioSettingsStore();
+    setReverbEnabled,
+    setReverbMix,
+    setReverbRoomSize,
+  } = useAudioSettingsStore(); // Все состояния и действия теперь из useAudioSettingsStore
 
   const frequencies = defaultFrequencies; // Теперь это массив из 6 частот
 
@@ -50,7 +59,6 @@ const SettingsPage: React.FC = () => {
 
   const handleSliderChange = (freq: string) => (value: number[]) => {
     setEqualizerGain(freq, value[0]);
-    // updateCustomPreset() больше не нужен здесь, так как setEqualizerGain в webAudio.ts уже устанавливает "Custom"
   };
 
   const handlePresetChange = (presetName: string) => {
@@ -60,6 +68,13 @@ const SettingsPage: React.FC = () => {
       if (!equalizerEnabled) {
         setEqualizerEnabled(true);
       }
+    }
+  };
+
+  const handleReverbRoomSizeChange = (value: string) => {
+    setReverbRoomSize(value as ReverbRoomSize);
+    if (!reverbEnabled) {
+      setReverbEnabled(true); // Включаем реверберацию, если она была выключена
     }
   };
 
@@ -133,6 +148,73 @@ const SettingsPage: React.FC = () => {
                       </span>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Reverb Section - НОВАЯ СЕКЦИЯ */}
+          <div className="border-b border-zinc-700 pb-8">
+            <div className="flex items-center justify-between mb-4">
+              <Label className="text-xl font-semibold">Reverb</Label>
+              <Switch
+                id="reverb-enabled"
+                checked={reverbEnabled}
+                onCheckedChange={setReverbEnabled}
+                className="data-[state=checked]:bg-violet-600"
+              />
+            </div>
+
+            {reverbEnabled && (
+              <>
+                <div className="mb-4">
+                  <Label
+                    htmlFor="reverb-room-size"
+                    className="text-sm font-medium text-zinc-400 mb-2 block"
+                  >
+                    Room Size
+                  </Label>
+                  <Select
+                    value={reverbRoomSize}
+                    onValueChange={handleReverbRoomSizeChange}
+                  >
+                    <SelectTrigger className="w-full bg-zinc-700 border-zinc-600 text-white">
+                      <SelectValue placeholder="Select room size" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                      {Object.keys(reverbIRPaths).map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size.charAt(0).toUpperCase() + size.slice(1)}{" "}
+                          {/* Капитализируем первое слово */}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="mb-4">
+                  <Label
+                    htmlFor="reverb-mix"
+                    className="text-sm font-medium text-zinc-400 mb-2 block"
+                  >
+                    Dry/Wet Mix
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-400">Dry</span>
+                    <Slider
+                      id="reverb-mix"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[reverbMix * 100]} // Переводим 0-1 в 0-100
+                      onValueChange={(value) => setReverbMix(value[0] / 100)} // Переводим 0-100 обратно в 0-1
+                      className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                    />
+                    <span className="text-xs text-zinc-400">Wet</span>
+                    <span className="text-xs sm:text-sm text-zinc-300 whitespace-nowrap">
+                      {(reverbMix * 100).toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
               </>
             )}

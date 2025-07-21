@@ -4,12 +4,13 @@ import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
-import { useDominantColor } from "@/hooks/useDominantColor"; // ✅ импортируем твой хук
+import { useDominantColor } from "@/hooks/useDominantColor";
+// Импортируем useAudioSettingsStore
+import { useAudioSettingsStore } from "../lib/webAudio";
 
 import {
   Heart,
   Laptop2,
-  ListMusic,
   Pause,
   Play,
   Repeat,
@@ -24,6 +25,7 @@ import {
   ChevronDown,
   Sliders,
   Mic2,
+  Waves, // Новая иконка для реверберации
 } from "lucide-react";
 import { Slider } from "../components/ui/slider";
 import {
@@ -99,6 +101,13 @@ const PlaybackControls = () => {
     setCurrentTime: setPlayerCurrentTime,
   } = usePlayerStore();
 
+  const {
+    reverbEnabled, // Состояние включения/выключения реверберации
+    reverbMix, // Значение Dry/Wet микса
+    setReverbEnabled, // Действие для включения/выключения реверберации
+    setReverbMix, // Действие для установки Dry/Wet микса
+  } = useAudioSettingsStore(); // Изменено: используем useAudioSettingsStore
+
   const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
 
   const [previousMasterVolume, setPreviousMasterVolume] =
@@ -125,7 +134,7 @@ const PlaybackControls = () => {
       lastImageUrlRef.current = currentSong.imageUrl;
       extractColor(currentSong.imageUrl); // ✅ Вызываем сразу
     }
-  }, [currentSong?.imageUrl, extractColor]);
+  }, [currentSong?.imageUrl, extractColor, currentSongImage]); // Добавлено currentSongImage в зависимости
   useEffect(() => {
     fetchLikedSongs();
   }, [fetchLikedSongs]);
@@ -471,45 +480,94 @@ const PlaybackControls = () => {
                   </div>
 
                   <div className="flex items-center justify-between w-full pb-4 px-2">
-                    {currentSong.vocalsUrl ? (
+                    <div className="justify-start">
+                      {" "}
+                      {currentSong.vocalsUrl ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="hover:text-white text-zinc-400"
+                              title="Adjust vocals volume"
+                            >
+                              <Sliders className="h-5 w-5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            side="top"
+                            align="start"
+                            className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <DropdownMenuItem className="focus:bg-transparent">
+                              <div className="flex items-center w-full gap-2">
+                                <span className="text-sm text-zinc-400 w-8 mr-2">
+                                  Vocals
+                                </span>
+                                <Slider
+                                  value={[vocalsVolume]}
+                                  max={100}
+                                  step={1}
+                                  className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                                  onValueChange={(value) =>
+                                    setVocalsVolume(value[0])
+                                  }
+                                />
+                              </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <div className="w-10 h-10"></div>
+                      )}
+                      {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ МОБИЛЬНЫХ/ПЛАНШЕТОВ */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="hover:text-white text-zinc-400"
-                            title="Adjust vocals volume"
+                            className={`hover:text-white ${
+                              reverbEnabled
+                                ? "text-violet-500"
+                                : "text-zinc-400"
+                            }`}
+                            title="Adjust Reverb"
+                            disabled={!currentSong || !reverbEnabled}
+                            onClick={() => {
+                              // Добавлен onClick для включения реверберации
+                              if (!reverbEnabled) setReverbEnabled(true);
+                            }}
                           >
-                            <Sliders className="h-5 w-5" />
+                            <Waves className="h-5 w-5" />{" "}
+                            {/* Иконка для реверберации */}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           side="top"
-                          align="start"
+                          align="center" // Центрируем для мобильных
                           className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <DropdownMenuItem className="focus:bg-transparent">
                             <div className="flex items-center w-full gap-2">
                               <span className="text-sm text-zinc-400 w-8 mr-2">
-                                Vocals
+                                Reverb
                               </span>
                               <Slider
-                                value={[vocalsVolume]}
+                                value={[reverbMix * 100]} // Переводим 0-1 в 0-100
                                 max={100}
                                 step={1}
                                 className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                                onValueChange={(value) =>
-                                  setVocalsVolume(value[0])
+                                onValueChange={
+                                  (value) => setReverbMix(value[0] / 100) // Переводим 0-100 обратно в 0-1
                                 }
                               />
                             </div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    ) : (
-                      <div className="w-10 h-10"></div>
-                    )}
+                    </div>
 
                     <div className="flex items-center gap-2 justify-end">
                       <Button
@@ -765,13 +823,48 @@ const PlaybackControls = () => {
             <div className="w-10 h-10"></div>
           )}
 
-          <Button
-            size="icon"
-            variant="ghost"
-            className="hover:text-white text-zinc-400"
-          >
-            <ListMusic className="h-4 w-4" />
-          </Button>
+          {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ ПК (заменяет ListMusic) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={`hover:text-white ${
+                  reverbEnabled ? "text-violet-500" : "text-zinc-400"
+                }`}
+                title="Adjust Reverb"
+                disabled={!currentSong || !reverbEnabled}
+                onClick={() => {
+                  // Добавлен onClick для включения реверберации
+                  if (!reverbEnabled) setReverbEnabled(true);
+                }}
+              >
+                <Waves className="h-4 w-4" /> {/* Иконка для реверберации */}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="end"
+              className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuItem className="focus:bg-transparent">
+                <div className="flex items-center w-full gap-2">
+                  <span className="text-sm text-zinc-400 w-8 mr-2">Reverb</span>
+                  <Slider
+                    value={[reverbMix * 100]} // Переводим 0-1 в 0-100
+                    max={100}
+                    step={1}
+                    className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                    onValueChange={
+                      (value) => setReverbMix(value[0] / 100) // Переводим 0-100 обратно в 0-1
+                    }
+                  />
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             size="icon"
             variant="ghost"

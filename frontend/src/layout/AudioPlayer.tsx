@@ -1,8 +1,9 @@
-// src/layout/AudioPlayer.tsx
+// frontend/src/layout/AudioPlayer.tsx
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { usePlayCountStore } from "@/stores/usePlayCountStore";
-import { webAudioService } from "../lib/webAudio";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { webAudioService, useAudioSettingsStore } from "../lib/webAudio"; // Импортируем useAudioSettingsStore
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -54,24 +55,6 @@ const AudioPlayer = () => {
 
   // --- Эффект 1: Инициализация AudioContext и WebAudioService ---
   useEffect(() => {
-    // Если AudioContext уже существует и готов, не переинициализируем, но убедимся, что сервис знает о нем
-    if (
-      audioContextRef.current &&
-      masterGainNodeRef.current &&
-      isAudioContextReady
-    ) {
-      if (!webAudioService.getAudioContext()) {
-        webAudioService.init(
-          audioContextRef.current,
-          masterGainNodeRef.current,
-          audioContextRef.current.destination
-        );
-        webAudioService.applySettingsToGraph();
-      }
-      setAudioContextState(audioContextRef.current.state); // Обновляем состояние, но без рендеринга
-      return;
-    }
-
     const AudioContextClass =
       window.AudioContext ||
       (window as typeof window & { webkitAudioContext: typeof AudioContext })
@@ -80,6 +63,28 @@ const AudioPlayer = () => {
       console.error("Web Audio API is not supported in this browser.");
       setIsAudioContextReady(false);
       setAudioContextState("uninitialized");
+      return;
+    }
+
+    // Если AudioContext уже существует и готов, не переинициализируем, но убедимся, что сервис знает о нем
+    // и его состояние не "closed"
+    if (
+      audioContextRef.current &&
+      masterGainNodeRef.current &&
+      audioContextRef.current.state !== "closed"
+    ) {
+      // Убедимся, что webAudioService инициализирован с текущим контекстом и masterGainNode
+      if (
+        webAudioService.getAudioContext() !== audioContextRef.current ||
+        webAudioService.getAnalyserNode() === null // Проверяем, что анализатор тоже инициализирован
+      ) {
+        webAudioService.init(
+          audioContextRef.current,
+          masterGainNodeRef.current,
+          audioContextRef.current.destination
+        );
+      }
+      setAudioContextState(audioContextRef.current.state);
       return;
     }
 
@@ -100,7 +105,7 @@ const AudioPlayer = () => {
         masterGainNodeRef.current, // Вход для WebAudioService
         newAudioContext.destination // Выход для WebAudioService
       );
-      webAudioService.applySettingsToGraph(); // Применяем настройки сразу после инициализации сервиса
+      // applySettingsToGraph вызывается внутри webAudioService.init после загрузки IR по умолчанию
 
       setIsAudioContextReady(true);
       setAudioContextState(newAudioContext.state);
@@ -156,8 +161,7 @@ const AudioPlayer = () => {
           .catch((err) => console.error("Error closing AudioContext:", err));
       }
     };
-  }, []);
-
+  }, []); // Удалено isAudioContextReady из зависимостей
   // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
     if (!isAudioContextReady) {
