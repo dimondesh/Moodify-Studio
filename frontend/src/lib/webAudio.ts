@@ -224,7 +224,7 @@ interface AudioStore extends AudioSettings {
 // Zustand store для настроек аудио с сохранением в localStorage
 export const useAudioSettingsStore = create<AudioStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       equalizerEnabled: false,
       equalizerGains: { ...equalizerPresets[0].gains }, // Дефолт - "Flat"
       normalizationMode: "off",

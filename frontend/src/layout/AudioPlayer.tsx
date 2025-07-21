@@ -2,8 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { usePlayCountStore } from "@/stores/usePlayCountStore";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { webAudioService, useAudioSettingsStore } from "../lib/webAudio"; // Импортируем useAudioSettingsStore
+import { webAudioService } from "../lib/webAudio"; // Импортируем useAudioSettingsStore
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
