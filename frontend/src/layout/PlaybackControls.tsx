@@ -480,47 +480,48 @@ const PlaybackControls = () => {
                   </div>
 
                   <div className="flex items-center justify-between w-full pb-4 px-2">
-                    <div className="justify-start">
-                      {" "}
-                      {currentSong.vocalsUrl ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="hover:text-white text-zinc-400"
-                              title="Adjust vocals volume"
-                            >
-                              <Sliders className="h-5 w-5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            side="top"
-                            align="start"
-                            className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
-                            onClick={(e) => e.stopPropagation()}
+                    {/* ИЗМЕНЕНО ЗДЕСЬ: Добавлен flex и items-center для выравнивания */}
+                    <div className="flex items-center justify-start gap-2">
+                      {/* Кнопка регулировки вокала: всегда отображается, но может быть неактивной */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="hover:text-white text-zinc-400"
+                            title="Adjust vocals volume"
+                            disabled={!currentSong || !currentSong.vocalsUrl}
                           >
-                            <DropdownMenuItem className="focus:bg-transparent">
-                              <div className="flex items-center w-full gap-2">
-                                <span className="text-sm text-zinc-400 w-8 mr-2">
-                                  Vocals
-                                </span>
-                                <Slider
-                                  value={[vocalsVolume]}
-                                  max={100}
-                                  step={1}
-                                  className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                                  onValueChange={(value) =>
-                                    setVocalsVolume(value[0])
-                                  }
-                                />
-                              </div>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <div className="w-10 h-10"></div>
-                      )}
+                            <Sliders className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          side="top"
+                          align="start"
+                          className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenuItem className="focus:bg-transparent">
+                            <div className="flex items-center w-full gap-2">
+                              <span className="text-sm text-zinc-400 w-8 mr-2">
+                                Vocals
+                              </span>
+                              <Slider
+                                value={[vocalsVolume]}
+                                max={100}
+                                step={1}
+                                className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                                onValueChange={(value) =>
+                                  setVocalsVolume(value[0])
+                                }
+                                disabled={
+                                  !currentSong || !currentSong.vocalsUrl
+                                }
+                              />
+                            </div>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ МОБИЛЬНЫХ/ПЛАНШЕТОВ */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -535,7 +536,6 @@ const PlaybackControls = () => {
                             title="Adjust Reverb"
                             disabled={!currentSong || !reverbEnabled}
                             onClick={() => {
-                              // Добавлен onClick для включения реверберации
                               if (!reverbEnabled) setReverbEnabled(true);
                             }}
                           >
@@ -784,44 +784,40 @@ const PlaybackControls = () => {
             </Button>
           )}
 
-          {currentSong.vocalsUrl ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="hover:text-white text-zinc-400"
-                  title="Adjust vocals volume"
-                  disabled={!currentSong}
-                >
-                  <Sliders className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="end"
-                className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg"
-                onClick={(e) => e.stopPropagation()}
+          {/* Кнопка регулировки вокала: всегда отображается, но может быть неактивной */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="hover:text-white text-zinc-400"
+                title="Adjust vocals volume"
+                disabled={!currentSong || !currentSong.vocalsUrl}
               >
-                <DropdownMenuItem className="focus:bg-transparent">
-                  <div className="flex items-center w-full gap-2">
-                    <span className="text-sm text-zinc-400 w-8 mr-2">
-                      Vocals
-                    </span>
-                    <Slider
-                      value={[vocalsVolume]}
-                      max={100}
-                      step={1}
-                      className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                      onValueChange={(value) => setVocalsVolume(value[0])}
-                    />
-                  </div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="w-10 h-10"></div>
-          )}
+                <Sliders className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="end"
+              className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuItem className="focus:bg-transparent">
+                <div className="flex items-center w-full gap-2">
+                  <span className="text-sm text-zinc-400 w-8 mr-2">Vocals</span>
+                  <Slider
+                    value={[vocalsVolume]}
+                    max={100}
+                    step={1}
+                    className="flex-1 hover:cursor-grab active:cursor-grabbing"
+                    onValueChange={(value) => setVocalsVolume(value[0])}
+                    disabled={!currentSong || !currentSong.vocalsUrl}
+                  />
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ ПК (заменяет ListMusic) */}
           <DropdownMenu>
@@ -835,7 +831,6 @@ const PlaybackControls = () => {
                 title="Adjust Reverb"
                 disabled={!currentSong || !reverbEnabled}
                 onClick={() => {
-                  // Добавлен onClick для включения реверберации
                   if (!reverbEnabled) setReverbEnabled(true);
                 }}
               >
