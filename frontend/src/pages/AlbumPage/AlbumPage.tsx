@@ -1,5 +1,6 @@
+// frontend/src/pages/AlbumPage/AlbumPage.tsx
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // Импортируем useNavigate
 import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
@@ -15,61 +16,27 @@ import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { format } from "date-fns";
-import { useDominantColor } from "@/hooks/useDominantColor"; // ✅ импортируем твой хук
-
-// Импортируем типы из центрального файла типов (убедитесь, что Artist, Song, Album там определены)
-import type { Artist } from "../../types"; // Убедитесь, что Artist тоже импортирован
+import { useDominantColor } from "@/hooks/useDominantColor";
 
 const formatDuration = (seconds: number) => {
-  if (isNaN(seconds) || seconds < 0) return "0:00"; // Добавлена проверка на NaN и отрицательные значения
+  if (isNaN(seconds) || seconds < 0) return "0:00";
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
 
-// Вспомогательная функция для безопасного извлечения имен артистов
-// Эта функция обрабатывает Artist | string | (Artist | string)[]
-const getArtistNames = (
-  artistData: Artist | string | (Artist | string)[] | undefined
-): string => {
-  if (!artistData || (Array.isArray(artistData) && artistData.length === 0)) {
-    return "Unknown Artist";
-  }
-
-  // Если это массив артистов (заполненных объектов или ID)
-  if (Array.isArray(artistData)) {
-    return artistData
-      .map((item) => {
-        if (typeof item === "object" && item !== null && "name" in item) {
-          return item.name;
-        }
-        return String(item); // Если это ID (строка) или не объект с именем
-      })
-      .filter(Boolean) // Удаляем пустые строки, если таковые появятся
-      .join(", ");
-  }
-  // Если это одиночный объект артиста (заполненный)
-  if (
-    typeof artistData === "object" &&
-    artistData !== null &&
-    "name" in artistData
-  ) {
-    return artistData.name;
-  }
-  // Если это просто строка (ID или имя)
-  return String(artistData);
-};
-
 const AlbumPage = () => {
   const { albumId } = useParams();
+  const navigate = useNavigate(); // Инициализируем useNavigate
   const { fetchAlbumbyId, currentAlbum, isLoading } = useMusicStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  const { extractColor } = useDominantColor(); // ✅ берём функцию
-  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const { extractColor } = useDominantColor();
+  const dominantColor = usePlayerStore((state) => state.dominantColor);
   const currentAlbumImage = currentAlbum?.imageUrl;
+
   useEffect(() => {
     if (!currentAlbum) return;
     const exists = albums.some(
@@ -77,14 +44,13 @@ const AlbumPage = () => {
     );
     setInLibrary(exists);
   }, [albums, currentAlbum]);
-  ////////////////////////////////////
+
   useEffect(() => {
     if (currentAlbumImage) {
       extractColor(currentAlbum.imageUrl);
-      console.log(extractColor);
     }
   }, [currentAlbum?.imageUrl, currentAlbumImage, extractColor]);
-  /////////////////////////////////////
+
   const handleToggleAlbum = async () => {
     if (!currentAlbum || isToggling) return;
     setIsToggling(true);
@@ -123,9 +89,20 @@ const AlbumPage = () => {
     playAlbum(currentAlbum.songs, index);
   };
 
+  // --- НОВАЯ ФУНКЦИЯ: ОБРАБОТЧИК КЛИКА ПО ИМЕНИ АРТИСТА ---
+  const handleArtistClick = (artistId: string) => {
+    navigate(`/artists/${artistId}`);
+  };
+
+  // --- НОВАЯ ФУНКЦИЯ: ОБРАБОТЧИК КЛИКА ПО НАЗВАНИЮ АЛЬБОМА (для плеера) ---
+  const handleAlbumTitleClick = (albumId: string | null | undefined) => {
+    if (albumId) {
+      navigate(`/albums/${albumId}`);
+    }
+  };
+
   return (
     <div className="h-full">
-      {/* Отступ снизу для мобильных, чтобы контент не перекрывался нижней навигацией и плеером */}
       <ScrollArea className="h-full rounded-md pb- md:pb-0">
         <div className="relative min-h-screen">
           <div
@@ -136,7 +113,6 @@ const AlbumPage = () => {
             }}
           />
           <div className="relative z-10">
-            {/* Адаптивный верхний блок с обложкой и информацией */}
             <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end">
               <img
                 src={currentAlbum.imageUrl}
@@ -155,9 +131,19 @@ const AlbumPage = () => {
                   {currentAlbum.title}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100">
+                  {/* ИЗМЕНЕНО: Рендеринг кликабельных имен артистов альбома */}
                   <span className="font-medium text-white">
-                    {/* ИЗМЕНЕНО: Использование getArtistNames для альбома */}
-                    {getArtistNames(currentAlbum.artist)}
+                    {currentAlbum.artist.map((artist, index) => (
+                      <span key={artist._id}>
+                        <button
+                          onClick={() => handleArtistClick(artist._id)}
+                          className="hover:underline focus:outline-none focus:underline cursor-pointer"
+                        >
+                          {artist.name}
+                        </button>
+                        {index < currentAlbum.artist.length - 1 && ", "}
+                      </span>
+                    ))}
                   </span>
                   <span>
                     • {currentAlbum.songs.length}{" "}
@@ -184,7 +170,6 @@ const AlbumPage = () => {
                   <Play className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-current" />
                 )}
               </Button>
-              {/* Кнопка "Добавить/Удалить альбом из библиотеки" */}
               {currentAlbum && (
                 <Button
                   onClick={handleToggleAlbum}
@@ -205,9 +190,7 @@ const AlbumPage = () => {
               )}
             </div>
 
-            {/* Table Section */}
             <div className="bg-black/20 backdrop-blur-sm">
-              {/* table header */}
               <div
                 className="grid grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
@@ -220,10 +203,9 @@ const AlbumPage = () => {
                 <div>
                   <Clock className="h-4 w-4" />
                 </div>
-                <div></div> {/* Место для заголовка колонки "Лайк" */}
+                <div></div>
               </div>
 
-              {/* songs list */}
               <div className="px-4 sm:px-6">
                 <div className="space-y-2 py-4">
                   {currentAlbum.songs.map((song, index) => {
@@ -268,16 +250,34 @@ const AlbumPage = () => {
                           />
 
                           <div>
-                            <div
-                              className={`font-medium ${
+                            {/* ИЗМЕНЕНО: Кликабельное название песни для перехода на страницу альбома */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation(); // Предотвращаем срабатывание handlePlaySong
+                                handleAlbumTitleClick(song.albumId);
+                              }}
+                              className={`font-medium text-left hover:underline focus:outline-none focus:underline ${
                                 isCurrentSong ? "text-violet-400" : "text-white"
                               }`}
                             >
                               {song.title}
-                            </div>
-                            {/* ИЗМЕНЕНО: Использование getArtistNames для песни */}
+                            </button>
+                            {/* ИЗМЕНЕНО: Рендеринг кликабельных имен артистов песни */}
                             <div className="text-zinc-400">
-                              {getArtistNames(song.artist)}
+                              {song.artist.map((artist, artistIndex) => (
+                                <span key={artist._id}>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Предотвращаем срабатывание handlePlaySong
+                                      handleArtistClick(artist._id);
+                                    }}
+                                    className="hover:underline focus:outline-none focus:underline"
+                                  >
+                                    {artist.name}
+                                  </button>
+                                  {artistIndex < song.artist.length - 1 && ", "}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -289,7 +289,6 @@ const AlbumPage = () => {
                         <div className="flex items-center">
                           {formatDuration(song.duration)}
                         </div>
-                        {/* Кнопка "Лайк/Дизлайк" */}
                         <div className="flex items-center justify-center">
                           <Button
                             size="icon"

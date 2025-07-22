@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { useDominantColor } from "@/hooks/useDominantColor";
 // Импортируем useAudioSettingsStore
 import { useAudioSettingsStore } from "../lib/webAudio";
+import { useNavigate } from "react-router-dom"; // Импортируем useNavigate
 
 import {
   Heart,
@@ -77,6 +78,8 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
 };
 
 const PlaybackControls = () => {
+  const navigate = useNavigate(); // Инициализируем useNavigate
+
   const {
     currentSong,
     isPlaying,
@@ -91,7 +94,7 @@ const PlaybackControls = () => {
     setIsFullScreenPlayerOpen,
     isDesktopLyricsOpen,
     setIsDesktopLyricsOpen,
-    setIsMobileLyricsFullScreen, // Мы только устанавливаем это состояние
+    setIsMobileLyricsFullScreen,
     vocalsVolume,
     setVocalsVolume,
     masterVolume,
@@ -101,12 +104,8 @@ const PlaybackControls = () => {
     setCurrentTime: setPlayerCurrentTime,
   } = usePlayerStore();
 
-  const {
-    reverbEnabled, // Состояние включения/выключения реверберации
-    reverbMix, // Значение Dry/Wet микса
-    setReverbEnabled, // Действие для включения/выключения реверберации
-    setReverbMix, // Действие для установки Dry/Wet микса
-  } = useAudioSettingsStore(); // Изменено: используем useAudioSettingsStore
+  const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
+    useAudioSettingsStore();
 
   const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
 
@@ -116,12 +115,11 @@ const PlaybackControls = () => {
   const [isCompactView, setIsCompactView] = useState(false);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
 
-  // Ref для области, от которой должен работать свайп вниз
   const topSwipeAreaRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
 
-  const { extractColor } = useDominantColor(); // ✅ берём функцию
-  const dominantColor = usePlayerStore((state) => state.dominantColor); // ✅ читаем из стора
+  const { extractColor } = useDominantColor();
+  const dominantColor = usePlayerStore((state) => state.dominantColor);
   const currentSongImage = currentSong?.imageUrl;
   const lastImageUrlRef = useRef<string | null>(null);
 
@@ -132,9 +130,10 @@ const PlaybackControls = () => {
       currentSong.imageUrl !== lastImageUrlRef.current
     ) {
       lastImageUrlRef.current = currentSong.imageUrl;
-      extractColor(currentSong.imageUrl); // ✅ Вызываем сразу
+      extractColor(currentSong.imageUrl);
     }
-  }, [currentSong?.imageUrl, extractColor, currentSongImage]); // Добавлено currentSongImage в зависимости
+  }, [currentSong?.imageUrl, extractColor, currentSongImage]);
+
   useEffect(() => {
     fetchLikedSongs();
   }, [fetchLikedSongs]);
@@ -201,28 +200,38 @@ const PlaybackControls = () => {
     }
   };
 
-  // НОВЫЙ ОБРАБОТЧИК ДЛЯ TOUCH START В ВЕРХНЕЙ ОБЛАСТИ
+  // ОБНОВЛЕННЫЙ ОБРАБОТЧИК НАВИГАЦИИ НА АРТИСТА
+  const handleArtistClick = (artistId: string) => {
+    navigate(`/artists/${artistId}`);
+    // Закрываем полноэкранный плеер, если мы на мобильном и он открыт
+    if (isCompactView && isFullScreenPlayerOpen) {
+      setIsFullScreenPlayerOpen(false);
+    }
+  };
+
+  const handleAlbumClick = (albumId: string) => {
+    navigate(`/albums/${albumId}`);
+    // Если мы на мобильном, закрываем полноэкранный плеер при переходе
+    if (isCompactView && isFullScreenPlayerOpen) {
+      setIsFullScreenPlayerOpen(false);
+    }
+  };
+
   const handleTopAreaTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     touchStartY.current = e.touches[0].clientY;
   };
 
-  // НОВЫЙ ОБРАБОТЧИК ДЛЯ TOUCH MOVE В ВЕРХНЕЙ ОБЛАСТИ
   const handleTopAreaTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     const currentY = e.touches[0].clientY;
-    const diffY = currentY - touchStartY.current; // Положительное значение = свайп вниз
+    const diffY = currentY - touchStartY.current;
 
-    // Определяем, насколько далеко от верха находится текущий скролл основного контента
-    // Это важно, чтобы свайп вниз закрывал плеер только когда мы находимся в начале скролла
     const mainContentScrollTop = mobilePlayerContentRef.current?.scrollTop || 0;
 
-    // Закрываем плеер, если свайп вниз достаточно длинный
-    // И основной контент находится в самом верху (или почти)
     if (diffY > 50 && mainContentScrollTop <= 5) {
       setIsFullScreenPlayerOpen(false);
     }
   };
 
-  // Реф для основного прокручиваемого контента, чтобы проверять его scrollTop
   const mobilePlayerContentRef = useRef<HTMLDivElement>(null);
 
   if (!currentSong) {
@@ -260,11 +269,19 @@ const PlaybackControls = () => {
               </div>
 
               <div className="flex flex-col flex-1 min-w-0">
+                {/* Название песни в компактном виде (НЕкликабельное) */}
                 <div className="font-medium truncate text-white text-sm sm:text-base">
                   {currentSong.title}
                 </div>
+                {/* Кликабельные имена артистов */}
                 <div className="text-xs text-zinc-400 truncate">
-                  {getArtistNames(currentSong.artist)}
+                  {currentSong.artist.map((artist, index) => (
+                    <span key={artist._id}>
+                      {artist.name}
+
+                      {index < currentSong.artist.length - 1 && ", "}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -344,14 +361,21 @@ const PlaybackControls = () => {
                 >
                   <ChevronDown className="h-6 w-6" />
                 </Button>
-                <div className="text-sm font-semibold text-zinc-400 uppercase">
+                {/* Кликабельное название альбома в полноэкранном режиме */}
+                <button
+                  onClick={() => {
+                    if (currentSong?.albumId) {
+                      handleAlbumClick(currentSong.albumId);
+                    }
+                  }}
+                  className="text-sm font-semibold text-zinc-400 uppercase hover:underline focus:outline-none focus:underline"
+                >
                   {currentSong?.albumTitle || "Now Playing"}
-                </div>
+                </button>
                 <div className="w-10 h-10"></div>
               </div>
 
               {/* ОСНОВНОЕ СОДЕРЖИМОЕ ПОЛНОЭКРАННОГО МОБИЛЬНОГО ПЛЕЕРА */}
-              {/* onScroll/onTouch* убраны отсюда, т.к. закрытие должно быть только сверху */}
               <div
                 ref={mobilePlayerContentRef} // Реф для проверки scrollTop
                 className="flex-1 flex flex-col items-center overflow-y-auto w-full hide-scrollbar"
@@ -371,11 +395,33 @@ const PlaybackControls = () => {
 
                   <div className="flex justify-between items-center w-full mb-4 px-2">
                     <div className="flex flex-col text-left">
-                      <h2 className="text-2xl font-bold text-white mb-1">
+                      {/* Кликабельное название песни в полноэкранном режиме */}
+                      <button
+                        onClick={() => {
+                          if (currentSong?.albumId) {
+                            handleAlbumClick(currentSong.albumId);
+                          }
+                        }}
+                        className="text-2xl font-bold text-white mb-1 text-left hover:underline focus:outline-none focus:underline"
+                      >
                         {currentSong?.title || "No song playing"}
-                      </h2>
+                      </button>
+                      {/* Кликабельные имена артистов в полноэкранном режиме */}
                       <p className="text-zinc-400 text-base">
-                        {getArtistNames(currentSong.artist)}
+                        {currentSong.artist.map((artist, index) => (
+                          <span key={artist._id}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleArtistClick(artist._id); // ОБНОВЛЕНО: теперь закрывает плеер
+                              }}
+                              className="hover:underline focus:outline-none focus:underline"
+                            >
+                              {artist.name}
+                            </button>
+                            {index < currentSong.artist.length - 1 && ", "}
+                          </span>
+                        ))}
                       </p>
                     </div>
                     {currentSong && (
@@ -480,9 +526,7 @@ const PlaybackControls = () => {
                   </div>
 
                   <div className="flex items-center justify-between w-full pb-4 px-2">
-                    {/* ИЗМЕНЕНО ЗДЕСЬ: Добавлен flex и items-center для выравнивания */}
                     <div className="flex items-center justify-start gap-2">
-                      {/* Кнопка регулировки вокала: всегда отображается, но может быть неактивной */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -522,7 +566,6 @@ const PlaybackControls = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ МОБИЛЬНЫХ/ПЛАНШЕТОВ */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -539,13 +582,12 @@ const PlaybackControls = () => {
                               if (!reverbEnabled) setReverbEnabled(true);
                             }}
                           >
-                            <Waves className="h-5 w-5" />{" "}
-                            {/* Иконка для реверберации */}
+                            <Waves className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           side="top"
-                          align="center" // Центрируем для мобильных
+                          align="center"
                           className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -555,12 +597,12 @@ const PlaybackControls = () => {
                                 Reverb
                               </span>
                               <Slider
-                                value={[reverbMix * 100]} // Переводим 0-1 в 0-100
+                                value={[reverbMix * 100]}
                                 max={100}
                                 step={1}
                                 className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                                onValueChange={
-                                  (value) => setReverbMix(value[0] / 100) // Переводим 0-100 обратно в 0-1
+                                onValueChange={(value) =>
+                                  setReverbMix(value[0] / 100)
                                 }
                               />
                             </div>
@@ -600,13 +642,7 @@ const PlaybackControls = () => {
                   </div>
                 </div>
                 {currentSong.lyrics && (
-                  <div
-                    className="w-full  mx-auto mt-8 flex flex-col items-center flex-shrink-0"
-                    // Эта общая область div не должна быть onClick для открытия лирики,
-                    // чтобы не перехватывать клики на самой лирике, когда пытаешься скроллить.
-                    // Вместо этого используем кнопки "Show full lyrics".
-                    // onClick={() => setIsMobileLyricsFullScreen(true)}
-                  >
+                  <div className="w-full  mx-auto mt-8 flex flex-col items-center flex-shrink-0">
                     <h3 className="text-xl font-bold mb-4 text-white">
                       Lyrics Preview
                     </h3>
@@ -632,8 +668,8 @@ const PlaybackControls = () => {
                             variant="ghost"
                             className="text-violet-400 hover:text-violet-300 text-sm font-bold"
                             onClick={(e) => {
-                              e.stopPropagation(); // Важно: предотвратить всплытие, чтобы не закрыть сразу
-                              setIsMobileLyricsFullScreen(true); // <-- Здесь вызываем
+                              e.stopPropagation();
+                              setIsMobileLyricsFullScreen(true);
                               setIsFullScreenPlayerOpen(false);
                             }}
                           >
@@ -659,17 +695,46 @@ const PlaybackControls = () => {
         <div className="flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
             <>
-              <img
-                src={currentSong.imageUrl || "/default-song-cover.png"}
-                alt={currentSong.title}
-                className="w-14 h-14 object-cover rounded-md"
-              />
+              {/* Кликабельная обложка (переход на альбом) */}
+              <button
+                onClick={() => {
+                  if (currentSong.albumId) {
+                    handleAlbumClick(currentSong.albumId);
+                  }
+                }}
+                className="flex-shrink-0 rounded-md overflow-hidden"
+              >
+                <img
+                  src={currentSong.imageUrl || "/default-song-cover.png"}
+                  alt={currentSong.title}
+                  className="w-14 h-14 object-cover"
+                />
+              </button>
               <div className="flex flex-col">
-                <div className="font-medium truncate hover:underline cursor-pointer">
+                {/* Кликабельное название песни (переход на альбом) */}
+                <button
+                  onClick={() => {
+                    if (currentSong.albumId) {
+                      handleAlbumClick(currentSong.albumId);
+                    }
+                  }}
+                  className="font-medium truncate text-left hover:underline cursor-pointer focus:outline-none focus:underline"
+                >
                   {currentSong.title}
-                </div>
-                <div className="text-sm text-zinc-400 truncate hover:underline cursor-pointer">
-                  {getArtistNames(currentSong.artist)}
+                </button>
+                {/* Кликабельные имена артистов */}
+                <div className="text-sm text-zinc-400 truncate">
+                  {currentSong.artist.map((artist, index) => (
+                    <span key={artist._id}>
+                      <button
+                        onClick={() => handleArtistClick(artist._id)}
+                        className="hover:underline focus:outline-none focus:underline"
+                      >
+                        {artist.name}
+                      </button>
+                      {index < currentSong.artist.length - 1 && ", "}
+                    </span>
+                  ))}
                 </div>
               </div>
               <Button
@@ -784,7 +849,6 @@ const PlaybackControls = () => {
             </Button>
           )}
 
-          {/* Кнопка регулировки вокала: всегда отображается, но может быть неактивной */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -819,7 +883,6 @@ const PlaybackControls = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* НОВАЯ КНОПКА РЕВЕРБЕРАЦИИ ДЛЯ ПК (заменяет ListMusic) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -834,7 +897,7 @@ const PlaybackControls = () => {
                   if (!reverbEnabled) setReverbEnabled(true);
                 }}
               >
-                <Waves className="h-4 w-4" /> {/* Иконка для реверберации */}
+                <Waves className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -847,13 +910,11 @@ const PlaybackControls = () => {
                 <div className="flex items-center w-full gap-2">
                   <span className="text-sm text-zinc-400 w-8 mr-2">Reverb</span>
                   <Slider
-                    value={[reverbMix * 100]} // Переводим 0-1 в 0-100
+                    value={[reverbMix * 100]}
                     max={100}
                     step={1}
                     className="flex-1 hover:cursor-grab active:cursor-grabbing"
-                    onValueChange={
-                      (value) => setReverbMix(value[0] / 100) // Переводим 0-100 обратно в 0-1
-                    }
+                    onValueChange={(value) => setReverbMix(value[0] / 100)}
                   />
                 </div>
               </DropdownMenuItem>

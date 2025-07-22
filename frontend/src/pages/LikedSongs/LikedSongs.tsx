@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+// frontend/src/pages/LikedSongsPage/LikedSongsPage.tsx
+
+import { JSX, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { usePlayerStore } from "../../stores/usePlayerStore";
@@ -15,6 +17,7 @@ interface Artist {
 }
 
 const formatDuration = (seconds: number) => {
+  if (isNaN(seconds) || seconds < 0) return "0:00"; // Добавлена проверка на NaN или отрицательные значения
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
@@ -32,23 +35,49 @@ const LikedSongsPage = () => {
     fetchArtists();
   }, [fetchLikedSongs, fetchArtists]);
 
-  const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
+  // НОВАЯ ФУНКЦИЯ: для рендеринга кликабельных имен артистов
+  const getArtistNamesDisplay = (
+    artistsInput: (string | Artist)[] | undefined
+  ) => {
     if (!artistsInput || artistsInput.length === 0) {
-      return "Unknown Artist";
+      return <span>Unknown Artist</span>;
     }
 
-    const names = artistsInput
-      .map((artistOrId) => {
-        if (typeof artistOrId === "string") {
-          const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
-          return foundArtist ? foundArtist.name : null;
-        } else {
-          return artistOrId.name;
-        }
-      })
-      .filter(Boolean);
+    const artistElements: JSX.Element[] = [];
+    artistsInput.forEach((artistOrId, index) => {
+      let artistName: string | null = null;
+      let artistId: string | null = null;
 
-    return names.join(", ") || "Unknown Artist";
+      if (typeof artistOrId === "string") {
+        const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
+        if (foundArtist) {
+          artistName = foundArtist.name;
+          artistId = foundArtist._id;
+        }
+      } else {
+        artistName = artistOrId.name;
+        artistId = artistOrId._id;
+      }
+
+      if (artistName && artistId) {
+        artistElements.push(
+          <span key={artistId}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Предотвращаем срабатывание клика по всей строке песни
+                handleNavigateToArtist(artistId);
+              }}
+              className="hover:underline focus:outline-none focus:underline"
+            >
+              {artistName}
+            </button>
+            {index < artistsInput.length - 1 && ", "}
+          </span>
+        );
+      }
+    });
+
+    return <>{artistElements}</>;
   };
 
   if (isLoading) return <LibraryGridSkeleton />;
@@ -100,15 +129,20 @@ const LikedSongsPage = () => {
   };
 
   const handleNavigateToAlbum = (
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.MouseEvent<HTMLButtonElement>, // Изменено на HTMLButtonElement
     albumId: string | null | undefined
   ) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Важно остановить распространение события
     if (albumId) {
       navigate(`/albums/${albumId}`);
     } else {
       console.warn("Album ID is missing for navigation.");
     }
+  };
+
+  // НОВАЯ ФУНКЦИЯ: для навигации по артистам
+  const handleNavigateToArtist = (artistId: string) => {
+    navigate(`/artists/${artistId}`);
   };
 
   return (
@@ -207,15 +241,23 @@ const LikedSongsPage = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <img
-                            src={song.imageUrl || "/default-song-cover.png"}
-                            alt={song.title}
-                            className="size-10 object-cover rounded-md"
-                          />
+                          {/* Обложка альбома теперь кликабельна */}
+                          <button
+                            onClick={(e) =>
+                              handleNavigateToAlbum(e, song.albumId)
+                            }
+                          >
+                            <img
+                              src={song.imageUrl || "/default-song-cover.png"}
+                              alt={song.title}
+                              className="size-10 object-cover rounded-md"
+                            />
+                          </button>
 
                           <div>
-                            <div
-                              className={`font-medium ${
+                            {/* Название песни теперь кликабельно */}
+                            <button
+                              className={`font-medium text-left ${
                                 isThisSongPlaying
                                   ? "text-violet-400"
                                   : "text-white"
@@ -225,14 +267,10 @@ const LikedSongsPage = () => {
                               }
                             >
                               {song.title}
-                            </div>
-                            <div
-                              className="text-zinc-400 hover:underline"
-                              onClick={(e) =>
-                                handleNavigateToAlbum(e, song.albumId)
-                              }
-                            >
-                              {getArtistNames(song.artist)}
+                            </button>
+                            <div className="text-zinc-400">
+                              {/* Имена артистов теперь кликабельны */}
+                              {getArtistNamesDisplay(song.artist)}
                             </div>
                           </div>
                         </div>
@@ -251,7 +289,7 @@ const LikedSongsPage = () => {
                             variant="ghost"
                             className="text-violet-500 hover:text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
-                              e.stopPropagation();
+                              e.stopPropagation(); // Предотвращаем срабатывание клика по всей строке песни
                               toggleSongLike(song._id);
                             }}
                             title="Удалить из понравившихся"

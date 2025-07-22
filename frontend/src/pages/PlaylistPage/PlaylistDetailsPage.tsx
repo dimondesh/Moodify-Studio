@@ -1,3 +1,5 @@
+// frontend/src/pages/PlaylistPage/PlaylistDetailsPage.tsx
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -21,7 +23,7 @@ import {
   Unlock,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
-import { Song, Playlist, Artist } from "../../types"; // Импортируем Artist
+import { Song, Playlist } from "../../types";
 import { useAuthStore } from "../../stores/useAuthStore";
 import {
   Dialog,
@@ -53,32 +55,14 @@ import {
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
 import Equalizer from "../../components/ui/equalizer";
-import { FastAverageColor } from "fast-average-color"; // Импортируем FastAverageColor локально
-// Helper function for duration formatting
+import { FastAverageColor } from "fast-average-color";
+
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
-const fac = new FastAverageColor(); // Создаем экземпляр FastAverageColor вне компонента
-
-// Вспомогательная функция для получения имен артистов из массива объектов Artist
-const getArtistNames = (artistsInput: Artist[] | undefined) => {
-  if (!artistsInput || artistsInput.length === 0) {
-    return "Unknown Artist";
-  }
-
-  const names = artistsInput
-    .map((artist) => {
-      if (typeof artist === "object" && artist !== null && "name" in artist) {
-        return artist.name;
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-  return names.join(", ") || "Unknown Artist";
-};
+const fac = new FastAverageColor();
 
 const PlaylistDetailsPage = () => {
   const { playlistId } = useParams<{ playlistId: string }>();
@@ -108,7 +92,7 @@ const PlaylistDetailsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
   const [playlistPageDominantColor, setPlaylistPageDominantColor] =
-    useState("#18181b"); // ✅ НОВОЕ: Локальное состояние для доминантного цвета страницы плейлиста
+    useState("#18181b");
   const {
     songs: searchSongs,
     loading: searchLoading,
@@ -123,6 +107,7 @@ const PlaylistDetailsPage = () => {
     currentSong,
     queue,
   } = usePlayerStore();
+
   useEffect(() => {
     const imageUrl = currentPlaylist?.imageUrl;
     if (imageUrl && imageUrl.trim() !== "") {
@@ -136,15 +121,17 @@ const PlaylistDetailsPage = () => {
             "Ошибка при извлечении цвета для страницы плейлиста:",
             error
           );
-          setPlaylistPageDominantColor("#18181b"); // Цвет по умолчанию в случае ошибки
+          setPlaylistPageDominantColor("#18181b");
         });
     } else {
-      setPlaylistPageDominantColor("#18181b"); // Цвет по умолчанию, если нет изображения
+      setPlaylistPageDominantColor("#18181b");
     }
   }, [currentPlaylist?.imageUrl]);
+
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
     : false;
+
   useEffect(() => {
     const loadPlaylist = async () => {
       setLocalIsLoading(true);
@@ -200,6 +187,14 @@ const PlaylistDetailsPage = () => {
     } else {
       playAlbum(currentPlaylist.songs, index);
     }
+  };
+
+  const handleSongTitleClick = (albumId: string) => {
+    navigate(`/albums/${albumId}`);
+  };
+
+  const handleArtistNameClick = (artistId: string) => {
+    navigate(`/artists/${artistId}`);
   };
 
   const isOwner = authUser && currentPlaylist?.owner?._id === authUser.id;
@@ -558,26 +553,50 @@ const PlaylistDetailsPage = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <img
-                            src={song.imageUrl || "/default-song-cover.png"}
-                            alt={song.title}
-                            className="size-10 object-cover rounded-md flex-shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/default-song-cover.png";
+                          <button
+                            onClick={() => {
+                              if (song.albumId) {
+                                handleSongTitleClick(song.albumId);
+                              }
                             }}
-                          />
+                          >
+                            <img
+                              src={song.imageUrl || "/default-song-cover.png"}
+                              alt={song.title}
+                              className="size-10 object-cover rounded-md flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "/default-song-cover.png";
+                              }}
+                            />
+                          </button>
 
                           <div className="flex flex-col overflow-hidden">
-                            <div
-                              className={`font-medium truncate ${
+                            <button
+                              onClick={() =>
+                                song.albumId &&
+                                handleSongTitleClick(song.albumId)
+                              }
+                              className={`font-medium truncate text-left hover:underline focus:outline-none focus:underline ${
                                 isCurrentSong ? "text-violet-400" : "text-white"
                               }`}
                             >
                               {song.title}
-                            </div>
+                            </button>
                             <div className="text-zinc-400 text-xs sm:text-sm truncate">
-                              {getArtistNames(song.artist)} {/* <-- ИЗМЕНЕНО */}
+                              {song.artist.map((artist, artistIndex) => (
+                                <span key={artist._id}>
+                                  <button
+                                    onClick={() =>
+                                      handleArtistNameClick(artist._id)
+                                    }
+                                    className="hover:underline focus:outline-none focus:underline"
+                                  >
+                                    {artist.name}
+                                  </button>
+                                  {artistIndex < song.artist.length - 1 && ", "}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -674,11 +693,28 @@ const PlaylistDetailsPage = () => {
                       className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
                     >
                       <div className="flex flex-col truncate">
-                        <span className="font-semibold text-white truncate">
+                        <button
+                          onClick={() =>
+                            song.albumId && handleSongTitleClick(song.albumId)
+                          }
+                          className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
+                        >
                           {song.title}
-                        </span>
+                        </button>
                         <span className="text-sm text-zinc-400 truncate">
-                          {getArtistNames(song.artist)} {/* <-- ИЗМЕНЕНО */}
+                          {song.artist.map((artist, artistIndex) => (
+                            <span key={artist._id}>
+                              <button
+                                onClick={() =>
+                                  handleArtistNameClick(artist._id)
+                                }
+                                className="hover:underline focus:outline-none focus:underline"
+                              >
+                                {artist.name}
+                              </button>
+                              {artistIndex < song.artist.length - 1 && ", "}
+                            </span>
+                          ))}
                         </span>
                       </div>
                       <Button
