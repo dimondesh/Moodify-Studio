@@ -39,7 +39,7 @@ const AudioPlayer = () => {
     masterVolume,
     setCurrentTime,
     setDuration,
-    currentTime: playerStoreCurrentTime,
+    currentTime: playerStoreCurrentTime, // Используем как исходник для перемотки
     duration,
   } = usePlayerStore();
 
@@ -51,6 +51,10 @@ const AudioPlayer = () => {
   isPlayingRef.current = isPlaying;
 
   const playCountIncrementedRef = useRef(false);
+
+  // Дополнительный реф для отслеживания предыдущего значения playerStoreCurrentTime
+  // чтобы избежать ненужной перемотки при каждом обновлении времени
+  const lastPlayerStoreCurrentTimeRef = useRef(0);
 
   // --- Эффект 1: Инициализация AudioContext и WebAudioService ---
   useEffect(() => {
@@ -193,6 +197,7 @@ const AudioPlayer = () => {
       setCurrentTime(0);
       prevCurrentSongIdRef.current = null;
       currentLoadRequestIdRef.current = null;
+      lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при смене песни
       return;
     }
 
@@ -200,6 +205,15 @@ const AudioPlayer = () => {
       prevCurrentSongIdRef.current === currentSong._id &&
       instrumentalBufferRef.current
     ) {
+      // Если песня та же и буфер уже загружен, просто обнуляем время воспроизведения,
+      // если только это не было ручной перемоткой (которая обрабатывается в Эффекте 3)
+      if (Math.abs(playerStoreCurrentTime - 0) < 0.5) {
+        // Проверяем, если playerStoreCurrentTime уже ~0
+        setCurrentTime(0);
+      }
+      offsetTimeRef.current = 0;
+      startTimeRef.current = 0;
+      lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при смене песни
       return;
     }
 
@@ -252,6 +266,7 @@ const AudioPlayer = () => {
         setCurrentTime(0);
         offsetTimeRef.current = 0;
         startTimeRef.current = 0;
+        lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при загрузке новой песни
       } catch (error) {
         if (currentLoadRequestIdRef.current !== loadRequestId) return;
         console.error("Error loading or decoding audio:", error);
@@ -260,6 +275,7 @@ const AudioPlayer = () => {
         vocalsBufferRef.current = null;
         setDuration(0);
         setCurrentTime(0);
+        lastPlayerStoreCurrentTimeRef.current = 0;
       }
     };
 
@@ -296,17 +312,23 @@ const AudioPlayer = () => {
       return;
     }
 
+    const currentTrackTime =
+      offsetTimeRef.current + (audioContext.currentTime - startTimeRef.current);
+
+    // Определяем, нужна ли перемотка
+    // Перемотка нужна, если playerStoreCurrentTime значительно отличается от текущего воспроизводимого времени
+    // или если это первая загрузка трека и playerStoreCurrentTime не равен 0 (например, если трек был перемотан в UI до начала воспроизведения)
+    const isSeeking =
+      Math.abs(playerStoreCurrentTime - currentTrackTime) > 0.5 && // Значительное расхождение
+      playerStoreCurrentTime !== lastPlayerStoreCurrentTimeRef.current; // И это не просто обновление времени с анимацией
+    // (playerStoreCurrentTime изменился извне)
+
+    lastPlayerStoreCurrentTimeRef.current = playerStoreCurrentTime; // Обновляем реф
+
     const managePlayback = async () => {
       if (isPlaying) {
-        const expectedCurrentTime = Math.floor(
-          offsetTimeRef.current +
-            (audioContext.currentTime - startTimeRef.current)
-        );
-        const isSeeking =
-          Math.abs(playerStoreCurrentTime - expectedCurrentTime) > 1 &&
-          playerStoreCurrentTime >= 0;
-
         if (isSeeking || !instrumentalSourceRef.current) {
+          // Останавливаем текущие источники, если они есть
           if (instrumentalSourceRef.current) {
             instrumentalSourceRef.current.stop();
             instrumentalSourceRef.current.disconnect();
@@ -340,9 +362,10 @@ const AudioPlayer = () => {
             newVocalsSource.connect(vocalsGainNodeRef.current);
             vocalsSourceRef.current = newVocalsSource;
           } else if (vocalsGainNodeRef.current) {
-            vocalsGainNodeRef.current.gain.value = 0;
+            vocalsGainNodeRef.current.gain.value = 0; // Убедиться, что вокал отключен, если нет URL
           }
 
+          // Начинаем воспроизведение с нового offsetTime
           newInstrumentalSource.start(
             audioContext.currentTime,
             offsetTimeRef.current
@@ -373,6 +396,7 @@ const AudioPlayer = () => {
               }
 
               if (repeatMode === "one") {
+                // Если режим повтора "один", то начинаем заново с 0
                 usePlayerStore.setState({ isPlaying: true, currentTime: 0 });
               } else if (repeatMode === "all") {
                 playNext();
@@ -412,7 +436,7 @@ const AudioPlayer = () => {
     managePlayback();
   }, [
     isPlaying,
-    playerStoreCurrentTime,
+    playerStoreCurrentTime, // Теперь это зависимость, чтобы реагировать на внешнюю перемотку
     currentSong,
     isAudioContextReady,
     playNext,
@@ -471,6 +495,9 @@ const AudioPlayer = () => {
           newTime <= duration! &&
           Math.abs(usePlayerStore.getState().currentTime - newTime) > 0.5
         ) {
+          // Обновляем currentTime в сторе, только если оно значительно отличается
+          // от вычисленного времени, чтобы не перезаписывать currentTime
+          // слишком часто, когда пользователь делает точную перемотку вручную
           if (usePlayerStore.getState().currentTime !== newTime) {
             setCurrentTime(newTime);
           }

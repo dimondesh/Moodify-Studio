@@ -39,6 +39,7 @@ interface PlayerStore {
   setDuration: (duration: number) => void;
   setIsDesktopLyricsOpen: (isOpen: boolean) => void; // <-- НОВОЕ действие
   setIsMobileLyricsFullScreen: (isOpen: boolean) => void; // <-- НОВОЕ действие
+  seekToTime: (time: number) => void; // <--- НОВОЕ ДЕЙСТВИЕ ДЛЯ ПЕРЕМОТКИ
 }
 
 // Вспомогательная функция для перемешивания массива индексов
@@ -434,6 +435,14 @@ export const usePlayerStore = create<PlayerStore>()(
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
         console.log("Setting isMobileLyricsFullScreen to:", isOpen);
         set({ isMobileLyricsFullScreen: isOpen });
+      },
+      // <--- НОВОЕ ДЕЙСТВИЕ seekToTime
+      seekToTime: (time: number) => {
+        set((state) => {
+          // Убедимся, что время находится в допустимом диапазоне [0, duration]
+          const newTime = Math.max(0, Math.min(time, state.duration));
+          return { currentTime: newTime, isPlaying: true }; // Начинаем воспроизведение при перемотке
+        });
       },
     }),
 
