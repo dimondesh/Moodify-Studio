@@ -165,7 +165,7 @@ const SectionGrid = ({
                   <img
                     src={song.imageUrl || "/default-song-cover.png"}
                     alt={song.title || "No title"}
-                    className="w-full h-full object-contain md:object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
                         "/default-song-cover.png";
