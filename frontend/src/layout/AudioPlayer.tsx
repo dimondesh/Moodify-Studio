@@ -398,10 +398,9 @@ const AudioPlayer = () => {
               if (repeatMode === "one") {
                 // Если режим повтора "один", то начинаем заново с 0
                 usePlayerStore.setState({ isPlaying: true, currentTime: 0 });
-              } else if (repeatMode === "all") {
-                playNext();
               } else {
-                usePlayerStore.setState({ isPlaying: false, currentTime: 0 });
+                // Упрощенная логика: playNext() сам обрабатывает все случаи, включая "off" и "all"
+                playNext();
               }
             }
           };
