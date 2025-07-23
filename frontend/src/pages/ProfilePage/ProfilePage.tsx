@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Создайте новую папку и файл: frontend/src/pages/ProfilePage/ProfilePage.tsx
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../stores/useAuthStore";
-import type { User, Playlist } from "../../types";
+import type { User } from "../../types";
 
 import {
   Avatar,
