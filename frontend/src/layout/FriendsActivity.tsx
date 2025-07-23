@@ -119,6 +119,7 @@ const FriendsActivity = () => {
                         <AvatarImage
                           src={userObj.imageUrl || "/default-avatar.png"}
                           alt={userObj.fullName}
+                          className="object-cover"
                         />
                         <AvatarFallback>
                           {userObj.fullName?.[0] || "U"}

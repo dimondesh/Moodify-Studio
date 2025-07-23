@@ -7,6 +7,7 @@ import SongGrid from "./SongGrid";
 import PlaylistGrid from "./PlaylistGrid";
 import ArtistGrid from "./ArtistGrid";
 import useDebounce from "../../hooks/useDebounce"; // Импортируем useDebounce
+import UserGrid from "./UserGrid";
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,17 @@ const SearchPage = () => {
   // Дебаунсированное значение для отправки запросов
   const debouncedInputSearchTerm = useDebounce(inputSearchTerm, 500); // Задержка 500 мс
 
-  const { query, songs, albums, playlists, artists, loading, error, search } =
-    useSearchStore();
+  const {
+    query,
+    songs,
+    albums,
+    playlists,
+    artists,
+    users,
+    loading,
+    error,
+    search,
+  } = useSearchStore();
 
   // Эффект для синхронизации поля ввода с параметром URL
   // Теперь просто обновляем inputSearchTerm при изменении queryParam
@@ -60,7 +70,8 @@ const SearchPage = () => {
             songs.length === 0 &&
             albums.length === 0 &&
             playlists.length === 0 &&
-            artists.length === 0 && (
+            artists.length === 0 &&
+            users.length === 0 && ( // <-- Добавляем users
               <p className="text-zinc-400">No results found.</p>
             )}
           {!loading &&
@@ -68,7 +79,8 @@ const SearchPage = () => {
             (songs.length > 0 ||
               albums.length > 0 ||
               playlists.length > 0 ||
-              artists.length > 0) && (
+              artists.length > 0 ||
+              users.length > 0) && (
               <>
                 {artists.length > 0 && (
                   <ArtistGrid
@@ -93,6 +105,10 @@ const SearchPage = () => {
                     playlists={playlists}
                     isLoading={loading}
                   />
+                )}
+                {/* --- НОВЫЙ КОМПОНЕНТ --- */}
+                {users.length > 0 && (
+                  <UserGrid title="Users" users={users} isLoading={loading} />
                 )}
               </>
             )}

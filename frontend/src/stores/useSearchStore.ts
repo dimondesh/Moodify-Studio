@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { Playlist, Song, Album, Artist } from "../types"; // Импортируем Artist
+import { Playlist, Song, Album, Artist, User } from "../types"; // Импортируем Artist
 
 // Обновленный интерфейс SearchState для включения artists
 interface SearchState {
@@ -9,6 +9,8 @@ interface SearchState {
   songs: Song[];
   albums: Album[];
   playlists: Playlist[];
+  users: User[]; // <-- НОВОЕ ПОЛЕ
+
   artists: Artist[]; // Добавляем артистов
   loading: boolean;
   error: string | null;
@@ -22,6 +24,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   albums: [],
   playlists: [],
   artists: [], // Инициализируем пустое поле для артистов
+  users: [], // <-- НОВОЕ ПОЛЕ
+
   loading: false,
   error: null,
 
@@ -34,6 +38,8 @@ export const useSearchStore = create<SearchState>((set) => ({
         albums: [],
         playlists: [],
         artists: [], // Очищаем и артистов
+        users: [], // <-- Очищаем
+
         loading: false,
         error: null,
         query: "",
@@ -50,6 +56,8 @@ export const useSearchStore = create<SearchState>((set) => ({
         albums: res.data.albums || [],
         playlists: res.data.playlists || [],
         artists: res.data.artists || [], // Обновляем состояние артистов
+        users: res.data.users || [], // <-- Обновляем
+
         loading: false,
       });
     } catch (e: any) {

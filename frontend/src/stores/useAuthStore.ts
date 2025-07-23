@@ -13,6 +13,11 @@ interface AuthUser {
   isAdmin?: boolean;
 }
 
+interface UpdateProfileData {
+  fullName?: string;
+  imageUrl?: File | null;
+}
+
 interface FirebaseUserDataForSync {
   uid: string;
   email: string;
@@ -32,6 +37,7 @@ interface AuthStore {
   fetchUser: (firebaseUid: string) => Promise<void>;
   logout: () => Promise<void>;
   reset: () => void;
+  updateUserProfile: (data: UpdateProfileData) => Promise<void>; // <-- ДОБАВЛЕНО
 }
 
 const getAuthHeaders = async () => {
@@ -54,6 +60,52 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
 
       setUser: (user) => set({ user }),
+
+      updateUserProfile: async (data: UpdateProfileData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const formData = new FormData();
+          if (data.fullName) {
+            formData.append("fullName", data.fullName);
+          }
+          if (data.imageUrl) {
+            formData.append("imageUrl", data.imageUrl);
+          }
+
+          const authHeaders = await getAuthHeaders();
+
+          // --- ИСПРАВЛЕНИЕ ОШИБКИ №2 ---
+          // Мы создаем один объект config, где все заголовки лежат внутри `headers`
+          const config = {
+            headers: {
+              ...authHeaders.headers, // Распространяем заголовки авторизации
+              "Content-Type": "multipart/form-data", // Добавляем Content-Type
+            },
+          };
+
+          const response = await axiosInstance.put(
+            "/users/me",
+            formData,
+            config
+          );
+
+          const updatedUser = response.data.user;
+
+          set((state) => ({
+            user: state.user ? { ...state.user, ...updatedUser } : updatedUser,
+            isLoading: false,
+          }));
+
+          console.log("AuthStore: User profile updated.");
+        } catch (error: any) {
+          console.error("AuthStore: Update profile error:", error);
+          set({
+            error: error.response?.data?.message || "Failed to update profile",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
 
       syncUser: async (userData: FirebaseUserDataForSync) => {
         set({ isLoading: true, error: null });

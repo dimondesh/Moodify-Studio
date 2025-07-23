@@ -1,3 +1,5 @@
+// backend/src/controller/auth.controller.js
+
 import { User } from "../models/user.model.js";
 import { firebaseAdmin } from "../lib/firebase.js";
 
@@ -17,40 +19,43 @@ export const syncUserWithDb = async (req, res) => {
       return res.status(400).json({ error: "Token is missing UID or email" });
     }
 
-    const updatedUser = await User.findOneAndUpdate(
-      { firebaseUid: uid },
-      {
-        email: email,
-        fullName: name || email,
-        imageUrl: picture || null,
-      },
-      {
-        new: true,
-        upsert: true,
-        setDefaultsOnInsert: true,
-      }
-    );
+    // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ЛОГИКИ ---
 
-    if (updatedUser) {
+    // 1. Ищем пользователя в нашей БД
+    let user = await User.findOne({ firebaseUid: uid });
+
+    // 2. Если пользователя нет, создаем его
+    if (!user) {
+      console.log(`User with firebaseUid ${uid} not found. Creating new user.`);
+      user = new User({
+        firebaseUid: uid,
+        email: email,
+        fullName: name || email.split("@")[0], // Используем name или часть email как имя по умолчанию
+        imageUrl: picture || null, // Картинка по умолчанию
+      });
+      await user.save();
       console.log(
-        `✅ User synced: ${updatedUser.email} with MongoDB ID: ${updatedUser._id}`
+        `✅ New user created: ${user.email} with MongoDB ID: ${user._id}`
       );
     } else {
-      console.error("Failed to find or create user with findOneAndUpdate");
-      return res.status(500).json({ error: "Failed to sync user" });
+      console.log(
+        `✅ User already exists, returning data from MongoDB for ${user.email}`
+      );
     }
 
+    // 3. Отправляем на фронтенд актуальные данные из НАШЕЙ базы данных
     res.status(200).json({
       message: "User synced successfully",
       user: {
-        _id: updatedUser._id,
-        firebaseUid: updatedUser.firebaseUid,
-        email: updatedUser.email,
-        fullName: updatedUser.fullName,
-        imageUrl: updatedUser.imageUrl,
+        _id: user._id,
+        firebaseUid: user.firebaseUid,
+        email: user.email,
+        fullName: user.fullName,
+        imageUrl: user.imageUrl,
       },
     });
   } catch (error) {
+    // ... обработка ошибок остается прежней ...
     console.error("❌ User sync error caught on backend:", error);
     if (error.code === "auth/id-token-expired") {
       return res

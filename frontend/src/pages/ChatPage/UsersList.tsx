@@ -90,6 +90,7 @@ const UsersList = ({
                     <Avatar className="size-10">
                       <AvatarImage
                         src={user.imageUrl || "/default-avatar.png"}
+                        className="object-cover"
                       />
                       <AvatarFallback>
                         {user.fullName?.[0] || "U"}

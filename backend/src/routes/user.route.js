@@ -11,6 +11,9 @@ import {
   followUser,
   updateUserProfile,
   getMutualFollowers,
+  getFollowers,
+  getFollowing,
+  getPublicPlaylists,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -35,5 +38,13 @@ router.put("/me", protectRoute, updateUserProfile);
 
 // Старый роут для получения ВСЕХ пользователей (можно оставить для админки или удалить)
 router.get("/", protectRoute, getAllUsers);
+
+router.get("/:userId/followers", protectRoute, getFollowers);
+
+// Получить подписки пользователя (юзеры + артисты)
+router.get("/:userId/following", protectRoute, getFollowing);
+
+// Получить публичные плейлисты пользователя
+router.get("/:userId/playlists", protectRoute, getPublicPlaylists);
 
 export default router;

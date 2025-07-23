@@ -19,6 +19,7 @@ import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
 import ArtistPage from "./pages/ArtistPage/ArtistPage";
 import SettingsPage from "./pages/SettingsPage/SettingsPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import DisplayListPage from "./pages/DisplayListPage/DisplayListPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -65,6 +66,8 @@ function App() {
           {/* Новый маршрут */}
           <Route path="/artists/:id" element={<ArtistPage />} />
           <Route path="/users/:userId" element={<ProfilePage />} />
+          <Route path="/list" element={<DisplayListPage />} />{" "}
+          {/* <-- НОВЫЙ РОУТ */}
         </Route>
       </Routes>
       <Toaster />

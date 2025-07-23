@@ -91,6 +91,8 @@ export interface SearchState {
   albums: Album[];
   playlists: Playlist[];
   artists: Artist[]; // <-- ДОБАВЛЕНО: Артисты в результатах поиска
+  users: User[]; // <-- НОВОЕ ПОЛЕ
+
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;

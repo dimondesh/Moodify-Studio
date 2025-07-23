@@ -63,7 +63,7 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
         {albumsToShow.map((album) => (
           <div
             key={album._id}
-            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
+            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer group"
             onClick={() => navigate(`/albums/${album._id}`)}
           >
             <div className="relative mb-4">
@@ -71,7 +71,7 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
                 <img
                   src={album.imageUrl || "/default-album-cover.png"}
                   alt={album.title}
-                  className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
+                  className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/default-album-cover.png";

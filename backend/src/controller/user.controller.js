@@ -1,6 +1,8 @@
 import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
 import { v2 as cloudinary } from "cloudinary"; // Для загрузки фото
+import { Library } from "../models/library.model.js"; // <-- Убедитесь, что этот импорт есть
+import { firebaseAdmin } from "../lib/firebase.js"; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -54,23 +56,58 @@ export const getUserProfile = async (req, res, next) => {
     const profileUser = await User.findById(userId)
       .populate({
         path: "playlists",
-        match: { isPublic: true }, // Показываем только публичные плейлисты
-        select: "title imageUrl isPublic",
+        match: { isPublic: true },
+        // --- ИЗМЕНЕНИЕ: Добавляем populate для owner ---
+        populate: {
+          path: "owner",
+          model: "User",
+          select: "fullName", // Получаем только имя владельца
+        },
+        select: "title imageUrl isPublic owner", // Убеждаемся, что owner выбран
       })
-      .select("-email -firebaseUid"); // Не отдаем чувствительные данные
+      .select("-email -firebaseUid");
+
+    const library = await Library.findOne({ userId: userId }).lean();
 
     if (!profileUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Добавим счетчики
     const profileData = profileUser.toObject();
     profileData.followersCount = profileUser.followers.length;
     profileData.followingUsersCount = profileUser.followingUsers.length;
-    profileData.followingArtistsCount = profileUser.followingArtists.length;
+    profileData.followingArtistsCount = library?.followedArtists?.length || 0;
     profileData.publicPlaylistsCount = profileUser.playlists.length;
 
     res.status(200).json(profileData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFollowers = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .populate({
+        path: "followers",
+        select: "fullName imageUrl",
+      })
+      .select("followers");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // --- ИЗМЕНЕНИЕ: Приводим данные к универсальному виду { name, imageUrl, type } ---
+    const followers = user.followers.map((f) => ({
+      _id: f._id,
+      name: f.fullName, // Переименовываем fullName в name
+      imageUrl: f.imageUrl,
+      type: "user",
+    }));
+
+    res.status(200).json({ items: followers });
   } catch (error) {
     next(error);
   }
@@ -126,10 +163,14 @@ export const updateUserProfile = async (req, res, next) => {
   try {
     const { fullName } = req.body;
     const userId = req.user.id;
+    const firebaseUid = req.user.firebaseUid; // Мы получаем его из protectRoute
 
-    const updateData = {};
+    const updateDataMongo = {}; // Данные для обновления в MongoDB
+    const updateDataFirebase = {}; // Данные для обновления в Firebase
+
     if (fullName) {
-      updateData.fullName = fullName;
+      updateDataMongo.fullName = fullName;
+      updateDataFirebase.displayName = fullName;
     }
 
     if (req.files && req.files.imageUrl) {
@@ -138,12 +179,22 @@ export const updateUserProfile = async (req, res, next) => {
         folder: "profile_pictures",
         public_id: `${userId}_${Date.now()}`,
       });
-      updateData.imageUrl = result.secure_url;
+      updateDataMongo.imageUrl = result.secure_url;
+      updateDataFirebase.photoURL = result.secure_url;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+    // Обновляем пользователя в MongoDB
+    const updatedUser = await User.findByIdAndUpdate(userId, updateDataMongo, {
       new: true,
-    });
+    }).select(
+      "-email -firebaseUid -followers -followingUsers -followingArtists"
+    ); // Отправляем только нужные данные
+
+    // --- НОВОЕ: Обновляем пользователя в Firebase Auth ---
+    if (Object.keys(updateDataFirebase).length > 0) {
+      await firebaseAdmin.auth().updateUser(firebaseUid, updateDataFirebase);
+      console.log(`Firebase user ${firebaseUid} updated.`);
+    }
 
     res
       .status(200)
@@ -174,6 +225,86 @@ export const getMutualFollowers = async (req, res, next) => {
     );
 
     res.status(200).json({ users: mutuals });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFollowing = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // 1. Получаем пользователей, на которых подписан
+    const user = await User.findById(userId)
+      .populate({
+        path: "followingUsers",
+        select: "fullName imageUrl",
+      })
+      .select("followingUsers");
+
+    // 2. Получаем артистов, на которых подписан
+    const library = await Library.findOne({ userId })
+      .populate({
+        path: "followedArtists.artistId",
+        model: "Artist",
+        select: "name imageUrl",
+      })
+      .select("followedArtists");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 3. Форматируем и объединяем списки
+    const followingUsers = user.followingUsers.map((u) => ({
+      _id: u._id,
+      name: u.fullName,
+      imageUrl: u.imageUrl,
+      type: "user",
+    }));
+
+    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Добавляем проверку на null ---
+    const followedArtists =
+      library?.followedArtists
+        .filter((item) => item && item.artistId) // Отфильтровываем элементы, где артист был удален (artistId is null)
+        .map((a) => ({
+          _id: a.artistId._id, // Теперь это безопасно
+          name: a.artistId.name,
+          imageUrl: a.artistId.imageUrl,
+          type: "artist",
+        })) || [];
+
+    const combinedFollowing = [...followingUsers, ...followedArtists];
+
+    res.status(200).json({ items: combinedFollowing });
+  } catch (error) {
+    // Важно, чтобы глобальный обработчик ошибок ловил такие проблемы
+    console.error("Error in getFollowing:", error);
+    next(error);
+  }
+};
+
+export const getPublicPlaylists = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .populate({
+        path: "playlists",
+        match: { isPublic: true },
+        select: "title imageUrl owner",
+      })
+      .select("playlists");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const playlists = user.playlists.map((p) => ({
+      ...p.toObject(),
+      type: "playlist",
+    }));
+
+    res.status(200).json({ items: playlists });
   } catch (error) {
     next(error);
   }
