@@ -19,7 +19,7 @@ interface ChatStore {
   messages: Message[];
   selectedUser: User | null;
 
-  fetchUsers: () => Promise<void>;
+  fetchUsers: () => Promise<void>; // Переименуем в fetchMutuals или изменим реализацию
 
   initSocket: (mongoDbUserId: string) => Promise<void>;
   disconnectSocket: () => void;
@@ -74,8 +74,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         );
       }
       const token = await currentUser.getIdToken();
-
-      const response = await axiosInstance.get("/users", {
+      const response = await axiosInstance.get("/users/mutuals", {
         headers: { Authorization: `Bearer ${token}` },
       });
       set({

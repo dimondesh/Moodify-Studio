@@ -62,6 +62,8 @@ export interface Message {
   updatedAt: string;
 }
 
+// frontend/src/types/index.ts
+
 export interface User {
   _id: string;
   firebaseUid: string;
@@ -70,6 +72,17 @@ export interface User {
   email: string;
   isAdmin?: boolean;
   playlists?: Playlist[];
+
+  // --- НОВЫЕ ПОЛЯ ---
+  followers: string[]; // Массивы ID
+  followingUsers: string[];
+  followingArtists: string[];
+
+  // --- НОВЫЕ СЧЕТЧИКИ (приходят с бэкенда для страницы профиля) ---
+  followersCount?: number;
+  followingUsersCount?: number;
+  followingArtistsCount?: number;
+  publicPlaylistsCount?: number;
 }
 
 export interface SearchState {

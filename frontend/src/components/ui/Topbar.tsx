@@ -1,7 +1,13 @@
 // src/components/ui/Topbar.tsx
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import { LayoutDashboardIcon, Search, LogOut, Settings } from "lucide-react"; // Добавили Settings
+import {
+  LayoutDashboardIcon,
+  Search,
+  LogOut,
+  Settings,
+  UserIcon,
+} from "lucide-react"; // Добавили Settings
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
 import { Button, buttonVariants } from "./button";
@@ -23,7 +29,7 @@ const Topbar = () => {
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const { isAdmin } = useAuthStore();
+  const { isAdmin, user: authUser } = useAuthStore();
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
@@ -179,6 +185,15 @@ const Topbar = () => {
               )}
               <DropdownMenuSeparator className="bg-zinc-700" />{" "}
               {/* Separator */}
+              <DropdownMenuItem
+                asChild
+                className="p-2 cursor-pointer hover:bg-zinc-700"
+              >
+                <Link to={`/users/${authUser?.id}`}>
+                  <UserIcon className="w-4 h-4 mr-2" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 asChild
                 className="p-2 cursor-pointer hover:bg-zinc-700"
