@@ -18,6 +18,11 @@ const albumSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    imagePublicId: {
+      type: String,
+      // Мы не делаем его required, чтобы не сломать старые записи,
+      // но новый код будет его всегда заполнять.
+    },
     releaseYear: {
       type: Number,
       required: false,

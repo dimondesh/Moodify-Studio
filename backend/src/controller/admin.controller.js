@@ -8,6 +8,7 @@ import {
   deleteFromCloudinary,
 } from "../lib/deleteFromCloudinary.js";
 import * as mm from "music-metadata";
+import { getTagsFromAI } from "../lib/ai.service.js"; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
 
 // --- НОВЫЕ ИМПОРТЫ ДЛЯ АВТОМАТИЗАЦИИ АЛЬБОМА ---
 import { getAlbumDataFromSpotify } from "../lib/spotifyService.js"; // Для данных Spotify
@@ -1019,10 +1020,9 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         songArtistIds.length > 0
           ? (await Artist.findById(songArtistIds[0])).name
           : "";
-      const { genreIds, moodIds } = await getGenresAndMoodsForTrack(
+      const { genreIds, moodIds } = await getTagsFromAI(
         primaryArtistForTags,
-        songName,
-        album.title // <-- ДОБАВЛЕНО НАЗВАНИЕ АЛЬБОМА
+        songName
       );
       // 4. Продолжаем остальную логику
       const normalizedSpotifySongName = songName
