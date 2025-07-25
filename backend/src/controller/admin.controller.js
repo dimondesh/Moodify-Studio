@@ -729,27 +729,38 @@ export const deleteArtist = async (req, res, next) => {
 // --- АВТОМАТИЧЕСКАЯ ЗАГРУЗКА АЛЬБОМА ---
 
 export const uploadFullAlbumAuto = async (req, res, next) => {
+  console.log("🚀 Reached /admin/albums/upload-full-album route - AUTO UPLOAD");
+
+  if (!req.user || !req.user.isAdmin) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Admin privileges required." });
+  }
+
+  const { spotifyAlbumUrl } = req.body;
+  const albumAudioZip = req.files ? req.files.albumAudioZip : null;
+
+  if (!spotifyAlbumUrl || !albumAudioZip) {
+    return res.status(400).json({
+      success: false,
+      message: "Spotify URL and ZIP file are required.",
+    });
+  }
+
   const tempUnzipDir = path.join(
     process.cwd(),
     "temp_unzip_albums",
     Date.now().toString()
   );
+
   try {
-    if (!req.user || !req.user.isAdmin)
-      return res.status(403).json({ message: "Access denied." });
-
-    const { spotifyAlbumUrl } = req.body;
-    const albumAudioZip = req.files ? req.files.albumAudioZip : null;
-    if (!spotifyAlbumUrl || !albumAudioZip)
-      return res
-        .status(400)
-        .json({ message: "Spotify URL and ZIP file are required." });
-
     const spotifyAlbumData = await getAlbumDataFromSpotify(spotifyAlbumUrl);
-    if (!spotifyAlbumData)
-      return res
-        .status(500)
-        .json({ message: "Could not get album data from Spotify." });
+    if (!spotifyAlbumData) {
+      return res.status(500).json({
+        success: false,
+        message: "Could not get album data from Spotify.",
+      });
+    }
 
     const extractedFilePaths = await extractZip(
       albumAudioZip.tempFilePath,
@@ -768,35 +779,40 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       }
     }
 
-    const albumArtistIds = await Promise.all(
-      (spotifyAlbumData.artists || []).map(async (spotifyArtist) => {
-        let artist = await Artist.findOne({ name: spotifyArtist.name });
-        if (!artist) {
-          const imageUpload = await uploadToCloudinary(
-            spotifyArtist.images[0]?.url,
-            "artists"
-          );
-          artist = new Artist({
-            name: spotifyArtist.name,
-            imageUrl: imageUpload.url,
-            imagePublicId: imageUpload.publicId,
-          });
-          await artist.save();
-        }
-        return artist._id;
-      })
-    );
+    const albumArtistIds = [];
+    for (const spotifyArtist of spotifyAlbumData.artists || []) {
+      let artist = await Artist.findOne({ name: spotifyArtist.name });
+      if (!artist) {
+        const artistImageUrl =
+          spotifyArtist.images && spotifyArtist.images.length > 0
+            ? spotifyArtist.images[0].url
+            : "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
 
-    const albumImageUpload = await uploadToCloudinary(
-      spotifyAlbumData.images[0]?.url,
-      "albums"
-    );
+        const imageUpload = await uploadToCloudinary(artistImageUrl, "artists");
+
+        artist = new Artist({
+          name: spotifyArtist.name,
+          imageUrl: imageUpload.url,
+          imagePublicId: imageUpload.publicId,
+          bannerUrl: imageUpload.url,
+          bannerPublicId: imageUpload.publicId,
+        });
+        await artist.save();
+      }
+      albumArtistIds.push(artist._id);
+    }
+
     const albumType =
       spotifyAlbumData.total_tracks === 1
         ? "Single"
         : spotifyAlbumData.total_tracks <= 6
         ? "EP"
         : "Album";
+
+    const albumImageUpload = await uploadToCloudinary(
+      spotifyAlbumData.images[0]?.url,
+      "albums"
+    );
 
     const album = new Album({
       title: spotifyAlbumData.name,
@@ -807,15 +823,35 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         ? parseInt(spotifyAlbumData.release_date.split("-")[0])
         : null,
       type: albumType,
+      songs: [],
     });
     await album.save();
+    console.log(`[AdminController] Альбом создан: ${album.title}`);
     await updateArtistsContent(albumArtistIds, album._id, "albums");
 
+    const createdSongs = [];
     const tracksToProcess =
       spotifyAlbumData.tracks.items || spotifyAlbumData.tracks;
+
     for (const spotifyTrack of tracksToProcess) {
       const songName = spotifyTrack.name;
       const durationMs = spotifyTrack.duration_ms;
+      console.log(`[AdminController] Обработка трека: ${songName}`);
+
+      const songArtistIds = [];
+      for (const spotifyTrackArtist of spotifyTrack.artists || []) {
+        let artist = await Artist.findOne({ name: spotifyTrackArtist.name });
+        // Артисты уже должны быть созданы на предыдущем шаге, здесь просто находим их
+        if (artist) songArtistIds.push(artist._id);
+      }
+      if (songArtistIds.length === 0) songArtistIds.push(...albumArtistIds);
+
+      const primaryArtistName = (await Artist.findById(songArtistIds[0])).name;
+      const { genreIds, moodIds } = await getTagsFromAI(
+        primaryArtistName,
+        songName
+      );
+
       const normalizedSpotifySongName = songName
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "");
@@ -823,52 +859,82 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
       let vocalsUpload = { url: null, publicId: null };
       let instrumentalUpload = { url: null, publicId: null };
-      if (filesForTrack?.vocalsPath)
-        vocalsUpload = await uploadToCloudinary(
-          { tempFilePath: filesForTrack.vocalsPath },
-          "songs/vocals"
-        );
-      if (filesForTrack?.instrumentalPath)
-        instrumentalUpload = await uploadToCloudinary(
-          { tempFilePath: filesForTrack.instrumentalPath },
-          "songs/instrumentals"
-        );
+      let lrcText = ""; // <--- ВОЗВРАЩАЕМ lrcText
 
-      const primaryArtistName = (await Artist.findById(albumArtistIds[0])).name;
-      const { genreIds, moodIds } = await getTagsFromAI(
-        primaryArtistName,
-        songName
-      );
+      if (filesForTrack) {
+        if (filesForTrack.vocalsPath) {
+          vocalsUpload = await uploadToCloudinary(
+            filesForTrack.vocalsPath,
+            "songs/vocals"
+          );
+        }
+        if (filesForTrack.instrumentalPath) {
+          instrumentalUpload = await uploadToCloudinary(
+            filesForTrack.instrumentalPath,
+            "songs/instrumentals"
+          );
+        }
+        // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: ВОЗВРАЩАЕМ ЛОГИКУ ДЛЯ LRC-ФАЙЛОВ ---
+        if (filesForTrack.lrcPath) {
+          try {
+            lrcText = await fs.readFile(filesForTrack.lrcPath, "utf8");
+            console.log(
+              `[AdminController] LRC-текст загружен из ZIP для трека: ${songName}`
+            );
+          } catch (readError) {
+            console.error(
+              `[AdminController] Ошибка чтения LRC-файла из ZIP для ${songName}:`,
+              readError
+            );
+          }
+        }
+      }
+
+      // --- ВОЗВРАЩАЕМ ЛОГИКУ ПОИСКА ТЕКСТА В LRC-LIB, ЕСЛИ ЕГО НЕ БЫЛО В ZIP ---
+      if (!lrcText) {
+        lrcText = await getLrcLyricsFromLrclib({
+          artistName: primaryArtistName,
+          songName: songName,
+          albumName: album.title,
+          songDuration: durationMs,
+        });
+      }
 
       const song = new Song({
         title: songName,
-        artist: albumArtistIds, // Упрощаем, используя артистов альбома
+        artist: songArtistIds,
         albumId: album._id,
         vocalsUrl: vocalsUpload.url,
         vocalsPublicId: vocalsUpload.publicId,
         instrumentalUrl: instrumentalUpload.url,
         instrumentalPublicId: instrumentalUpload.publicId,
-        lyrics: "", // Логика LRC остается прежней
+        lyrics: lrcText || "", // <-- ИСПОЛЬЗУЕМ НАЙДЕННЫЙ ТЕКСТ
         duration: Math.round(durationMs / 1000),
-        imageUrl: album.imageUrl, // Используем обложку альбома
+        imageUrl: album.imageUrl,
         genres: genreIds,
         moods: moodIds,
       });
+
       await song.save();
-      album.songs.push(song._id);
+      createdSongs.push(song);
+
+      await Album.findByIdAndUpdate(album._id, { $push: { songs: song._id } });
+      await updateArtistsContent(songArtistIds, song._id, "songs");
     }
-    await album.save();
-    res
-      .status(200)
-      .json({ success: true, message: "Album uploaded successfully", album });
-  } catch (error) {
-    console.error(
-      "[AdminController] Critical error during auto upload:",
-      error
-    );
-    next(error);
-  } finally {
+
+    console.log(`[AdminController] Запускаем очистку: ${tempUnzipDir}`);
     await cleanUpTempDir(tempUnzipDir);
+
+    res.status(200).json({
+      success: true,
+      message: `Альбом "${album.title}" (${album.type}) и ${createdSongs.length} треков успешно добавлены!`,
+      album,
+      songs: createdSongs.map((s) => ({ title: s.title, id: s._id })),
+    });
+  } catch (error) {
+    console.error("[AdminController] Критическая ошибка:", error);
+    await cleanUpTempDir(tempUnzipDir);
+    next(error);
   }
 };
 
