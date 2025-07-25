@@ -149,11 +149,11 @@ const ArtistPage = () => {
       await toggleArtistFollow(artist._id);
       toast.success(
         isArtistFollowed(artist._id)
-          ? `Вы отписались от ${artist.name}`
-          : `Вы подписались на ${artist.name}`
+          ? `Now you are following ${artist.name}`
+          : `You unfollowed ${artist.name}`
       );
     } catch (e) {
-      toast.error("Не удалось изменить статус подписки.");
+      toast.error("Failed to change follow status");
       console.error("Error toggling artist follow:", e);
     }
   };

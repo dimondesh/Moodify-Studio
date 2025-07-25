@@ -70,7 +70,28 @@ function App() {
           {/* <-- НОВЫЙ РОУТ */}
         </Route>
       </Routes>
-      <Toaster />
+      <Toaster
+        toastOptions={{
+          iconTheme: {
+            primary: "#805ad5",
+            secondary: "black",
+          },
+          success: {
+            style: {
+              background: "#27272a",
+              borderRadius: "20px",
+              color: "#BAC4C8",
+            },
+          },
+          error: {
+            style: {
+              background: "#27272a",
+              borderRadius: "20px",
+              color: "#BAC4C8",
+            },
+          },
+        }}
+      />
     </>
   );
 }
