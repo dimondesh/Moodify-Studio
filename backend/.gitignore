@@ -2,3 +2,4 @@ node_modules/
 firebaseServiceKey.json
 .env
 temp
+plan.txt
