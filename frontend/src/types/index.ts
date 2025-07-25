@@ -11,7 +11,15 @@ export interface Artist {
   createdAt: string;
   updatedAt: string;
 }
+export interface Genre {
+  _id: string;
+  name: string;
+}
 
+export interface Mood {
+  _id: string;
+  name: string;
+}
 export interface Song {
   _id: string;
   title: string;
@@ -24,6 +32,8 @@ export interface Song {
   vocalsUrl?: string; // <-- НОВОЕ ПОЛЕ: Опциональная вокальная дорожка
   duration: number; // in seconds
   playCount: number; // <-- НОВОЕ ПОЛЕ
+  genres: Genre[]; // или string[] в зависимости от populate
+  moods: Mood[];
   createdAt: string;
   updatedAt: string;
   albumTitle?: string;

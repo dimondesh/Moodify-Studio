@@ -10,6 +10,8 @@ import {
   updateArtist,
   deleteArtist,
   uploadFullAlbumAuto,
+  getGenres, // <-- НОВЫЙ
+  getMoods,
 } from "../controller/admin.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 // import upload from "../middleware/multerUpload.js"; // <-- ЭТО УЖЕ БЫЛО УДАЛЕНО
@@ -36,5 +38,8 @@ router.post("/albums/upload-full-album", uploadFullAlbumAuto); // <-- НОВЫЙ
 router.post("/artists", createArtist);
 router.put("/artists/:id", updateArtist);
 router.delete("/artists/:id", deleteArtist);
+
+router.get("/genres", getGenres);
+router.get("/moods", getMoods);
 
 export default router;

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Song, Album, Stats, Artist } from "../types/index"; // Импортируем Artist
+import type { Song, Album, Stats, Artist, Genre, Mood } from "../types/index"; // <-- Импортируем Genre и Mood
 import toast from "react-hot-toast";
 
 interface MusicStore {
@@ -12,6 +12,8 @@ interface MusicStore {
   error: string | null;
   currentAlbum: Album | null;
   featuredSongs: Song[];
+  genres: Genre[]; // <-- НОВОЕ
+  moods: Mood[]; // <-- НОВОЕ
   madeForYouSongs: Song[];
   trendingSongs: Song[];
   stats: Stats;
@@ -20,6 +22,8 @@ interface MusicStore {
   fetchFeaturedSongs: () => Promise<void>;
   fetchMadeForYouSongs: () => Promise<void>;
   fetchTrendingSongs: () => Promise<void>;
+  fetchGenres: () => Promise<void>; // <-- НОВОЕ
+  fetchMoods: () => Promise<void>; // <-- НОВОЕ
   fetchStats: () => Promise<void>;
   fetchSongs: () => Promise<void>;
   fetchArtists: () => Promise<void>; // НОВОЕ: Функция для получения артистов
@@ -36,6 +40,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
   artists: [], // Инициализируем массив артистов
   isLoading: false,
   error: null,
+  genres: [],
+  moods: [],
   currentAlbum: null,
   featuredSongs: [],
   madeForYouSongs: [],
@@ -47,6 +53,23 @@ export const useMusicStore = create<MusicStore>((set) => ({
     totalArtists: 0,
   },
 
+  fetchGenres: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/genres");
+      set({ genres: response.data });
+    } catch (error) {
+      console.error("Failed to fetch genres", error);
+    }
+  },
+
+  fetchMoods: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/moods");
+      set({ moods: response.data });
+    } catch (error) {
+      console.error("Failed to fetch moods", error);
+    }
+  },
   deleteSong: async (id) => {
     set({ isLoading: true, error: null });
     try {

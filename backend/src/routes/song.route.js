@@ -5,15 +5,15 @@ import {
   getFeaturedSongs,
   getMadeForYouSongs,
   getTrendingSongs,
-  incrementPlayCount,
+  recordListen,
 } from "../controller/song.controller.js";
 
 const router = Router();
 
 router.get("/", protectRoute, getAllSongs);
 router.get("/featured", getFeaturedSongs);
-router.get("/made-for-you", getMadeForYouSongs);
+router.get("/made-for-you", protectRoute, getMadeForYouSongs);
 router.get("/trending", getTrendingSongs);
-router.post("/:songId/play", protectRoute, incrementPlayCount); // Защищаем маршрут
+router.post("/:id/listen", protectRoute, recordListen);
 
 export default router;

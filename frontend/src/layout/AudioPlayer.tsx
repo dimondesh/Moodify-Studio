@@ -1,8 +1,12 @@
 // frontend/src/layout/AudioPlayer.tsx
+
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
-import { usePlayCountStore } from "@/stores/usePlayCountStore";
-import { webAudioService } from "../lib/webAudio"; // Импортируем useAudioSettingsStore
+import { webAudioService } from "../lib/webAudio";
+
+// --- ИМПОРТЫ ---
+import { useAuthStore } from "@/stores/useAuthStore";
+import { axiosInstance } from "@/lib/axios";
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -12,7 +16,7 @@ const AudioPlayer = () => {
 
   const instrumentalGainNodeRef = useRef<GainNode | null>(null);
   const vocalsGainNodeRef = useRef<GainNode | null>(null);
-  const masterGainNodeRef = useRef<GainNode | null>(null); // Главный Gain Node для всего микса
+  const masterGainNodeRef = useRef<GainNode | null>(null);
 
   const instrumentalBufferRef = useRef<AudioBuffer | null>(null);
   const vocalsBufferRef = useRef<AudioBuffer | null>(null);
@@ -24,9 +28,7 @@ const AudioPlayer = () => {
   const currentLoadRequestIdRef = useRef<string | null>(null);
 
   const [isAudioContextReady, setIsAudioContextReady] = useState(false);
-  // Состояние для отслеживания актуального состояния AudioContext, но уже не используется для дебага UI
   const [, setAudioContextState] = useState<
-    // Убрал audioContextState из зависимостей рендера
     AudioContextState | "uninitialized"
   >("uninitialized");
 
@@ -39,21 +41,16 @@ const AudioPlayer = () => {
     masterVolume,
     setCurrentTime,
     setDuration,
-    currentTime: playerStoreCurrentTime, // Используем как исходник для перемотки
+    currentTime,
     duration,
   } = usePlayerStore();
 
-  const incrementPlayCount = usePlayCountStore(
-    (state) => state.incrementPlayCount
-  );
+  const { user } = useAuthStore();
+  const listenRecordedRef = useRef(false);
 
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
 
-  const playCountIncrementedRef = useRef(false);
-
-  // Дополнительный реф для отслеживания предыдущего значения playerStoreCurrentTime
-  // чтобы избежать ненужной перемотки при каждом обновлении времени
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
   // --- Эффект 1: Инициализация AudioContext и WebAudioService ---
@@ -69,17 +66,14 @@ const AudioPlayer = () => {
       return;
     }
 
-    // Если AudioContext уже существует и готов, не переинициализируем, но убедимся, что сервис знает о нем
-    // и его состояние не "closed"
     if (
       audioContextRef.current &&
       masterGainNodeRef.current &&
       audioContextRef.current.state !== "closed"
     ) {
-      // Убедимся, что webAudioService инициализирован с текущим контекстом и masterGainNode
       if (
         webAudioService.getAudioContext() !== audioContextRef.current ||
-        webAudioService.getAnalyserNode() === null // Проверяем, что анализатор тоже инициализирован
+        webAudioService.getAnalyserNode() === null
       ) {
         webAudioService.init(
           audioContextRef.current,
@@ -94,29 +88,20 @@ const AudioPlayer = () => {
     try {
       const newAudioContext = new AudioContextClass();
       audioContextRef.current = newAudioContext;
-
       masterGainNodeRef.current = newAudioContext.createGain();
       instrumentalGainNodeRef.current = newAudioContext.createGain();
       vocalsGainNodeRef.current = newAudioContext.createGain();
-
       instrumentalGainNodeRef.current.connect(masterGainNodeRef.current);
       vocalsGainNodeRef.current.connect(masterGainNodeRef.current);
-
-      // Инициализируем WebAudioService с masterGainNode как входом
       webAudioService.init(
         newAudioContext,
-        masterGainNodeRef.current, // Вход для WebAudioService
-        newAudioContext.destination // Выход для WebAudioService
+        masterGainNodeRef.current,
+        newAudioContext.destination
       );
-      // applySettingsToGraph вызывается внутри webAudioService.init после загрузки IR по умолчанию
-
       setIsAudioContextReady(true);
       setAudioContextState(newAudioContext.state);
-
-      // Добавляем слушателя для изменения состояния контекста
       newAudioContext.onstatechange = () => {
         setAudioContextState(newAudioContext.state);
-        // Принудительно применяем настройки, если контекст возобновился
         if (newAudioContext.state === "running") {
           webAudioService.applySettingsToGraph();
         }
@@ -137,7 +122,6 @@ const AudioPlayer = () => {
       }
     };
 
-    // Слушатели событий для возобновления контекста
     document.addEventListener("click", resumeContext, { once: true });
     document.addEventListener("keydown", resumeContext, { once: true });
     document.addEventListener("touchstart", resumeContext, { once: true });
@@ -146,7 +130,6 @@ const AudioPlayer = () => {
       document.removeEventListener("click", resumeContext);
       document.removeEventListener("keydown", resumeContext);
       document.removeEventListener("touchstart", resumeContext);
-
       if (
         audioContextRef.current &&
         audioContextRef.current.state !== "closed"
@@ -164,7 +147,8 @@ const AudioPlayer = () => {
           .catch((err) => console.error("Error closing AudioContext:", err));
       }
     };
-  }, []); // Удалено isAudioContextReady из зависимостей
+  }, []);
+
   // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
     if (!isAudioContextReady) {
@@ -176,9 +160,7 @@ const AudioPlayer = () => {
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") {
-      return;
-    }
+    if (!audioContext || audioContext.state === "closed") return;
 
     if (!currentSong) {
       if (instrumentalSourceRef.current) {
@@ -197,7 +179,7 @@ const AudioPlayer = () => {
       setCurrentTime(0);
       prevCurrentSongIdRef.current = null;
       currentLoadRequestIdRef.current = null;
-      lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при смене песни
+      lastPlayerStoreCurrentTimeRef.current = 0;
       return;
     }
 
@@ -205,15 +187,12 @@ const AudioPlayer = () => {
       prevCurrentSongIdRef.current === currentSong._id &&
       instrumentalBufferRef.current
     ) {
-      // Если песня та же и буфер уже загружен, просто обнуляем время воспроизведения,
-      // если только это не было ручной перемоткой (которая обрабатывается в Эффекте 3)
-      if (Math.abs(playerStoreCurrentTime - 0) < 0.5) {
-        // Проверяем, если playerStoreCurrentTime уже ~0
+      if (Math.abs(currentTime - 0) < 0.5) {
         setCurrentTime(0);
       }
       offsetTimeRef.current = 0;
       startTimeRef.current = 0;
-      lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при смене песни
+      lastPlayerStoreCurrentTimeRef.current = 0;
       return;
     }
 
@@ -251,22 +230,17 @@ const AudioPlayer = () => {
           vocalsUrl ? loadAudio(vocalsUrl) : Promise.resolve(null),
         ]);
 
-        if (currentLoadRequestIdRef.current !== loadRequestId) {
-          return;
-        }
-
+        if (currentLoadRequestIdRef.current !== loadRequestId) return;
         if (!audioContext || audioContext.state === "closed") return;
 
         instrumentalBufferRef.current = instrumentalBuffer;
         vocalsBufferRef.current = vocalsBuffer;
 
-        playCountIncrementedRef.current = false;
-
         setDuration(Math.floor(instrumentalBuffer.duration));
         setCurrentTime(0);
         offsetTimeRef.current = 0;
         startTimeRef.current = 0;
-        lastPlayerStoreCurrentTimeRef.current = 0; // Сброс при загрузке новой песни
+        lastPlayerStoreCurrentTimeRef.current = 0;
       } catch (error) {
         if (currentLoadRequestIdRef.current !== loadRequestId) return;
         console.error("Error loading or decoding audio:", error);
@@ -308,27 +282,20 @@ const AudioPlayer = () => {
     }
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") {
-      return;
-    }
+    if (!audioContext || audioContext.state === "closed") return;
 
     const currentTrackTime =
       offsetTimeRef.current + (audioContext.currentTime - startTimeRef.current);
 
-    // Определяем, нужна ли перемотка
-    // Перемотка нужна, если playerStoreCurrentTime значительно отличается от текущего воспроизводимого времени
-    // или если это первая загрузка трека и playerStoreCurrentTime не равен 0 (например, если трек был перемотан в UI до начала воспроизведения)
     const isSeeking =
-      Math.abs(playerStoreCurrentTime - currentTrackTime) > 0.5 && // Значительное расхождение
-      playerStoreCurrentTime !== lastPlayerStoreCurrentTimeRef.current; // И это не просто обновление времени с анимацией
-    // (playerStoreCurrentTime изменился извне)
+      Math.abs(currentTime - currentTrackTime) > 0.5 &&
+      currentTime !== lastPlayerStoreCurrentTimeRef.current;
 
-    lastPlayerStoreCurrentTimeRef.current = playerStoreCurrentTime; // Обновляем реф
+    lastPlayerStoreCurrentTimeRef.current = currentTime;
 
     const managePlayback = async () => {
       if (isPlaying) {
         if (isSeeking || !instrumentalSourceRef.current) {
-          // Останавливаем текущие источники, если они есть
           if (instrumentalSourceRef.current) {
             instrumentalSourceRef.current.stop();
             instrumentalSourceRef.current.disconnect();
@@ -340,11 +307,9 @@ const AudioPlayer = () => {
             vocalsSourceRef.current = null;
           }
 
-          if (audioContext.state === "suspended") {
-            await audioContext.resume();
-          }
+          if (audioContext.state === "suspended") await audioContext.resume();
 
-          offsetTimeRef.current = playerStoreCurrentTime;
+          offsetTimeRef.current = currentTime;
           startTimeRef.current = audioContext.currentTime;
 
           const newInstrumentalSource = audioContext.createBufferSource();
@@ -362,10 +327,9 @@ const AudioPlayer = () => {
             newVocalsSource.connect(vocalsGainNodeRef.current);
             vocalsSourceRef.current = newVocalsSource;
           } else if (vocalsGainNodeRef.current) {
-            vocalsGainNodeRef.current.gain.value = 0; // Убедиться, что вокал отключен, если нет URL
+            vocalsGainNodeRef.current.gain.value = 0;
           }
 
-          // Начинаем воспроизведение с нового offsetTime
           newInstrumentalSource.start(
             audioContext.currentTime,
             offsetTimeRef.current
@@ -375,11 +339,6 @@ const AudioPlayer = () => {
               audioContext.currentTime,
               offsetTimeRef.current
             );
-          }
-
-          if (!playCountIncrementedRef.current) {
-            incrementPlayCount(currentSong._id);
-            playCountIncrementedRef.current = true;
           }
 
           newInstrumentalSource.onended = (event) => {
@@ -396,10 +355,8 @@ const AudioPlayer = () => {
               }
 
               if (repeatMode === "one") {
-                // Если режим повтора "один", то начинаем заново с 0
                 usePlayerStore.setState({ isPlaying: true, currentTime: 0 });
               } else {
-                // Упрощенная логика: playNext() сам обрабатывает все случаи, включая "off" и "all"
                 playNext();
               }
             }
@@ -435,21 +392,18 @@ const AudioPlayer = () => {
     managePlayback();
   }, [
     isPlaying,
-    playerStoreCurrentTime, // Теперь это зависимость, чтобы реагировать на внешнюю перемотку
+    currentTime,
     currentSong,
     isAudioContextReady,
     playNext,
     repeatMode,
     setCurrentTime,
     duration,
-    incrementPlayCount,
   ]);
 
   // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
-    if (!isAudioContextReady) {
-      return;
-    }
+    if (!isAudioContextReady) return;
 
     if (masterGainNodeRef.current) {
       masterGainNodeRef.current.gain.value = masterVolume / 100;
@@ -465,14 +419,10 @@ const AudioPlayer = () => {
 
   // --- Эффект 5: Обновление текущего времени в сторе (для UI) ---
   useEffect(() => {
-    if (!isAudioContextReady) {
-      return;
-    }
+    if (!isAudioContextReady) return;
 
     const audioContext = audioContextRef.current;
-    if (!audioContext || audioContext.state === "closed") {
-      return;
-    }
+    if (!audioContext || audioContext.state === "closed") return;
 
     let animationFrameId: number;
 
@@ -494,9 +444,6 @@ const AudioPlayer = () => {
           newTime <= duration! &&
           Math.abs(usePlayerStore.getState().currentTime - newTime) > 0.5
         ) {
-          // Обновляем currentTime в сторе, только если оно значительно отличается
-          // от вычисленного времени, чтобы не перезаписывать currentTime
-          // слишком часто, когда пользователь делает точную перемотку вручную
           if (usePlayerStore.getState().currentTime !== newTime) {
             setCurrentTime(newTime);
           }
@@ -511,6 +458,54 @@ const AudioPlayer = () => {
       cancelAnimationFrame(animationFrameId);
     };
   }, [isAudioContextReady, duration, setCurrentTime]);
+
+  // --- ИСПРАВЛЕННЫЙ ЭФФЕКТ 6: ЗАПИСЬ ПРОСЛУШИВАНИЯ ---
+  useEffect(() => {
+    // Сбрасываем флаг при смене песни
+    listenRecordedRef.current = false;
+  }, [currentSong]);
+
+  useEffect(() => {
+    // Добавляем явную проверку на наличие currentSong._id
+    if (
+      isPlaying &&
+      user &&
+      currentSong &&
+      currentSong._id && // <-- ВАЖНАЯ ПРОВЕРКА
+      currentTime >= 30 &&
+      !listenRecordedRef.current
+    ) {
+      listenRecordedRef.current = true; // Устанавливаем флаг немедленно
+
+      const songId = currentSong._id;
+      const requestUrl = `/songs/${songId}/listen`;
+
+      // Добавляем логирование ПЕРЕД отправкой запроса
+      console.log(`[AudioPlayer] Preparing to send POST to: ${requestUrl}`);
+
+      axiosInstance
+        .post(requestUrl)
+        .then((response) => {
+          if (response.data.success) {
+            console.log(
+              `[AudioPlayer] Listen recorded successfully for song: ${currentSong.title}`
+            );
+          }
+        })
+        .catch((error) => {
+          // Если произошла ошибка, сбрасываем флаг, чтобы можно было попробовать еще раз
+          listenRecordedRef.current = false;
+          // Улучшенное логирование ошибки
+          console.error("[AudioPlayer] Failed to record listen. Details:", {
+            errorMessage: error.message,
+            requestUrl: requestUrl,
+            songId: songId,
+            errorResponse: error.response?.data, // Показываем ответ от сервера, если он есть
+          });
+        });
+    }
+  }, [currentTime, isPlaying, currentSong, user]);
+  // ----------------------------------------------------
 
   return null;
 };

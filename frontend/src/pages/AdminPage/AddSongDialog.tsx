@@ -32,13 +32,26 @@ interface NewSong {
   album: string;
   releaseYear: number;
   lyrics: string; // <-- НОВОЕ: Добавляем поле lyrics
+  genreIds: string[];
+  moodIds: string[];
 }
 
 const AddSongDialog = () => {
-  const { albums, artists, fetchAlbums, fetchArtists } = useMusicStore();
+  const {
+    albums,
+    artists,
+    fetchAlbums,
+    fetchArtists,
+    genres,
+    moods,
+    fetchGenres,
+    fetchMoods,
+  } = useMusicStore();
   const [songDialogOpen, setSongDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
+  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
 
   const [newSong, setNewSong] = useState<NewSong>({
     title: "",
@@ -46,6 +59,8 @@ const AddSongDialog = () => {
     album: "",
     releaseYear: new Date().getFullYear(),
     lyrics: "", // <-- Инициализируем lyrics
+    genreIds: [], // <-- Инициализация
+    moodIds: [], // <-- Инициализация
   });
 
   const [files, setFiles] = useState<{
@@ -66,8 +81,10 @@ const AddSongDialog = () => {
     if (songDialogOpen) {
       fetchArtists();
       fetchAlbums();
+      fetchGenres(); // <-- ВЫЗОВ
+      fetchMoods(); // <-- ВЫЗОВ
     }
-  }, [songDialogOpen, fetchArtists, fetchAlbums]);
+  }, [songDialogOpen, fetchArtists, fetchAlbums, fetchGenres, fetchMoods]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -92,6 +109,8 @@ const AddSongDialog = () => {
 
       formData.append("title", newSong.title);
       formData.append("artistIds", JSON.stringify(selectedArtistIds));
+      formData.append("genreIds", JSON.stringify(selectedGenreIds));
+      formData.append("moodIds", JSON.stringify(selectedMoodIds));
 
       if (newSong.album && newSong.album !== "none") {
         formData.append("albumId", newSong.album);
@@ -120,6 +139,8 @@ const AddSongDialog = () => {
         album: "",
         releaseYear: new Date().getFullYear(),
         lyrics: "",
+        genreIds: [],
+        moodIds: [],
       });
       setSelectedArtistIds([]);
       setFiles({
@@ -307,6 +328,31 @@ const AddSongDialog = () => {
               placeholder="Select artists"
             />
           </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Genres</label>
+            <MultiSelect
+              defaultValue={selectedGenreIds}
+              onValueChange={setSelectedGenreIds}
+              options={genres.map((genre) => ({
+                label: genre.name,
+                value: genre._id,
+              }))}
+              placeholder="Select genres"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Moods</label>
+            <MultiSelect
+              defaultValue={selectedMoodIds}
+              onValueChange={setSelectedMoodIds}
+              options={moods.map((mood) => ({
+                label: mood.name,
+                value: mood._id,
+              }))}
+              placeholder="Select moods"
+            />
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
@@ -385,6 +431,8 @@ const AddSongDialog = () => {
                 album: "",
                 releaseYear: new Date().getFullYear(),
                 lyrics: "",
+                genreIds: [], // <-- Инициализация
+                moodIds: [],
               });
               setSelectedArtistIds([]);
               setFiles({

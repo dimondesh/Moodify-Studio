@@ -65,6 +65,18 @@ const songSchema = new mongoose.Schema(
       type: String, // Для хранения LRC-текста
       default: null,
     },
+    genres: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Genre",
+      },
+    ],
+    moods: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Mood",
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -74,5 +86,7 @@ songSchema.index({ title: 1 });
 songSchema.index({ artist: 1 });
 songSchema.index({ albumId: 1 });
 songSchema.index({ playCount: -1 }); // Индекс для сортировки по популярности
+songSchema.index({ genres: 1 }); // <-- НОВЫЙ ИНДЕКС
+songSchema.index({ moods: 1 }); // <-- НОВЫЙ ИНДЕКС
 
 export const Song = mongoose.model("Song", songSchema);
