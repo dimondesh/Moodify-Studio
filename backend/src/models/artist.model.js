@@ -10,6 +10,9 @@ const artistSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    imagePublicId: {
+      type: String,
+    },
     bio: {
       type: String,
       required: false,
@@ -19,6 +22,9 @@ const artistSchema = new mongoose.Schema(
       type: String,
       required: false,
       default: null,
+    },
+    bannerPublicId: {
+      type: String,
     },
     songs: [
       {

@@ -31,20 +31,37 @@ export const extractPublicId = (url) => {
  * Удаляет ресурс из Cloudinary по его public_id.
  * @param {string} publicId - public_id ресурса в Cloudinary.
  */
-export const deleteFromCloudinary = async (publicId) => {
+export const deleteFromCloudinary = async (
+  publicId,
+  resourceType = "image"
+) => {
   if (!publicId) {
-    console.warn(
-      "No public ID provided for Cloudinary deletion. Skipping deletion."
-    );
+    console.warn("deleteFromCloudinary: No public ID provided. Skipping.");
     return;
   }
+
   try {
-    const result = await cloudinary.uploader.destroy(publicId);
-    console.log(`Successfully deleted ${publicId} from Cloudinary:`, result);
+    console.log(
+      `[Cloudinary] Deleting ${publicId} with resource_type: ${resourceType}...`
+    );
+
+    // ВАЖНО: Мы передаем второй аргумент с опциями, указывая тип ресурса
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
+
+    // Проверяем результат от Cloudinary
+    if (result.result === "ok") {
+      console.log(`[Cloudinary] Successfully deleted ${publicId}.`);
+    } else {
+      // 'not found' - это не ошибка, а нормальный ответ, если файла уже нет
+      console.warn(
+        `[Cloudinary] Resource ${publicId} resulted in: ${result.result}.`
+      );
+    }
+
     return result;
   } catch (error) {
-    console.error(`Error deleting ${publicId} from Cloudinary:`, error);
-    // Не выбрасываем ошибку, чтобы не блокировать основной поток выполнения,
-    // если удаление из Cloudinary по какой-то причине не удалось.
+    console.error(`[Cloudinary] Error deleting ${publicId}:`, error);
   }
 };
