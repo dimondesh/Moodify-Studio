@@ -6,6 +6,8 @@ import { usePlayerStore } from "../../stores/usePlayerStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { usePlaylistStore } from "../../stores/usePlaylistStore"; // Импортируем usePlaylistStore
 import PlaylistGrid from "../SearchPage/PlaylistGrid"; // Импортируем PlaylistGrid
+import { useMixesStore } from "../../stores/useMixesStore"; // <-- ИМПОРТ
+import MixGrid from "./MixGrid"; // <-- ИМПОРТ
 
 const HomePage = () => {
   const {
@@ -17,6 +19,12 @@ const HomePage = () => {
     trendingSongs,
     featuredSongs,
   } = useMusicStore();
+  const {
+    genreMixes,
+    moodMixes,
+    isLoading: areMixesLoading,
+    fetchDailyMixes,
+  } = useMixesStore();
 
   const {
     fetchPublicPlaylists,
@@ -31,11 +39,15 @@ const HomePage = () => {
     fetchFeaturedSongs();
     fetchTrendingSongs();
     fetchMadeForYouSongs();
+    fetchDailyMixes(); // <-- ВЫЗОВ
+
     fetchPublicPlaylists(); // Загружаем публичные плейлисты
   }, [
     fetchFeaturedSongs,
     fetchTrendingSongs,
     fetchMadeForYouSongs,
+    fetchDailyMixes, // <-- ВЫЗОВ
+
     fetchPublicPlaylists, // Добавляем в зависимости
   ]);
 
@@ -87,6 +99,17 @@ const HomePage = () => {
               isLoading={isLoading}
               showAllPath="/full-songs"
             />
+            <MixGrid
+              title="Genre Mixes"
+              mixes={genreMixes}
+              isLoading={areMixesLoading}
+            />
+            <MixGrid
+              title="Mood Mixes"
+              mixes={moodMixes}
+              isLoading={areMixesLoading}
+            />
+
             <SectionGrid
               title="Trending"
               songs={trendingSongs}

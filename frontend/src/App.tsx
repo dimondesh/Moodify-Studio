@@ -20,6 +20,8 @@ import ArtistPage from "./pages/ArtistPage/ArtistPage";
 import SettingsPage from "./pages/SettingsPage/SettingsPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import DisplayListPage from "./pages/DisplayListPage/DisplayListPage";
+import MixDetailsPage from "./pages/MixDetailsPage/MixDetailsPage";
+import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -67,6 +69,10 @@ function App() {
           <Route path="/artists/:id" element={<ArtistPage />} />
           <Route path="/users/:userId" element={<ProfilePage />} />
           <Route path="/list" element={<DisplayListPage />} />{" "}
+          <Route path="/mixes/:mixId" element={<MixDetailsPage />} />{" "}
+          <Route path="/all-mixes/:category" element={<AllMixesPage />} />{" "}
+          {/* <-- ДОБАВЛЕННЫЙ РОУТ */}
+          {/* <-- НОВЫЙ РОУТ */}
           {/* <-- НОВЫЙ РОУТ */}
         </Route>
       </Routes>

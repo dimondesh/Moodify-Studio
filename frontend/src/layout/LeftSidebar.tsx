@@ -27,6 +27,7 @@ import {
   Artist,
   LikedSongsItem,
   FollowedArtistItem,
+  MixItem, // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 } from "../types";
 import { useMusicStore } from "../stores/useMusicStore";
 
@@ -34,6 +35,8 @@ const LeftSidebar = () => {
   const {
     albums,
     playlists, // добавленные в библиотеку
+    savedMixes, // <-- ПОЛУЧАЕМ СОХРАНЕННЫЕ МИКСЫ
+
     followedArtists, // Добавлено для подписанных артистов
     fetchLibrary,
     isLoading: isLoadingLibrary,
@@ -145,6 +148,14 @@ const LeftSidebar = () => {
     //       } as LikedSongsItem,
     //     ]
     //   : []),
+    ...(savedMixes || []).map((mix) => ({
+      _id: mix._id,
+      type: "mix" as const,
+      title: mix.name,
+      imageUrl: mix.imageUrl,
+      createdAt: new Date(mix.addedAt ?? new Date()),
+      sourceName: mix.sourceName,
+    })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Сортируем по дате создания/добавления
 
   return (
@@ -274,6 +285,12 @@ const LeftSidebar = () => {
                   subtitle = `Artist`;
                   fallbackImage = "/default-album-cover.png";
                   imageClass = "rounded-full"; // Круглые аватарки для артистов
+                } else if (item.type === "mix") {
+                  const mixItem = item as MixItem;
+                  linkPath = `/mixes/${mixItem._id}`; // Новый роут
+                  subtitle = `Daily Mix`;
+                  fallbackImage = "/default-album-cover.png";
+                  imageClass = "rounded-md";
                 } else {
                   // Fallback для неизвестных типов, хотя LibraryItem должен покрывать все
                   linkPath = "#";

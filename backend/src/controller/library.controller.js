@@ -3,6 +3,7 @@ import { Library } from "../models/library.model.js";
 import { Playlist } from "../models/playlist.model.js";
 import { Song } from "../models/song.model.js";
 import { Artist } from "../models/artist.model.js"; // Импортируем модель Artist
+import { Mix } from "../models/mix.model.js";
 
 export const getLibraryAlbums = async (req, res, next) => {
   try {
@@ -421,6 +422,77 @@ export const getFollowedArtists = async (req, res, next) => {
     res.json({ artists });
   } catch (err) {
     console.error("❌ Error in getFollowedArtists:", err);
+    next(err);
+  }
+};
+export const toggleMixInLibrary = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { mixId } = req.body;
+
+    if (!mixId || !mongoose.Types.ObjectId.isValid(mixId)) {
+      return res.status(400).json({ message: "Valid Mix ID is required" });
+    }
+
+    const library = await Library.findOneAndUpdate(
+      { userId },
+      {},
+      { upsert: true, new: true }
+    );
+
+    if (!library.savedMixes) library.savedMixes = [];
+
+    const exists = library.savedMixes.some(
+      (m) => m.mixId?.toString() === mixId
+    );
+    let isSaved;
+
+    if (exists) {
+      library.savedMixes = library.savedMixes.filter(
+        (m) => m.mixId?.toString() !== mixId
+      );
+      isSaved = false;
+    } else {
+      library.savedMixes.push({
+        mixId: new mongoose.Types.ObjectId(mixId),
+        addedAt: new Date(),
+      });
+      isSaved = true;
+    }
+
+    await library.save();
+    res.json({ success: true, isSaved });
+  } catch (err) {
+    console.error("❌ toggleMixInLibrary error:", err);
+    next(err);
+  }
+};
+
+// Функция для получения сохраненных миксов
+export const getSavedMixes = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const library = await Library.findOne({ userId })
+      .populate({
+        path: "savedMixes.mixId",
+        model: "Mix",
+      })
+      .lean();
+
+    if (!library || !library.savedMixes) {
+      return res.json({ mixes: [] });
+    }
+
+    const mixes = library.savedMixes
+      .filter((item) => item.mixId)
+      .map((item) => ({
+        ...item.mixId,
+        addedAt: item.addedAt,
+      }));
+
+    res.json({ mixes });
+  } catch (err) {
+    console.error("❌ Error in getSavedMixes:", err);
     next(err);
   }
 };

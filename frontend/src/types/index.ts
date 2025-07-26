@@ -15,6 +15,17 @@ export interface Genre {
   _id: string;
   name: string;
 }
+export interface Mix {
+  _id: string;
+  name: string;
+  type: "Genre" | "Mood";
+  sourceName: string;
+  songs: Song[];
+  imageUrl: string;
+  createdAt: string;
+  updatedAt: string;
+  addedAt?: string; // <-- ДОБАВЬТЕ ЭТО ОПЦИОНАЛЬНОЕ ПОЛЕ
+}
 
 export interface Mood {
   _id: string;
@@ -151,7 +162,11 @@ export interface PlaylistItem extends BaseLibraryItem {
   type: "playlist";
   owner: User;
 }
-
+export interface MixItem extends BaseLibraryItem {
+  // Наследуемся от BaseLibraryItem
+  type: "mix";
+  sourceName: string; // "Rock", "Sad" и т.д.
+}
 export interface FollowedArtistItem extends BaseLibraryItem {
   // <-- НОВЫЙ ТИП
   type: "artist";
@@ -163,8 +178,8 @@ export type LibraryItem =
   | LikedSongsItem
   | AlbumItem
   | PlaylistItem
-  | FollowedArtistItem; // <-- ОБНОВЛЕНО
-
+  | FollowedArtistItem
+  | MixItem;
 export interface LibraryPlaylist extends Playlist {
   addedAt: string;
 }

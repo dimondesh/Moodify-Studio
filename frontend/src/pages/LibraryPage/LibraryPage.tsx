@@ -12,6 +12,7 @@ import {
   Artist,
   LikedSongsItem,
   FollowedArtistItem,
+  MixItem, // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -25,6 +26,8 @@ const LibraryPage = () => {
     albums,
     playlists,
     followedArtists, // НОВОЕ: подписанные артисты
+    savedMixes, // <-- ПОЛУЧАЕМ СОХРАНЕННЫЕ МИКСЫ
+
     isLoading: isLoadingLibrary,
     error: libraryError,
     fetchLibrary,
@@ -132,6 +135,17 @@ const LibraryPage = () => {
         } as AlbumItem)
     ),
     ...uniquePlaylists, // ИСПОЛЬЗУЕМ ДЕДУПЛИЦИРОВАННЫЕ ПЛЕЙЛИСТЫ ЗДЕСЬ
+    ...(savedMixes || []).map(
+      (mix) =>
+        ({
+          _id: mix._id,
+          title: mix.name,
+          imageUrl: mix.imageUrl,
+          createdAt: new Date(mix.addedAt || 0),
+          type: "mix",
+          sourceName: mix.sourceName,
+        } as MixItem)
+    ),
     ...(followedArtists || []).map(
       (artist) =>
         ({
@@ -227,6 +241,13 @@ const LibraryPage = () => {
                       coverImageUrl =
                         item.imageUrl || "/default-artist-cover.png";
                       imageClass = "rounded-full";
+                    } else if (item.type === "mix") {
+                      const mixItem = item as MixItem;
+                      linkPath = `/mixes/${mixItem._id}`; // Новый роут
+                      subtitle = `Daily Mix`;
+                      coverImageUrl =
+                        item.imageUrl || "/default-album-cover.png";
+                      imageClass = "rounded-md";
                     } else {
                       linkPath = "#";
                       subtitle = "";

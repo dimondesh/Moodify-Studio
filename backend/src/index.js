@@ -20,6 +20,7 @@ import libraryRoutes from "./routes/library.route.js";
 import { protectRoute } from "./middleware/auth.middleware.js";
 import { Playlist } from "./models/playlist.model.js"; // путь под себя
 import artistRoutes from "./routes/artist.route.js";
+import mixRoutes from "./routes/mix.route.js"; // <-- ДОБАВИТЬ
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/library", libraryRoutes);
 app.use("/api/playlists", playlistRoutes);
 app.use("/api/artists", artistRoutes);
+app.use("/api/mixes", mixRoutes); // <-- ДОБАВИТЬ
 
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR HANDLER CAUGHT AN ERROR:");

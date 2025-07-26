@@ -21,6 +21,19 @@ const librarySchema = new mongoose.Schema(
         },
       },
     ],
+    savedMixes: [
+      {
+        mixId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Mix", // Прямая ссылка на модель Mix
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     albums: [
       {
         albumId: {

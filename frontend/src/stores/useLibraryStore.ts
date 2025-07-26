@@ -1,55 +1,73 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Album, Song, LibraryPlaylist, Artist } from "../types";
+import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types"; // Убедитесь, что Mix импортирован
 
 interface LibraryStore {
   albums: Album[];
   likedSongs: Song[];
   playlists: LibraryPlaylist[];
-  followedArtists: Artist[]; // <-- НОВОЕ: Массив подписанных артистов (объектов Artist)
+  followedArtists: Artist[];
+  savedMixes: Mix[]; // <-- Поле уже есть, все отлично
+
   isLoading: boolean;
   error: string | null;
+
   fetchLibrary: () => Promise<void>;
-  fetchLikedSongs: () => Promise<void>;
-  fetchFollowedArtists: () => Promise<void>; // <-- НОВОЕ
+  fetchLikedSongs: () => Promise<void>; // Можно будет удалить, если не используется где-то еще
+  fetchFollowedArtists: () => Promise<void>; // Можно будет удалить
+
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
   togglePlaylist: (playlistId: string) => Promise<void>;
-  toggleArtistFollow: (artistId: string) => Promise<void>; // <-- НОВОЕ
+  toggleArtistFollow: (artistId: string) => Promise<void>;
+  toggleMixInLibrary: (mixId: string) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ
+
   isSongLiked: (songId: string) => boolean;
-  isArtistFollowed: (artistId: string) => boolean; // <-- НОВАЯ ФУНКЦИЯ
+  isArtistFollowed: (artistId: string) => boolean;
+  isMixSaved: (mixId: string) => boolean; // <-- НОВАЯ ФУНКЦИЯ
 }
 
 export const useLibraryStore = create<LibraryStore>((set, get) => ({
   albums: [],
   likedSongs: [],
   playlists: [],
-  followedArtists: [], // <-- Инициализируем
+  followedArtists: [],
+  savedMixes: [],
+
   isLoading: false,
   error: null,
 
   fetchLibrary: async () => {
     set({ isLoading: true, error: null });
     try {
-      console.log("useLibraryStore: Attempting to fetch library data...");
+      console.log("useLibraryStore: Attempting to fetch all library data...");
 
-      const [albumsRes, likedSongsRes, playlistsRes, followedArtistsRes] =
-        await Promise.all([
-          axiosInstance.get("/library/albums"),
-          axiosInstance.get("/library/liked-songs"),
-          axiosInstance.get("/library/playlists"),
-          axiosInstance.get("/library/artists"), // <-- НОВОЕ
-        ]);
+      // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Добавляем пятый запрос в Promise.all ---
+      const [
+        albumsRes,
+        likedSongsRes,
+        playlistsRes,
+        followedArtistsRes,
+        savedMixesRes, // <-- ПОЛУЧАЕМ РЕЗУЛЬТАТ ДЛЯ МИКСОВ
+      ] = await Promise.all([
+        axiosInstance.get("/library/albums"),
+        axiosInstance.get("/library/liked-songs"),
+        axiosInstance.get("/library/playlists"),
+        axiosInstance.get("/library/artists"),
+        axiosInstance.get("/library/mixes"), // <-- НОВЫЙ ЗАПРОС
+      ]);
 
+      // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Обновляем состояние, включая миксы ---
       set({
         albums: albumsRes.data.albums || [],
         likedSongs: likedSongsRes.data.songs || [],
         playlists: playlistsRes.data.playlists || [],
-        followedArtists: followedArtistsRes.data.artists || [], // <-- Устанавливаем подписанных артистов
+        followedArtists: followedArtistsRes.data.artists || [],
+        savedMixes: savedMixesRes.data.mixes || [], // <-- СОХРАНЯЕМ МИКСЫ В СОСТОЯНИЕ
         isLoading: false,
       });
-      console.log("useLibraryStore: Library data fetched successfully.");
+      console.log("useLibraryStore: All library data fetched successfully.");
     } catch (err: any) {
       set({
         error: err.message || "Failed to fetch library",
@@ -58,6 +76,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
   },
 
+  // Эта функция больше не нужна, так как ее логика теперь внутри fetchLibrary.
+  // Оставляю ее закомментированной на случай, если она нужна для чего-то еще.
+  // fetchSavedMixes: async () => { ... },
+
+  // Эта функция тоже может быть удалена, если вызывается только fetchLibrary
   fetchLikedSongs: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -71,8 +94,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
   },
 
+  // И эта тоже
   fetchFollowedArtists: async () => {
-    // <-- НОВАЯ ФУНКЦИЯ
     set({ isLoading: true, error: null });
     try {
       const res = await axiosInstance.get("/library/artists");
@@ -88,7 +111,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   toggleAlbum: async (albumId: string) => {
     try {
       await axiosInstance.post("/library/albums/toggle", { albumId });
-      await get().fetchLibrary();
+      await get().fetchLibrary(); // Полное обновление - самый надежный способ
     } catch (err) {
       console.error("Toggle album error", err);
       set({ error: "Failed to toggle album" });
@@ -97,17 +120,9 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   toggleSongLike: async (songId: string) => {
     try {
-      const { isLiked } = (
-        await axiosInstance.post("/library/songs/toggle-like", { songId })
-      ).data;
-
-      if (isLiked) {
-        await get().fetchLikedSongs();
-      } else {
-        set((state) => ({
-          likedSongs: state.likedSongs.filter((song) => song._id !== songId),
-        }));
-      }
+      await axiosInstance.post("/library/songs/toggle-like", { songId });
+      // Можно обновлять точечно или полностью
+      await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle song like error", err);
       set({ error: "Failed to toggle song like" });
@@ -125,24 +140,24 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleArtistFollow: async (artistId: string) => {
-    // <-- НОВАЯ ФУНКЦИЯ
     try {
-      const { isFollowed } = (
-        await axiosInstance.post("/library/artists/toggle", { artistId })
-      ).data;
-
-      if (isFollowed) {
-        await get().fetchFollowedArtists();
-      } else {
-        set((state) => ({
-          followedArtists: state.followedArtists.filter(
-            (artist) => artist._id !== artistId
-          ),
-        }));
-      }
+      await axiosInstance.post("/library/artists/toggle", { artistId });
+      await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle artist follow error", err);
       set({ error: "Failed to toggle artist follow" });
+    }
+  },
+
+  // --- НОВАЯ ФУНКЦИЯ ДЛЯ ПЕРЕКЛЮЧЕНИЯ МИКСОВ ---
+  toggleMixInLibrary: async (mixId: string) => {
+    try {
+      await axiosInstance.post("/library/mixes/toggle", { mixId });
+      // После изменения вызываем полное обновление, чтобы все компоненты получили свежие данные
+      await get().fetchLibrary();
+    } catch (err) {
+      console.error("Toggle mix in library error", err);
+      set({ error: "Failed to toggle mix in library" });
     }
   },
 
@@ -151,7 +166,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   isArtistFollowed: (artistId: string) => {
-    // <-- НОВАЯ ФУНКЦИЯ
     return get().followedArtists.some((artist) => artist._id === artistId);
+  },
+
+  // --- НОВАЯ ФУНКЦИЯ ДЛЯ ПРОВЕРКИ МИКСОВ ---
+  isMixSaved: (mixId: string) => {
+    return get().savedMixes.some((mix) => mix._id === mixId);
   },
 }));

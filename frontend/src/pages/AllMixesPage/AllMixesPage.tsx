@@ -1,0 +1,75 @@
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
+import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+import type { Mix } from "../../types/index";
+
+const AllMixesPage = () => {
+  const [mixes, setMixes] = useState<Mix[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Получаем данные, переданные со страницы HomePage
+  const initialMixes = location.state?.mixes;
+  const pageTitle = location.state?.title || "All Mixes";
+
+  useEffect(() => {
+    if (initialMixes && Array.isArray(initialMixes)) {
+      setMixes(initialMixes);
+    } else {
+      setError("Mix data not available.");
+    }
+    setIsLoading(false);
+  }, [initialMixes]);
+
+  const handleNavigateToMix = (mixId: string) => {
+    navigate(`/mixes/${mixId}`);
+  };
+
+  if (isLoading) return <SectionGridSkeleton />;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+
+  if (!mixes || mixes.length === 0) {
+    return (
+      <div className="p-4">
+        <h2 className="text-2xl font-bold mb-4">{pageTitle}</h2>
+        <p className="text-zinc-400">No mixes available in this category.</p>
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[calc(100vh-120px)] w-full rounded-md pr-4">
+      <div className="p-4 pt-0">
+        <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {mixes.map((mix) => (
+            // Используем ту же карточку, что и в MixGrid
+            <div
+              key={mix._id}
+              onClick={() => handleNavigateToMix(mix._id)}
+              className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all"
+            >
+              <img
+                src={mix.imageUrl}
+                alt={mix.name}
+                className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 flex items-start justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                <h3 className="text-white text-lg sm:text-xl font-bold drop-shadow-lg break-words">
+                  {mix.name}
+                </h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <ScrollBar orientation="vertical" />
+    </ScrollArea>
+  );
+};
+
+export default AllMixesPage;
