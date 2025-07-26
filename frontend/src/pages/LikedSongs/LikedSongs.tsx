@@ -85,11 +85,9 @@ const LikedSongsPage = () => {
   if (!isLoading && !error && likedSongs.length === 0) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
-        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
-          Понравившиеся песни
-        </h1>
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Liked Songs</h1>
         <p className="text-zinc-400">
-          Пока нет понравившихся песен. Добавьте песни, чтобы увидеть их здесь!
+          There are no liked songs yet. Add songs to see them here!
         </p>
       </div>
     );
@@ -98,10 +96,8 @@ const LikedSongsPage = () => {
   if (error) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
-        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
-          Понравившиеся песни
-        </h1>
-        <p className="text-red-500 mt-4 text-center">Ошибка: {error}</p>
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Liked Songs</h1>
+        <p className="text-red-500 mt-4 text-center">Error: {error}</p>
       </div>
     );
   }
@@ -240,21 +236,22 @@ const LikedSongsPage = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 overflow-hidden">
                           {/* Обложка альбома теперь кликабельна */}
                           <button
                             onClick={(e) =>
                               handleNavigateToAlbum(e, song.albumId)
                             }
+                            className="flex-shrink-0"
                           >
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
                               alt={song.title}
-                              className="size-10 object-cover rounded-md"
+                              className="size-10 object-cover rounded-md flex-shrink-0"
                             />
                           </button>
 
-                          <div>
+                          <div className="flex flex-col min-w-0">
                             {/* Название песни теперь кликабельно */}
                             <button
                               className={`font-medium text-left ${
@@ -266,9 +263,9 @@ const LikedSongsPage = () => {
                                 handleNavigateToAlbum(e, song.albumId)
                               }
                             >
-                              {song.title}
+                              <p className="truncate">{song.title}</p>
                             </button>
-                            <div className="text-zinc-400">
+                            <div className="text-zinc-400 truncate">
                               {/* Имена артистов теперь кликабельны */}
                               {getArtistNamesDisplay(song.artist)}
                             </div>

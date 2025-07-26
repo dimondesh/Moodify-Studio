@@ -196,6 +196,11 @@ const PlaylistDetailsPage = () => {
   const handleArtistNameClick = (artistId: string) => {
     navigate(`/artists/${artistId}`);
   };
+  const handleOwnerClick = () => {
+    if (currentPlaylist?.owner?._id) {
+      navigate(`/users/${currentPlaylist.owner._id}`);
+    }
+  };
 
   const isOwner = authUser && currentPlaylist?.owner?._id === authUser.id;
 
@@ -360,14 +365,17 @@ const PlaylistDetailsPage = () => {
                   ) : (
                     <></>
                   )}
-                  <span className="font-semibold text-white flex items-center">
+                  <button
+                    onClick={handleOwnerClick}
+                    className="font-semibold text-white flex items-center hover:underline focus:outline-none focus:underline"
+                  >
                     <img
                       src={currentPlaylist.owner.imageUrl}
-                      className="w-4 h-4 rounded-full mr-1"
+                      className="size-4 rounded-full mr-1"
                       alt={currentPlaylist.owner.fullName}
                     />
                     {currentPlaylist.owner?.fullName || "Unknown User"}
-                  </span>
+                  </button>
                   <span className="hidden lg:inline">
                     • {currentPlaylist.songs.length}{" "}
                     {currentPlaylist.songs.length !== 1 ? "songs" : "song"}
