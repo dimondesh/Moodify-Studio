@@ -742,6 +742,10 @@ export const deleteArtist = async (req, res, next) => {
 
 export const uploadFullAlbumAuto = async (req, res, next) => {
   console.log("🚀 Reached /admin/albums/upload-full-album route - AUTO UPLOAD");
+  const DEFAULT_ARTIST_IMAGE_URL =
+    "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+  const DEFAULT_ALBUM_IMAGE_URL =
+    "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753429031/default-album-cover_zbebta.png";
 
   if (!req.user || !req.user.isAdmin) {
     return res
@@ -799,8 +803,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         console.log(
           `[AdminController] Основной артист альбома: ${spotifyArtist.name}. Получение данных со Spotify...`
         );
-        let artistImageUrl =
-          "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+        let artistImageUrl = DEFAULT_ARTIST_IMAGE_URL;
 
         try {
           const artistDetails = await getArtistDataFromSpotify(
@@ -823,16 +826,33 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           );
         }
 
-        const imageUpload = await uploadToCloudinary(artistImageUrl, "artists");
+        let imageUploadResult;
+        if (artistImageUrl === DEFAULT_ARTIST_IMAGE_URL) {
+          // Если это заглушка, не загружаем ее, а используем URL напрямую
+          console.log(
+            "[AdminController] Используем URL заглушки напрямую, без повторной загрузки."
+          );
+          imageUploadResult = {
+            url: DEFAULT_ARTIST_IMAGE_URL,
+            publicId: "default_artist_placeholder", // Используем строковый идентификатор, а не null
+          };
+        } else {
+          // Если это новая картинка со Spotify, загружаем ее
+          imageUploadResult = await uploadToCloudinary(
+            artistImageUrl,
+            "artists"
+          );
+        }
 
         artist = new Artist({
           name: spotifyArtist.name,
-          imageUrl: imageUpload.url,
-          imagePublicId: imageUpload.publicId,
-          bannerUrl: imageUpload.url,
-          bannerPublicId: imageUpload.publicId,
+          imageUrl: imageUploadResult.url,
+          imagePublicId: imageUploadResult.publicId,
+          bannerUrl: imageUploadResult.url,
+          bannerPublicId: imageUploadResult.publicId,
         });
         await artist.save();
+        // --- КОНЕЦ ИСПРАВЛЕНИЯ 1 ---
       }
       albumArtistIds.push(artist._id);
     }
@@ -844,10 +864,12 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         ? "EP"
         : "Album";
 
-    const albumImageUpload = await uploadToCloudinary(
-      spotifyAlbumData.images[0]?.url,
-      "albums"
-    );
+    const albumImageUrl =
+      spotifyAlbumData.images && spotifyAlbumData.images.length > 0
+        ? spotifyAlbumData.images[0].url
+        : DEFAULT_ALBUM_IMAGE_URL; // Используем заглушку, если у альбома нет обложки
+
+    const albumImageUpload = await uploadToCloudinary(albumImageUrl, "albums");
 
     const album = new Album({
       title: spotifyAlbumData.name,
@@ -881,8 +903,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           console.log(
             `[AdminController] Новый артист: ${spotifyTrackArtist.name}. Получение данных со Spotify...`
           );
-          let artistImageUrl =
-            "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+          let artistImageUrl = DEFAULT_ARTIST_IMAGE_URL;
           try {
             const artistDetails = await getArtistDataFromSpotify(
               spotifyTrackArtist.id
@@ -900,18 +921,33 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
               e
             );
           }
-          const imageUpload = await uploadToCloudinary(
-            artistImageUrl,
-            "artists"
-          );
+          let imageUploadResult;
+          if (artistImageUrl === DEFAULT_ARTIST_IMAGE_URL) {
+            // Если это заглушка, не загружаем ее, а используем URL напрямую
+            console.log(
+              "[AdminController] Используем URL заглушки напрямую, без повторной загрузки."
+            );
+            imageUploadResult = {
+              url: DEFAULT_ARTIST_IMAGE_URL,
+              publicId: "default_artist_placeholder",
+            };
+          } else {
+            // Если это новая картинка со Spotify, загружаем ее
+            imageUploadResult = await uploadToCloudinary(
+              artistImageUrl,
+              "artists"
+            );
+          }
+
           artist = new Artist({
             name: spotifyTrackArtist.name,
-            imageUrl: imageUpload.url,
-            imagePublicId: imageUpload.publicId,
-            bannerUrl: imageUpload.url,
-            bannerPublicId: imageUpload.publicId,
+            imageUrl: imageUploadResult.url,
+            imagePublicId: imageUploadResult.publicId,
+            bannerUrl: imageUploadResult.url,
+            bannerPublicId: imageUploadResult.publicId,
           });
           await artist.save();
+          // --- КОНЕЦ ИСПРАВЛЕНИЯ 2 ---
         }
         songArtistIds.push(artist._id);
       }
