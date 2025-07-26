@@ -476,11 +476,15 @@ export const usePlayerStore = create<PlayerStore>()(
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
-            persistedState.currentSong = null;
+            // Мы больше НЕ сбрасываем currentSong
+            // persistedState.currentSong = null;
+
+            // Но мы ВСЕГДА сбрасываем isPlaying, чтобы музыка не начинала играть сама
             persistedState.isPlaying = false;
+
+            // Также сбрасываем временные состояния UI
             persistedState.isFullScreenPlayerOpen = false;
             persistedState.currentTime = 0;
-            persistedState.duration = 0;
           }
         };
       },
