@@ -177,11 +177,7 @@ const MixDetailsPage = () => {
                   }'.`}
                 </p>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100 mt-2">
-                  <img
-                    src="../../../public/Moodify.png"
-                    alt="Moodify"
-                    className="size-4"
-                  />
+                  <img src="/Moodify.png" alt="Moodify" className="size-4" />
                   <span className="font-semibold text-white">Moodify</span>
                   <span className="hidden lg:inline">
                     • {currentMix.songs.length} songs
