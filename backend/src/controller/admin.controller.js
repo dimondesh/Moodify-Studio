@@ -772,7 +772,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       if (parsed) {
         const normalizedSongName = parsed.songName
           .toLowerCase()
-          .replace(/[^a-z0-9]/g, "");
+          .replace(/[^\p{L}\p{N}]/gu, ""); // <-- ИСПРАВЛЕНО
         if (!trackFilesMap[normalizedSongName])
           trackFilesMap[normalizedSongName] = {};
         trackFilesMap[normalizedSongName][`${parsed.trackType}Path`] = filePath;
@@ -854,7 +854,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
       const normalizedSpotifySongName = songName
         .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
+        .replace(/[^\p{L}\p{N}]/gu, ""); // <-- ИСПРАВЛЕНО
       const filesForTrack = trackFilesMap[normalizedSpotifySongName];
 
       let vocalsUpload = { url: null, publicId: null };
