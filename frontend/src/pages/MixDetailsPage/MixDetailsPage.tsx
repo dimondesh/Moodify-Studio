@@ -272,32 +272,40 @@ const MixDetailsPage = () => {
 
                         <div className="flex items-center gap-3 overflow-hidden">
                           <button
-                            onClick={() => handleSongTitleClick(song.albumId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSongTitleClick(song.albumId);
+                            }}
+                            className="flex-shrink-0"
                           >
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
                               alt={song.title}
-                              className="size-10 object-cover rounded-md flex-shrink-0"
+                              className="size-10 object-cover rounded-md"
                             />
                           </button>
-                          <div className="flex flex-col overflow-hidden">
+                          <div className="flex flex-col min-w-0">
                             <button
-                              onClick={() => handleSongTitleClick(song.albumId)}
-                              className={`font-medium truncate text-left hover:underline focus:outline-none focus:underline ${
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSongTitleClick(song.albumId);
+                              }}
+                              className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
                                 isCurrentlyPlaying
                                   ? "text-violet-400"
                                   : "text-white"
                               }`}
                             >
-                              {song.title}
+                              <p className="truncate">{song.title}</p>
                             </button>
                             <div className="text-zinc-400 text-xs sm:text-sm truncate">
                               {song.artist.map((artist, artistIndex) => (
                                 <span key={artist._id}>
                                   <button
-                                    onClick={() =>
-                                      handleArtistNameClick(artist._id)
-                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleArtistNameClick(artist._id);
+                                    }}
                                     className="hover:underline focus:outline-none focus:underline"
                                   >
                                     {artist.name}
