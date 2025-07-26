@@ -95,14 +95,6 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
   const vocalsInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Логирование монтирования/размонтирования
-  useEffect(() => {
-    console.log(`[${song._id}] EditSongDialog MOUNTED`);
-    return () => {
-      console.log(`[${song._id}] EditSongDialog UNMOUNTED`);
-    };
-  }, []);
-
   useEffect(() => {
     console.log(`[${song._id}] Dialog open state changed:`, dialogOpen);
 

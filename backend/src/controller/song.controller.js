@@ -6,6 +6,8 @@ export const getAllSongs = async (req, res, next) => {
   try {
     const songs = await Song.find()
       .populate("artist", "name imageUrl")
+      .populate("genres") // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+      .populate("moods") // <-- И ЭТУ СТРОКУ
       .sort({ createdAt: -1 });
     res.status(200).json({ songs });
   } catch (error) {
