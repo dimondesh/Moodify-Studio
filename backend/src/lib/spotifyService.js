@@ -115,10 +115,12 @@ export const getAlbumDataFromSpotify = async (albumUrl) => {
       tracks: albumData.tracks.items.map((track) => ({
         id: track.id,
         name: track.name,
-        // Spotify предоставляет длительность в мс
         duration_ms: track.duration_ms,
-        // Spotify URL для каждого трека может быть полезен для отладки, но для lrclib.net нужны метаданные
-        // external_urls: track.external_urls.spotify,
+
+        artists: track.artists.map((artist) => ({
+          id: artist.id,
+          name: artist.name,
+        })),
       })),
     };
 

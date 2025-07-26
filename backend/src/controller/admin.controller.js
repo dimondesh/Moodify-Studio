@@ -848,12 +848,41 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       console.log(`[AdminController] Обработка трека: ${songName}`);
 
       const songArtistIds = [];
+      // Итерируем по всем артистам, указанным именно для этого трека
       for (const spotifyTrackArtist of spotifyTrack.artists || []) {
+        // Пытаемся найти артиста в нашей БД
         let artist = await Artist.findOne({ name: spotifyTrackArtist.name });
-        // Артисты уже должны быть созданы на предыдущем шаге, здесь просто находим их
-        if (artist) songArtistIds.push(artist._id);
+
+        // Если артист не найден, создаем его!
+        if (!artist) {
+          console.log(
+            `[AdminController] Создание нового артиста: ${spotifyTrackArtist.name}`
+          );
+          // Для приглашенных артистов у нас нет прямой ссылки на картинку,
+          // поэтому используем плейсхолдер.
+          const placeholderImageUrl =
+            "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+          const imageUpload = await uploadToCloudinary(
+            placeholderImageUrl,
+            "artists"
+          );
+
+          artist = new Artist({
+            name: spotifyTrackArtist.name,
+            imageUrl: imageUpload.url,
+            imagePublicId: imageUpload.publicId,
+            bannerUrl: imageUpload.url,
+            bannerPublicId: imageUpload.publicId,
+          });
+          await artist.save();
+        }
+
+        // Добавляем ID найденного или только что созданного артиста в массив для песни
+        songArtistIds.push(artist._id);
       }
-      if (songArtistIds.length === 0) songArtistIds.push(...albumArtistIds);
+
+      // Больше нет необходимости в этой строке, так как songArtistIds будет заполнен корректно
+      // if (songArtistIds.length === 0) songArtistIds.push(...albumArtistIds);
 
       const primaryArtistName = (await Artist.findById(songArtistIds[0])).name;
       const { genreIds, moodIds } = await getTagsFromAI(
