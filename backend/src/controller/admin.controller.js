@@ -363,10 +363,19 @@ export const updateSong = async (req, res, next) => {
     song.title = title || song.title;
     song.lyrics = lyrics !== undefined ? lyrics : song.lyrics;
     if (genreIdsJson) {
-      song.genres = JSON.parse(genreIdsJson);
+      try {
+        song.genres = JSON.parse(genreIdsJson);
+      } catch (e) {
+        console.error("Failed to parse genreIds JSON on update:", e);
+        // Можно вернуть ошибку или просто проигнорировать
+      }
     }
     if (moodIdsJson) {
-      song.moods = JSON.parse(moodIdsJson);
+      try {
+        song.moods = JSON.parse(moodIdsJson);
+      } catch (e) {
+        console.error("Failed to parse moodIds JSON on update:", e);
+      }
     }
 
     await song.save();

@@ -26,7 +26,7 @@ import {
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { MultiSelect } from "../../components/ui/multi-select";
 import { Textarea } from "../../components/ui/textarea";
-import { Song, Artist } from "../../types";
+import { Song, Artist, Genre, Mood } from "../../types"; // <-- Убедитесь, что Genre и Mood импортированы
 
 // frontend/src/pages/AdminPage/EditSongDialog.tsx
 import { memo } from "react"; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
@@ -39,10 +39,21 @@ interface EditSongDialogProps {
 
 // Переименуем основной компонент для ясности, чтобы обернуть его в memo
 const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
-  const { albums, artists, fetchAlbums, fetchArtists, fetchSongs } =
-    useMusicStore();
+  const {
+    albums,
+    artists,
+    fetchAlbums,
+    fetchArtists,
+    fetchSongs,
+    genres,
+    moods,
+    fetchGenres,
+    fetchMoods,
+  } = useMusicStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
+  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
 
   // Инициализация состояния на основе props.song
   const [currentSongData, setCurrentSongData] = useState({
@@ -98,6 +109,9 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
     if (dialogOpen) {
       fetchArtists();
       fetchAlbums();
+      fetchGenres(); // <-- ВЫЗОВ
+      fetchMoods(); // <-- ВЫЗОВ
+
       // Сброс и инициализация при каждом открытии
       setCurrentSongData({
         title: song.title,
@@ -116,12 +130,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
         vocalsFile: null,
         imageFile: null,
       });
+      setSelectedGenreIds(song.genres.map((genre: Genre) => genre._id));
+      setSelectedMoodIds(song.moods.map((mood: Mood) => mood._id));
       setPreviewImageUrl(song.imageUrl);
       setPreviewInstrumentalUrl(song.instrumentalUrl);
       setPreviewVocalsUrl(song.vocalsUrl || null);
       setClearVocals(false);
     }
-  }, [dialogOpen, fetchArtists, fetchAlbums, song]); // <-- song ДОБАВЛЕН ОБРАТНО В ЗАВИСИМОСТИ
+  }, [dialogOpen, fetchArtists, fetchAlbums, fetchGenres, fetchMoods, song]); // <-- song ДОБАВЛЕН ОБРАТНО В ЗАВИСИМОСТИ
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -170,6 +186,8 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
       formData.append("title", currentSongData.title);
       formData.append("artistIds", JSON.stringify(selectedArtistIds));
       formData.append("lyrics", currentSongData.lyrics || "");
+      formData.append("genreIds", JSON.stringify(selectedGenreIds));
+      formData.append("moodIds", JSON.stringify(selectedMoodIds));
 
       if (currentSongData.albumId && currentSongData.albumId !== "none") {
         formData.append("albumId", currentSongData.albumId);
@@ -374,6 +392,32 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 value: artist._id,
               }))}
               placeholder="Select artists"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Genres</label>
+            <MultiSelect
+              defaultValue={selectedGenreIds}
+              onValueChange={setSelectedGenreIds}
+              options={genres.map((genre) => ({
+                label: genre.name,
+                value: genre._id,
+              }))}
+              placeholder="Select genres"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">Moods</label>
+            <MultiSelect
+              defaultValue={selectedMoodIds}
+              onValueChange={setSelectedMoodIds}
+              options={moods.map((mood) => ({
+                label: mood.name,
+                value: mood._id,
+              }))}
+              placeholder="Select moods"
             />
           </div>
 
