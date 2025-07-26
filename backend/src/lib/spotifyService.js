@@ -144,3 +144,41 @@ export const getAlbumDataFromSpotify = async (albumUrl) => {
     return null;
   }
 };
+export const getArtistDataFromSpotify = async (artistId) => {
+  if (!artistId) {
+    console.error("[SpotifyService] ID артиста не предоставлен.");
+    return null;
+  }
+
+  try {
+    const token = await getAccessToken(); // Используем уже существующую функцию для получения токена
+    const response = await axios.get(
+      `https://api.spotify.com/v1/artists/${artistId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log(
+      `[SpotifyService] Данные для артиста ${response.data.name} успешно получены.`
+    );
+    // Мы возвращаем весь объект, так как он содержит массив images
+    return response.data;
+  } catch (error) {
+    console.error(
+      `[SpotifyService] Ошибка при получении данных артиста ${artistId} со Spotify:`,
+      error.message
+    );
+    if (error.response) {
+      console.error(
+        "Status:",
+        error.response.status,
+        "Data:",
+        error.response.data
+      );
+    }
+    return null;
+  }
+};

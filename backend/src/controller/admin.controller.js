@@ -11,7 +11,10 @@ import * as mm from "music-metadata";
 import { getTagsFromAI } from "../lib/ai.service.js"; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
 
 // --- НОВЫЕ ИМПОРТЫ ДЛЯ АВТОМАТИЗАЦИИ АЛЬБОМА ---
-import { getAlbumDataFromSpotify } from "../lib/spotifyService.js"; // Для данных Spotify
+import {
+  getAlbumDataFromSpotify,
+  getArtistDataFromSpotify,
+} from "../lib/spotifyService.js"; // Для данных Spotify
 import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js"; // Для LRC текстов
 import {
   extractZip,
@@ -781,7 +784,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       if (parsed) {
         const normalizedSongName = parsed.songName
           .toLowerCase()
-          .replace(/[^\p{L}\p{N}]/gu, ""); // <-- ИСПРАВЛЕНО
+          .replace(/[^\p{L}\p{N}]/gu, "");
         if (!trackFilesMap[normalizedSongName])
           trackFilesMap[normalizedSongName] = {};
         trackFilesMap[normalizedSongName][`${parsed.trackType}Path`] = filePath;
@@ -791,11 +794,34 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     const albumArtistIds = [];
     for (const spotifyArtist of spotifyAlbumData.artists || []) {
       let artist = await Artist.findOne({ name: spotifyArtist.name });
+
       if (!artist) {
-        const artistImageUrl =
-          spotifyArtist.images && spotifyArtist.images.length > 0
-            ? spotifyArtist.images[0].url
-            : "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+        console.log(
+          `[AdminController] Основной артист альбома: ${spotifyArtist.name}. Получение данных со Spotify...`
+        );
+        let artistImageUrl =
+          "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+
+        try {
+          const artistDetails = await getArtistDataFromSpotify(
+            spotifyArtist.id
+          );
+          if (
+            artistDetails &&
+            artistDetails.images &&
+            artistDetails.images.length > 0
+          ) {
+            artistImageUrl = artistDetails.images[0].url;
+            console.log(
+              `[AdminController] Найдена аватарка для основного артиста ${spotifyArtist.name}.`
+            );
+          }
+        } catch (e) {
+          console.error(
+            `[AdminController] Не удалось получить детали для основного артиста ${spotifyArtist.name}:`,
+            e
+          );
+        }
 
         const imageUpload = await uploadToCloudinary(artistImageUrl, "artists");
 
@@ -843,30 +869,41 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       spotifyAlbumData.tracks.items || spotifyAlbumData.tracks;
 
     for (const spotifyTrack of tracksToProcess) {
+      // <-- ИСПРАВЛЕНИЕ 2: Объявляем переменные здесь
       const songName = spotifyTrack.name;
       const durationMs = spotifyTrack.duration_ms;
       console.log(`[AdminController] Обработка трека: ${songName}`);
 
       const songArtistIds = [];
-      // Итерируем по всем артистам, указанным именно для этого трека
       for (const spotifyTrackArtist of spotifyTrack.artists || []) {
-        // Пытаемся найти артиста в нашей БД
         let artist = await Artist.findOne({ name: spotifyTrackArtist.name });
-
-        // Если артист не найден, создаем его!
         if (!artist) {
           console.log(
-            `[AdminController] Создание нового артиста: ${spotifyTrackArtist.name}`
+            `[AdminController] Новый артист: ${spotifyTrackArtist.name}. Получение данных со Spotify...`
           );
-          // Для приглашенных артистов у нас нет прямой ссылки на картинку,
-          // поэтому используем плейсхолдер.
-          const placeholderImageUrl =
+          let artistImageUrl =
             "https://res.cloudinary.com/dssg0ex0c/image/upload/v1753430664/artists/kwknwdmsmoace6wpyfue.jpg";
+          try {
+            const artistDetails = await getArtistDataFromSpotify(
+              spotifyTrackArtist.id
+            );
+            if (
+              artistDetails &&
+              artistDetails.images &&
+              artistDetails.images.length > 0
+            ) {
+              artistImageUrl = artistDetails.images[0].url;
+            }
+          } catch (e) {
+            console.error(
+              `[AdminController] Не удалось получить детали для приглашенного артиста ${spotifyTrackArtist.name}:`,
+              e
+            );
+          }
           const imageUpload = await uploadToCloudinary(
-            placeholderImageUrl,
+            artistImageUrl,
             "artists"
           );
-
           artist = new Artist({
             name: spotifyTrackArtist.name,
             imageUrl: imageUpload.url,
@@ -876,28 +913,23 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           });
           await artist.save();
         }
-
-        // Добавляем ID найденного или только что созданного артиста в массив для песни
         songArtistIds.push(artist._id);
       }
-
-      // Больше нет необходимости в этой строке, так как songArtistIds будет заполнен корректно
-      // if (songArtistIds.length === 0) songArtistIds.push(...albumArtistIds);
 
       const primaryArtistName = (await Artist.findById(songArtistIds[0])).name;
       const { genreIds, moodIds } = await getTagsFromAI(
         primaryArtistName,
-        songName
+        songName // Теперь эта переменная существует
       );
 
-      const normalizedSpotifySongName = songName
+      const normalizedSpotifySongName = songName // Теперь эта переменная существует
         .toLowerCase()
-        .replace(/[^\p{L}\p{N}]/gu, ""); // <-- ИСПРАВЛЕНО
+        .replace(/[^\p{L}\p{N}]/gu, "");
       const filesForTrack = trackFilesMap[normalizedSpotifySongName];
 
       let vocalsUpload = { url: null, publicId: null };
       let instrumentalUpload = { url: null, publicId: null };
-      let lrcText = ""; // <--- ВОЗВРАЩАЕМ lrcText
+      let lrcText = "";
 
       if (filesForTrack) {
         if (filesForTrack.vocalsPath) {
@@ -912,7 +944,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
             "songs/instrumentals"
           );
         }
-        // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: ВОЗВРАЩАЕМ ЛОГИКУ ДЛЯ LRC-ФАЙЛОВ ---
         if (filesForTrack.lrcPath) {
           try {
             lrcText = await fs.readFile(filesForTrack.lrcPath, "utf8");
@@ -928,25 +959,24 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         }
       }
 
-      // --- ВОЗВРАЩАЕМ ЛОГИКУ ПОИСКА ТЕКСТА В LRC-LIB, ЕСЛИ ЕГО НЕ БЫЛО В ZIP ---
       if (!lrcText) {
         lrcText = await getLrcLyricsFromLrclib({
           artistName: primaryArtistName,
-          songName: songName,
+          songName: songName, // Теперь эта переменная существует
           albumName: album.title,
           songDuration: durationMs,
         });
       }
 
       const song = new Song({
-        title: songName,
+        title: songName, // Теперь эта переменная существует
         artist: songArtistIds,
         albumId: album._id,
         vocalsUrl: vocalsUpload.url,
         vocalsPublicId: vocalsUpload.publicId,
         instrumentalUrl: instrumentalUpload.url,
         instrumentalPublicId: instrumentalUpload.publicId,
-        lyrics: lrcText || "", // <-- ИСПОЛЬЗУЕМ НАЙДЕННЫЙ ТЕКСТ
+        lyrics: lrcText || "",
         duration: Math.round(durationMs / 1000),
         imageUrl: album.imageUrl,
         genres: genreIds,
