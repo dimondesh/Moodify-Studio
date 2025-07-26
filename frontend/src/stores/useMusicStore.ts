@@ -11,6 +11,8 @@ interface MusicStore {
   isLoading: boolean;
   error: string | null;
   currentAlbum: Album | null;
+  recentlyListenedSongs: Song[]; // <-- ДОБАВИТЬ НОВОЕ СОСТОЯНИЕ
+
   featuredSongs: Song[];
   genres: Genre[]; // <-- НОВОЕ
   moods: Mood[]; // <-- НОВОЕ
@@ -26,6 +28,8 @@ interface MusicStore {
   fetchMoods: () => Promise<void>; // <-- НОВОЕ
   fetchStats: () => Promise<void>;
   fetchSongs: () => Promise<void>;
+  fetchRecentlyListenedSongs: () => Promise<void>; // <-- ДОБАВИТЬ НОВУЮ ФУНКЦИЮ
+
   fetchArtists: () => Promise<void>; // НОВОЕ: Функция для получения артистов
   deleteSong: (id: string) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
@@ -41,11 +45,14 @@ export const useMusicStore = create<MusicStore>((set) => ({
   isLoading: false,
   error: null,
   genres: [],
+
   moods: [],
   currentAlbum: null,
   featuredSongs: [],
   madeForYouSongs: [],
   trendingSongs: [],
+  recentlyListenedSongs: [], // <-- ИНИЦИАЛИЗИРОВАТЬ ПУСТЫМ МАССИВОМ
+
   stats: {
     totalSongs: 0,
     totalAlbums: 0,
@@ -233,7 +240,19 @@ export const useMusicStore = create<MusicStore>((set) => ({
       set({ isLoading: false });
     }
   },
-
+  fetchRecentlyListenedSongs: async () => {
+    try {
+      const response = await axiosInstance.get("/songs/history");
+      set({ recentlyListenedSongs: response.data.songs || [] });
+      console.log("✅ Recently Listened songs updated.");
+    } catch (error: any) {
+      console.error(
+        "Could not fetch listen history:",
+        error.response?.data?.message
+      );
+      set({ recentlyListenedSongs: [] });
+    }
+  },
   fetchTrendingSongs: async () => {
     set({ isLoading: true, error: null });
     try {

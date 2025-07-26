@@ -7,6 +7,7 @@ import { webAudioService } from "../lib/webAudio";
 // --- ИМПОРТЫ ---
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
+import { useMusicStore } from "@/stores/useMusicStore";
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -491,7 +492,9 @@ const AudioPlayer = () => {
               `[AudioPlayer] Listen recorded successfully for song: ${currentSong.title}`
             );
           }
+          useMusicStore.getState().fetchRecentlyListenedSongs();
         })
+
         .catch((error) => {
           // Если произошла ошибка, сбрасываем флаг, чтобы можно было попробовать еще раз
           listenRecordedRef.current = false;

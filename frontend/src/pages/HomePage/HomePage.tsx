@@ -8,12 +8,16 @@ import { usePlaylistStore } from "../../stores/usePlaylistStore"; // Импор�
 import PlaylistGrid from "../SearchPage/PlaylistGrid"; // Импортируем PlaylistGrid
 import { useMixesStore } from "../../stores/useMixesStore"; // <-- ИМПОРТ
 import MixGrid from "./MixGrid"; // <-- ИМПОРТ
+import { useAuthStore } from "../../stores/useAuthStore"; // <-- ВАЖНЫЙ ИМПОРТ
 
 const HomePage = () => {
   const {
     fetchFeaturedSongs,
     fetchMadeForYouSongs,
     fetchTrendingSongs,
+    fetchRecentlyListenedSongs,
+    recentlyListenedSongs,
+
     isLoading, // Общий isLoading для MusicStore
     madeForYouSongs,
     trendingSongs,
@@ -25,6 +29,7 @@ const HomePage = () => {
     isLoading: areMixesLoading,
     fetchDailyMixes,
   } = useMixesStore();
+  const { user } = useAuthStore(); // <-- Получаем текущего пользователя
 
   const {
     fetchPublicPlaylists,
@@ -38,15 +43,20 @@ const HomePage = () => {
   useEffect(() => {
     fetchFeaturedSongs();
     fetchTrendingSongs();
-    fetchMadeForYouSongs();
     fetchDailyMixes(); // <-- ВЫЗОВ
 
     fetchPublicPlaylists(); // Загружаем публичные плейлисты
+    if (user) {
+      fetchMadeForYouSongs();
+      fetchRecentlyListenedSongs();
+    }
   }, [
+    user,
     fetchFeaturedSongs,
     fetchTrendingSongs,
     fetchMadeForYouSongs,
-    fetchDailyMixes, // <-- ВЫЗОВ
+    fetchDailyMixes,
+    fetchRecentlyListenedSongs, // <-- ВЫЗОВ
 
     fetchPublicPlaylists, // Добавляем в зависимости
   ]);
@@ -93,12 +103,22 @@ const HomePage = () => {
           <FeaturedSection />
 
           <div className="space-y-8">
-            <SectionGrid
-              title="Made For You"
-              songs={madeForYouSongs}
-              isLoading={isLoading}
-              showAllPath="/full-songs"
-            />
+            {madeForYouSongs && recentlyListenedSongs.length >= 5 && (
+              <SectionGrid
+                title="Made For You"
+                songs={madeForYouSongs}
+                isLoading={isLoading}
+                showAllPath="/full-songs"
+              />
+            )}
+            {recentlyListenedSongs && recentlyListenedSongs.length >= 10 && (
+              <SectionGrid
+                title="You Recently Listened"
+                songs={recentlyListenedSongs}
+                isLoading={isLoading}
+                // `AllSongsPage` автоматически подхватит данные из `state`
+              />
+            )}
             <MixGrid
               title="Genre Mixes"
               mixes={genreMixes}

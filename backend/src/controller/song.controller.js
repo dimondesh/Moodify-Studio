@@ -218,3 +218,42 @@ export const recordListen = async (req, res, next) => {
   }
 };
 // Старую функцию incrementPlayCount можно полностью удалить
+export const getListenHistory = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Получаем всю историю, сортируя по последней дате прослушивания
+    const fullHistory = await ListenHistory.find({ user: userId })
+      .sort({ listenedAt: -1 })
+      .populate({
+        path: "song",
+        populate: {
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
+        },
+      })
+      .lean(); // .lean() для производительности
+
+    if (!fullHistory || fullHistory.length === 0) {
+      return res.json({ songs: [] });
+    }
+
+    // 2. Убираем дубликаты, сохраняя порядок последнего прослушивания
+    const uniqueSongs = [];
+    const seenSongIds = new Set();
+
+    for (const record of fullHistory) {
+      // Пропускаем, если песня была удалена или уже добавлена в наш список
+      if (record.song && !seenSongIds.has(record.song._id.toString())) {
+        seenSongIds.add(record.song._id.toString());
+        uniqueSongs.push(record.song);
+      }
+    }
+
+    res.status(200).json({ songs: uniqueSongs });
+  } catch (error) {
+    console.error("Error fetching listen history:", error);
+    next(error);
+  }
+};
