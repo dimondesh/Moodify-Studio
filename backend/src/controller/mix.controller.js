@@ -2,6 +2,7 @@ import { Mix } from "../models/mix.model.js";
 import { Genre } from "../models/genre.model.js";
 import { Mood } from "../models/mood.model.js";
 import { Song } from "../models/song.model.js";
+import { ListenHistory } from "../models/listenHistory.model.js"; // <-- ИМПОРТ
 
 // Функция для получения YYYY-MM-DD для сравнения дат
 const getTodayDate = () => {
@@ -28,72 +29,92 @@ const groupMixes = (mixes) => {
 export const getDailyMixes = async (req, res, next) => {
   try {
     const today = getTodayDate();
+    let mixes = await Mix.find({ generatedOn: today }).lean();
 
-    let mixes = await Mix.find({ generatedOn: today }).populate({
+    // Генерация миксов, если их нет на сегодня
+    if (mixes.length === 0) {
+      await Mix.deleteMany({});
+      const genres = await Genre.find().lean();
+      const moods = await Mood.find().lean();
+      const sources = [
+        ...genres.map((g) => ({ ...g, type: "Genre" })),
+        ...moods.map((m) => ({ ...m, type: "Mood" })),
+      ];
+      const newMixesData = [];
+      for (const source of sources) {
+        const queryField = source.type === "Genre" ? "genres" : "moods";
+        const songCount = await Song.countDocuments({
+          [queryField]: source._id,
+        });
+        if (songCount < 5) continue;
+        const randomSongs = await Song.aggregate([
+          { $match: { [queryField]: source._id } },
+          { $sample: { size: 30 } },
+          {
+            $lookup: {
+              from: "artists",
+              localField: "artist",
+              foreignField: "_id",
+              as: "artistDetails",
+            },
+          },
+        ]);
+        if (randomSongs.length === 0 || !randomSongs[0].artistDetails?.[0])
+          continue;
+        newMixesData.push({
+          name: `${source.name} Mix`,
+          type: source.type,
+          sourceName: source.name,
+          sourceId: source._id, // <-- СОХРАНЯЕМ ID ИСТОЧНИКА
+          songs: randomSongs.map((s) => s._id),
+          imageUrl: randomSongs[0].artistDetails[0].imageUrl,
+          generatedOn: today,
+        });
+      }
+      if (newMixesData.length > 0) {
+        mixes = await Mix.insertMany(newMixesData);
+      }
+    }
+
+    // --- ЛОГИКА ПЕРСОНАЛИЗАЦИИ ---
+    // Проверяем, определил ли middleware пользователя
+    if (req.user && req.user.id) {
+      const userId = req.user.id;
+      const listenHistory = await ListenHistory.find({ user: userId })
+        .limit(150)
+        .populate({ path: "song", select: "genres moods" })
+        .lean();
+
+      const validHistory = listenHistory.filter((item) => item.song);
+
+      if (validHistory.length > 0) {
+        const preferenceCounts = {};
+        validHistory.forEach((item) => {
+          item.song.genres.forEach((genreId) => {
+            preferenceCounts[genreId] = (preferenceCounts[genreId] || 0) + 1;
+          });
+          item.song.moods.forEach((moodId) => {
+            preferenceCounts[moodId] = (preferenceCounts[moodId] || 0) + 1;
+          });
+        });
+
+        // Сортируем миксы на основе очков предпочтений
+        mixes.sort((a, b) => {
+          const scoreA = preferenceCounts[a.sourceId.toString()] || 0;
+          const scoreB = preferenceCounts[b.sourceId.toString()] || 0;
+          return scoreB - scoreA; // Сортировка по убыванию
+        });
+      }
+    }
+
+    // Популируем песни в уже (возможно) отсортированном списке миксов
+    const populatedMixes = await Mix.populate(mixes, {
       path: "songs",
-      select: "title duration imageUrl artist",
+      select: "title duration imageUrl artist albumId",
       populate: { path: "artist", select: "name" },
     });
 
-    if (mixes.length > 0) {
-      return res.status(200).json(groupMixes(mixes));
-    }
-
-    await Mix.deleteMany({});
-
-    const genres = await Genre.find().lean();
-    const moods = await Mood.find().lean();
-    const sources = [
-      ...genres.map((g) => ({ ...g, type: "Genre" })),
-      ...moods.map((m) => ({ ...m, type: "Mood" })),
-    ];
-
-    const newMixesData = [];
-
-    for (const source of sources) {
-      const queryField = source.type === "Genre" ? "genres" : "moods";
-      const songCount = await Song.countDocuments({ [queryField]: source._id });
-      if (songCount < 5) continue;
-
-      const randomSongs = await Song.aggregate([
-        { $match: { [queryField]: source._id } },
-        { $sample: { size: 30 } },
-        {
-          $lookup: {
-            from: "artists",
-            localField: "artist",
-            foreignField: "_id",
-            as: "artistDetails",
-          },
-        },
-      ]);
-
-      if (randomSongs.length === 0 || !randomSongs[0].artistDetails?.[0])
-        continue;
-
-      newMixesData.push({
-        name: `${source.name} Mix`,
-        type: source.type,
-        sourceName: source.name,
-        songs: randomSongs.map((s) => s._id),
-        imageUrl: randomSongs[0].artistDetails[0].imageUrl,
-        generatedOn: today,
-      });
-    }
-
-    if (newMixesData.length > 0) {
-      const createdMixes = await Mix.insertMany(newMixesData);
-      const populatedNewMixes = await Mix.find({
-        _id: { $in: createdMixes.map((m) => m._id) },
-      }).populate({
-        path: "songs",
-        select: "title duration imageUrl artist",
-        populate: { path: "artist", select: "name" },
-      });
-      return res.status(200).json(groupMixes(populatedNewMixes));
-    }
-
-    return res.status(200).json({ genreMixes: [], moodMixes: [] });
+    res.status(200).json(groupMixes(populatedMixes));
   } catch (error) {
     console.error("Error in getDailyMixes:", error);
     next(error);

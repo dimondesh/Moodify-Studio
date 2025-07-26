@@ -18,6 +18,8 @@ const mixSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    sourceId: { type: mongoose.Schema.Types.ObjectId, required: true }, // <-- ДОБАВИТЬ ЭТО ПОЛЕ
+
     songs: [
       {
         type: mongoose.Schema.Types.ObjectId,
