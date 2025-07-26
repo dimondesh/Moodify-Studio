@@ -127,7 +127,16 @@ const AlbumPage = () => {
                 <p className="text-xs sm:text-sm font-medium ">
                   {currentAlbum.type || "Album"}
                 </p>
-                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
+                <h1
+                  className={`
+                    ${
+                      currentAlbum.title.length > 25
+                        ? "text-3xl sm:text-4xl lg:text-5xl"
+                        : "text-4xl sm:text-5xl lg:text-7xl"
+                    } 
+                    font-bold mt-2 mb-2 sm:my-4 break-words
+                  `}
+                >
                   {currentAlbum.title}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100">
