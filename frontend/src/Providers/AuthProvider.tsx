@@ -14,6 +14,7 @@ interface AuthProviderProps {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [firebaseChecked, setFirebaseChecked] = useState(false);
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
 
   const { user, setUser, fetchUser, logout } = useAuthStore();
   const { initSocket, disconnectSocket, isConnected } = useChatStore();
@@ -103,8 +104,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         <Card className="w-[90%] max-w-md bg-zinc-900 border-zinc-800">
           <CardContent className="flex flex-col items-center gap-4 pt-6">
             <Loader className="size-6 text-violet-500 animate-spin" />
-            <h3 className="text-zinc-400 text-xl font-bold">Logging you in</h3>
-            <p className="text-zinc-400 text-sm">Redirecting...</p>
+            <h3 className="text-zinc-400 text-xl font-bold">
+              {t("auth.loggingIn")}
+            </h3>
+            <p className="text-zinc-400 text-sm">{t("auth.redirecting")}</p>
           </CardContent>
         </Card>
       </div>

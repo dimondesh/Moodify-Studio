@@ -22,7 +22,7 @@
     }
   },
   "topbar": {
-    "searchPlaceholder": "Исполнители, треки или подкасты",
+    "searchPlaceholder": "Исполнители, треки или плейлисты",
     "cancel": "Отмена",
     "admin": "Админ",
     "profile": "Профиль",

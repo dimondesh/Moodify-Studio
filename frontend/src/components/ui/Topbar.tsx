@@ -23,6 +23,7 @@ import {
 } from "../ui/dropdown-menu";
 import WaveAnalyzer from "./WaveAnalyzer";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import MoodifyLogo from "../MoodifyLogo";
 
 const Topbar = () => {
   const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
@@ -66,6 +67,11 @@ const Topbar = () => {
       }
     }, 300);
   };
+  const handleBlur = () => {
+    setQuery("");
+    navigate("/search");
+    setIsSearchVisible(false);
+  };
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -78,7 +84,8 @@ const Topbar = () => {
           isSearchVisible ? "hidden sm:flex" : "flex"
         }`}
       >
-        <img src="/Moodify.png" alt="Moodify" className="h-8 w-auto" />
+        <MoodifyLogo />
+        {/* <img src="/Moodify.svg" alt="Moodify" className="h-8 w-auto" /> */}
         <WaveAnalyzer width={120} height={30} />
       </div>
 
@@ -94,6 +101,7 @@ const Topbar = () => {
           value={query}
           onChange={handleChange}
           autoFocus={isSearchVisible}
+          onBlur={handleBlur}
           className="
             w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm
             text-zinc-200 placeholder:text-zinc-500 focus:outline-none
