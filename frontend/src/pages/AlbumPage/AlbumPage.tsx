@@ -306,7 +306,7 @@ const AlbumPage = () => {
                             className={`rounded-full ${
                               songIsLiked
                                 ? "text-violet-500 hover:text-violet-400"
-                                : "text-zinc-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
