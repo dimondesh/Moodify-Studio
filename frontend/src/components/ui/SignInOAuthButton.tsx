@@ -25,9 +25,9 @@ const SignInOAuthButton = () => {
     <Button
       onClick={signInWithGoogle}
       variant="secondary"
-      className="w-3fr text-white border-zinc-200 h-11"
+      className="w-30 md:w-40 text-white border-zinc-200 h-10"
     >
-      {t("topbar.login")}
+      <p className="text-xs">{t("topbar.login")}</p>
     </Button>
   );
 };

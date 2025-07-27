@@ -37,7 +37,6 @@ const Topbar = () => {
     displayName: string | null;
     photoURL: string | null;
   }>(null);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -84,7 +83,10 @@ const Topbar = () => {
           isSearchVisible ? "hidden sm:flex" : "flex"
         }`}
       >
-        <MoodifyLogo />
+        <Link to="/">
+          <MoodifyLogo />
+        </Link>
+
         {/* <img src="/Moodify.svg" alt="Moodify" className="h-8 w-auto" /> */}
         <WaveAnalyzer width={120} height={30} />
       </div>
@@ -127,15 +129,16 @@ const Topbar = () => {
           isSearchVisible ? "hidden" : "flex"
         }`}
       >
-        <Button
-          size="icon"
-          variant="ghost"
-          className="md:hidden"
-          onClick={() => setIsSearchVisible(true)}
-        >
-          <Search className="w-5 h-5" />
-        </Button>
-
+        {user && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="md:hidden"
+            onClick={() => setIsSearchVisible(true)}
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+        )}
         {isAdmin && (
           <Link
             to={"/admin"}
