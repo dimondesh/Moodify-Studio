@@ -1,3 +1,5 @@
+// frontend/src/pages/AdminPage/SongsTabContent.tsx
+
 import { Music } from "lucide-react";
 import {
   Card,
@@ -8,8 +10,10 @@ import {
 } from "../../components/ui/card";
 import SongsTable from "./SongsTable";
 import AddSongDialog from "./AddSongDialog";
+import { useTranslation } from "react-i18next";
 
 const SongsTabContent = () => {
+  const { t } = useTranslation();
   return (
     <Card className="border-zinc-700/50">
       <CardHeader>
@@ -17,9 +21,9 @@ const SongsTabContent = () => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Music className="size-5 text-emerald-500" />
-              Songs Library
+              {t("admin.songs.title")}
             </CardTitle>
-            <CardDescription>Manage your music tracks</CardDescription>
+            <CardDescription>{t("admin.songs.description")}</CardDescription>
           </div>
           <AddSongDialog />
         </div>

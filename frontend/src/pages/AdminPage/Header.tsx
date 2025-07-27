@@ -1,3 +1,5 @@
+// frontend/src/pages/AdminPage/Header.tsx
+
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { auth, signOut } from "../../lib/firebase";
@@ -12,8 +14,10 @@ import {
 import SignInOAuthButton from "../../components/ui/SignInOAuthButton";
 import { LayoutDashboardIcon, LogOut, HomeIcon } from "lucide-react";
 import { useAuthStore } from "../../stores/useAuthStore";
+import { useTranslation } from "react-i18next";
 
 const Header = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<null | {
     displayName: string | null;
     photoURL: string | null;
@@ -42,29 +46,21 @@ const Header = () => {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3 mb-8">
-        {/* Логотип для планшетов и ПК */}
         <Link to="/" className="rounded-lg hidden sm:block">
-          {" "}
-          {/* sm:block делает его видимым от sm и выше */}
           <img
             src="/Moodify.png"
             alt="Moodify Logo - Go to Home"
             className="size-10 text-black cursor-pointer"
           />
         </Link>
-
-        {/* НОВАЯ КНОПКА "НАЗАД НА ДОМАШНЮЮ" ДЛЯ МОБИЛОК */}
         <Link to="/" className="sm:hidden">
-          {" "}
-          {/* sm:hidden скрывает на sm и выше, оставляя видимым только на мобилках */}
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <HomeIcon className="h-5 w-5" />
           </Button>
         </Link>
-
         <div>
-          <h1 className="text-3xl font-bold">Music Manager</h1>
-          <p className="text-zinc-400 mt-1">Manage your music catalog</p>
+          <h1 className="text-3xl font-bold">{t("admin.title")}</h1>
+          <p className="text-zinc-400 mt-1">{t("admin.description")}</p>
         </div>
       </div>
 
@@ -99,7 +95,7 @@ const Header = () => {
               >
                 <Link to="/admin">
                   <LayoutDashboardIcon className="w-4 h-4 mr-2" />
-                  Admin Dashboard
+                  {t("topbar.adminDashboard")}
                 </Link>
               </DropdownMenuItem>
             )}
@@ -108,7 +104,7 @@ const Header = () => {
               className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              {t("topbar.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

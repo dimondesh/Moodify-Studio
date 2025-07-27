@@ -1,6 +1,6 @@
 // frontend/src/pages/AlbumPage/AlbumPage.tsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Импортируем useNavigate
+import { useParams, useNavigate } from "react-router-dom";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
@@ -17,6 +17,7 @@ import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { format } from "date-fns";
 import { useDominantColor } from "@/hooks/useDominantColor";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -26,8 +27,9 @@ const formatDuration = (seconds: number) => {
 };
 
 const AlbumPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { albumId } = useParams();
-  const navigate = useNavigate(); // Инициализируем useNavigate
+  const navigate = useNavigate();
   const { fetchAlbumbyId, currentAlbum, isLoading } = useMusicStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
@@ -67,10 +69,10 @@ const AlbumPage = () => {
   if (!currentAlbum) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
-        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Album Not Found</h1>
-        <p className="text-zinc-400">
-          The album you are looking for could not be found.
-        </p>
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
+          {t("pages.album.notFoundTitle")}
+        </h1>
+        <p className="text-zinc-400">{t("pages.album.notFoundDesc")}</p>
       </div>
     );
   }
@@ -89,12 +91,10 @@ const AlbumPage = () => {
     playAlbum(currentAlbum.songs, index);
   };
 
-  // --- НОВАЯ ФУНКЦИЯ: ОБРАБОТЧИК КЛИКА ПО ИМЕНИ АРТИСТА ---
   const handleArtistClick = (artistId: string) => {
     navigate(`/artists/${artistId}`);
   };
 
-  // --- НОВАЯ ФУНКЦИЯ: ОБРАБОТЧИК КЛИКА ПО НАЗВАНИЮ АЛЬБОМА (для плеера) ---
   const handleAlbumTitleClick = (albumId: string | null | undefined) => {
     if (albumId) {
       navigate(`/albums/${albumId}`);
@@ -120,12 +120,12 @@ const AlbumPage = () => {
                 className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
+                    "/default-album-cover.png";
                 }}
               />
               <div className="flex flex-col justify-end text-center sm:text-left">
                 <p className="text-xs sm:text-sm font-medium ">
-                  {currentAlbum.type || "Album"}
+                  {currentAlbum.type || t("pages.album.type")}
                 </p>
                 <h1
                   className={`
@@ -140,7 +140,6 @@ const AlbumPage = () => {
                   {currentAlbum.title}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100">
-                  {/* ИЗМЕНЕНО: Рендеринг кликабельных имен артистов альбома */}
                   <span className="font-medium text-white">
                     {currentAlbum.artist.map((artist, index) => (
                       <span key={artist._id}>
@@ -156,7 +155,9 @@ const AlbumPage = () => {
                   </span>
                   <span>
                     • {currentAlbum.songs.length}{" "}
-                    {currentAlbum.songs.length !== 1 ? "songs" : "song"}
+                    {currentAlbum.songs.length !== 1
+                      ? t("pages.album.songs")
+                      : t("pages.album.song")}
                   </span>
                   <span>• {currentAlbum.releaseYear}</span>
                 </div>
@@ -188,7 +189,11 @@ const AlbumPage = () => {
                   className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors ${
                     inLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
                   }`}
-                  title={inLibrary ? "Remove from Library" : "Add to Library"}
+                  title={
+                    inLibrary
+                      ? t("pages.album.actions.removeFromLibrary")
+                      : t("pages.album.actions.addToLibrary")
+                  }
                 >
                   {inLibrary ? (
                     <CheckCircle2 className="size-6 sm:size-8 text-violet-400" />
@@ -205,10 +210,10 @@ const AlbumPage = () => {
             text-zinc-400 border-b border-white/5"
               >
                 <div>#</div>
-                <div>Title</div>
+                <div>{t("pages.album.headers.title")}</div>
                 <div className="hidden md:flex justify-between">
-                  Released Date
-                </div>{" "}
+                  {t("pages.album.headers.releaseDate")}
+                </div>
                 <div>
                   <Clock className="h-4 w-4" />
                 </div>
@@ -241,7 +246,6 @@ const AlbumPage = () => {
                               {index + 1}
                             </span>
                           )}
-
                           {!isCurrentSong && (
                             <Play className="h-4 w-4 hidden group-hover:block" />
                           )}
@@ -257,12 +261,10 @@ const AlbumPage = () => {
                                 "/default-song-cover.png";
                             }}
                           />
-
                           <div>
-                            {/* ИЗМЕНЕНО: Кликабельное название песни для перехода на страницу альбома */}
                             <button
                               onClick={(e) => {
-                                e.stopPropagation(); // Предотвращаем срабатывание handlePlaySong
+                                e.stopPropagation();
                                 handleAlbumTitleClick(song.albumId);
                               }}
                               className={`font-medium text-left hover:underline focus:outline-none focus:underline ${
@@ -271,13 +273,12 @@ const AlbumPage = () => {
                             >
                               {song.title}
                             </button>
-                            {/* ИЗМЕНЕНО: Рендеринг кликабельных имен артистов песни */}
                             <div className="text-zinc-400">
                               {song.artist.map((artist, artistIndex) => (
                                 <span key={artist._id}>
                                   <button
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Предотвращаем срабатывание handlePlaySong
+                                      e.stopPropagation();
                                       handleArtistClick(artist._id);
                                     }}
                                     className="hover:underline focus:outline-none focus:underline"
@@ -311,7 +312,11 @@ const AlbumPage = () => {
                               e.stopPropagation();
                               toggleSongLike(song._id);
                             }}
-                            title={songIsLiked ? "Unlike song" : "Like song"}
+                            title={
+                              songIsLiked
+                                ? t("player.unlike")
+                                : t("player.like")
+                            }
                           >
                             <Heart
                               className={`h-5 w-5 ${

@@ -5,8 +5,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../stores/useAuthStore";
 import type { User, Playlist } from "../../types";
-
-// UI Components
 import {
   Avatar,
   AvatarFallback,
@@ -17,10 +15,9 @@ import { Loader2 } from "lucide-react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { EditProfileDialog } from "./EditProfileDialog";
 import ProfileSection from "./ProfileSection";
-
-// Hooks
 import { useDominantColor } from "../../hooks/useDominantColor";
 import PlaylistRow from "./PlaylistRow";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 interface ListItem {
   _id: string;
@@ -30,11 +27,11 @@ interface ListItem {
 }
 
 const ProfilePage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
   const { extractColor } = useDominantColor();
-
   const [profileData, setProfileData] = useState<User | null>(null);
   const [followers, setFollowers] = useState<ListItem[]>([]);
   const [following, setFollowing] = useState<ListItem[]>([]);
@@ -51,13 +48,11 @@ const ProfilePage = () => {
         axiosInstance.get(`/users/${userId}/followers`),
         axiosInstance.get(`/users/${userId}/following`),
       ]);
-
       const profile = profileRes.data;
       setProfileData(profile);
       setFollowers(followersRes.data.items);
       setFollowing(followingRes.data.items);
       setIsFollowingUser(profile.followers.includes(currentUser?.id));
-
       if (profile.imageUrl) {
         const color = await extractColor(profile.imageUrl);
         setPageBackgroundColor(color || "#18181b");
@@ -94,7 +89,7 @@ const ProfilePage = () => {
   const handleShowAllPlaylists = () => {
     navigate("/list", {
       state: {
-        title: "Public Playlists",
+        title: t("pages.profile.playlistsSection"),
         apiEndpoint: `/users/${userId}/playlists`,
       },
     });
@@ -112,7 +107,9 @@ const ProfilePage = () => {
   }
 
   if (!profileData) {
-    return <div className="text-center p-10">User not found.</div>;
+    return (
+      <div className="text-center p-10">{t("pages.profile.notFound")}</div>
+    );
   }
 
   return (
@@ -134,42 +131,45 @@ const ProfilePage = () => {
               <AvatarFallback>{profileData.fullName[0]}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1 text-center sm:text-left">
-              <p className="hidden sm:block text-sm font-bold">Profile</p>
+              <p className="hidden sm:block text-sm font-bold">
+                {t("pages.profile.type")}
+              </p>
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black break-words">
                 {profileData.fullName}
               </h1>
               <div className="flex flex-row gap-2 justify-center sm:justify-start items-center gap-y-1 sm:gap-x-4 text-sm mt-1 text-zinc-300">
-                {/* --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ --- */}
-                {/* Мобильный вид (просто текст) */}
                 <span className="hidden">
-                  {profileData.publicPlaylistsCount ?? 0} Public Playlists
+                  {profileData.publicPlaylistsCount ?? 0}{" "}
+                  {t("pages.profile.playlists")}
                 </span>
-                {/* Десктопный вид (ссылка) */}
                 <Link
                   to="/list"
                   state={{
-                    title: "Public Playlists",
+                    title: t("pages.profile.playlistsSection"),
                     apiEndpoint: `/users/${userId}/playlists`,
                   }}
                   className="hidden sm:block hover:underline"
                 >
-                  {profileData.publicPlaylistsCount ?? 0} Public Playlists
+                  {profileData.publicPlaylistsCount ?? 0}{" "}
+                  {t("pages.profile.playlists")}
                 </Link>
-
                 <Link
                   to="/list"
                   state={{
-                    title: "Followers",
+                    title: t("pages.profile.followersSection"),
                     apiEndpoint: `/users/${userId}/followers`,
                   }}
                   className="hover:underline"
                 >
-                  <span>{profileData.followersCount ?? 0} followers</span>
+                  <span>
+                    {profileData.followersCount ?? 0}{" "}
+                    {t("pages.profile.followers")}
+                  </span>
                 </Link>
                 <Link
                   to="/list"
                   state={{
-                    title: "Following",
+                    title: t("pages.profile.followingSection"),
                     apiEndpoint: `/users/${userId}/following`,
                   }}
                   className="hover:underline"
@@ -177,7 +177,7 @@ const ProfilePage = () => {
                   <span>
                     {(profileData.followingUsersCount ?? 0) +
                       (profileData.followingArtistsCount ?? 0)}{" "}
-                    following
+                    {t("pages.profile.following")}
                   </span>
                 </Link>
               </div>
@@ -191,7 +191,7 @@ const ProfilePage = () => {
                 variant="outline"
                 className="rounded-full px-5"
               >
-                Edit
+                {t("pages.profile.edit")}
               </Button>
             ) : (
               <Button
@@ -199,13 +199,17 @@ const ProfilePage = () => {
                 variant="outline"
                 className="rounded-full px-5"
               >
-                {isFollowingUser ? "Following" : "Follow"}
+                {isFollowingUser
+                  ? t("pages.profile.followingButton")
+                  : t("pages.profile.followButton")}
               </Button>
             )}
           </div>
 
           <div className="mt-8 sm:hidden">
-            <h2 className="text-xl font-bold mb-2">Playlists</h2>
+            <h2 className="text-xl font-bold mb-2">
+              {t("pages.profile.playlists")}
+            </h2>
             <div className="flex flex-col gap-2">
               {profileData.playlists?.slice(0, 5).map((playlist: Playlist) => (
                 <PlaylistRow key={playlist._id} playlist={playlist} />
@@ -218,7 +222,7 @@ const ProfilePage = () => {
                   variant="outline"
                   className="rounded-full"
                 >
-                  See all playlists
+                  {t("pages.profile.showAllPlaylists")}
                 </Button>
               </div>
             )}
@@ -226,24 +230,26 @@ const ProfilePage = () => {
 
           <div className="hidden sm:block mt-12 space-y-12">
             <ProfileSection
-              title="Followers"
+              title={t("pages.profile.followersSection")}
               items={followers}
               apiEndpoint={`/users/${userId}/followers`}
             />
             <ProfileSection
-              title="Following"
+              title={t("pages.profile.followingSection")}
               items={following}
               apiEndpoint={`/users/${userId}/following`}
             />
             <div className="mt-12">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Public Playlists</h2>
+                <h2 className="text-2xl font-bold">
+                  {t("pages.profile.playlistsSection")}
+                </h2>
                 {profileData.playlists && profileData.playlists.length > 0 && (
                   <button
                     onClick={handleShowAllPlaylists}
                     className="text-sm font-bold text-zinc-400 hover:underline"
                   >
-                    Show all
+                    {t("pages.profile.showAll")}
                   </button>
                 )}
               </div>
@@ -264,7 +270,7 @@ const ProfilePage = () => {
                     <h3 className="font-semibold truncate">{playlist.title}</h3>
                     {playlist.owner && (
                       <p className="text-xs text-zinc-400 truncate">
-                        by {playlist.owner.fullName}
+                        {t("pages.profile.by")} {playlist.owner.fullName}
                       </p>
                     )}
                   </Link>

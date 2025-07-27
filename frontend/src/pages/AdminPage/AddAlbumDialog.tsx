@@ -1,5 +1,4 @@
-// /home/dmytro/VS_Projects/Moodify/frontend/src/pages/AdminPage/AddAlbumDialog.tsx
-
+// frontend/src/pages/AdminPage/AddAlbumDialog.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus, Upload } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
@@ -25,21 +24,20 @@ import {
 } from "../../components/ui/select";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { MultiSelect } from "../../components/ui/multi-select";
+import { useTranslation } from "react-i18next";
 
 const AddAlbumDialog = () => {
+  const { t } = useTranslation();
   const [albumDialogOpen, setAlbumDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { artists, fetchArtists, fetchAlbums } = useMusicStore();
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
-
   const [newAlbum, setNewAlbum] = useState({
     title: "",
     releaseYear: new Date().getFullYear(),
     type: "Album",
   });
-
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -57,7 +55,6 @@ const AddAlbumDialog = () => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-
     try {
       if (!imageFile) {
         return toast.error("Please upload an image for the album.");
@@ -65,22 +62,13 @@ const AddAlbumDialog = () => {
       if (selectedArtistIds.length === 0) {
         return toast.error("Please select at least one artist.");
       }
-
       const formData = new FormData();
       formData.append("title", newAlbum.title);
-      // ИЗМЕНЕНО: Отправляем artistIds как JSON-строку
       formData.append("artistIds", JSON.stringify(selectedArtistIds));
       formData.append("releaseYear", newAlbum.releaseYear.toString());
       formData.append("type", newAlbum.type);
       formData.append("imageFile", imageFile);
-
-      await axiosInstance.post("/admin/albums", formData, {
-        // УДАЛЕНО: Больше не нужно явно указывать Content-Type для FormData в Axios
-        // headers: {
-        //   "Content-Type": "multipart/form-data",
-        // },
-      });
-
+      await axiosInstance.post("/admin/albums", formData);
       setNewAlbum({
         title: "",
         releaseYear: new Date().getFullYear(),
@@ -106,14 +94,16 @@ const AddAlbumDialog = () => {
       <DialogTrigger asChild>
         <Button className="bg-violet-500 hover:bg-violet-600 text-white">
           <Plus className="mr-2 h-4 w-4" />
-          Add Album
+          {t("admin.albums.add")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200">
         <DialogHeader>
-          <DialogTitle className="text-zinc-200">Add New Album</DialogTitle>
+          <DialogTitle className="text-zinc-200">
+            {t("admin.albums.addDialogTitle")}
+          </DialogTitle>
           <DialogDescription>
-            Add a new album to your collection
+            {t("admin.albums.addDialogDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 text-zinc-200">
@@ -133,39 +123,44 @@ const AddAlbumDialog = () => {
                 <Upload className="h-6 w-6 text-zinc-400" />
               </div>
               <div className="text-sm text-zinc-400 mb-2">
-                {imageFile ? imageFile.name : "Upload album artwork"}
+                {imageFile ? imageFile.name : t("admin.albums.uploadArtwork")}
               </div>
               <Button variant="outline" size="sm" className="text-xs">
-                Choose File
+                {t("admin.common.chooseFile")}
               </Button>
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Album Title</label>
+            <label className="text-sm font-medium">
+              {t("admin.albums.fieldTitle")}
+            </label>
             <Input
               value={newAlbum.title}
               onChange={(e) =>
                 setNewAlbum({ ...newAlbum, title: e.target.value })
               }
               className="bg-zinc-800 border-zinc-700"
-              placeholder="Enter album title"
+              placeholder={t("admin.albums.placeholderTitle")}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Artists</label>
+            <label className="text-sm font-medium">
+              {t("admin.albums.fieldArtists")}
+            </label>
             <MultiSelect
-              // Исправлено: используем defaultValue и onValueChange
               defaultValue={selectedArtistIds}
               onValueChange={setSelectedArtistIds}
               options={artists.map((artist) => ({
                 label: artist.name,
                 value: artist._id,
               }))}
-              placeholder="Select artists"
+              placeholder={t("admin.songs.placeholderArtists")}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Release Year</label>
+            <label className="text-sm font-medium">
+              {t("admin.albums.fieldReleaseYear")}
+            </label>
             <Input
               type="number"
               value={newAlbum.releaseYear}
@@ -176,13 +171,15 @@ const AddAlbumDialog = () => {
                 })
               }
               className="bg-zinc-800 border-zinc-700"
-              placeholder="Enter release year"
+              placeholder={t("admin.songs.placeholderReleaseYear")}
               min={1900}
               max={new Date().getFullYear()}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Type</label>
+            <label className="text-sm font-medium">
+              {t("admin.albums.fieldType")}
+            </label>
             <Select
               value={newAlbum.type}
               onValueChange={(value) =>
@@ -193,9 +190,13 @@ const AddAlbumDialog = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700">
-                <SelectItem value="Album">Album</SelectItem>
-                <SelectItem value="EP">EP</SelectItem>
-                <SelectItem value="Single">Single</SelectItem>
+                <SelectItem value="Album">
+                  {t("admin.albums.typeAlbum")}
+                </SelectItem>
+                <SelectItem value="EP">{t("admin.albums.typeEP")}</SelectItem>
+                <SelectItem value="Single">
+                  {t("admin.albums.typeSingle")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -207,7 +208,7 @@ const AddAlbumDialog = () => {
             disabled={isLoading}
             className="text-zinc-200"
           >
-            Cancel
+            {t("admin.common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -219,7 +220,7 @@ const AddAlbumDialog = () => {
               selectedArtistIds.length === 0
             }
           >
-            {isLoading ? "Creating..." : "Add Album"}
+            {isLoading ? t("admin.common.creating") : t("admin.albums.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

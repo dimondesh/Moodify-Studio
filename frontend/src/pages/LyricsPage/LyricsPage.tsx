@@ -1,4 +1,4 @@
-// frontend/src/components/LyricsPage.tsx
+// frontend/src/pages/LyricsPage/LyricsPage.tsx
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
@@ -7,11 +7,11 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useDominantColor } from "@/hooks/useDominantColor";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const parseLrc = (lrcContent: string): LyricLine[] => {
   const lines = lrcContent.split("\n");
   const parsedLyrics: LyricLine[] = [];
-
   lines.forEach((line) => {
     const timeMatch = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/);
     if (timeMatch) {
@@ -23,7 +23,6 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
       parsedLyrics.push({ time: timeInSeconds, text });
     }
   });
-
   parsedLyrics.sort((a, b) => a.time - b.time);
   return parsedLyrics;
 };
@@ -40,6 +39,7 @@ interface LyricsPageProps {
 const LyricsPage: React.FC<LyricsPageProps> = ({
   isMobileFullScreen = false,
 }) => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const {
     currentSong,
     currentTime,
@@ -63,11 +63,9 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
     }
   }, [currentSong?.imageUrl, currentSongImage, extractColor]);
 
-  // Обновление лирики при изменении песни
   useEffect(() => {
     if (currentSong?.lyrics) {
       setLyrics(parseLrc(currentSong.lyrics));
-      // Сбрасываем скролл и состояние прокрутки при смене песни
       setIsUserScrolling(false);
       if (lyricsScrollAreaRef.current) {
         lyricsScrollAreaRef.current.scrollTop = 0;
@@ -77,22 +75,18 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
     }
   }, [currentSong]);
 
-  // Эффект для автопрокрутки
   useEffect(() => {
-    // Выполняем автопрокрутку только если пользователь не прокручивает вручную
     if (lyricsScrollAreaRef.current && lyrics.length > 0 && !isUserScrolling) {
       const activeLineIndex = lyrics.findIndex(
         (line, index) =>
           currentTime >= line.time &&
           (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time)
       );
-
       if (activeLineIndex !== -1) {
         const activeLineElement = lyricsScrollAreaRef.current.querySelector(
           `.lyric-line-${activeLineIndex}`
         );
         if (activeLineElement) {
-          // Используем requestAnimationFrame для более плавной прокрутки
           requestAnimationFrame(() => {
             activeLineElement.scrollIntoView({
               behavior: "smooth",
@@ -104,52 +98,31 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
     }
   }, [currentTime, lyrics, isUserScrolling]);
 
-  // Обработчик события прокрутки
   const handleScroll = useCallback(() => {
-    // Если пользователь прокручивает, устанавливаем isUserScrolling в true
-    if (!isUserScrolling) {
-      setIsUserScrolling(true);
-    }
-
-    // Очищаем предыдущий таймаут, если он был
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-
-    // Устанавливаем новый таймаут для сброса isUserScrolling
-    // Если в течение 300мс нет нового скролла, считаем, что пользователь закончил
+    if (!isUserScrolling) setIsUserScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       setIsUserScrolling(false);
       scrollTimeoutRef.current = null;
-    }, 300); // Можно настроить это значение
+    }, 300);
   }, [isUserScrolling]);
 
-  // Добавляем слушатели событий скролла к ScrollArea
   useEffect(() => {
     const scrollAreaElement = lyricsScrollAreaRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     ) as HTMLElement;
-
     if (scrollAreaElement) {
       scrollAreaElement.addEventListener("scroll", handleScroll);
-      // Добавляем слушатели для touch событий для мобильных устройств
-      // Сбрасываем таймаут при начале тача, чтобы предотвратить автоскролл во время перетаскивания
       scrollAreaElement.addEventListener("touchstart", () => {
         if (scrollTimeoutRef.current) {
           clearTimeout(scrollTimeoutRef.current);
           scrollTimeoutRef.current = null;
         }
-        setIsUserScrolling(true); // Сразу считаем, что пользователь начал прокрутку
+        setIsUserScrolling(true);
       });
-      // По завершении тача, запускаем таймаут для сброса isUserScrolling
-      scrollAreaElement.addEventListener("touchend", () => {
-        handleScroll(); // Вызываем handleScroll, чтобы установить таймаут
-      });
-      scrollAreaElement.addEventListener("touchcancel", () => {
-        handleScroll();
-      });
+      scrollAreaElement.addEventListener("touchend", handleScroll);
+      scrollAreaElement.addEventListener("touchcancel", handleScroll);
     }
-
     return () => {
       if (scrollAreaElement) {
         scrollAreaElement.removeEventListener("scroll", handleScroll);
@@ -157,10 +130,7 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
         scrollAreaElement.removeEventListener("touchend", () => {});
         scrollAreaElement.removeEventListener("touchcancel", () => {});
       }
-      // Очищаем таймаут при размонтировании компонента
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [handleScroll]);
 
@@ -187,9 +157,9 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
             : "w-full bg-black"
         }`}
       >
-        <p>No lyrics available for this song.</p>
+        <p>{t("player.noLyrics")}</p>
         <Button variant="ghost" className="mt-4" onClick={handleClose}>
-          Close
+          {t("player.close")}
         </Button>
       </div>
     );
@@ -215,14 +185,14 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
             <ChevronDown className="h-6 w-6" />
           </Button>
           <div className="text-sm font-semibold text-zinc-400 uppercase">
-            Lyrics
+            {t("player.lyrics")}
           </div>
           <div className="w-10 h-10" />
         </div>
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-1">{currentSong.title}</h2>
           <p className="text-zinc-400 text-lg">
-            {getArtistNames(currentSong.artist)}
+            {getArtistNames(currentSong.artist, [])}
           </p>
         </div>
         <ScrollArea

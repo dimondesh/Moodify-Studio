@@ -1,4 +1,4 @@
-// frontend/src/components/playlists/EditPlaylistDialog.tsx
+// frontend/src/pages/PlaylistPage/EditPlaylistDialog.tsx
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,46 +12,44 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea"; // Ensure you have Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { usePlaylistStore } from "@/stores/usePlaylistStore";
-import { Playlist } from "@/types"; // Import Playlist type
+import { Playlist } from "@/types";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface EditPlaylistDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  playlist: Playlist | null; // Current playlist for editing
-  onSuccess: () => void; // Add onSuccess prop
+  playlist: Playlist | null;
+  onSuccess: () => void;
 }
 
 export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
   isOpen,
   onClose,
   playlist,
-  onSuccess, // Accept onSuccess
+  onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(playlist?.title || "");
   const [description, setDescription] = useState(playlist?.description || "");
-  // Use nullish coalescing operator (??) for isPublic to correctly handle undefined/null
   const [isPublic, setIsPublic] = useState(playlist?.isPublic ?? false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
     playlist?.imageUrl || null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { updatePlaylist, isLoading } = usePlaylistStore();
 
-  // Update form state when the playlist prop changes
   useEffect(() => {
     if (playlist) {
       setTitle(playlist.title);
       setDescription(playlist.description || "");
-      setIsPublic(playlist.isPublic ?? false); // Ensure it handles undefined/null
-      setImageFile(null); // Reset selected file when playlist changes
+      setIsPublic(playlist.isPublic ?? false);
+      setImageFile(null);
       setImagePreviewUrl(playlist.imageUrl || null);
     } else {
-      // Reset form if playlist becomes null (e.g., when creating a new one)
       setTitle("");
       setDescription("");
       setIsPublic(false);
@@ -64,10 +62,10 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file)); // For preview
+      setImagePreviewUrl(URL.createObjectURL(file));
     } else {
       setImageFile(null);
-      setImagePreviewUrl(playlist?.imageUrl || null); // Revert to original if file is canceled
+      setImagePreviewUrl(playlist?.imageUrl || null);
     }
   };
 
@@ -80,7 +78,6 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
       toast.error("Playlist title cannot be empty.");
       return;
     }
-
     try {
       const updated = await updatePlaylist(
         playlist._id,
@@ -91,11 +88,10 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
       );
       if (updated) {
         toast.success("Playlist updated successfully!");
-        onSuccess(); // Call onSuccess to update data in the parent component
-        onClose(); // Close the dialog
+        onSuccess();
+        onClose();
       }
     } catch (error) {
-      // Error is already handled in usePlaylistStore and toast is shown
       console.error("Error updating playlist in dialog:", error);
     }
   }, [
@@ -106,11 +102,10 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
     imageFile,
     updatePlaylist,
     onClose,
-    onSuccess, // Add onSuccess to dependencies
+    onSuccess,
   ]);
 
   const handleClose = useCallback(() => {
-    // Reset form state to initial playlist values when closing without saving
     if (playlist) {
       setTitle(playlist.title);
       setDescription(playlist.description || "");
@@ -125,35 +120,28 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
       setImagePreviewUrl(null);
     }
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Clear file input
+      fileInputRef.current.value = "";
     }
     onClose();
   }, [onClose, playlist]);
 
-  if (!playlist) {
-    return null; // Do not render the dialog if no playlist is available for editing
-  }
+  if (!playlist) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700">
-        {" "}
-        {/* Styles added */}
         <DialogHeader>
-          <DialogTitle className="text-white">Edit Playlist</DialogTitle>{" "}
-          {/* Translation */}
+          <DialogTitle className="text-white">
+            {t("pages.playlist.editDialog.title")}
+          </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            {" "}
-            {/* Translation */}
-            Make changes to your playlist here. Click save when you're done.
+            {t("pages.playlist.editDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right text-white">
-              {" "}
-              {/* Translation and text color */}
-              Title
+              {t("pages.playlist.editDialog.fieldTitle")}
             </Label>
             <Input
               id="title"
@@ -165,9 +153,7 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right text-white">
-              {" "}
-              {/* Translation and text color */}
-              Description
+              {t("pages.playlist.editDialog.fieldDescription")}
             </Label>
             <Textarea
               id="description"
@@ -175,14 +161,12 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               className="col-span-3 min-h-[80px] bg-zinc-800 text-white border-zinc-700 rounded-md p-2 focus:ring-green-500 focus:border-green-500"
               rows={3}
-              placeholder="A brief description of the playlist" // Placeholder added
+              placeholder="A brief description of the playlist"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="image" className="text-right text-white">
-              {" "}
-              {/* Translation and text color */}
-              Cover
+              {t("pages.playlist.editDialog.fieldCover")}
             </Label>
             <div className="col-span-3">
               <Input
@@ -196,48 +180,41 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
               {imagePreviewUrl && (
                 <img
                   src={imagePreviewUrl}
-                  alt="Cover preview" // Translation
-                  className="w-24 h-24 object-cover rounded-md mt-2" // Increased margin
+                  alt="Cover preview"
+                  className="w-24 h-24 object-cover rounded-md mt-2"
                 />
               )}
             </div>
           </div>
-          {/* FIXED: For Switch, use flex, not grid-cols */}
           <div className="flex items-center justify-between col-span-full mt-2">
             <Label htmlFor="public" className="text-white">
-              {" "}
-              {/* Translation and text color */}
-              Public
+              {t("pages.playlist.editDialog.fieldPublic")}
             </Label>
             <Switch
               id="public"
               checked={isPublic}
               onCheckedChange={setIsPublic}
-              className="data-[state=checked]:bg-green-500" // Shadcn styles
+              className="data-[state=checked]:bg-green-500"
             />
           </div>
         </div>
         <DialogFooter className="mt-6">
-          {" "}
-          {/* Increased margin */}
           <Button
             onClick={handleClose}
             variant="outline"
             disabled={isLoading}
             className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
           >
-            {" "}
-            {/* Styles added */}
-            Cancel {/* Translation */}
+            {t("admin.common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isLoading}
             className="bg-green-500 hover:bg-green-600 text-white"
           >
-            {" "}
-            {/* Styles added */}
-            {isLoading ? "Saving..." : "Save Changes"} {/* Translation */}
+            {isLoading
+              ? t("admin.common.saving")
+              : t("admin.common.saveChanges")}
           </Button>
         </DialogFooter>
       </DialogContent>

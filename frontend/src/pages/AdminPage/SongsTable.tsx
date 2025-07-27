@@ -1,5 +1,6 @@
 // frontend/src/pages/AdminPage/SongsTable.tsx
-import { memo, useEffect } from "react"; // ИЗМЕНЕНО: Добавлен memo
+
+import { memo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -10,14 +11,14 @@ import {
 } from "../../components/ui/table";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Loader2 } from "lucide-react";
-import { Button } from "../../components/ui/button"; // ИЗМЕНЕНО: Убедитесь, что Button импортирован
+import { Button } from "../../components/ui/button";
 import EditSongDialog from "./EditSongDialog";
-import { Calendar, Trash2 } from "lucide-react"; // ИЗМЕНЕНО: Trash2 снова используется
+import { Calendar, Trash2 } from "lucide-react";
 import { Artist } from "@/types";
+import { useTranslation } from "react-i18next";
 
-// ИЗМЕНЕНО: Обернуть компонент SongsTable в React.memo
 const SongsTable = memo(() => {
-  console.log("SongsTable RENDERED"); // Оставляем этот лог для отладки
+  const { t } = useTranslation();
   const {
     songs,
     isLoading,
@@ -33,7 +34,6 @@ const SongsTable = memo(() => {
     fetchSongs();
   }, [fetchArtists, fetchSongs]);
 
-  // ИЗМЕНЕНО: Добавлены типы для artistsData и item
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (
       !artistsData ||
@@ -45,12 +45,11 @@ const SongsTable = memo(() => {
 
     const names = artistsData
       .map((item: string | Artist) => {
-        // ИЗМЕНЕНО: Добавлен тип для item
         if (typeof item === "string") {
           const artist = artists.find((a) => a._id === item);
           return artist ? artist.name : null;
         } else if (item && typeof item === "object" && "name" in item) {
-          return (item as Artist).name; // Приведение типа
+          return (item as Artist).name;
         }
         return null;
       })
@@ -80,17 +79,19 @@ const SongsTable = memo(() => {
       <TableHeader>
         <TableRow className="border-zinc-700/50">
           <TableHead className="w-[50px]"></TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Artist</TableHead>
-          <TableHead>Release Date</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t("admin.songs.tableTitle")}</TableHead>
+          <TableHead>{t("admin.songs.tableArtist")}</TableHead>
+          <TableHead>{t("admin.songs.tableReleaseDate")}</TableHead>
+          <TableHead className="text-right">
+            {t("admin.songs.tableActions")}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {songs.length === 0 ? (
           <TableRow>
             <TableCell colSpan={5} className="h-24 text-center text-zinc-400">
-              No songs found.
+              {t("admin.songs.tableNoSongs")}
             </TableCell>
           </TableRow>
         ) : (
@@ -121,7 +122,6 @@ const SongsTable = memo(() => {
               <TableCell className="text-right">
                 <div className="flex gap-2 justify-end">
                   <EditSongDialog song={song} />
-                  {/* ИЗМЕНЕНО: Возвращена кнопка удаления */}
                   <Button
                     variant={"ghost"}
                     size={"sm"}
@@ -138,5 +138,5 @@ const SongsTable = memo(() => {
       </TableBody>
     </Table>
   );
-}); // ИЗМЕНЕНО: Завершение memo
+});
 export default SongsTable;

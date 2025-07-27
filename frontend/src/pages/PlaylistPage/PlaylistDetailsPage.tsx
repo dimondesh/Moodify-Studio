@@ -56,6 +56,7 @@ import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
 import Equalizer from "../../components/ui/equalizer";
 import { FastAverageColor } from "fast-average-color";
+import { useTranslation } from "react-i18next";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -65,6 +66,7 @@ const formatDuration = (seconds: number): string => {
 const fac = new FastAverageColor();
 
 const PlaylistDetailsPage = () => {
+  const { t } = useTranslation();
   const { playlistId } = useParams<{ playlistId: string }>();
   const {
     currentPlaylist,
@@ -98,7 +100,6 @@ const PlaylistDetailsPage = () => {
     loading: searchLoading,
     search: performSearch,
   } = useSearchStore();
-
   const {
     playAlbum,
     setCurrentSong,
@@ -140,7 +141,6 @@ const PlaylistDetailsPage = () => {
       }
       setLocalIsLoading(false);
     };
-
     loadPlaylist();
   }, [playlistId, fetchPlaylistDetails]);
 
@@ -148,22 +148,18 @@ const PlaylistDetailsPage = () => {
     const handler = setTimeout(() => {
       performSearch(searchTerm);
     }, 300);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm, performSearch]);
 
   const handlePlayPlaylist = () => {
     if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
-
-    if (
+    const isCurrentPlaylistPlaying =
       isPlaying &&
       currentSong &&
       queue.length > 0 &&
       currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
-      queue[0]?._id === currentPlaylist.songs[0]?._id
-    ) {
+      queue[0]?._id === currentPlaylist.songs[0]?._id;
+    if (isCurrentPlaylistPlaying) {
       togglePlay();
     } else {
       playAlbum(currentPlaylist.songs, 0);
@@ -172,11 +168,9 @@ const PlaylistDetailsPage = () => {
 
   const handlePlaySong = (song: Song, index: number) => {
     if (!currentPlaylist) return;
-
     const isThisPlaylistInPlayer =
       queue.length > 0 &&
       currentPlaylist.songs.some((s) => s._id === queue[0]?._id);
-
     if (isThisPlaylistInPlayer) {
       if (currentSong?._id === song._id) {
         togglePlay();
@@ -189,19 +183,14 @@ const PlaylistDetailsPage = () => {
     }
   };
 
-  const handleSongTitleClick = (albumId: string) => {
+  const handleSongTitleClick = (albumId: string) =>
     navigate(`/albums/${albumId}`);
-  };
-
-  const handleArtistNameClick = (artistId: string) => {
+  const handleArtistNameClick = (artistId: string) =>
     navigate(`/artists/${artistId}`);
-  };
   const handleOwnerClick = () => {
-    if (currentPlaylist?.owner?._id) {
+    if (currentPlaylist?.owner?._id)
       navigate(`/users/${currentPlaylist.owner._id}`);
-    }
   };
-
   const isOwner = authUser && currentPlaylist?.owner?._id === authUser.id;
 
   const handleDeletePlaylistConfirm = async () => {
@@ -278,15 +267,17 @@ const PlaylistDetailsPage = () => {
     }
   };
 
-  if (localIsLoading) {
-    return <PlaylistDetailsSkeleton />;
-  }
+  if (localIsLoading) return <PlaylistDetailsSkeleton />;
 
   if (error) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
-        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Error</h1>
-        <p className="text-red-500">Failed to load playlist details: {error}</p>
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
+          {t("pages.playlist.errorTitle")}
+        </h1>
+        <p className="text-red-500">
+          {t("pages.playlist.error")}: {error}
+        </p>
       </div>
     );
   }
@@ -295,11 +286,9 @@ const PlaylistDetailsPage = () => {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
         <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
-          Playlist Not Found
+          {t("pages.playlist.notFoundTitle")}
         </h1>
-        <p className="text-zinc-400">
-          It seems this playlist does not exist or has been deleted.
-        </p>
+        <p className="text-zinc-400">{t("pages.playlist.notFoundDesc")}</p>
       </div>
     );
   }
@@ -313,7 +302,6 @@ const PlaylistDetailsPage = () => {
   const formattedDuration = `${totalMinutes}:${remainingSeconds
     .toString()
     .padStart(2, "0")}`;
-
   const isCurrentPlaylistPlaying =
     isPlaying &&
     currentPlaylist.songs.length > 0 &&
@@ -344,7 +332,9 @@ const PlaylistDetailsPage = () => {
                 className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
               />
               <div className="flex flex-col justify-end flex-grow">
-                <p className="text-xs sm:text-sm font-medium">Playlist</p>
+                <p className="text-xs sm:text-sm font-medium">
+                  {t("pages.playlist.type")}
+                </p>
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
                   {currentPlaylist.title}
                 </h1>
@@ -364,7 +354,7 @@ const PlaylistDetailsPage = () => {
                     </>
                   ) : (
                     <></>
-                  )}
+                  )}{" "}
                   <button
                     onClick={handleOwnerClick}
                     className="font-semibold text-white flex items-center hover:underline focus:outline-none focus:underline"
@@ -374,25 +364,24 @@ const PlaylistDetailsPage = () => {
                       className="size-4 rounded-full mr-1"
                       alt={currentPlaylist.owner.fullName}
                     />
-                    {currentPlaylist.owner?.fullName || "Unknown User"}
+                    {currentPlaylist.owner?.fullName ||
+                      t("common.unknownArtist")}
                   </button>
                   <span className="hidden lg:inline">
                     • {currentPlaylist.songs.length}{" "}
-                    {currentPlaylist.songs.length !== 1 ? "songs" : "song"}
+                    {currentPlaylist.songs.length !== 1
+                      ? t("pages.playlist.songs")
+                      : t("pages.playlist.song")}
                   </span>
                   {currentPlaylist.songs.length > 0 && (
-                    <>
-                      <span className="hidden lg:inline">
-                        • {formattedDuration}
-                      </span>
-                    </>
-                  )}
-                  {currentPlaylist.likes > 0 ? (
                     <span className="hidden lg:inline">
-                      • {currentPlaylist.likes} saved
+                      • {formattedDuration}
                     </span>
-                  ) : (
-                    <></>
+                  )}
+                  {currentPlaylist.likes > 0 && (
+                    <span className="hidden lg:inline">
+                      • {currentPlaylist.likes} {t("pages.playlist.saved")}
+                    </span>
                   )}
                 </div>
               </div>
@@ -404,7 +393,11 @@ const PlaylistDetailsPage = () => {
                   size="icon"
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105"
                   onClick={handlePlayPlaylist}
-                  title={isCurrentPlaylistPlaying ? "Pause" : "Play"}
+                  title={
+                    isCurrentPlaylistPlaying
+                      ? t("pages.playlist.actions.pause")
+                      : t("pages.playlist.actions.play")
+                  }
                 >
                   {isCurrentPlaylistPlaying ? (
                     <Pause className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-current" />
@@ -413,7 +406,6 @@ const PlaylistDetailsPage = () => {
                   )}
                 </Button>
               )}
-
               {!isOwner ? (
                 <Button
                   onClick={handleTogglePlaylistInLibrary}
@@ -423,7 +415,11 @@ const PlaylistDetailsPage = () => {
                   className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors flex-shrink-0 ${
                     isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
                   }`}
-                  title={isInLibrary ? "Remove from Library" : "Add to Library"}
+                  title={
+                    isInLibrary
+                      ? t("pages.playlist.actions.removeFromLibrary")
+                      : t("pages.playlist.actions.addToLibrary")
+                  }
                 >
                   {isInLibrary ? (
                     <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
@@ -438,18 +434,17 @@ const PlaylistDetailsPage = () => {
                     size="icon"
                     className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
                     onClick={() => setIsAddSongDialogOpen(true)}
-                    title="Add Song"
+                    title={t("pages.playlist.actions.addSong")}
                   >
                     <Plus className="size-4 sm:size-5" />
                   </Button>
-
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
-                        title="More actions"
+                        title={t("pages.playlist.actions.moreActions")}
                       >
                         <MoreHorizontal className="size-4 sm:size-5" />
                       </Button>
@@ -460,9 +455,8 @@ const PlaylistDetailsPage = () => {
                         onClick={() => setIsEditDialogOpen(true)}
                       >
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit Playlist
+                        {t("pages.playlist.actions.edit")}
                       </DropdownMenuItem>
-
                       <AlertDialog
                         open={isDeleteDialogOpen}
                         onOpenChange={setIsDeleteDialogOpen}
@@ -470,33 +464,30 @@ const PlaylistDetailsPage = () => {
                         <AlertDialogTrigger asChild>
                           <DropdownMenuItem
                             className="cursor-pointer text-red-400 hover:bg-zinc-700 hover:text-red-300"
-                            onSelect={(e) => {
-                              e.preventDefault();
-                            }}
+                            onSelect={(e) => e.preventDefault()}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Playlist
+                            {t("pages.playlist.actions.delete")}
                           </DropdownMenuItem>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
                           <AlertDialogHeader>
                             <AlertDialogTitle className="text-white">
-                              Are you sure you want to delete this playlist?
+                              {t("pages.playlist.deleteDialog.title")}
                             </AlertDialogTitle>
                             <AlertDialogDescription className="text-zinc-400">
-                              This action cannot be undone. The playlist will be
-                              permanently deleted.
+                              {t("pages.playlist.deleteDialog.description")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
-                              Cancel
+                              {t("pages.playlist.deleteDialog.cancel")}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-red-600 text-white hover:bg-red-700"
                               onClick={handleDeletePlaylistConfirm}
                             >
-                              Delete
+                              {t("pages.playlist.deleteDialog.delete")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -508,21 +499,17 @@ const PlaylistDetailsPage = () => {
             </div>
 
             <div className="bg-black/20 backdrop-blur-sm">
-              <div
-                className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
-            text-zinc-400 border-b border-white/5"
-              >
-                <div className="">#</div>
-                <div>Title</div>
-                <div className="hidden md:flex justify-between ">
-                  Date Added
+              <div className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
+                <div>#</div>
+                <div>{t("pages.playlist.headers.title")}</div>
+                <div className="hidden md:flex justify-between">
+                  {t("pages.playlist.headers.dateAdded")}
                 </div>
                 <div className="flex items-center justify-center">
                   <Clock className="h-4 w-4" />
                 </div>
                 <div className="hidden md:block"></div>
               </div>
-
               <div className="px-4 sm:px-6">
                 <div className="space-y-2 py-4">
                   {currentPlaylist.songs.map((song, index) => {
@@ -530,19 +517,16 @@ const PlaylistDetailsPage = () => {
                     const songIsLiked = likedSongs.some(
                       (likedSong) => likedSong._id === song._id
                     );
-
                     return (
                       <div
                         key={song._id}
                         onClick={(e) => {
-                          if ((e.target as HTMLElement).closest("button")) {
-                            return;
-                          }
-                          handlePlaySong(song, index);
+                          if (!(e.target as HTMLElement).closest("button"))
+                            handlePlaySong(song, index);
                         }}
-                        className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
-                      text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
-                      ${isCurrentSong ? "bg-white/10" : ""}`}
+                        className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          isCurrentSong ? "bg-white/10" : ""
+                        }`}
                       >
                         <div className="flex items-center justify-center">
                           {isCurrentSong && isPlaying ? (
@@ -554,18 +538,15 @@ const PlaylistDetailsPage = () => {
                               {index + 1}
                             </span>
                           )}
-
                           {!isCurrentSong && (
                             <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
                           )}
                         </div>
-
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => {
-                              if (song.albumId) {
+                              if (song.albumId)
                                 handleSongTitleClick(song.albumId);
-                              }
                             }}
                           >
                             <img
@@ -578,7 +559,6 @@ const PlaylistDetailsPage = () => {
                               }}
                             />
                           </button>
-
                           <div className="flex flex-col overflow-hidden">
                             <button
                               onClick={() =>
@@ -629,7 +609,11 @@ const PlaylistDetailsPage = () => {
                               e.stopPropagation();
                               toggleSongLike(song._id);
                             }}
-                            title={songIsLiked ? "Unlike song" : "Like song"}
+                            title={
+                              songIsLiked
+                                ? t("player.unlike")
+                                : t("player.like")
+                            }
                           >
                             <Heart
                               className={`h-4 w-4 sm:h-5 sm:w-5 ${
@@ -646,7 +630,7 @@ const PlaylistDetailsPage = () => {
                                 e.stopPropagation();
                                 handleRemoveSong(song._id);
                               }}
-                              title="Remove song from playlist"
+                              title={t("pages.playlist.actions.removeSong")}
                             >
                               <X className="size-3 sm:size-4" />
                             </Button>
@@ -670,28 +654,31 @@ const PlaylistDetailsPage = () => {
           onSuccess={() => fetchPlaylistDetails(currentPlaylist._id)}
         />
       )}
-
       <Dialog open={isAddSongDialogOpen} onOpenChange={setIsAddSongDialogOpen}>
         <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900 text-white border-zinc-700">
           <DialogHeader>
             <DialogTitle className="text-white max-w-[80vw]">
-              Add Song to Playlist
+              {t("pages.playlist.addSongDialog.title")}
             </DialogTitle>
             <DialogDescription className="text-zinc-400 max-w-[80vw]">
-              Find a song and add it to the playlist.
+              {t("pages.playlist.addSongDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
-              placeholder="Search songs..."
+              placeholder={t("pages.playlist.addSongDialog.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="mb-4 bg-zinc-800 text-white border-zinc-700 focus:ring-green-500 w-[80vw] sm:w-[55vw] md:w-[38vw] lg:w-[19.5vw] 2xl:w-[18vw]"
             />
             {searchLoading ? (
-              <p className="text-zinc-400">Searching...</p>
+              <p className="text-zinc-400">
+                {t("pages.playlist.addSongDialog.searching")}
+              </p>
             ) : searchSongs.length === 0 && searchTerm.length > 0 ? (
-              <p className="text-zinc-400">No songs found.</p>
+              <p className="text-zinc-400">
+                {t("pages.playlist.addSongDialog.noSongsFound")}
+              </p>
             ) : (
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
@@ -734,8 +721,8 @@ const PlaylistDetailsPage = () => {
                         )}
                       >
                         {currentPlaylist?.songs.some((s) => s._id === song._id)
-                          ? "Added"
-                          : "Add"}
+                          ? t("pages.playlist.addSongDialog.added")
+                          : t("pages.playlist.addSongDialog.add")}
                       </Button>
                     </div>
                   ))}
@@ -745,7 +732,6 @@ const PlaylistDetailsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
-
       <AlertDialog
         open={!!songToDeleteId}
         onOpenChange={(open) => {
@@ -755,21 +741,21 @@ const PlaylistDetailsPage = () => {
         <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">
-              Are you sure you want to remove this song from the playlist?
+              {t("pages.playlist.removeSongDialog.title")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              This action will remove the song from the current playlist.
+              {t("pages.playlist.removeSongDialog.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
-              Cancel
+              {t("pages.playlist.removeSongDialog.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 text-white hover:bg-red-700"
               onClick={handleDeleteSongConfirm}
             >
-              Remove Song
+              {t("pages.playlist.removeSongDialog.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

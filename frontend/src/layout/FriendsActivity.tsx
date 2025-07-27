@@ -1,18 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// frontend/src/layout/FriendsActivity.tsx
+
 import { HeadphonesIcon, Music, Users } from "lucide-react";
 import { useChatStore } from "../stores/useChatStore";
 import { useEffect } from "react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { useAuthStore } from "../stores/useAuthStore";
-
-// Импортируем тип Artist, чтобы getArtistNames могла работать корректно.
-// Убедитесь, что ваш файл 'types' находится по этому пути или укажите верный.
 import type { Artist } from "../types/index";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
-// Вспомогательная функция для безопасного извлечения имен артистов
-// Скопирована из PlaybackControls.tsx для единообразия и обработки разных форматов.
-// В FriendsActivity.tsx она будет использоваться для artistDisplayData,
-// которая теперь должна быть строкой (именем или ID)
 const getArtistNames = (
   artistData: (Artist | string) | (Artist | string)[] | undefined
 ): string => {
@@ -20,7 +17,6 @@ const getArtistNames = (
     return "Unknown Artist";
   }
 
-  // Преобразуем один элемент в массив, чтобы всегда работать с массивом
   const artistsArray = Array.isArray(artistData) ? artistData : [artistData];
 
   if (artistsArray.length === 0) {
@@ -29,17 +25,16 @@ const getArtistNames = (
 
   return artistsArray
     .map((item) => {
-      // Проверяем, является ли элемент объектом и имеет ли свойство 'name'
       if (typeof item === "object" && item !== null && "name" in item) {
         return item.name;
       }
-      // Если это строка (ID) или объект без 'name', возвращаем строковое представление
       return String(item);
     })
     .join(", ");
 };
 
 const FriendsActivity = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { users, fetchUsers, onlineUsers, userActivities } = useChatStore();
   const { user: authUser, isLoading: loadingAuthUser } = useAuthStore();
 
@@ -77,19 +72,16 @@ const FriendsActivity = () => {
         <div className="flex items-center gap-2">
           <Users className="size-5 shrink-0" />
           <h2 className="font-semibold text-base sm:text-sm md:text-base">
-            What they're listening to
+            {t("friendsActivity.title")}
           </h2>
         </div>
       </div>
 
       <ScrollArea className="flex-1 pr-2 -mr-2">
-        {" "}
-        {/* Добавляем для стилизации скроллбара */}
         <div className="p-4 sm:p-3 md:p-4 space-y-4">
           {activeUsers.length === 0 ? (
             <p className="text-zinc-400 text-center text-sm p-4">
-              No active friends found. <br /> Connect with friends or wait for
-              them to come online!
+              {t("friendsActivity.noFriends")}
             </p>
           ) : (
             activeUsers.map((userObj) => {
@@ -98,12 +90,12 @@ const FriendsActivity = () => {
               const isPlaying = activity && activity !== "Idle";
 
               let songTitle = "";
-              let artistName = ""; // Теперь artistName будет строкой (именем или ID)
+              let artistName = "";
 
               if (isPlaying) {
                 const parts = activity.split("   ");
                 songTitle = parts[0] || "";
-                artistName = parts[1] || ""; // Получаем строку, которая должна быть именем артиста
+                artistName = parts[1] || "";
               }
 
               return (
@@ -113,8 +105,6 @@ const FriendsActivity = () => {
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative flex-shrink-0">
-                      {" "}
-                      {/* Добавляем flex-shrink-0 */}
                       <Avatar className="size-10 border border-zinc-800">
                         <AvatarImage
                           src={userObj.imageUrl || "/default-avatar.png"}
@@ -123,8 +113,7 @@ const FriendsActivity = () => {
                         />
                         <AvatarFallback>
                           {userObj.fullName?.[0] || "U"}
-                        </AvatarFallback>{" "}
-                        {/* Fallback для первой буквы */}
+                        </AvatarFallback>
                       </Avatar>
                       <div
                         className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-zinc-900 ${
@@ -134,12 +123,8 @@ const FriendsActivity = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      {" "}
-                      {/* min-w-0 для truncate */}
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm text-white truncate">
-                          {" "}
-                          {/* truncate для имени */}
                           {userObj.fullName}
                         </span>
                         {isPlaying && (
@@ -152,19 +137,12 @@ const FriendsActivity = () => {
                             {songTitle}
                           </div>
                           <div className="text-xs text-zinc-400 truncate">
-                            {/* Здесь artistName уже должен быть строкой с именем артиста,
-                                 потому что бэкенд его правильно сформировал.
-                                 getArtistNames здесь не нужна, так как мы не работаем с объектами Artist.
-                                 Но если вы хотите использовать её для единообразия и дополнительной защиты,
-                                 то она должна быть адаптирована для приема просто строки.
-                                 Я оставлю ее, но она будет просто возвращать переданную строку.
-                            */}
-                            {getArtistNames(artistName)}
+                            {getArtistNames(artistName as any)}
                           </div>
                         </div>
                       ) : (
                         <div className="mt-1 text-xs text-zinc-400 truncate">
-                          Idle
+                          {t("friendsActivity.idle")}
                         </div>
                       )}
                     </div>
@@ -181,36 +159,28 @@ const FriendsActivity = () => {
 
 export default FriendsActivity;
 
-const LoginPrompt = () => (
-  <div className="h-full flex flex-col items-center justify-center p-4 sm:p-6 text-center space-y-4">
-    {" "}
-    {/* Адаптивные отступы */}
-    <div className="relative">
-      <div
-        className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full blur-lg
-       opacity-75 animate-pulse"
-        aria-hidden="true"
-      />
-      <div className="relative bg-zinc-900 rounded-full p-4 sm:p-3">
-        {" "}
-        {/* Адаптивный padding */}
-        <HeadphonesIcon className="size-8 sm:size-7 text-emerald-400" />{" "}
-        {/* Адаптивный размер иконки */}
+const LoginPrompt = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-4 sm:p-6 text-center space-y-4">
+      <div className="relative">
+        <div
+          className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-full blur-lg
+         opacity-75 animate-pulse"
+          aria-hidden="true"
+        />
+        <div className="relative bg-zinc-900 rounded-full p-4 sm:p-3">
+          <HeadphonesIcon className="size-8 sm:size-7 text-emerald-400" />
+        </div>
+      </div>
+      <div className="space-y-2 max-w-[250px] sm:max-w-[200px]">
+        <h3 className="text-lg sm:text-base font-semibold text-white">
+          {t("friendsActivity.loginPromptTitle")}
+        </h3>
+        <p className="text-sm sm:text-xs text-zinc-400">
+          {t("friendsActivity.loginPromptDescription")}
+        </p>
       </div>
     </div>
-    <div className="space-y-2 max-w-[250px] sm:max-w-[200px]">
-      {" "}
-      {/* Адаптивная максимальная ширина */}
-      <h3 className="text-lg sm:text-base font-semibold text-white">
-        {" "}
-        {/* Адаптивный размер заголовка */}
-        See What Friends Are Playing
-      </h3>
-      <p className="text-sm sm:text-xs text-zinc-400">
-        {" "}
-        {/* Адаптивный размер параграфа */}
-        Login to discover what music your friends are enjoying right now
-      </p>
-    </div>
-  </div>
-);
+  );
+};

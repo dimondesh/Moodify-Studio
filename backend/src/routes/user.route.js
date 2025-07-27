@@ -14,6 +14,7 @@ import {
   getFollowers,
   getFollowing,
   getPublicPlaylists,
+  updateUserLanguage,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -46,5 +47,7 @@ router.get("/:userId/following", protectRoute, getFollowing);
 
 // Получить публичные плейлисты пользователя
 router.get("/:userId/playlists", protectRoute, getPublicPlaylists);
+
+router.put("/language", protectRoute, updateUserLanguage);
 
 export default router;

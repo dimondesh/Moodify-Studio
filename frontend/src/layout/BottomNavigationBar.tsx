@@ -1,10 +1,14 @@
+// frontend/src/layout/BottomNavigationBar.tsx
+
 import { Link, useLocation } from "react-router-dom";
 import { HomeIcon, Search, Library, MessageCircle } from "lucide-react";
 import { useAuthStore } from "../stores/useAuthStore";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const BottomNavigationBar = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const location = useLocation();
   const { user } = useAuthStore();
 
@@ -12,25 +16,25 @@ const BottomNavigationBar = () => {
     {
       to: "/",
       icon: HomeIcon,
-      label: "Home",
+      label: t("bottomNav.home"), // <-- ПЕРЕВОД
       authRequired: false,
     },
     {
       to: "/search",
       icon: Search,
-      label: "Search",
+      label: t("bottomNav.search"), // <-- ПЕРЕВОД
       authRequired: false,
     },
     {
       to: "/library",
       icon: Library,
-      label: "Library",
+      label: t("bottomNav.library"), // <-- ПЕРЕВОД
       authRequired: true,
     },
     {
       to: "/chat",
       icon: MessageCircle,
-      label: "Chat",
+      label: t("bottomNav.chat"), // <-- ПЕРЕВОД
       authRequired: true,
     },
   ];

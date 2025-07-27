@@ -24,19 +24,21 @@ import {
 } from "../../components/ui/select";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { MultiSelect } from "../../components/ui/multi-select";
-import { Textarea } from "../../components/ui/textarea"; // <-- НОВОЕ: Импортируем Textarea
+import { Textarea } from "../../components/ui/textarea";
+import { useTranslation } from "react-i18next";
 
 interface NewSong {
   title: string;
   artistIds: string[];
   album: string;
   releaseYear: number;
-  lyrics: string; // <-- НОВОЕ: Добавляем поле lyrics
+  lyrics: string;
   genreIds: string[];
   moodIds: string[];
 }
 
 const AddSongDialog = () => {
+  const { t } = useTranslation();
   const {
     albums,
     artists,
@@ -50,17 +52,17 @@ const AddSongDialog = () => {
   const [songDialogOpen, setSongDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
-  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]);
 
   const [newSong, setNewSong] = useState<NewSong>({
     title: "",
     artistIds: [],
     album: "",
     releaseYear: new Date().getFullYear(),
-    lyrics: "", // <-- Инициализируем lyrics
-    genreIds: [], // <-- Инициализация
-    moodIds: [], // <-- Инициализация
+    lyrics: "",
+    genreIds: [],
+    moodIds: [],
   });
 
   const [files, setFiles] = useState<{
@@ -81,8 +83,8 @@ const AddSongDialog = () => {
     if (songDialogOpen) {
       fetchArtists();
       fetchAlbums();
-      fetchGenres(); // <-- ВЫЗОВ
-      fetchMoods(); // <-- ВЫЗОВ
+      fetchGenres();
+      fetchMoods();
     }
   }, [songDialogOpen, fetchArtists, fetchAlbums, fetchGenres, fetchMoods]);
 
@@ -93,25 +95,19 @@ const AddSongDialog = () => {
       if (!files.instrumentalFile) {
         return toast.error("Please upload instrumental audio file.");
       }
-
-      // ✅ ИЗМЕНЕНИЕ ЛОГИКИ ВАЛИДАЦИИ ОБЛОЖКИ
       const isAlbumSelected = newSong.album && newSong.album !== "none";
       if (!isAlbumSelected && !files.imageFile) {
         return toast.error("Please upload an image file for the single.");
       }
-      // ✅ КОНЕЦ ИЗМЕНЕНИЯ
-
       if (selectedArtistIds.length === 0) {
         return toast.error("Please select at least one artist.");
       }
 
       const formData = new FormData();
-
       formData.append("title", newSong.title);
       formData.append("artistIds", JSON.stringify(selectedArtistIds));
       formData.append("genreIds", JSON.stringify(selectedGenreIds));
       formData.append("moodIds", JSON.stringify(selectedMoodIds));
-
       if (newSong.album && newSong.album !== "none") {
         formData.append("albumId", newSong.album);
       }
@@ -119,17 +115,13 @@ const AddSongDialog = () => {
       if (newSong.lyrics) {
         formData.append("lyrics", newSong.lyrics);
       }
-
       formData.append("instrumentalFile", files.instrumentalFile);
       if (files.vocalsFile) {
         formData.append("vocalsFile", files.vocalsFile);
       }
-      // Добавляем imageFile только если он существует (то есть, если это сингл или загружен вручную)
       if (files.imageFile) {
-        // ✅ ОБНОВЛЕНО: Отправляем imageFile только если он есть
         formData.append("imageFile", files.imageFile);
       }
-      // Если albumId есть, бэкенд сам подставит обложку альбома
 
       await axiosInstance.post("/admin/songs", formData);
 
@@ -160,7 +152,6 @@ const AddSongDialog = () => {
     }
   };
 
-  // ✅ НОВОЕ: Перемещаем определение isAlbumSelected сюда, чтобы оно было доступно в JSX
   const isAlbumSelected = newSong.album && newSong.album !== "none";
 
   return (
@@ -168,22 +159,22 @@ const AddSongDialog = () => {
       <DialogTrigger asChild>
         <Button className="bg-emerald-500 hover:bg-emerald-600 text-black">
           <Plus className="mr-2 h-4 w-4" />
-          Add Song
+          {t("admin.songs.add")}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="bg-zinc-900 border-zinc-700 max-h-[80vh] overflow-auto text-zinc-200 no-scrollbar">
         <DialogHeader>
-          <DialogTitle className="text-white">Add New Song</DialogTitle>
+          <DialogTitle className="text-white">
+            {t("admin.songs.addDialogTitle")}
+          </DialogTitle>
           <DialogDescription>
-            Add a new song to your music library
+            {t("admin.songs.addDialogDesc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Image upload area */}
           <div
-            // ✅ ИЗМЕНЕНО: Добавляем класс, если обложка не обязательна
             className={`flex items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer ${
               !isAlbumSelected && !files.imageFile
                 ? "border-red-500"
@@ -204,7 +195,7 @@ const AddSongDialog = () => {
               {files.imageFile ? (
                 <div className="space-y-2">
                   <div className="text-sm text-emerald-500">
-                    Image selected:
+                    {t("admin.songs.imageSelected")}
                   </div>
                   <div className="text-xs text-zinc-400">
                     {files.imageFile.name.slice(0, 20)}
@@ -216,25 +207,25 @@ const AddSongDialog = () => {
                     <Upload className="h-6 w-6 text-zinc-400" />
                   </div>
                   <div className="text-sm text-zinc-400 mb-2">
-                    Upload artwork {!isAlbumSelected && "(Required)"}{" "}
-                    {/* ✅ НОВОЕ: Показываем, что обязательно */}
+                    {!isAlbumSelected
+                      ? t("admin.songs.artworkRequired")
+                      : t("admin.songs.uploadArtwork")}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     className="text-xs text-zinc-200"
                   >
-                    Choose File
+                    {t("admin.songs.chooseFile")}
                   </Button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Instrumental Audio upload */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Instrumental File (Required)
+              {t("admin.songs.instrumentalRequired")}
             </label>
             <div className="flex items-center gap-2">
               <Button
@@ -244,7 +235,7 @@ const AddSongDialog = () => {
               >
                 {files.instrumentalFile
                   ? files.instrumentalFile.name.slice(0, 20)
-                  : "Choose Instrumental File"}
+                  : t("admin.songs.chooseInstrumental")}
               </Button>
               <input
                 type="file"
@@ -261,10 +252,9 @@ const AddSongDialog = () => {
             </div>
           </div>
 
-          {/* Vocals Audio upload (Optional) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Vocals File (Optional)
+              {t("admin.songs.vocalsOptional")}
             </label>
             <div className="flex items-center gap-2">
               <Button
@@ -274,7 +264,7 @@ const AddSongDialog = () => {
               >
                 {files.vocalsFile
                   ? files.vocalsFile.name.slice(0, 20)
-                  : "Choose Vocals File (Optional)"}
+                  : t("admin.songs.chooseVocals")}
               </Button>
               <input
                 type="file"
@@ -303,21 +293,24 @@ const AddSongDialog = () => {
             </div>
           </div>
 
-          {/* Other fields */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Title</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldTitle")}
+            </label>
             <Input
               value={newSong.title}
               onChange={(e) =>
                 setNewSong({ ...newSong, title: e.target.value })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
-              placeholder="Enter song title"
+              placeholder={t("admin.songs.placeholderTitle")}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Artists</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldArtists")}
+            </label>
             <MultiSelect
               defaultValue={selectedArtistIds}
               onValueChange={setSelectedArtistIds}
@@ -325,11 +318,14 @@ const AddSongDialog = () => {
                 label: artist.name,
                 value: artist._id,
               }))}
-              placeholder="Select artists"
+              placeholder={t("admin.songs.placeholderArtists")}
             />
           </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Genres</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldGenres")}
+            </label>
             <MultiSelect
               defaultValue={selectedGenreIds}
               onValueChange={setSelectedGenreIds}
@@ -337,12 +333,14 @@ const AddSongDialog = () => {
                 label: genre.name,
                 value: genre._id,
               }))}
-              placeholder="Select genres"
+              placeholder={t("admin.songs.placeholderGenres")}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Moods</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldMoods")}
+            </label>
             <MultiSelect
               defaultValue={selectedMoodIds}
               onValueChange={setSelectedMoodIds}
@@ -350,13 +348,13 @@ const AddSongDialog = () => {
                 label: mood.name,
                 value: mood._id,
               }))}
-              placeholder="Select moods"
+              placeholder={t("admin.songs.placeholderMoods")}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Release Year
+              {t("admin.songs.fieldReleaseYear")}
             </label>
             <Input
               type="number"
@@ -370,14 +368,14 @@ const AddSongDialog = () => {
                 })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
-              placeholder="Enter release year"
+              placeholder={t("admin.songs.placeholderReleaseYear")}
             />
           </div>
 
           <ScrollArea>
             <div className="space-y-2">
               <label className="text-sm font-medium text-white">
-                Album (Optional)
+                {t("admin.songs.fieldAlbumOptional")}
               </label>
               <Select
                 value={newSong.album}
@@ -387,12 +385,14 @@ const AddSongDialog = () => {
               >
                 <SelectTrigger className="bg-zinc-800 border-zinc-700">
                   <SelectValue
-                    placeholder="Select album"
+                    placeholder={t("admin.songs.placeholderAlbum")}
                     className="text-zinc-400"
                   />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="none">No Album (Single)</SelectItem>
+                  <SelectItem value="none">
+                    {t("admin.songs.noAlbum")}
+                  </SelectItem>
                   {albums.map((album) => (
                     <SelectItem key={album._id} value={album._id}>
                       {album.title}
@@ -403,10 +403,9 @@ const AddSongDialog = () => {
             </div>
           </ScrollArea>
 
-          {/* НОВОЕ ПОЛЕ: Lyrics (LRC Format) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Lyrics (LRC Format, Optional)
+              {t("admin.songs.fieldLyricsOptional")}
             </label>
             <Textarea
               value={newSong.lyrics}
@@ -414,10 +413,9 @@ const AddSongDialog = () => {
                 setNewSong({ ...newSong, lyrics: e.target.value })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400 h-32"
-              placeholder="Paste lyrics in LRC format here, e.g., [00:01.23]Line 1"
+              placeholder={t("admin.songs.placeholderLyrics")}
             />
           </div>
-          {/* Конец нового поля */}
         </div>
 
         <DialogFooter>
@@ -444,7 +442,7 @@ const AddSongDialog = () => {
             disabled={isLoading}
             className="text-zinc-400"
           >
-            Cancel
+            {t("admin.common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -453,11 +451,10 @@ const AddSongDialog = () => {
               !newSong.title ||
               selectedArtistIds.length === 0 ||
               !files.instrumentalFile ||
-              // ✅ ИЗМЕНЕНО: Новое условие блокировки кнопки
               (!isAlbumSelected && !files.imageFile)
             }
           >
-            {isLoading ? "Uploading..." : "Add Song"}
+            {isLoading ? t("admin.common.uploading") : t("admin.songs.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

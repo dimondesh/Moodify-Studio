@@ -11,6 +11,7 @@ interface AuthUser {
   fullName: string;
   imageUrl?: string | null;
   isAdmin?: boolean;
+  language?: string; // <-- ДОБАВЛЕНО ПОЛЕ
 }
 
 interface UpdateProfileData {
@@ -38,6 +39,7 @@ interface AuthStore {
   logout: () => Promise<void>;
   reset: () => void;
   updateUserProfile: (data: UpdateProfileData) => Promise<void>; // <-- ДОБАВЛЕНО
+  updateUserLanguage: (language: string) => Promise<void>; // <-- ДОБАВЛЕН МЕТОД
 }
 
 const getAuthHeaders = async () => {
@@ -61,6 +63,26 @@ export const useAuthStore = create<AuthStore>()(
 
       setUser: (user) => set({ user }),
 
+      updateUserLanguage: async (language: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const authHeaders = await getAuthHeaders();
+          await axiosInstance.put("/users/language", { language }, authHeaders);
+
+          set((state) => ({
+            user: state.user ? { ...state.user, language } : state.user,
+            isLoading: false,
+          }));
+          console.log("AuthStore: User language updated.");
+        } catch (error: any) {
+          console.error("AuthStore: Update language error:", error);
+          set({
+            error: error.response?.data?.message || "Failed to update language",
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
       updateUserProfile: async (data: UpdateProfileData) => {
         set({ isLoading: true, error: null });
         try {

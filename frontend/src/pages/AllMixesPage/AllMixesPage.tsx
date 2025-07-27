@@ -1,18 +1,19 @@
-import { useState, useEffect } from "react";
+// frontend/src/pages/AllMixesPage/AllMixesPage.tsx
+
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import type { Mix } from "../../types/index";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const AllMixesPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const [mixes, setMixes] = useState<Mix[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Получаем данные, переданные со страницы HomePage
   const initialMixes = location.state?.mixes;
   const pageTitle = location.state?.title || "All Mixes";
 
@@ -30,7 +31,12 @@ const AllMixesPage = () => {
   };
 
   if (isLoading) return <SectionGridSkeleton />;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+  if (error)
+    return (
+      <div className="p-4 text-red-500">
+        {t("pages.playlist.errorTitle")}: {error}
+      </div>
+    );
 
   if (!mixes || mixes.length === 0) {
     return (
@@ -47,7 +53,6 @@ const AllMixesPage = () => {
         <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {mixes.map((mix) => (
-            // Используем ту же карточку, что и в MixGrid
             <div
               key={mix._id}
               onClick={() => handleNavigateToMix(mix._id)}

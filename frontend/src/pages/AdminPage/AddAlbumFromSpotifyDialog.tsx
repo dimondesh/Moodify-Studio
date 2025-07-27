@@ -1,5 +1,4 @@
 // frontend/src/pages/AdminPage/AddAlbumFromSpotifyDialog.tsx
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Plus } from "lucide-react";
 import { useRef, useState } from "react";
@@ -18,14 +17,15 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useMusicStore } from "../../stores/useMusicStore";
+import { useTranslation } from "react-i18next";
 
 const AddAlbumFromSpotifyDialog = () => {
+  const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [spotifyAlbumUrl, setSpotifyAlbumUrl] = useState("");
   const [albumAudioZip, setAlbumAudioZip] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { fetchAlbums } = useMusicStore();
 
   const handleZipFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,23 +37,15 @@ const AddAlbumFromSpotifyDialog = () => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-
     try {
-      if (!spotifyAlbumUrl) {
+      if (!spotifyAlbumUrl)
         return toast.error("Please enter Spotify Album URL.");
-      }
-      if (!albumAudioZip) {
-        return toast.error("Please upload ZIP File.");
-      }
-
+      if (!albumAudioZip) return toast.error("Please upload ZIP File.");
       const formData = new FormData();
       formData.append("spotifyAlbumUrl", spotifyAlbumUrl);
       formData.append("albumAudioZip", albumAudioZip);
-
       await axiosInstance.post("/admin/albums/upload-full-album", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / (progressEvent.total || 1)
@@ -61,7 +53,6 @@ const AddAlbumFromSpotifyDialog = () => {
           console.log(`Upload Progress: ${percentCompleted}%`);
         },
       });
-
       setSpotifyAlbumUrl("");
       setAlbumAudioZip(null);
       setDialogOpen(false);
@@ -83,34 +74,34 @@ const AddAlbumFromSpotifyDialog = () => {
       <DialogTrigger asChild>
         <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
           <Plus className="mr-2 h-4 w-4" />
-          From Spotify
+          {t("admin.albums.addFromSpotify")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200">
         <DialogHeader>
           <DialogTitle className="text-zinc-200">
-            Add Album from Spotify
+            {t("admin.albums.addSpotifyTitle")}
           </DialogTitle>
           <DialogDescription>
-            Upload album using Spotify URL and Zip with audio tracks
+            {t("admin.albums.addSpotifyDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 text-zinc-200">
           <div className="space-y-2">
-            <Label htmlFor="spotifyUrl">Spotify Album URL</Label>
+            <Label htmlFor="spotifyUrl">
+              {t("admin.albums.fieldSpotifyUrl")}
+            </Label>
             <Input
               id="spotifyUrl"
               value={spotifyAlbumUrl}
               onChange={(e) => setSpotifyAlbumUrl(e.target.value)}
               className="bg-zinc-800 border-zinc-700"
-              placeholder="https://open.spotify.com/album/..."
+              placeholder={t("admin.albums.placeholderSpotifyUrl")}
               disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="albumAudioZip">
-              ZIP Archive with Audio Files (Vocals/Instrumentals)
-            </Label>
+            <Label htmlFor="albumAudioZip">{t("admin.albums.fieldZip")}</Label>
             <input
               type="file"
               ref={fileInputRef}
@@ -131,7 +122,7 @@ const AddAlbumFromSpotifyDialog = () => {
                 <div className="text-sm text-zinc-400 mb-2">
                   {albumAudioZip
                     ? albumAudioZip.name
-                    : "Нажмите или перетащите ZIP-файл сюда"}
+                    : t("admin.albums.zipPrompt")}
                 </div>
                 <Button
                   variant="outline"
@@ -143,7 +134,7 @@ const AddAlbumFromSpotifyDialog = () => {
                   }}
                   disabled={isLoading}
                 >
-                  Choose ZIP-file
+                  {t("admin.albums.chooseZip")}
                 </Button>
               </div>
             </div>
@@ -156,14 +147,14 @@ const AddAlbumFromSpotifyDialog = () => {
             disabled={isLoading}
             className="text-zinc-200"
           >
-            Cancel
+            {t("admin.common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             className="bg-violet-500 hover:bg-violet-600 text-zinc-200"
             disabled={isLoading || !spotifyAlbumUrl || !albumAudioZip}
           >
-            {isLoading ? "Loading..." : "Add Album"}
+            {isLoading ? t("admin.common.loading") : t("admin.albums.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

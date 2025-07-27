@@ -16,13 +16,14 @@ import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
 import toast from "react-hot-toast";
-import { Playlist } from "../../types"; // Ensure the Playlist type is imported
+import { Playlist } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface CreatePlaylistDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: Playlist | null; // Optional prop for editing an existing playlist
-  onSuccess?: () => void; // Callback after successful creation/update
+  initialData?: Playlist | null;
+  onSuccess?: () => void;
 }
 
 export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
@@ -31,29 +32,27 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   initialData,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(
     initialData?.description || ""
-  ); // Fixed: ensure description is a string
+  );
   const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
     initialData?.imageUrl || null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { createPlaylist, updatePlaylist, isLoading } = usePlaylistStore(); // Use isLoading from the store for general indication
+  const { createPlaylist, updatePlaylist, isLoading } = usePlaylistStore();
 
   useEffect(() => {
-    // Reset form and update initial data when the dialog opens or initialData changes
     if (initialData) {
-      setTitle(initialData.title || ""); // Added || "" for safety, although title is usually required
-      setDescription(initialData.description || ""); // FIXED: Safe access to description
+      setTitle(initialData.title || "");
+      setDescription(initialData.description || "");
       setIsPublic(initialData.isPublic);
       setImagePreviewUrl(initialData.imageUrl || null);
-      setImageFile(null); // Clear file input when editing an existing playlist
+      setImageFile(null);
     } else {
-      // Clear form for creation mode
       setTitle("");
       setDescription("");
       setIsPublic(false);
@@ -66,26 +65,23 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      setImagePreviewUrl(URL.createObjectURL(file)); // Create a URL for preview
+      setImagePreviewUrl(URL.createObjectURL(file));
     } else {
       setImageFile(null);
-      setImagePreviewUrl(initialData?.imageUrl || null); // Revert to initial image if cleared
+      setImagePreviewUrl(initialData?.imageUrl || null);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     if (!title.trim()) {
       toast.error("Playlist title cannot be empty.");
       setIsSubmitting(false);
       return;
     }
-
     try {
       if (initialData) {
-        // Editing an existing playlist
         await updatePlaylist(
           initialData._id,
           title,
@@ -95,24 +91,30 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
         );
         toast.success("Playlist updated successfully!");
       } else {
-        // Creating a new playlist
         await createPlaylist(title, description, isPublic, imageFile);
         toast.success("Playlist created successfully!");
       }
-      onClose(); // Close the dialog on success
-      if (onSuccess) {
-        onSuccess(); // Call the success callback
-      }
+      onClose();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      // Error handling is already present in usePlaylistStore with toast
       console.error("Playlist operation failed:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const dialogTitle = initialData ? "Edit Playlist" : "Create New Playlist";
-  const submitButtonText = initialData ? "Save Changes" : "Create Playlist";
+  const dialogTitle = initialData
+    ? t("pages.playlist.editDialog.title")
+    : t("pages.playlist.createDialog.title");
+  const dialogDescription = initialData
+    ? t("pages.playlist.editDialog.description")
+    : t("pages.playlist.createDialog.description");
+  const submitButtonText = initialData
+    ? t("pages.playlist.editDialog.save")
+    : t("pages.playlist.createDialog.buttonText");
+  const submittingText = initialData
+    ? t("admin.common.saving")
+    : t("admin.common.creating");
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -120,15 +122,13 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="text-white">{dialogTitle}</DialogTitle>
           <DialogDescription className="text-zinc-400">
-            {initialData
-              ? "Make changes to your playlist."
-              : "Enter details for your new playlist."}
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="title" className="text-right text-white">
-              Title
+              {t("pages.playlist.editDialog.fieldTitle")}
             </Label>
             <Input
               id="title"
@@ -140,7 +140,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="description" className="text-right text-white">
-              Description
+              {t("pages.playlist.editDialog.fieldDescription")}
             </Label>
             <Textarea
               id="description"
@@ -152,7 +152,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="isPublic" className="text-right text-white">
-              Public
+              {t("pages.playlist.editDialog.fieldPublic")}
             </Label>
             <Switch
               id="isPublic"
@@ -163,7 +163,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="image" className="text-right text-white">
-              Cover
+              {t("pages.playlist.editDialog.fieldCover")}
             </Label>
             <Input
               id="image"
@@ -188,11 +188,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
               disabled={isSubmitting || isLoading}
               className="bg-green-500 hover:bg-green-600 text-white"
             >
-              {isSubmitting
-                ? initialData
-                  ? "Saving..."
-                  : "Creating..."
-                : submitButtonText}
+              {isSubmitting ? submittingText : submitButtonText}
             </Button>
           </DialogFooter>
         </form>

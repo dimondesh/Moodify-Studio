@@ -6,6 +6,7 @@ import { useAuthStore } from "../stores/useAuthStore";
 import { useChatStore } from "../stores/useChatStore";
 import { Card, CardContent } from "../components/ui/card";
 import { Loader } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -16,9 +17,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const { user, setUser, fetchUser, logout } = useAuthStore();
   const { initSocket, disconnectSocket, isConnected } = useChatStore();
+  const { i18n } = useTranslation(); // <-- ПОЛУЧАЕМ ЭКЗЕМПЛЯР i18n
 
   const socketInitializedRef = useRef(false);
-
+  useEffect(() => {
+    if (user?.language && user.language !== i18n.language) {
+      console.log(
+        `AuthProvider: Setting language from user profile to '${user.language}'`
+      );
+      i18n.changeLanguage(user.language);
+    }
+  }, [user, i18n]);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {

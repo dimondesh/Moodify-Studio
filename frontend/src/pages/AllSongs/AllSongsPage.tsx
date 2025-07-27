@@ -1,4 +1,5 @@
-// frontend/src/pages/AllSongsPage.tsx
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// frontend/src/pages/AllSongs/AllSongsPage.tsx
 import { JSX, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PlayButton from "../../pages/HomePage/PlayButton";
@@ -7,7 +8,8 @@ import type { Song } from "../../types/index";
 import axios from "axios";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import { useMusicStore } from "../../stores/useMusicStore";
-import React from "react"; // Добавил импорт React
+import React from "react";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 interface Artist {
   _id: string;
@@ -15,17 +17,15 @@ interface Artist {
 }
 
 const AllSongsPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const location = useLocation();
   const navigate = useNavigate();
-
   const initialSongs = location.state?.songs;
-  const pageTitle = location.state?.title || "Все песни";
+  const pageTitle = location.state?.title || t("searchpage.songs");
   const apiEndpoint = location.state?.apiEndpoint;
-
   const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
@@ -42,12 +42,10 @@ const AllSongsPage = () => {
           if (Array.isArray(fetchedData)) {
             setSongs(fetchedData);
           } else {
-            console.error("Fetched data is not an array:", fetchedData);
-            setError("Некорректный формат данных.");
+            setError(t("pages.playlist.error")); // Generic error
           }
         } catch (err) {
-          console.error("Ошибка при загрузке всех песен:", err);
-          setError("Не удалось загрузить песни.");
+          setError(t("pages.playlist.error")); // Generic error
         } finally {
           setIsLoading(false);
         }
@@ -55,24 +53,20 @@ const AllSongsPage = () => {
       fetchSongs();
     } else {
       setIsLoading(false);
-      setError("Нет доступных данных для отображения.");
+      setError("No data available to display.");
     }
     fetchArtists();
-  }, [initialSongs, apiEndpoint, fetchArtists]);
+  }, [initialSongs, apiEndpoint, fetchArtists, t]);
 
-  // Восстановленная и модифицированная вспомогательная функция getArtistNamesDisplay
   const getArtistNamesDisplay = (
     artistsInput: (string | Artist)[] | undefined
   ) => {
-    if (!artistsInput || artistsInput.length === 0) {
-      return <span>Unknown artist</span>;
-    }
-
+    if (!artistsInput || artistsInput.length === 0)
+      return <span>{t("common.unknownArtist")}</span>;
     const artistElements: JSX.Element[] = [];
     artistsInput.forEach((artistOrId, index) => {
       let artistName: string | null = null;
       let artistId: string | null = null;
-
       if (typeof artistOrId === "string") {
         const foundArtist = artists.find((a: Artist) => a._id === artistOrId);
         if (foundArtist) {
@@ -83,13 +77,12 @@ const AllSongsPage = () => {
         artistName = artistOrId.name;
         artistId = artistOrId._id;
       }
-
       if (artistName && artistId) {
         artistElements.push(
           <span key={artistId}>
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Предотвратить переход по альбому при клике на артиста
+                e.stopPropagation();
                 handleNavigateToArtist(artistId);
               }}
               className="hover:underline focus:outline-none focus:underline"
@@ -101,36 +94,35 @@ const AllSongsPage = () => {
         );
       }
     });
-
     return <>{artistElements}</>;
   };
 
   const handleNavigateToAlbum = (
-    e: React.MouseEvent, // Используем React.MouseEvent
+    e: React.MouseEvent,
     albumId: string | null | undefined
   ) => {
-    e.stopPropagation(); // Остановить распространение события, чтобы избежать двойного перехода
+    e.stopPropagation();
     if (albumId) {
       const albumIdStr = String(albumId);
-      if (albumIdStr.length > 0) {
-        navigate(`/albums/${albumIdStr}`);
-      }
-    } else {
-      console.warn("albumId отсутствует или не строка:", albumId);
+      if (albumIdStr.length > 0) navigate(`/albums/${albumIdStr}`);
     }
   };
 
-  const handleNavigateToArtist = (artistId: string) => {
+  const handleNavigateToArtist = (artistId: string) =>
     navigate(`/artists/${artistId}`);
-  };
 
   if (isLoading) return <SectionGridSkeleton />;
-  if (error) return <div className="p-4 text-red-500">Ошибка: {error}</div>;
+  if (error)
+    return (
+      <div className="p-4 text-red-500">
+        {t("pages.playlist.errorTitle")}: {error}
+      </div>
+    );
   if (!songs || songs.length === 0) {
     return (
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4">{pageTitle}</h2>
-        <p className="text-zinc-400">Нет доступных песен в этой категории.</p>
+        <p className="text-zinc-400">{t("pages.common.songsNotFound")}</p>
       </div>
     );
   }
@@ -145,24 +137,14 @@ const AllSongsPage = () => {
               key={song._id}
               className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
               onClick={() => {
-                // Основной клик по карточке, ведущий на альбом
                 if (song.albumId) {
                   const albumIdStr = String(song.albumId);
-
-                  if (albumIdStr.length > 0) {
-                    navigate(`/albums/${albumIdStr}`);
-                    return;
-                  }
+                  if (albumIdStr.length > 0) navigate(`/albums/${albumIdStr}`);
                 }
-                console.warn(
-                  "albumId отсутствует или не строка:",
-                  song.albumId
-                );
               }}
             >
               <div className="relative mb-4">
                 <div className="aspect-square rounded-md shadow-lg overflow-hidden">
-                  {/* Обложка альбома теперь кликабельна */}
                   <button
                     onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
                     className="w-full h-full block"
@@ -180,7 +162,6 @@ const AllSongsPage = () => {
                 </div>
                 <PlayButton song={song} />
               </div>
-              {/* Название песни теперь кликабельно */}
               <h3 className="font-medium mb-2 truncate">
                 <button
                   onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
@@ -190,8 +171,7 @@ const AllSongsPage = () => {
                 </button>
               </h3>
               <p className="text-sm text-zinc-400 truncate">
-                {/* Имена артистов теперь кликабельны */}
-                {getArtistNamesDisplay(song.artist)}{" "}
+                {getArtistNamesDisplay(song.artist)}
               </p>
             </div>
           ))}

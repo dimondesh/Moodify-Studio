@@ -6,22 +6,23 @@ import { axiosInstance } from "@/lib/axios";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SectionGridSkeleton from "@/components/ui/skeletons/PlaylistSkeleton";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 interface ListItem {
   _id: string;
-  name?: string; // для юзеров и артистов
-  title?: string; // для плейлистов
+  name?: string;
+  title?: string;
   imageUrl: string;
   type: "user" | "artist" | "playlist";
 }
 
 const DisplayListPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const [items, setItems] = useState<ListItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const location = useLocation();
   const { title, apiEndpoint } = location.state || {
-    title: "List",
+    title: t("pages.displayList.title"), // <-- ПЕРЕВОД
     apiEndpoint: null,
   };
 
@@ -70,16 +71,13 @@ const DisplayListPage = () => {
               className="p-4 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 transition-all group cursor-pointer"
             >
               <div className="relative mb-3 aspect-square shadow-lg">
-                {/* --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Условный рендеринг обложки --- */}
                 {item.type === "playlist" ? (
-                  // Для плейлистов - обычное изображение
                   <img
                     src={item.imageUrl || "/liked.png"}
                     alt={item.title || "Playlist"}
                     className="w-full h-full object-cover rounded-md"
                   />
                 ) : (
-                  // Для юзеров и артистов - круглый аватар
                   <Avatar className="w-full h-full">
                     <AvatarImage src={item.imageUrl} />
                     <AvatarFallback>
@@ -91,7 +89,9 @@ const DisplayListPage = () => {
               <h3 className="font-semibold truncate">
                 {item.name || item.title}
               </h3>
-              <p className="text-sm text-zinc-400 capitalize">{item.type}</p>
+              <p className="text-sm text-zinc-400 capitalize">
+                {t(`sidebar.subtitle.${item.type}`)}
+              </p>
             </Link>
           ))}
         </div>

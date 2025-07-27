@@ -1,5 +1,4 @@
 // frontend/src/pages/AdminPage/EditArtistDialog.tsx
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Upload } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
@@ -11,16 +10,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../../components/ui/dialog"; // Обратите внимание, что DialogTrigger здесь не будет
+} from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { Artist } from "../../types"; // Импортируем тип Artist
+import { Artist } from "../../types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "react-i18next";
 
 interface EditArtistDialogProps {
-  artist: Artist | null; // Артист, который будет редактироваться
+  artist: Artist | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -30,77 +30,56 @@ const EditArtistDialog = ({
   isOpen,
   onClose,
 }: EditArtistDialogProps) => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
-  const { updateArtist: updateArtistInStore } = useMusicStore(); // Переименовываем, чтобы не конфликтовало с функцией ниже
-
-  const [editedArtist, setEditedArtist] = useState({
-    name: "",
-    bio: "",
-  });
+  const { updateArtist: updateArtistInStore } = useMusicStore();
+  const [editedArtist, setEditedArtist] = useState({ name: "", bio: "" });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [deleteBanner, setDeleteBanner] = useState(false); // Состояние для удаления баннера
+  const [deleteBanner, setDeleteBanner] = useState(false);
 
   useEffect(() => {
-    // Предзаполнение формы при изменении артиста или открытии диалога
     if (artist) {
-      setEditedArtist({
-        name: artist.name,
-        bio: artist.bio || "",
-      });
-      setImageFile(null); // Сбрасываем выбранные файлы при открытии
+      setEditedArtist({ name: artist.name, bio: artist.bio || "" });
+      setImageFile(null);
       setBannerFile(null);
-      setDeleteBanner(false); // Сброс состояния удаления баннера
+      setDeleteBanner(false);
     }
   }, [artist, isOpen]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-    }
+    if (file) setImageFile(file);
   };
 
   const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setBannerFile(file);
-      setDeleteBanner(false); // Если выбран новый баннер, отменяем удаление
+      setDeleteBanner(false);
     }
   };
 
   const handleDeleteBanner = () => {
     setBannerFile(null);
-    setDeleteBanner(true); // Устанавливаем флаг для удаления баннера на бэкенде
+    setDeleteBanner(true);
   };
 
   const handleSubmit = async () => {
-    if (!artist) return; // Нельзя редактировать несуществующего артиста
-
+    if (!artist) return;
     setIsLoading(true);
-
     try {
       const formData = new FormData();
       formData.append("name", editedArtist.name);
       formData.append("bio", editedArtist.bio);
-
-      if (imageFile) {
-        formData.append("imageFile", imageFile);
-      }
-      if (bannerFile) {
-        formData.append("bannerFile", bannerFile);
-      } else if (deleteBanner && artist.bannerUrl) {
-        // Если флаг удаления баннера установлен и у артиста был баннер,
-        // отправляем специальное значение, чтобы бэкенд его удалил.
-        // Ваш бэкенд ожидает req.body.bannerUrl = null/"" для удаления.
+      if (imageFile) formData.append("imageFile", imageFile);
+      if (bannerFile) formData.append("bannerFile", bannerFile);
+      else if (deleteBanner && artist.bannerUrl)
         formData.append("bannerUrl", "");
-      }
-
-      await updateArtistInStore(artist._id, formData); // Используем функцию из стора
-
-      onClose(); // Закрываем диалог после успешного обновления
+      await updateArtistInStore(artist._id, formData);
+      onClose();
       toast.success("Artist updated successfully!");
     } catch (error: any) {
       console.error("Failed to update artist:", error);
@@ -118,13 +97,14 @@ const EditArtistDialog = ({
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200 h-auto">
         <ScrollArea className="h-[73vh]">
           <DialogHeader>
-            <DialogTitle className="text-zinc-200">Edit Artist</DialogTitle>
+            <DialogTitle className="text-zinc-200">
+              {t("admin.artists.editDialogTitle")}
+            </DialogTitle>
             <DialogDescription>
-              Измените данные артиста: {artist?.name}
+              {t("admin.artists.editDialogDesc")}: {artist?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 text-zinc-200">
-            {/* Поле для основной картинки артиста */}
             <input
               type="file"
               ref={imageInputRef}
@@ -144,10 +124,12 @@ const EditArtistDialog = ({
                   {imageFile
                     ? imageFile.name
                     : artist?.imageUrl
-                    ? `Current: ${artist.imageUrl.substring(
+                    ? `${t(
+                        "admin.common.currentFile"
+                      )} ${artist.imageUrl.substring(
                         artist.imageUrl.lastIndexOf("/") + 1
-                      )}` // Показываем текущее название файла
-                    : "Upload artist image"}
+                      )}`
+                    : t("admin.artists.uploadImageRequired")}
                 </div>
                 <Button
                   variant="outline"
@@ -155,12 +137,10 @@ const EditArtistDialog = ({
                   className="text-xs"
                   disabled={isLoading}
                 >
-                  Choose Image
+                  {t("admin.artists.chooseImage")}
                 </Button>
               </div>
             </div>
-
-            {/* Поле для баннера артиста (опциональное) */}
             <input
               type="file"
               ref={bannerInputRef}
@@ -180,12 +160,14 @@ const EditArtistDialog = ({
                   {bannerFile
                     ? bannerFile.name
                     : deleteBanner
-                    ? "Banner will be removed"
+                    ? t("admin.artists.bannerWillBeRemoved")
                     : artist?.bannerUrl
-                    ? `Current: ${artist.bannerUrl.substring(
+                    ? `${t(
+                        "admin.common.currentFile"
+                      )} ${artist.bannerUrl.substring(
                         artist.bannerUrl.lastIndexOf("/") + 1
                       )}`
-                    : "Upload banner image (optional)"}
+                    : t("admin.artists.uploadBannerOptional")}
                 </div>
                 <div className="flex justify-center gap-2 mt-2">
                   <Button
@@ -194,39 +176,39 @@ const EditArtistDialog = ({
                     className="text-xs"
                     disabled={isLoading}
                   >
-                    Choose Banner
+                    {t("admin.artists.chooseBanner")}
                   </Button>
-                  {artist?.bannerUrl &&
-                    !deleteBanner && ( // Кнопка "Удалить баннер" только если баннер есть и не помечен на удаление
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="text-xs"
-                        onClick={handleDeleteBanner}
-                        disabled={isLoading}
-                      >
-                        Remove Banner
-                      </Button>
-                    )}
+                  {artist?.bannerUrl && !deleteBanner && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="text-xs"
+                      onClick={handleDeleteBanner}
+                      disabled={isLoading}
+                    >
+                      {t("admin.artists.removeBanner")}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
-
             <div className="space-y-2">
-              <label className="text-sm font-medium">Artist Name</label>
+              <label className="text-sm font-medium">
+                {t("admin.artists.fieldName")}
+              </label>
               <Input
                 value={editedArtist.name}
                 onChange={(e) =>
                   setEditedArtist({ ...editedArtist, name: e.target.value })
                 }
                 className="bg-zinc-800 border-zinc-700"
-                placeholder="Enter artist name"
+                placeholder={t("admin.artists.placeholderName")}
                 disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Biography (Optional)
+                {t("admin.artists.fieldBioOptional")}
               </label>
               <Textarea
                 value={editedArtist.bio}
@@ -234,7 +216,7 @@ const EditArtistDialog = ({
                   setEditedArtist({ ...editedArtist, bio: e.target.value })
                 }
                 className="bg-zinc-800 border-zinc-700 resize-y"
-                placeholder="Enter artist biography"
+                placeholder={t("admin.artists.placeholderBio")}
                 rows={4}
                 disabled={isLoading}
               />
@@ -247,14 +229,16 @@ const EditArtistDialog = ({
               disabled={isLoading}
               className="text-zinc-200"
             >
-              Cancel
+              {t("admin.common.cancel")}
             </Button>
             <Button
               onClick={handleSubmit}
               className="bg-orange-500 hover:bg-orange-600 text-zinc-200"
               disabled={isLoading || !editedArtist.name}
             >
-              {isLoading ? "Updating..." : "Save Changes"}
+              {isLoading
+                ? t("admin.common.updating")
+                : t("admin.common.saveChanges")}
             </Button>
           </DialogFooter>
         </ScrollArea>

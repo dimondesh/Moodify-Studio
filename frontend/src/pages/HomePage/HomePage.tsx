@@ -1,16 +1,20 @@
+// frontend/src/pages/HomePage/HomePage.tsx
+
 import { useEffect } from "react";
 import { useMusicStore } from "../../stores/useMusicStore";
 import FeaturedSection from "./FeaturedSection";
 import SectionGrid from "./SectionGrid";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { usePlaylistStore } from "../../stores/usePlaylistStore"; // Импортируем usePlaylistStore
-import PlaylistGrid from "../SearchPage/PlaylistGrid"; // Импортируем PlaylistGrid
-import { useMixesStore } from "../../stores/useMixesStore"; // <-- ИМПОРТ
-import MixGrid from "./MixGrid"; // <-- ИМПОРТ
-import { useAuthStore } from "../../stores/useAuthStore"; // <-- ВАЖНЫЙ ИМПОРТ
+import { usePlaylistStore } from "../../stores/usePlaylistStore";
+import PlaylistGrid from "../SearchPage/PlaylistGrid";
+import { useMixesStore } from "../../stores/useMixesStore";
+import MixGrid from "./MixGrid";
+import { useAuthStore } from "../../stores/useAuthStore";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const HomePage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const {
     fetchFeaturedSongs,
     fetchMadeForYouSongs,
@@ -18,7 +22,7 @@ const HomePage = () => {
     fetchRecentlyListenedSongs,
     recentlyListenedSongs,
 
-    isLoading, // Общий isLoading для MusicStore
+    isLoading,
     madeForYouSongs,
     trendingSongs,
     featuredSongs,
@@ -29,23 +33,23 @@ const HomePage = () => {
     isLoading: areMixesLoading,
     fetchDailyMixes,
   } = useMixesStore();
-  const { user } = useAuthStore(); // <-- Получаем текущего пользователя
+  const { user } = useAuthStore();
 
   const {
     fetchPublicPlaylists,
     publicPlaylists,
-    isLoading: isPlaylistsLoading, // isLoading specifically for playlists
-  } = usePlaylistStore(); // Используем PlaylistStore
+    isLoading: isPlaylistsLoading,
+  } = usePlaylistStore();
 
   const { initializeQueue, toggleShuffle, isShuffle, currentSong } =
-    usePlayerStore(); // <--- Добавили currentSong из usePlayerStore
+    usePlayerStore();
 
   useEffect(() => {
     fetchFeaturedSongs();
     fetchTrendingSongs();
-    fetchDailyMixes(); // <-- ВЫЗОВ
+    fetchDailyMixes();
 
-    fetchPublicPlaylists(); // Загружаем публичные плейлисты
+    fetchPublicPlaylists();
     if (user) {
       fetchMadeForYouSongs();
       fetchRecentlyListenedSongs();
@@ -56,15 +60,13 @@ const HomePage = () => {
     fetchTrendingSongs,
     fetchMadeForYouSongs,
     fetchDailyMixes,
-    fetchRecentlyListenedSongs, // <-- ВЫЗОВ
-
-    fetchPublicPlaylists, // Добавляем в зависимости
+    fetchRecentlyListenedSongs,
+    fetchPublicPlaylists,
   ]);
 
   useEffect(() => {
-    // <--- Добавлена проверка: если currentSong уже есть, не инициализируем очередь
     if (
-      currentSong === null && // <--- НОВОЕ УСЛОВИЕ: Инициализируем только если трек не играет
+      currentSong === null &&
       madeForYouSongs.length > 0 &&
       featuredSongs.length > 0 &&
       trendingSongs.length > 0
@@ -79,15 +81,14 @@ const HomePage = () => {
     trendingSongs,
     isShuffle,
     toggleShuffle,
-    currentSong, // <--- Добавили currentSong в зависимости
+    currentSong,
   ]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return t("greetings.morning");
+    if (hour < 18) return t("greetings.afternoon");
+    return t("greetings.evening");
   };
 
   return (
@@ -95,8 +96,6 @@ const HomePage = () => {
       <ScrollArea className="h-[calc(100vh-180px)]">
         <div className="p-4 sm:p-6">
           <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
-            {" "}
-            {/* Добавил text-white */}
             {getGreeting()}
           </h1>
 
@@ -105,7 +104,7 @@ const HomePage = () => {
           <div className="space-y-8">
             {madeForYouSongs && recentlyListenedSongs.length >= 5 && (
               <SectionGrid
-                title="Made For You"
+                title={t("homepage.madeForYou")}
                 songs={madeForYouSongs}
                 isLoading={isLoading}
                 showAllPath="/full-songs"
@@ -113,34 +112,32 @@ const HomePage = () => {
             )}
             {recentlyListenedSongs && recentlyListenedSongs.length >= 10 && (
               <SectionGrid
-                title="You Recently Listened"
+                title={t("homepage.recentlyListened")}
                 songs={recentlyListenedSongs}
                 isLoading={isLoading}
-                // `AllSongsPage` автоматически подхватит данные из `state`
               />
             )}
             <MixGrid
-              title="Genre Mixes"
+              title={t("homepage.genreMixes")}
               mixes={genreMixes}
               isLoading={areMixesLoading}
             />
             <MixGrid
-              title="Mood Mixes"
+              title={t("homepage.moodMixes")}
               mixes={moodMixes}
               isLoading={areMixesLoading}
             />
-
             <SectionGrid
-              title="Trending"
+              title={t("homepage.trending")}
               songs={trendingSongs}
               isLoading={isLoading}
               showAllPath="/full-songs"
             />
-            {publicPlaylists.length > 0 && ( // Новая секция для плейлистов
+            {publicPlaylists.length > 0 && (
               <PlaylistGrid
-                title="Playlists For You"
+                title={t("homepage.playlistsForYou")}
                 playlists={publicPlaylists}
-                isLoading={isPlaylistsLoading} // Используем isLoading от PlaylistStore
+                isLoading={isPlaylistsLoading}
               />
             )}
           </div>

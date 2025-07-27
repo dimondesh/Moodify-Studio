@@ -17,12 +17,13 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { User } from "@/types";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 interface EditProfileDialogProps {
   user: User;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Для обновления данных на странице профиля
+  onSuccess: () => void;
 }
 
 export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
@@ -31,17 +32,15 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   user,
   onSuccess,
 }) => {
-  // Управляем состоянием формы с помощью useState, как в вашем примере
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
     user?.imageUrl || null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const { updateUserProfile, isLoading } = useAuthStore();
 
-  // Обновляем состояние формы, если пропс user изменился
   useEffect(() => {
     if (user) {
       setFullName(user.fullName);
@@ -66,24 +65,17 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
       toast.error("Full Name cannot be empty.");
       return;
     }
-
     try {
-      await updateUserProfile({
-        fullName: fullName,
-        imageUrl: imageFile,
-      });
-
+      await updateUserProfile({ fullName: fullName, imageUrl: imageFile });
       toast.success("Profile updated successfully!");
-      onSuccess(); // Обновляем данные на странице
-      onClose(); // Закрываем диалог
+      onSuccess();
+      onClose();
     } catch (error) {
-      // Ошибка уже обработана в useAuthStore
       console.error("Error updating profile in dialog:", error);
     }
   }, [fullName, imageFile, updateUserProfile, onClose, onSuccess]);
 
   const handleClose = useCallback(() => {
-    // Сбрасываем состояние к исходному при закрытии
     if (user) {
       setFullName(user.fullName);
       setImageFile(null);
@@ -99,9 +91,11 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700">
         <DialogHeader>
-          <DialogTitle className="text-white">Edit Profile</DialogTitle>
+          <DialogTitle className="text-white">
+            {t("pages.editProfileDialog.title")}
+          </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Make changes to your profile here. Click save when you're done.
+            {t("pages.editProfileDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
@@ -116,7 +110,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
               className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700"
               onClick={() => fileInputRef.current?.click()}
             >
-              Change Photo
+              {t("pages.editProfileDialog.changePhoto")}
             </Button>
             <Input
               id="image"
@@ -129,7 +123,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="fullName" className="text-white">
-              Full Name
+              {t("pages.editProfileDialog.fullName")}
             </Label>
             <Input
               id="fullName"
@@ -147,7 +141,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             disabled={isLoading}
             className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
           >
-            Cancel
+            {t("pages.editProfileDialog.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -155,7 +149,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
             className="bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
+            {t("pages.editProfileDialog.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

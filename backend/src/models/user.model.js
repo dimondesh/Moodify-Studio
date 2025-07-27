@@ -8,6 +8,11 @@ const userSchema = new mongoose.Schema(
     imageUrl: String,
     email: { type: String, required: true },
     firebaseUid: { type: String, required: true, unique: true },
+    language: {
+      type: String,
+      enum: ["ru", "uk", "en"], // Допустимые значения языка
+      default: "ru", // Язык по умолчанию для новых пользователей
+    },
     playlists: [
       {
         type: mongoose.Schema.Types.ObjectId,

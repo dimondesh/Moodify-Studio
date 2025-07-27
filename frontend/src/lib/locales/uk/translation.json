@@ -1,0 +1,399 @@
+{
+  "sidebar": {
+    "home": "Головна",
+    "search": "Пошук",
+    "messages": "Повідомлення",
+    "likedSongs": "Улюблені треки",
+    "library": "Моя медіатека",
+    "createPlaylist": "Створити плейлист",
+    "loginPromptTitle": "Увійдіть, щоб побачити медіатеку",
+    "loginPromptDescription": "Увійдіть до облікового запису, щоб керувати своєю музичною колекцією",
+    "emptyLibrary": "У вашій медіатеці поки що нічого немає.",
+    "subtitle": {
+      "Album": "Альбом",
+      "Single": "Сингл",
+      "EP": "EP",
+      "playlist": "Плейлист",
+      "artist": "Виконавець",
+      "dailyMix": "Денний мікс",
+      "songs": "треків",
+      "song": "трек",
+      "user": "Користувач"
+    }
+  },
+  "topbar": {
+    "searchPlaceholder": "Виконавці, треки або подкасти",
+    "cancel": "Скасувати",
+    "admin": "Адмін",
+    "profile": "Профіль",
+    "settings": "Налаштування",
+    "adminDashboard": "Панель адміністратора",
+    "logout": "Вийти",
+    "login": "Увійти через Google"
+  },
+  "player": {
+    "noSong": "Трек не відтворюється",
+    "like": "Подобається",
+    "unlike": "Прибрати лайк",
+    "nowPlaying": "Зараз грає",
+    "vocals": "Вокал",
+    "reverb": "Реверб",
+    "lyricsPreview": "Текст пісні",
+    "showFullLyrics": "Показати повний текст",
+    "toggleShuffle": "Перемішати",
+    "toggleRepeat": "Режим повтору",
+    "lyrics": "Текст",
+    "close": "Закрити",
+    "noLyrics": "Для цього треку немає тексту."
+  },
+  "friendsActivity": {
+    "title": "Активність друзів",
+    "noFriends": "Активних друзів не знайдено. Підпишіться на друзів або зачекайте, поки вони з'являться в мережі!",
+    "idle": "В мережі",
+    "loginPromptTitle": "Дивіться, що слухають друзі",
+    "loginPromptDescription": "Увійдіть, щоб дізнатися, якою музикою насолоджуються ваші друзі прямо зараз"
+  },
+  "bottomNav": {
+    "home": "Головна",
+    "search": "Пошук",
+    "library": "Медіатека",
+    "chat": "Чат"
+  },
+  "greetings": {
+    "morning": "Доброго ранку",
+    "afternoon": "Доброго дня",
+    "evening": "Доброго вечора"
+  },
+  "homepage": {
+    "madeForYou": "Створено для вас",
+    "recentlyListened": "Ви нещодавно слухали",
+    "genreMixes": "Мікси за жанрами",
+    "moodMixes": "Мікси за настроєм",
+    "trending": "У тренді",
+    "playlistsForYou": "Плейлисти для вас"
+  },
+  "searchpage": {
+    "resultsFor": "Результати пошуку за запитом",
+    "findYourFavorites": "Знайдіть тут свої улюблені пісні, альбоми та плейлисти",
+    "loading": "Завантаження...",
+    "noResults": "Нічого не знайдено.",
+    "artists": "Виконавці",
+    "songs": "Треки",
+    "albums": "Альбоми",
+    "playlists": "Плейлисти",
+    "users": "Користувачі",
+    "showAll": "Показати всі",
+    "showLess": "Приховати"
+  },
+  "settings": {
+    "title": "Налаштування",
+    "language": "Мова інтерфейсу",
+    "audioTitle": "Налаштування аудіо",
+    "equalizer": "Еквалайзер",
+    "selectPreset": "Оберіть пресет",
+    "custom": "Свій",
+    "reverb": "Реверберація",
+    "roomSize": "Розмір кімнати",
+    "selectRoomSize": "Оберіть розмір кімнати",
+    "small": "Маленька",
+    "medium": "Середня",
+    "large": "Велика",
+    "dryWetMix": "Баланс Dry/Wet",
+    "dry": "Dry",
+    "wet": "Wet",
+    "normalization": "Нормалізація",
+    "selectMode": "Оберіть режим",
+    "off": "Вимк",
+    "loud": "Гучно",
+    "normal": "Нормально",
+    "quiet": "Тихо",
+    "normalizationDesc": "Автоматично регулює гучність для більш стабільного відтворення.",
+    "waveAnalyzer": "Аналізатор хвилі",
+    "waveAnalyzerDesc": "Показувати візуалізатор хвилі у верхній панелі.",
+    "resetAudio": "Скинути всі налаштування аудіо",
+    "resetAudioDesc": "Скидає налаштування еквалайзера, нормалізації та аналізатора хвилі до стандартних значень."
+  },
+  "admin": {
+    "unauthorized": "Немає доступу",
+    "backToHome": "Повернутися на головну",
+    "title": "Керування музикою",
+    "description": "Керуйте своїм музичним каталогом",
+    "tabs": {
+      "songs": "Треки",
+      "albums": "Альбоми",
+      "artists": "Виконавці"
+    },
+    "stats": {
+      "totalSongs": "Всього треків",
+      "totalAlbums": "Всього альбомів",
+      "totalArtists": "Всього виконавців",
+      "totalUsers": "Всього користувачів"
+    },
+    "songs": {
+      "title": "Бібліотека треків",
+      "description": "Керуйте своїми музичними треками",
+      "add": "Додати трек",
+      "addDialogTitle": "Додати новий трек",
+      "addDialogDesc": "Додайте новий трек до своєї музичної бібліотеки",
+      "editDialogTitle": "Редагувати трек",
+      "editDialogDesc": "Змініть дані треку",
+      "uploadArtwork": "Завантажити обкладинку",
+      "artworkRequired": "Завантажити обкладинку (Обов'язково)",
+      "imageSelected": "Зображення вибрано:",
+      "chooseFile": "Виберіть файл",
+      "instrumentalRequired": "Інструментальний файл (Обов'язково)",
+      "chooseInstrumental": "Виберіть інструментал",
+      "changeInstrumental": "Змінити інструментал",
+      "vocalsOptional": "Вокальний файл (Необов'язково)",
+      "chooseVocals": "Виберіть вокал (Необов'язково)",
+      "changeVocals": "Змінити вокал",
+      "fieldTitle": "Назва",
+      "placeholderTitle": "Введіть назву треку",
+      "fieldArtists": "Виконавці",
+      "placeholderArtists": "Оберіть виконавців",
+      "fieldGenres": "Жанри",
+      "placeholderGenres": "Оберіть жанри",
+      "fieldMoods": "Настрої",
+      "placeholderMoods": "Оберіть настрої",
+      "fieldReleaseYear": "Рік випуску",
+      "placeholderReleaseYear": "Введіть рік випуску",
+      "fieldAlbumOptional": "Альбом (Необов'язково)",
+      "placeholderAlbum": "Оберіть альбом",
+      "noAlbum": "Без альбому (Сингл)",
+      "fieldLyricsOptional": "Текст (формат LRC, Необов'язково)",
+      "placeholderLyrics": "Вставте текст у форматі LRC, наприклад, [00:01.23]Рядок 1",
+      "tableTitle": "Назва",
+      "tableArtist": "Виконавець",
+      "tableReleaseDate": "Дата випуску",
+      "tableActions": "Дії",
+      "tableNoSongs": "Треки не знайдено."
+    },
+    "albums": {
+      "title": "Бібліотека альбомів",
+      "description": "Керуйте своєю колекцією альбомів",
+      "add": "Додати альбом",
+      "addFromSpotify": "Зі Spotify",
+      "addDialogTitle": "Додати новий альбом",
+      "addDialogDesc": "Додайте новий альбом до своєї колекції",
+      "editDialogTitle": "Редагувати альбом",
+      "editDialogDesc": "Змініть дані альбому",
+      "uploadArtwork": "Завантажити обкладинку альбому",
+      "changeArtwork": "Натисніть, щоб змінити обкладинку альбому",
+      "fieldTitle": "Назва альбому",
+      "placeholderTitle": "Введіть назву альбому",
+      "fieldArtists": "Виконавці",
+      "fieldReleaseYear": "Рік випуску",
+      "fieldType": "Тип",
+      "typeAlbum": "Альбом",
+      "typeEP": "EP",
+      "typeSingle": "Сингл",
+      "addSpotifyTitle": "Додати альбом зі Spotify",
+      "addSpotifyDesc": "Завантажте альбом, використовуючи URL Spotify та ZIP-архів з аудіо",
+      "fieldSpotifyUrl": "URL альбому в Spotify",
+      "placeholderSpotifyUrl": "https://open.spotify.com/album/...",
+      "fieldZip": "ZIP-архів з аудіофайлами (Вокал/Інструментал)",
+      "zipPrompt": "Натисніть або перетягніть ZIP-файл сюди",
+      "chooseZip": "Виберіть ZIP-файл",
+      "tableTitle": "Назва",
+      "tableArtists": "Виконавці",
+      "tableReleaseYear": "Рік випуску",
+      "tableSongs": "Треки",
+      "tableActions": "Дії"
+    },
+    "artists": {
+      "title": "Бібліотека виконавців",
+      "description": "Керуйте своєю колекцією виконавців",
+      "add": "Додати виконавця",
+      "addDialogTitle": "Додати нового виконавця",
+      "addDialogDesc": "Додайте нового виконавця до своєї музичної колекції",
+      "editDialogTitle": "Редагувати виконавця",
+      "editDialogDesc": "Змініть дані виконавця",
+      "uploadImageRequired": "Завантажити фото виконавця (обов'язково)",
+      "uploadBannerOptional": "Завантажити банер (необов'язково)",
+      "chooseImage": "Вибрати фото",
+      "chooseBanner": "Вибрати банер",
+      "removeBanner": "Видалити банер",
+      "bannerWillBeRemoved": "Банер буде видалено",
+      "fieldName": "Ім'я виконавця",
+      "placeholderName": "Введіть ім'я виконавця",
+      "fieldBioOptional": "Біографія (Необов'язково)",
+      "placeholderBio": "Введіть біографію виконавця",
+      "tableName": "Ім'я",
+      "tableAlbums": "Альбоми"
+    },
+    "common": {
+      "cancel": "Скасувати",
+      "creating": "Створення...",
+      "uploading": "Завантаження...",
+      "saving": "Збереження...",
+      "updating": "Оновлення...",
+      "loading": "Завантаження...",
+      "saveChanges": "Зберегти зміни",
+      "currentFile": "Поточний:",
+      "chooseFile": "Оберіть файл"
+
+    }
+  },
+  "pages": {
+    "notFound": {
+      "title": "Сторінку не знайдено",
+      "description": "Схоже, цей трек загубився. Давайте повернемо вас до музики.",
+      "goBack": "Назад",
+      "backToHome": "На головну"
+    },
+    "album": {
+      "notFoundTitle": "Альбом не знайдено",
+      "notFoundDesc": "Альбом, який ви шукаєте, не знайдено.",
+      "type": "Альбом",
+      "songs": "треків",
+      "song": "трек",
+      "actions": {
+        "removeFromLibrary": "Видалити з медіатеки",
+        "addToLibrary": "Додати до медіатеки"
+      },
+      "headers": {
+        "title": "Назва",
+        "releaseDate": "Дата випуску"
+      }
+    },
+    "artist": {
+      "loading": "Завантаження виконавця...",
+      "error": "Не вдалося завантажити інформацію про виконавця. Будь ласка, спробуйте пізніше.",
+      "notFound": "Виконавця не знайдено.",
+      "type": "Виконавець",
+      "actions": {
+        "pause": "Пауза",
+        "play": "Слухати всі треки від",
+        "following": "Відстежується",
+        "follow": "Відстежувати"
+      },
+      "popular": "Популярне",
+      "plays": "прослуховувань",
+      "about": "Про виконавця",
+      "albums": "Альбоми",
+      "singlesAndEps": "Сингли та EP"
+    },
+    "likedSongs": {
+      "title": "Улюблені треки",
+      "empty": "У вас ще немає улюблених треків. Додайте треки, щоб побачити їх тут!",
+      "error": "Помилка",
+      "playlist": "Плейлист",
+      "yourLibrary": "Ваша медіатека",
+      "songs": "треків",
+      "song": "трек",
+      "minutes": "хвилин",
+      "headers": {
+        "title": "Назва",
+        "dateAdded": "Дата додавання"
+      }
+    },
+    "playlist": {
+      "error": "Не вдалося завантажити деталі плейлиста",
+      "notFoundTitle": "Плейлист не знайдено",
+      "notFoundDesc": "Схоже, цей плейлист не існує або був видалений.",
+      "type": "Плейлист",
+      "songs": "треків",
+      "song": "трек",
+      "saved": "збережень",
+      "actions": {
+        "pause": "Пауза",
+        "play": "Слухати",
+        "removeFromLibrary": "Видалити з медіатеки",
+        "addToLibrary": "Додати до медіатеки",
+        "addSong": "Додати трек",
+        "moreActions": "Ще",
+        "edit": "Редагувати",
+        "delete": "Видалити плейлист",
+        "removeSong": "Видалити трек з плейлиста"
+      },
+      "deleteDialog": {
+        "title": "Ви впевнені, що хочете видалити цей плейлист?",
+        "description": "Цю дію не можна буде скасувати. Плейлист буде видалено назавжди.",
+        "cancel": "Скасувати",
+        "delete": "Видалити"
+      },
+      "removeSongDialog": {
+        "title": "Ви впевнені, що хочете видалити цей трек з плейлиста?",
+        "description": "Ця дія видалить трек з поточного плейлиста.",
+        "cancel": "Скасувати",
+        "remove": "Видалити трек"
+      },
+      "addSongDialog": {
+        "title": "Додати трек до плейлиста",
+        "description": "Знайдіть трек і додайте його до плейлиста.",
+        "searchPlaceholder": "Пошук треків...",
+        "searching": "Пошук...",
+        "noSongsFound": "Треки не знайдено.",
+        "added": "Додано",
+        "add": "Додати"
+      },
+      "editDialog": {
+        "title": "Редагувати плейлист",
+        "description": "Внесіть зміни до свого плейлиста тут. Натисніть 'Зберегти', коли закінчите.",
+        "fieldTitle": "Назва",
+        "fieldDescription": "Опис",
+        "fieldPublic": "Публічний",
+        "fieldCover": "Обкладинка",
+        "save": "Зберегти зміни"
+      },
+      "createDialog": {
+        "title": "Створити новий плейлист",
+        "description": "Введіть дані для вашого нового плейлиста.",
+        "buttonText": "Створити плейлист"
+      },
+      "headers": {
+        "title": "Назва",
+        "dateAdded": "Дата додавання"
+      }
+    },
+    "profile": {
+      "loading": "Завантаження профілю...",
+      "notFound": "Користувача не знайдено.",
+      "type": "Профіль",
+      "playlists": "Публічні плейлисти",
+      "followers": "підписників",
+      "following": "підписок",
+      "edit": "Редагувати",
+      "followingButton": "Ви підписані",
+      "followButton": "Підписатися",
+      "showAllPlaylists": "Показати всі плейлисти",
+      "followersSection": "Підписники",
+      "followingSection": "Підписки",
+      "playlistsSection": "Публічні плейлисти",
+      "showAll": "Показати всі",
+      "by": "від"
+    },
+    "editProfileDialog": {
+      "title": "Редагувати профіль",
+      "description": "Внесіть зміни до свого профілю тут. Натисніть 'Зберегти', коли закінчите.",
+      "changePhoto": "Змінити фото",
+      "fullName": "Повне ім'я",
+      "cancel": "Скасувати",
+      "save": "Зберегти зміни"
+    },
+    "chat": {
+      "startChatting": "Почніть спілкуватися з",
+      "noMessages": "Повідомлень поки немає.",
+      "noConversation": "Чат не вибрано",
+      "chooseFriend": "Оберіть друга, щоб почати спілкуватися",
+      "viewUsers": "Переглянути користувачів",
+      "title": "Чати",
+      "noUsers": "Інших користувачів не знайдено.",
+      "online": "В мережі",
+      "offline": "Не в мережі",
+      "playing": "Слухає:",
+      "typeMessage": "Введіть повідомлення"
+    },
+    "displayList": {
+      "title": "Список"
+    }
+  },
+  "auth": {
+    "loggingIn": "Входимо в акаунт",
+    "redirecting": "Перенаправлення..."
+  },
+  "common": {
+    "unknownArtist": "Невідомий виконавець",
+    "songsNotFound": "Немає пісень у цій категорії."
+  }
+}

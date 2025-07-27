@@ -5,9 +5,9 @@ import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
 import { useDominantColor } from "@/hooks/useDominantColor";
-// Импортируем useAudioSettingsStore
 import { useAudioSettingsStore } from "../lib/webAudio";
-import { useNavigate } from "react-router-dom"; // Импортируем useNavigate
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 import {
   Heart,
@@ -26,7 +26,7 @@ import {
   ChevronDown,
   Sliders,
   Mic2,
-  Waves, // Новая иконка для реверберации
+  Waves,
 } from "lucide-react";
 import { Slider } from "../components/ui/slider";
 import {
@@ -53,7 +53,7 @@ const formatTime = (seconds: number) => {
 };
 
 interface LyricLine {
-  time: number; // время в секундах
+  time: number;
   text: string;
 }
 
@@ -78,7 +78,8 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
 };
 
 const PlaybackControls = () => {
-  const navigate = useNavigate(); // Инициализируем useNavigate
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const navigate = useNavigate();
 
   const {
     currentSong,
@@ -200,10 +201,8 @@ const PlaybackControls = () => {
     }
   };
 
-  // ОБНОВЛЕННЫЙ ОБРАБОТЧИК НАВИГАЦИИ НА АРТИСТА
   const handleArtistClick = (artistId: string) => {
     navigate(`/artists/${artistId}`);
-    // Закрываем полноэкранный плеер, если мы на мобильном и он открыт
     if (isCompactView && isFullScreenPlayerOpen) {
       setIsFullScreenPlayerOpen(false);
     }
@@ -211,7 +210,6 @@ const PlaybackControls = () => {
 
   const handleAlbumClick = (albumId: string) => {
     navigate(`/albums/${albumId}`);
-    // Если мы на мобильном, закрываем полноэкранный плеер при переходе
     if (isCompactView && isFullScreenPlayerOpen) {
       setIsFullScreenPlayerOpen(false);
     }
@@ -238,10 +236,10 @@ const PlaybackControls = () => {
     return (
       <footer
         className={`h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40
-        ${isCompactView && isFullScreenPlayerOpen ? "hidden" : ""}`}
+          ${isCompactView && isFullScreenPlayerOpen ? "hidden" : ""}`}
       >
         <div className="flex items-center justify-center h-full text-zinc-500">
-          No song playing
+          {t("player.noSong")}
         </div>
       </footer>
     );
@@ -269,16 +267,13 @@ const PlaybackControls = () => {
               </div>
 
               <div className="flex flex-col flex-1 min-w-0">
-                {/* Название песни в компактном виде (НЕкликабельное) */}
                 <div className="font-medium truncate text-white text-sm sm:text-base">
                   {currentSong.title}
                 </div>
-                {/* Кликабельные имена артистов */}
                 <div className="text-xs text-zinc-400 truncate">
                   {currentSong.artist.map((artist, index) => (
                     <span key={artist._id}>
                       {artist.name}
-
                       {index < currentSong.artist.length - 1 && ", "}
                     </span>
                   ))}
@@ -300,7 +295,9 @@ const PlaybackControls = () => {
                   handleToggleLike();
                 }}
                 title={
-                  isSongLiked(currentSong._id) ? "Unlike song" : "Like song"
+                  isSongLiked(currentSong._id)
+                    ? t("player.unlike")
+                    : t("player.like")
                 }
               >
                 <Heart className="h-5 w-5 fill-current" />
@@ -337,19 +334,18 @@ const PlaybackControls = () => {
               }}
             >
               <style>{`
-                button[data-slot="dialog-close"] {
-                  display: none !important;
-                }
-              `}</style>
+                  button[data-slot="dialog-close"] {
+                    display: none !important;
+                  }
+                `}</style>
               <DialogTitle className="sr-only">
-                {currentSong?.title || "Now Playing"} -{" "}
-                {getArtistNames(currentSong.artist)}
+                {currentSong?.title || t("player.nowPlaying")} -{" "}
+                {getArtistNames(currentSong.artist, [])}
               </DialogTitle>
 
-              {/* ЭТА ОБЛАСТЬ РЕАГИРУЕТ НА СВАЙП ВНИЗ */}
               <div
                 className="flex justify-between items-center min-w-screen mb-4 flex-shrink-0"
-                ref={topSwipeAreaRef} // Привязываем реф к верхней панели
+                ref={topSwipeAreaRef}
                 onTouchStart={handleTopAreaTouchStart}
                 onTouchMove={handleTopAreaTouchMove}
               >
@@ -361,7 +357,6 @@ const PlaybackControls = () => {
                 >
                   <ChevronDown className="h-6 w-6" />
                 </Button>
-                {/* Кликабельное название альбома в полноэкранном режиме */}
                 <button
                   onClick={() => {
                     if (currentSong?.albumId) {
@@ -370,14 +365,13 @@ const PlaybackControls = () => {
                   }}
                   className="text-sm font-semibold text-zinc-400 uppercase hover:underline focus:outline-none focus:underline"
                 >
-                  {currentSong?.albumTitle || "Now Playing"}
+                  {currentSong?.albumTitle || t("player.nowPlaying")}
                 </button>
                 <div className="w-10 h-10"></div>
               </div>
 
-              {/* ОСНОВНОЕ СОДЕРЖИМОЕ ПОЛНОЭКРАННОГО МОБИЛЬНОГО ПЛЕЕРА */}
               <div
-                ref={mobilePlayerContentRef} // Реф для проверки scrollTop
+                ref={mobilePlayerContentRef}
                 className="flex-1 flex flex-col items-center overflow-y-auto w-full hide-scrollbar"
               >
                 <div className="flex flex-col items-center justify-center px-4 py-8 flex-shrink-0 w-full">
@@ -389,13 +383,12 @@ const PlaybackControls = () => {
                     />
                   ) : (
                     <div className="w-full max-w-md aspect-square bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 mb-8">
-                      No song playing
+                      {t("player.noSong")}
                     </div>
                   )}
 
                   <div className="flex justify-between items-center w-full mb-4 px-2">
                     <div className="flex flex-col text-left">
-                      {/* Кликабельное название песни в полноэкранном режиме */}
                       <button
                         onClick={() => {
                           if (currentSong?.albumId) {
@@ -404,16 +397,15 @@ const PlaybackControls = () => {
                         }}
                         className="text-2xl font-bold text-white mb-1 text-left hover:underline focus:outline-none focus:underline"
                       >
-                        {currentSong?.title || "No song playing"}
+                        {currentSong?.title || t("player.noSong")}
                       </button>
-                      {/* Кликабельные имена артистов в полноэкранном режиме */}
                       <p className="text-zinc-400 text-base">
                         {currentSong.artist.map((artist, index) => (
                           <span key={artist._id}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleArtistClick(artist._id); // ОБНОВЛЕНО: теперь закрывает плеер
+                                handleArtistClick(artist._id);
                               }}
                               className="hover:underline focus:outline-none focus:underline"
                             >
@@ -436,8 +428,8 @@ const PlaybackControls = () => {
                         onClick={handleToggleLike}
                         title={
                           isSongLiked(currentSong._id)
-                            ? "Unlike song"
-                            : "Like song"
+                            ? t("player.unlike")
+                            : t("player.like")
                         }
                       >
                         <Heart className="h-7 w-7 fill-current" />
@@ -469,7 +461,7 @@ const PlaybackControls = () => {
                         isShuffle ? "text-violet-500" : "text-zinc-400"
                       }`}
                       onClick={toggleShuffle}
-                      title="Toggle Shuffle"
+                      title={t("player.toggleShuffle")}
                     >
                       <Shuffle className="h-6 w-6" />
                     </Button>
@@ -515,7 +507,7 @@ const PlaybackControls = () => {
                           : "text-zinc-400"
                       }`}
                       onClick={toggleRepeatMode}
-                      title="Toggle Repeat Mode"
+                      title={t("player.toggleRepeat")}
                     >
                       {repeatMode === "one" ? (
                         <Repeat1 className="h-6 w-6" />
@@ -533,7 +525,7 @@ const PlaybackControls = () => {
                             size="icon"
                             variant="ghost"
                             className="hover:text-white text-zinc-400"
-                            title="Adjust vocals volume"
+                            title={t("player.vocals")}
                             disabled={!currentSong || !currentSong.vocalsUrl}
                           >
                             <Sliders className="h-5 w-5" />
@@ -541,14 +533,14 @@ const PlaybackControls = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           side="top"
-                          align="start"
+                          align="center"
                           className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <DropdownMenuItem className="focus:bg-transparent">
                             <div className="flex items-center w-full gap-2">
                               <span className="text-sm text-zinc-400 w-8 mr-2">
-                                Vocals
+                                {t("player.vocals")}
                               </span>
                               <Slider
                                 value={[vocalsVolume]}
@@ -576,7 +568,7 @@ const PlaybackControls = () => {
                                 ? "text-violet-500"
                                 : "text-zinc-400"
                             }`}
-                            title="Adjust Reverb"
+                            title={t("player.reverb")}
                             disabled={!currentSong || !reverbEnabled}
                             onClick={() => {
                               if (!reverbEnabled) setReverbEnabled(true);
@@ -593,8 +585,8 @@ const PlaybackControls = () => {
                         >
                           <DropdownMenuItem className="focus:bg-transparent">
                             <div className="flex items-center w-full gap-2">
-                              <span className="text-sm text-zinc-400 w-8 mr-2">
-                                Reverb
+                              <span className="text-sm text-zinc-400 w-8 mr-4">
+                                {t("player.reverb")}
                               </span>
                               <Slider
                                 value={[reverbMix * 100]}
@@ -644,20 +636,20 @@ const PlaybackControls = () => {
                 {currentSong.lyrics && (
                   <div className="w-full  mx-auto mt-8 flex flex-col items-center flex-shrink-0">
                     <h3 className="text-xl font-bold mb-4 text-white">
-                      Lyrics Preview
+                      {t("player.lyricsPreview")}
                     </h3>
                     <div className="w-full text-center relative cursor-pointer">
                       {lyrics.slice(0, 5).map((line, index) => (
                         <p
                           key={index}
                           className={`py-0.5 text-base font-bold transition-colors duration-100
-                            ${
-                              currentTime >= line.time &&
-                              (index === lyrics.length - 1 ||
-                                currentTime < lyrics[index + 1].time)
-                                ? "text-violet-400"
-                                : "text-zinc-400"
-                            }`}
+                              ${
+                                currentTime >= line.time &&
+                                (index === lyrics.length - 1 ||
+                                  currentTime < lyrics[index + 1].time)
+                                  ? "text-violet-400"
+                                  : "text-zinc-400"
+                              }`}
                         >
                           {line.text}
                         </p>
@@ -673,7 +665,7 @@ const PlaybackControls = () => {
                               setIsFullScreenPlayerOpen(false);
                             }}
                           >
-                            Show full lyrics
+                            {t("player.showFullLyrics")}
                           </Button>
                         </div>
                       )}
@@ -695,7 +687,6 @@ const PlaybackControls = () => {
         <div className="flex items-center gap-4 min-w-[180px] w-[30%]">
           {currentSong && (
             <>
-              {/* Кликабельная обложка (переход на альбом) */}
               <button
                 onClick={() => {
                   if (currentSong.albumId) {
@@ -711,7 +702,6 @@ const PlaybackControls = () => {
                 />
               </button>
               <div className="flex flex-col">
-                {/* Кликабельное название песни (переход на альбом) */}
                 <button
                   onClick={() => {
                     if (currentSong.albumId) {
@@ -722,7 +712,6 @@ const PlaybackControls = () => {
                 >
                   {currentSong.title}
                 </button>
-                {/* Кликабельные имена артистов */}
                 <div className="text-sm text-zinc-400 truncate">
                   {currentSong.artist.map((artist, index) => (
                     <span key={artist._id}>
@@ -747,7 +736,9 @@ const PlaybackControls = () => {
                 }`}
                 onClick={handleToggleLike}
                 title={
-                  isSongLiked(currentSong._id) ? "Unlike song" : "Like song"
+                  isSongLiked(currentSong._id)
+                    ? t("player.unlike")
+                    : t("player.like")
                 }
               >
                 <Heart className="h-4 w-4 fill-current" />
@@ -764,7 +755,7 @@ const PlaybackControls = () => {
                 isShuffle ? "text-violet-500" : "text-zinc-400"
               }`}
               onClick={toggleShuffle}
-              title="Toggle Shuffle"
+              title={t("player.toggleShuffle")}
             >
               <Shuffle className="h-4 w-4" />
             </Button>
@@ -811,7 +802,7 @@ const PlaybackControls = () => {
                 repeatMode !== "off" ? "text-violet-500" : "text-zinc-400"
               }`}
               onClick={toggleRepeatMode}
-              title="Toggle Repeat Mode"
+              title={t("player.toggleRepeat")}
             >
               {repeatMode === "one" ? (
                 <Repeat1 className="h-4 w-4" />
@@ -843,7 +834,7 @@ const PlaybackControls = () => {
                 isDesktopLyricsOpen ? "text-violet-500" : "text-zinc-400"
               }`}
               onClick={() => setIsDesktopLyricsOpen(!isDesktopLyricsOpen)}
-              title="Toggle Lyrics Page"
+              title={t("player.lyrics")}
             >
               <Mic2 className="h-4 w-4" />
             </Button>
@@ -855,7 +846,7 @@ const PlaybackControls = () => {
                 size="icon"
                 variant="ghost"
                 className="hover:text-white text-zinc-400"
-                title="Adjust vocals volume"
+                title={t("player.vocals")}
                 disabled={!currentSong || !currentSong.vocalsUrl}
               >
                 <Sliders className="h-4 w-4" />
@@ -869,7 +860,9 @@ const PlaybackControls = () => {
             >
               <DropdownMenuItem className="focus:bg-transparent">
                 <div className="flex items-center w-full gap-2">
-                  <span className="text-sm text-zinc-400 w-8 mr-2">Vocals</span>
+                  <span className="text-sm text-zinc-400 w-8 mr-2">
+                    {t("player.vocals")}
+                  </span>
                   <Slider
                     value={[vocalsVolume]}
                     max={100}
@@ -891,7 +884,7 @@ const PlaybackControls = () => {
                 className={`hover:text-white ${
                   reverbEnabled ? "text-violet-500" : "text-zinc-400"
                 }`}
-                title="Adjust Reverb"
+                title={t("player.reverb")}
                 disabled={!currentSong || !reverbEnabled}
                 onClick={() => {
                   if (!reverbEnabled) setReverbEnabled(true);
@@ -908,7 +901,9 @@ const PlaybackControls = () => {
             >
               <DropdownMenuItem className="focus:bg-transparent">
                 <div className="flex items-center w-full gap-2">
-                  <span className="text-sm text-zinc-400 w-8 mr-2">Reverb</span>
+                  <span className="text-sm text-zinc-400 w-8 mr-2">
+                    {t("player.reverb")}
+                  </span>
                   <Slider
                     value={[reverbMix * 100]}
                     max={100}

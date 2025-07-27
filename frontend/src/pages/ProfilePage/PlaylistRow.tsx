@@ -3,12 +3,14 @@
 import { Link } from "react-router-dom";
 import { Playlist } from "@/types";
 import { Music } from "lucide-react";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 interface PlaylistRowProps {
   playlist: Playlist;
 }
 
 const PlaylistRow = ({ playlist }: PlaylistRowProps) => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   return (
     <Link
       to={`/playlists/${playlist._id}`}
@@ -28,7 +30,8 @@ const PlaylistRow = ({ playlist }: PlaylistRowProps) => {
       <div className="flex-grow min-w-0">
         <p className="font-medium truncate text-white">{playlist.title}</p>
         <p className="text-sm text-zinc-400 truncate">
-          {playlist.likes ?? 0} saves • {playlist.owner?.fullName || "Unknown"}
+          {playlist.likes ?? 0} {t("pages.playlist.saved")} •{" "}
+          {playlist.owner?.fullName || t("common.unknownArtist")}
         </p>
       </div>
     </Link>

@@ -1,7 +1,7 @@
 // frontend/src/pages/AdminPage/ArtistsTable.tsx
 
 import { Music, Trash2, Pencil } from "lucide-react";
-import { useEffect, useState } from "react"; // <-- ДОБАВЛЕНО: useState
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,13 +12,15 @@ import {
 } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { Artist } from "../../types"; // <-- ДОБАВЛЕНО: Импорт Artist
-import EditArtistDialog from "./EditArtistDialog"; // <-- НОВЫЙ ИМПОРТ
+import { Artist } from "../../types";
+import EditArtistDialog from "./EditArtistDialog";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const ArtistsTable = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { artists, fetchArtists, deleteArtist } = useMusicStore();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // Состояние для открытия/закрытия диалога
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null); // Выбранный артист для редактирования
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
 
   useEffect(() => {
     fetchArtists();
@@ -31,7 +33,7 @@ const ArtistsTable = () => {
 
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
-    setSelectedArtist(null); // Сбрасываем выбранного артиста
+    setSelectedArtist(null);
   };
 
   return (
@@ -40,9 +42,11 @@ const ArtistsTable = () => {
         <TableHeader>
           <TableRow className="hover:bg-zinc-800/50 border-zinc-700/50">
             <TableHead className="w-[50px]"></TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Albums</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t("admin.artists.tableName")}</TableHead>
+            <TableHead>{t("admin.artists.tableAlbums")}</TableHead>
+            <TableHead className="text-right">
+              {t("admin.songs.tableActions")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -62,7 +66,8 @@ const ArtistsTable = () => {
               <TableCell>
                 <span className="inline-flex items-center gap-1 text-zinc-400">
                   <Music className="h-4 w-4" />
-                  {artist.albums.length} albums
+                  {artist.albums.length}{" "}
+                  {t("admin.artists.tableAlbums").toLowerCase()}
                 </span>
               </TableCell>
               <TableCell className="text-right">
@@ -90,7 +95,6 @@ const ArtistsTable = () => {
         </TableBody>
       </Table>
 
-      {/* Диалог редактирования артиста */}
       <EditArtistDialog
         artist={selectedArtist}
         isOpen={isEditDialogOpen}

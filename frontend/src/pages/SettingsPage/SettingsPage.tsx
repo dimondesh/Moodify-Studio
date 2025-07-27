@@ -1,14 +1,14 @@
+// frontend/src/pages/SettingsPage/SettingsPage.tsx
+
 import React, { useEffect } from "react";
 import {
-  // Импортируем все необходимые константы и типы из webAudio,
-  // так как они описывают структуру данных, а не сам стор
   defaultFrequencies,
   equalizerPresets,
   NormalizationMode,
   webAudioService,
   ReverbRoomSize,
   reverbIRPaths,
-  useAudioSettingsStore, // Используем useAudioSettingsStore
+  useAudioSettingsStore,
 } from "../../lib/webAudio";
 import { Label } from "../../components/ui/label";
 import { Slider } from "../../components/ui/slider";
@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../../stores/useAuthStore";
 
 const SettingsPage: React.FC = () => {
   const {
@@ -43,9 +45,12 @@ const SettingsPage: React.FC = () => {
     setReverbEnabled,
     setReverbMix,
     setReverbRoomSize,
-  } = useAudioSettingsStore(); // Все состояния и действия теперь из useAudioSettingsStore
+  } = useAudioSettingsStore();
 
-  const frequencies = defaultFrequencies; // Теперь это массив из 6 частот
+  const { t, i18n } = useTranslation();
+  const { updateUserLanguage } = useAuthStore();
+
+  const frequencies = defaultFrequencies;
 
   useEffect(() => {
     if (
@@ -74,19 +79,53 @@ const SettingsPage: React.FC = () => {
   const handleReverbRoomSizeChange = (value: string) => {
     setReverbRoomSize(value as ReverbRoomSize);
     if (!reverbEnabled) {
-      setReverbEnabled(true); // Включаем реверберацию, если она была выключена
+      setReverbEnabled(true);
+    }
+  };
+  const handleLanguageChange = async (lang: string) => {
+    if (lang !== i18n.language) {
+      await i18n.changeLanguage(lang);
+      try {
+        await updateUserLanguage(lang);
+      } catch (error) {
+        console.error("Failed to save language preference:", error);
+      }
     }
   };
 
   return (
     <ScrollArea className="h-full bg-radial from-violet-950 to-zinc-950">
       <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-2xl  ">
-        <h1 className="text-3xl font-bold text-white mb-6">Audio Settings</h1>
+        <h1 className="text-3xl font-bold text-white mb-6">
+          {t("settings.title")}
+        </h1>
+        <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8 mb-8">
+          <div>
+            <Label className="text-xl font-semibold mb-4 block">
+              {t("settings.language")}
+            </Label>
+            <Select value={i18n.language} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-full bg-zinc-700 border-zinc-600 text-white">
+                <SelectValue placeholder={t("settings.language")} />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                <SelectItem value="ru">Русский</SelectItem>
+                <SelectItem value="uk">Українська</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
+        <h1 className="text-3xl font-bold text-white mb-6">
+          {t("settings.audioTitle")}
+        </h1>
         <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
           {/* Equalizer Section */}
           <div className="border-b border-zinc-700 pb-8">
             <div className="flex items-center justify-between mb-4">
-              <Label className="text-xl font-semibold">Equalizer</Label>
+              <Label className="text-xl font-semibold">
+                {t("settings.equalizer")}
+              </Label>
               <Switch
                 id="equalizer-mode"
                 checked={equalizerEnabled}
@@ -103,7 +142,7 @@ const SettingsPage: React.FC = () => {
                     value={activePresetName}
                   >
                     <SelectTrigger className="w-full bg-zinc-700 border-zinc-600 text-white">
-                      <SelectValue placeholder="Select a preset" />
+                      <SelectValue placeholder={t("settings.selectPreset")} />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700 text-white max-h-60 overflow-y-auto">
                       {equalizerPresets.map((preset) => (
@@ -111,16 +150,16 @@ const SettingsPage: React.FC = () => {
                           {preset.name}
                         </SelectItem>
                       ))}
-                      {/* Убедимся, что "Custom" отображается только если он активен */}
                       {activePresetName === "Custom" &&
                         !equalizerPresets.some((p) => p.name === "Custom") && (
-                          <SelectItem value="Custom">Custom</SelectItem>
+                          <SelectItem value="Custom">
+                            {t("settings.custom")}
+                          </SelectItem>
                         )}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Адаптивная сетка для 6 ползунков */}
                 <div className="grid grid-cols-6 gap-2 sm:gap-3 md:gap-4 mt-4 justify-items-center">
                   {frequencies.map((freq) => (
                     <div
@@ -153,10 +192,12 @@ const SettingsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Reverb Section - НОВАЯ СЕКЦИЯ */}
+          {/* Reverb Section */}
           <div className="border-b border-zinc-700 pb-8">
             <div className="flex items-center justify-between mb-4">
-              <Label className="text-xl font-semibold">Reverb</Label>
+              <Label className="text-xl font-semibold">
+                {t("settings.reverb")}
+              </Label>
               <Switch
                 id="reverb-enabled"
                 checked={reverbEnabled}
@@ -172,20 +213,21 @@ const SettingsPage: React.FC = () => {
                     htmlFor="reverb-room-size"
                     className="text-sm font-medium text-zinc-400 mb-2 block"
                   >
-                    Room Size
+                    {t("settings.roomSize")}
                   </Label>
                   <Select
                     value={reverbRoomSize}
                     onValueChange={handleReverbRoomSizeChange}
                   >
                     <SelectTrigger className="w-full bg-zinc-700 border-zinc-600 text-white">
-                      <SelectValue placeholder="Select room size" />
+                      <SelectValue placeholder={t("settings.selectRoomSize")} />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
                       {Object.keys(reverbIRPaths).map((size) => (
                         <SelectItem key={size} value={size}>
-                          {size.charAt(0).toUpperCase() + size.slice(1)}{" "}
-                          {/* Капитализируем первое слово */}
+                          {t(
+                            `settings.${size as "small" | "medium" | "large"}`
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -197,20 +239,24 @@ const SettingsPage: React.FC = () => {
                     htmlFor="reverb-mix"
                     className="text-sm font-medium text-zinc-400 mb-2 block"
                   >
-                    Dry/Wet Mix
+                    {t("settings.dryWetMix")}
                   </Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-400">Dry</span>
+                    <span className="text-xs text-zinc-400">
+                      {t("settings.dry")}
+                    </span>
                     <Slider
                       id="reverb-mix"
                       min={0}
                       max={100}
                       step={1}
-                      value={[reverbMix * 100]} // Переводим 0-1 в 0-100
-                      onValueChange={(value) => setReverbMix(value[0] / 100)} // Переводим 0-100 обратно в 0-1
+                      value={[reverbMix * 100]}
+                      onValueChange={(value) => setReverbMix(value[0] / 100)}
                       className="flex-1 hover:cursor-grab active:cursor-grabbing"
                     />
-                    <span className="text-xs text-zinc-400">Wet</span>
+                    <span className="text-xs text-zinc-400">
+                      {t("settings.wet")}
+                    </span>
                     <span className="text-xs sm:text-sm text-zinc-300 whitespace-nowrap">
                       {(reverbMix * 100).toFixed(0)}%
                     </span>
@@ -226,7 +272,7 @@ const SettingsPage: React.FC = () => {
               htmlFor="normalization-mode-select"
               className="text-xl font-semibold mb-4 block"
             >
-              Normalization
+              {t("settings.normalization")}
             </Label>
             <Select
               value={normalizationMode}
@@ -235,17 +281,17 @@ const SettingsPage: React.FC = () => {
               }
             >
               <SelectTrigger className="w-full bg-zinc-700 border-zinc-600 text-white">
-                <SelectValue placeholder="Select a mode" />
+                <SelectValue placeholder={t("settings.selectMode")} />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                <SelectItem value="off">Off</SelectItem>
-                <SelectItem value="loud">Loud</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="quiet">Quiet</SelectItem>
+                <SelectItem value="off">{t("settings.off")}</SelectItem>
+                <SelectItem value="loud">{t("settings.loud")}</SelectItem>
+                <SelectItem value="normal">{t("settings.normal")}</SelectItem>
+                <SelectItem value="quiet">{t("settings.quiet")}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-zinc-400 text-sm mt-2">
-              Automatically adjusts volume for more consistent playback.
+              {t("settings.normalizationDesc")}
             </p>
           </div>
 
@@ -256,7 +302,7 @@ const SettingsPage: React.FC = () => {
                 htmlFor="wave-analyzer-toggle"
                 className="text-xl font-semibold"
               >
-                Wave Analyzer
+                {t("settings.waveAnalyzer")}
               </Label>
               <Switch
                 id="wave-analyzer-toggle"
@@ -266,7 +312,7 @@ const SettingsPage: React.FC = () => {
               />
             </div>
             <p className="text-zinc-400 text-sm mt-2">
-              Show wave visualizer in the topbar.
+              {t("settings.waveAnalyzerDesc")}
             </p>
           </div>
 
@@ -277,11 +323,10 @@ const SettingsPage: React.FC = () => {
               variant="outline"
               className="w-full bg-red-600 hover:bg-red-700 text-white border-red-700 hover:border-red-800"
             >
-              Reset All Audio Settings
+              {t("settings.resetAudio")}
             </Button>
             <p className="text-zinc-400 text-sm mt-2 text-center">
-              Resets equalizer, normalization, and wave analyzer settings to
-              default values.
+              {t("settings.resetAudioDesc")}
             </p>
           </div>
         </Card>

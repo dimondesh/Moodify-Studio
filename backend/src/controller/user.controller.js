@@ -203,6 +203,22 @@ export const updateUserProfile = async (req, res, next) => {
     next(error);
   }
 };
+export const updateUserLanguage = async (req, res, next) => {
+  try {
+    const { language } = req.body;
+    const userId = req.user.id;
+
+    if (!language || !["ru", "uk", "en"].includes(language)) {
+      return res.status(400).json({ message: "Invalid language specified" });
+    }
+
+    await User.findByIdAndUpdate(userId, { language });
+
+    res.status(200).json({ message: "Language updated successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getMutualFollowers = async (req, res, next) => {
   try {

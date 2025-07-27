@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { axiosInstance } from "../../lib/axios";
 import {
   Dialog,
@@ -26,19 +26,15 @@ import {
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { MultiSelect } from "../../components/ui/multi-select";
 import { Textarea } from "../../components/ui/textarea";
-import { Song, Artist, Genre, Mood } from "../../types"; // <-- Убедитесь, что Genre и Mood импортированы
-
-// frontend/src/pages/AdminPage/EditSongDialog.tsx
-import { memo } from "react"; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
-
-// ... (остальные импорты) ...
+import { Song, Artist, Genre, Mood } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface EditSongDialogProps {
   song: Song;
 }
 
-// Переименуем основной компонент для ясности, чтобы обернуть его в memo
 const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
+  const { t } = useTranslation();
   const {
     albums,
     artists,
@@ -52,10 +48,9 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
   } = useMusicStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
-  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]); // <-- НОВЫЙ СТЕЙТ
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+  const [selectedMoodIds, setSelectedMoodIds] = useState<string[]>([]);
 
-  // Инициализация состояния на основе props.song
   const [currentSongData, setCurrentSongData] = useState({
     title: song.title,
     albumId: song.albumId || "none",
@@ -96,15 +91,12 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log(`[${song._id}] Dialog open state changed:`, dialogOpen);
-
     if (dialogOpen) {
       fetchArtists();
       fetchAlbums();
-      fetchGenres(); // <-- ВЫЗОВ
-      fetchMoods(); // <-- ВЫЗОВ
+      fetchGenres();
+      fetchMoods();
 
-      // Сброс и инициализация при каждом открытии
       setCurrentSongData({
         title: song.title,
         albumId: song.albumId || "none",
@@ -129,7 +121,7 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
       setPreviewVocalsUrl(song.vocalsUrl || null);
       setClearVocals(false);
     }
-  }, [dialogOpen, fetchArtists, fetchAlbums, fetchGenres, fetchMoods, song]); // <-- song ДОБАВЛЕН ОБРАТНО В ЗАВИСИМОСТИ
+  }, [dialogOpen, fetchArtists, fetchAlbums, fetchGenres, fetchMoods, song]);
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -157,7 +149,6 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-
     try {
       if (!currentSongData.title.trim()) {
         return toast.error("Song title cannot be empty.");
@@ -187,17 +178,11 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
         formData.append("albumId", "");
       }
 
-      if (files.instrumentalFile) {
+      if (files.instrumentalFile)
         formData.append("instrumentalFile", files.instrumentalFile);
-      }
-      if (files.vocalsFile) {
-        formData.append("vocalsFile", files.vocalsFile);
-      } else if (clearVocals) {
-        formData.append("clearVocals", "true");
-      }
-      if (files.imageFile) {
-        formData.append("imageFile", files.imageFile);
-      }
+      if (files.vocalsFile) formData.append("vocalsFile", files.vocalsFile);
+      else if (clearVocals) formData.append("clearVocals", "true");
+      if (files.imageFile) formData.append("imageFile", files.imageFile);
 
       await axiosInstance.put(`/admin/songs/${song._id}`, formData);
 
@@ -231,14 +216,15 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
 
       <DialogContent className="bg-zinc-900 border-zinc-700 max-h-[80vh] overflow-auto text-zinc-200 no-scrollbar">
         <DialogHeader>
-          <DialogTitle className="text-white">Edit Song</DialogTitle>
+          <DialogTitle className="text-white">
+            {t("admin.songs.editDialogTitle")}
+          </DialogTitle>
           <DialogDescription>
-            Modify details of the song "{song.title}"
+            {t("admin.songs.editDialogDesc")} "{song.title}"
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Image upload area */}
           <div
             className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer ${
               !isAlbumSelected && !previewImageUrl && !files.imageFile
@@ -269,19 +255,22 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 {files.imageFile
                   ? files.imageFile.name
                   : previewImageUrl
-                  ? "Click to change artwork"
-                  : `Upload artwork ${!isAlbumSelected ? "(Required)" : ""}`}
+                  ? t("admin.albums.changeArtwork")
+                  : `${t("admin.songs.uploadArtwork")} ${
+                      !isAlbumSelected
+                        ? `(${t("admin.songs.artworkRequired")})`
+                        : ""
+                    }`}
               </div>
               <Button variant="outline" size="sm" className="text-xs">
-                Choose New File
+                {t("admin.common.chooseFile")}
               </Button>
             </div>
           </div>
 
-          {/* Instrumental Audio upload */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Instrumental File (Required)
+              {t("admin.songs.instrumentalRequired")}
             </label>
             <div className="flex items-center gap-2">
               <Button
@@ -292,8 +281,8 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 {files.instrumentalFile
                   ? files.instrumentalFile.name
                   : previewInstrumentalUrl
-                  ? "Change Instrumental File"
-                  : "Choose Instrumental File"}
+                  ? t("admin.songs.changeInstrumental")
+                  : t("admin.songs.chooseInstrumental")}
               </Button>
               <input
                 type="file"
@@ -305,7 +294,7 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             </div>
             {previewInstrumentalUrl && !files.instrumentalFile && (
               <p className="text-xs text-zinc-500">
-                Current:{" "}
+                {t("admin.common.currentFile")}{" "}
                 {previewInstrumentalUrl.substring(
                   previewInstrumentalUrl.lastIndexOf("/") + 1
                 )}
@@ -313,10 +302,9 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             )}
           </div>
 
-          {/* Vocals Audio upload (Optional) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Vocals File (Optional)
+              {t("admin.songs.vocalsOptional")}
             </label>
             <div className="flex items-center gap-2">
               <Button
@@ -327,8 +315,8 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 {files.vocalsFile
                   ? files.vocalsFile.name
                   : previewVocalsUrl
-                  ? "Change Vocals File"
-                  : "Choose Vocals File (Optional)"}
+                  ? t("admin.songs.changeVocals")
+                  : t("admin.songs.chooseVocals")}
               </Button>
               <input
                 type="file"
@@ -350,7 +338,7 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             </div>
             {previewVocalsUrl && !files.vocalsFile && !clearVocals && (
               <p className="text-xs text-zinc-500">
-                Current:{" "}
+                {t("admin.common.currentFile")}{" "}
                 {previewVocalsUrl.substring(
                   previewVocalsUrl.lastIndexOf("/") + 1
                 )}
@@ -358,9 +346,10 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             )}
           </div>
 
-          {/* Other fields */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Title</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldTitle")}
+            </label>
             <Input
               value={currentSongData.title}
               onChange={(e) =>
@@ -370,12 +359,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400"
-              placeholder="Enter song title"
+              placeholder={t("admin.songs.placeholderTitle")}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Artists</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldArtists")}
+            </label>
             <MultiSelect
               defaultValue={selectedArtistIds}
               onValueChange={setSelectedArtistIds}
@@ -383,12 +374,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 label: artist.name,
                 value: artist._id,
               }))}
-              placeholder="Select artists"
+              placeholder={t("admin.songs.placeholderArtists")}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Genres</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldGenres")}
+            </label>
             <MultiSelect
               defaultValue={selectedGenreIds}
               onValueChange={setSelectedGenreIds}
@@ -396,12 +389,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 label: genre.name,
                 value: genre._id,
               }))}
-              placeholder="Select genres"
+              placeholder={t("admin.songs.placeholderGenres")}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Moods</label>
+            <label className="text-sm font-medium text-white">
+              {t("admin.songs.fieldMoods")}
+            </label>
             <MultiSelect
               defaultValue={selectedMoodIds}
               onValueChange={setSelectedMoodIds}
@@ -409,14 +404,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 label: mood.name,
                 value: mood._id,
               }))}
-              placeholder="Select moods"
+              placeholder={t("admin.songs.placeholderMoods")}
             />
           </div>
 
           <ScrollArea className="max-h-[150px]">
             <div className="space-y-2">
               <label className="text-sm font-medium text-white">
-                Album (Optional)
+                {t("admin.songs.fieldAlbumOptional")}
               </label>
               <Select
                 value={currentSongData.albumId}
@@ -426,12 +421,14 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
               >
                 <SelectTrigger className="bg-zinc-800 border-zinc-700">
                   <SelectValue
-                    placeholder="Select album"
+                    placeholder={t("admin.songs.placeholderAlbum")}
                     className="text-zinc-400"
                   />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="none">No Album (Single)</SelectItem>
+                  <SelectItem value="none">
+                    {t("admin.songs.noAlbum")}
+                  </SelectItem>
                   {albums.map((album) => (
                     <SelectItem key={album._id} value={album._id}>
                       {album.title}
@@ -442,10 +439,9 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             </div>
           </ScrollArea>
 
-          {/* Lyrics (LRC Format) */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-white">
-              Lyrics (LRC Format, Optional)
+              {t("admin.songs.fieldLyricsOptional")}
             </label>
             <Textarea
               value={currentSongData.lyrics}
@@ -456,7 +452,7 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
                 })
               }
               className="bg-zinc-800 border-zinc-700 text-zinc-400 h-32"
-              placeholder="Paste lyrics in LRC format here, e.g., [00:01.23]Line 1"
+              placeholder={t("admin.songs.placeholderLyrics")}
             />
           </div>
         </div>
@@ -468,7 +464,7 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
             disabled={isLoading}
             className="text-zinc-400"
           >
-            Cancel
+            {t("admin.common.cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -480,7 +476,9 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
               (!isAlbumSelected && !previewImageUrl && !files.imageFile)
             }
           >
-            {isLoading ? "Saving..." : "Save Changes"}
+            {isLoading
+              ? t("admin.common.saving")
+              : t("admin.common.saveChanges")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -488,7 +486,5 @@ const EditSongDialogComponent = ({ song }: EditSongDialogProps) => {
   );
 };
 
-// Оберните компонент в React.memo
 const EditSongDialog = memo(EditSongDialogComponent);
-
 export default EditSongDialog;

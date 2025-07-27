@@ -1,3 +1,5 @@
+// frontend/src/pages/ChatPage/ChatPage.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
@@ -16,6 +18,7 @@ import {
 } from "../../components/ui/sheet";
 import { Avatar, AvatarImage } from "../../components/ui/avatar";
 import MessageInput from "./MessageInput";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const formatTime = (date: string) => {
   return new Date(date).toLocaleTimeString("en-US", {
@@ -26,6 +29,7 @@ const formatTime = (date: string) => {
 };
 
 const ChatPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { user: mongoUser } = useAuthStore();
   const {
     users,
@@ -43,14 +47,11 @@ const ChatPage = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageContent, setMessageContent] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    console.log("ChatPage Mount/Update. Current State:");
-    console.log("  mongoUser:", mongoUser);
-    console.log("  selectedUser:", selectedUser);
-    console.log("  messages length:", messages.length);
-    console.log("  isConnected:", isConnected);
-  }, [mongoUser, selectedUser, messages.length, isConnected]);
+    // ... (existing useEffects without text)
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,48 +63,17 @@ const ChatPage = () => {
       await sendMessage(selectedUser._id, mongoUser.id, messageContent);
       setMessageContent("");
       setTimeout(scrollToBottom, 100);
-    } else {
-      console.warn(
-        "Failed to send message: Missing selectedUser, mongoUser, or empty content."
-      );
-      console.log({
-        messageContent,
-        selectedUser,
-        mongoUserExists: !!mongoUser,
-        mongoUserId: mongoUser?.id,
-      });
     }
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   useEffect(() => {
-    if (mongoUser && mongoUser.id && !isConnected) {
-      console.log("ChatPage: Initializing socket for user:", mongoUser.id);
-      initSocket(mongoUser.id);
-    }
-
-    if (mongoUser && mongoUser.id && !users.length) {
-      console.log("ChatPage: Fetching users.");
-      fetchUsers();
-    }
-    return () => {};
+    if (mongoUser && mongoUser.id && !isConnected) initSocket(mongoUser.id);
+    if (mongoUser && mongoUser.id && !users.length) fetchUsers();
   }, [mongoUser, initSocket, fetchUsers, isConnected, users.length]);
 
   useEffect(() => {
-    if (selectedUser && mongoUser && mongoUser.id) {
-      console.log(`ChatPage: Fetching messages for ${selectedUser.fullName}.`);
+    if (selectedUser && mongoUser && mongoUser.id)
       fetchMessages(selectedUser._id);
-    } else {
-      console.log(
-        "ChatPage: Not fetching messages (selectedUser or mongoUser/mongoUser.id missing).",
-        {
-          selectedUser,
-          mongoUserExists: !!mongoUser,
-          mongoUserId: mongoUser?.id,
-        }
-      );
-    }
   }, [selectedUser, fetchMessages, mongoUser]);
 
   useEffect(() => {
@@ -122,7 +92,6 @@ const ChatPage = () => {
 
   return (
     <main className="h-full rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-900 overflow-hidden">
-      {/* Десктопная версия (lg и выше) */}
       <div className="hidden lg:grid lg:grid-cols-[300px_1fr] h-[calc(100vh-180px)]">
         <UsersList
           onUserSelect={handleUserSelect}
@@ -130,7 +99,6 @@ const ChatPage = () => {
           onlineUsers={onlineUsers}
           userActivities={userActivities}
         />
-
         <div className="flex flex-col h-full border-l border-zinc-800">
           {selectedUser ? (
             <>
@@ -139,8 +107,10 @@ const ChatPage = () => {
                 <div className="p-4 space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center text-zinc-400 mt-8">
-                      <p>Start chatting with {selectedUser.fullName}!</p>
-                      <p className="text-sm">No messages yet.</p>
+                      <p>
+                        {t("pages.chat.startChatting")} {selectedUser.fullName}!
+                      </p>
+                      <p className="text-sm">{t("pages.chat.noMessages")}</p>
                     </div>
                   ) : (
                     messages.map((message) => (
@@ -162,7 +132,6 @@ const ChatPage = () => {
                             }
                           />
                         </Avatar>
-
                         <div
                           className={`rounded-lg p-3 max-w-[70%] ${
                             message.senderId === mongoUser?.id
@@ -194,8 +163,6 @@ const ChatPage = () => {
           )}
         </div>
       </div>
-
-      {/* Мобильная версия (sm и md экраны) */}
       <div className="lg:hidden h-[calc(100vh-180px)] flex flex-col">
         {selectedUser ? (
           <div className="flex flex-col h-full">
@@ -204,8 +171,10 @@ const ChatPage = () => {
               <div className="p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-zinc-400 mt-8">
-                    <p>Start chatting with {selectedUser.fullName}!</p>
-                    <p className="text-sm">No messages yet.</p>
+                    <p>
+                      {t("pages.chat.startChatting")} {selectedUser.fullName}!
+                    </p>
+                    <p className="text-sm">{t("pages.chat.noMessages")}</p>
                   </div>
                 ) : (
                   messages.map((message) => (
@@ -227,7 +196,6 @@ const ChatPage = () => {
                           }
                         />
                       </Avatar>
-
                       <div
                         className={`rounded-lg p-3 max-w-[70%] ${
                           message.senderId === mongoUser?.id
@@ -260,7 +228,8 @@ const ChatPage = () => {
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
               <SheetTrigger asChild>
                 <Button className="mt-8 bg-violet-600 hover:bg-violet-700 mb-10">
-                  <UsersIcon className="mr-2 h-4 w-4" /> View Users
+                  <UsersIcon className="mr-2 h-4 w-4" />{" "}
+                  {t("pages.chat.viewUsers")}
                 </Button>
               </SheetTrigger>
               <SheetContent
@@ -288,14 +257,21 @@ const ChatPage = () => {
 
 export default ChatPage;
 
-const NoConversationPlaceholder = () => (
-  <div className="flex flex-col items-center justify-center h-full space-y-6 text-center">
-    <img src="/Moodify.png" alt="Moodify" className="size-16 animate-bounce" />
-    <div className="text-center">
-      <h3 className="text-zinc-300 text-lg font-medium mb-1">
-        No conversation selected
-      </h3>
-      <p className="text-zinc-500 text-sm">Choose a friend to start chatting</p>
+const NoConversationPlaceholder = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center h-full space-y-6 text-center">
+      <img
+        src="/Moodify.png"
+        alt="Moodify"
+        className="size-16 animate-bounce"
+      />
+      <div className="text-center">
+        <h3 className="text-zinc-300 text-lg font-medium mb-1">
+          {t("pages.chat.noConversation")}
+        </h3>
+        <p className="text-zinc-500 text-sm">{t("pages.chat.chooseFriend")}</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};

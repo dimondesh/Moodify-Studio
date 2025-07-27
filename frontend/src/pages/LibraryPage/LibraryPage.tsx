@@ -1,3 +1,5 @@
+// frontend/src/pages/LibraryPage/LibraryPage.tsx
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -12,22 +14,23 @@ import {
   Artist,
   LikedSongsItem,
   FollowedArtistItem,
-  MixItem, // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
+  MixItem,
 } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const LibraryPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const {
     likedSongs,
     albums,
     playlists,
-    followedArtists, // НОВОЕ: подписанные артисты
-    savedMixes, // <-- ПОЛУЧАЕМ СОХРАНЕННЫЕ МИКСЫ
-
+    followedArtists,
+    savedMixes,
     isLoading: isLoadingLibrary,
     error: libraryError,
     fetchLibrary,
@@ -49,19 +52,15 @@ const LibraryPage = () => {
   }, [fetchLibrary, fetchLikedSongs, fetchMyPlaylists, fetchArtists]);
 
   const isLoading = isLoadingLibrary || isLoadingPlaylists;
-
   const combinedError: string | null =
     (libraryError as string | null) || (playlistsError as string | null);
-
   const errorMessage = combinedError;
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
-    if (!artistsInput || artistsInput.length === 0) {
-      return "Unknown Artist";
-    }
-
+    if (!artistsInput || artistsInput.length === 0)
+      return t("common.unknownArtist");
     const names = artistsInput
       .map((artistOrId) => {
         if (typeof artistOrId === "string") {
@@ -72,8 +71,7 @@ const LibraryPage = () => {
         }
       })
       .filter(Boolean);
-
-    return names.join(", ") || "Unknown Artist";
+    return names.join(", ") || t("common.unknownArtist");
   };
 
   if (isLoading) return <LibraryGridSkeleton />;
@@ -81,18 +79,17 @@ const LibraryPage = () => {
   if (errorMessage) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
-        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">Ваша библиотека</h1>
+        <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
+          {t("sidebar.library")}
+        </h1>
         <p className="text-red-500 mt-4 text-center">
-          Ошибка загрузки библиотеки: {errorMessage}
+          Error loading library: {errorMessage}
         </p>
       </div>
     );
   }
 
-  // --- НОВОЕ: Логика дедупликации плейлистов ---
   const allPlaylistsMap = new Map<string, PlaylistItem>();
-
-  // Добавляем плейлисты, созданные пользователем (приоритет)
   (myPlaylists || []).forEach((playlist) => {
     allPlaylistsMap.set(playlist._id, {
       _id: playlist._id,
@@ -103,8 +100,6 @@ const LibraryPage = () => {
       owner: playlist.owner,
     });
   });
-
-  // Добавляем плейлисты из библиотеки, если их еще нет в Map
   (playlists || []).forEach((playlist) => {
     if (!allPlaylistsMap.has(playlist._id)) {
       allPlaylistsMap.set(playlist._id, {
@@ -117,11 +112,8 @@ const LibraryPage = () => {
       });
     }
   });
-
   const uniquePlaylists = Array.from(allPlaylistsMap.values());
-  // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
 
-  // Объединяем все элементы библиотеки и сортируем по дате добавления
   const libraryItems: LibraryItem[] = [
     ...(albums || []).map(
       (album) =>
@@ -130,11 +122,12 @@ const LibraryPage = () => {
           title: album.title,
           imageUrl: album.imageUrl,
           createdAt: new Date(album.addedAt || 0),
-          type: "album",
+          type: "album" as const,
           artist: album.artist,
+          albumType: album.type,
         } as AlbumItem)
     ),
-    ...uniquePlaylists, // ИСПОЛЬЗУЕМ ДЕДУПЛИЦИРОВАННЫЕ ПЛЕЙЛИСТЫ ЗДЕСЬ
+    ...uniquePlaylists,
     ...(savedMixes || []).map(
       (mix) =>
         ({
@@ -150,9 +143,9 @@ const LibraryPage = () => {
       (artist) =>
         ({
           _id: artist._id,
-          title: artist.name, // Используем artist.name
+          title: artist.name,
           imageUrl: artist.imageUrl,
-          createdAt: new Date(artist.addedAt || artist.createdAt), // Используем artist.addedAt, если есть, иначе artist.createdAt
+          createdAt: new Date(artist.addedAt || artist.createdAt),
           type: "artist",
           artistId: artist._id,
         } as FollowedArtistItem)
@@ -162,7 +155,7 @@ const LibraryPage = () => {
           {
             _id: "liked-songs",
             type: "liked-songs",
-            title: "Liked Songs",
+            title: t("sidebar.likedSongs"),
             imageUrl: "/liked.png",
             createdAt: new Date(likedSongs[0]?.likedAt || Date.now()),
             songsCount: likedSongs.length,
@@ -176,14 +169,13 @@ const LibraryPage = () => {
       <ScrollArea className="h-full rounded-md md:pb-0">
         <div className="relative min-h-screen p-4 sm:p-6">
           <div
-            className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80
-            to-zinc-900 pointer-events-none"
+            className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
             aria-hidden="true"
           />
           <div className="relative z-10">
             <div className="flex justify-between items-baseline">
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
-                Your Library
+                {t("sidebar.library")}
               </h1>
               {user && (
                 <Button
@@ -191,17 +183,16 @@ const LibraryPage = () => {
                   size="icon"
                   className="hover:bg-zinc-800 "
                   onClick={() => setIsCreateDialogOpen(true)}
-                  title="Create new playlist"
+                  title={t("sidebar.createPlaylist")}
                 >
                   <Plus className="size-6" />
                 </Button>
               )}
             </div>
-
             <div className="flex flex-col gap-2">
               {libraryItems.length === 0 ? (
                 <p className="text-zinc-400 px-2">
-                  No items in your library yet.
+                  {t("sidebar.emptyLibrary")}
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -215,46 +206,50 @@ const LibraryPage = () => {
                     if (item.type === "liked-songs") {
                       const likedItem = item as LikedSongsItem;
                       linkPath = "/liked-songs";
-                      subtitle = `Playlist • ${likedItem.songsCount} ${
-                        likedItem.songsCount !== 1 ? "songs" : "song"
+                      subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                        likedItem.songsCount
+                      } ${
+                        likedItem.songsCount !== 1
+                          ? t("sidebar.subtitle.songs")
+                          : t("sidebar.subtitle.song")
                       }`;
                       coverImageUrl = item.imageUrl;
                     } else if (item.type === "album") {
                       const albumItem = item as AlbumItem;
                       linkPath = `/albums/${albumItem._id}`;
-                      subtitle = `Album • ${getArtistNames(albumItem.artist)}`;
+                      subtitle = `${
+                        t(`sidebar.subtitle.${albumItem.albumType}`) ||
+                        t("sidebar.subtitle.album")
+                      } • ${getArtistNames(albumItem.artist)}`;
                       coverImageUrl =
                         item.imageUrl || "/default-album-cover.png";
                     } else if (item.type === "playlist") {
                       const playlistItem = item as PlaylistItem;
                       linkPath = `/playlists/${playlistItem._id}`;
-                      subtitle = `Playlist • ${
-                        playlistItem.owner?.fullName || "Unknown"
+                      subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                        playlistItem.owner?.fullName ||
+                        t("common.unknownArtist")
                       }`;
                       coverImageUrl =
-                        item.imageUrl ||
-                        "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
+                        item.imageUrl || "/default-album-cover.png";
                     } else if (item.type === "artist") {
                       const artistItem = item as FollowedArtistItem;
                       linkPath = `/artists/${artistItem._id}`;
-                      subtitle = `Artist`;
+                      subtitle = t("sidebar.subtitle.artist");
                       coverImageUrl =
                         item.imageUrl || "/default-artist-cover.png";
                       imageClass = "rounded-full";
                     } else if (item.type === "mix") {
-                      const mixItem = item as MixItem;
-                      linkPath = `/mixes/${mixItem._id}`; // Новый роут
-                      subtitle = `Daily Mix`;
+                      linkPath = `/mixes/${item._id}`;
+                      subtitle = t("sidebar.subtitle.dailyMix");
                       coverImageUrl =
                         item.imageUrl || "/default-album-cover.png";
                       imageClass = "rounded-md";
                     } else {
                       linkPath = "#";
                       subtitle = "";
-                      coverImageUrl =
-                        "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
+                      coverImageUrl = "/default-album-cover.png";
                     }
-
                     return (
                       <Link
                         key={item._id}
@@ -266,18 +261,12 @@ const LibraryPage = () => {
                             className={`aspect-square shadow-lg overflow-hidden ${imageClass}`}
                           >
                             <img
-                              src={
-                                coverImageUrl ||
-                                "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png"
-                              }
+                              src={coverImageUrl || "/default-album-cover.png"}
                               alt={item.title}
                               className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
-                                  item.type === "album" ||
-                                  item.type === "artist"
-                                    ? "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png"
-                                    : "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png ";
+                                  "/default-album-cover.png";
                               }}
                             />
                           </div>

@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminPage/AlbumsTable.tsx
 
-import { Calendar, Music, Trash2 } from "lucide-react"; // Удалена Pencil, так как она теперь внутри EditAlbumDialog
+import { Calendar, Music, Trash2 } from "lucide-react";
 import { useEffect } from "react";
 import {
   Table,
@@ -13,9 +13,11 @@ import {
 import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Artist } from "../../types";
-import EditAlbumDialog from "./EditAlbumDialog"; // <-- НОВЫЙ ИМПОРТ
+import EditAlbumDialog from "./EditAlbumDialog";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const AlbumsTable = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { albums, deleteAlbum, fetchAlbums, artists, fetchArtists } =
     useMusicStore();
 
@@ -24,12 +26,11 @@ const AlbumsTable = () => {
     fetchArtists();
   }, [fetchAlbums, fetchArtists]);
 
-  // ИЗМЕНЕНО: Функция getArtistNames теперь принимает Artist[] | string[]
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (
       !artistsData ||
       artistsData.length === 0 ||
-      !artists || // Убедимся, что 'artists' из useMusicStore доступен
+      !artists ||
       artists.length === 0
     )
       return "N/A";
@@ -37,11 +38,9 @@ const AlbumsTable = () => {
     const names = artistsData
       .map((item) => {
         if (typeof item === "string") {
-          // Если это ID, ищем артиста по ID
           const artist = artists.find((a) => a._id === item);
           return artist ? artist.name : null;
         } else if (item && typeof item === "object" && "name" in item) {
-          // Если это объект Artist, берем имя напрямую
           return (item as Artist).name;
         }
         return null;
@@ -56,11 +55,13 @@ const AlbumsTable = () => {
       <TableHeader>
         <TableRow className="hover:bg-zinc-800/50 border-zinc-700/50">
           <TableHead className="w-[50px]"></TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Artists</TableHead>
-          <TableHead>Release Year</TableHead>
-          <TableHead>Songs</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>{t("admin.albums.tableTitle")}</TableHead>
+          <TableHead>{t("admin.albums.tableArtists")}</TableHead>
+          <TableHead>{t("admin.albums.tableReleaseYear")}</TableHead>
+          <TableHead>{t("admin.albums.tableSongs")}</TableHead>
+          <TableHead className="text-right">
+            {t("admin.albums.tableActions")}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -91,12 +92,14 @@ const AlbumsTable = () => {
             <TableCell>
               <span className="inline-flex items-center gap-1 text-zinc-400">
                 <Music className="h-4 w-4" />
-                {album.songs.length} songs
+                {album.songs.length}{" "}
+                {album.songs.length === 1
+                  ? t("sidebar.subtitle.song")
+                  : t("sidebar.subtitle.songs")}
               </span>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex gap-2 justify-end">
-                {/* <-- ИСПОЛЬЗУЕМ EditAlbumDialog ЗДЕСЬ */}
                 <EditAlbumDialog album={album} />
                 <Button
                   variant="ghost"

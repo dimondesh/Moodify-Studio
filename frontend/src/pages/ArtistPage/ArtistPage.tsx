@@ -8,15 +8,14 @@ import AlbumGrid from "../SearchPage/AlbumGrid";
 import { Play, Heart, UserPlus, UserCheck, Pause } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import toast from "react-hot-toast";
-
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import Equalizer from "../../components/ui/equalizer";
-
-// Импортируем типы из центрального файла типов
 import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const ArtistPage = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const { id } = useParams<{ id: string }>();
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,6 @@ const ArtistPage = () => {
 
   const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
     usePlayerStore();
-
   const {
     isSongLiked,
     toggleSongLike,
@@ -45,12 +43,10 @@ const ArtistPage = () => {
         setLoading(true);
         const artistRes = await axiosInstance.get<Artist>(`/artists/${id}`);
         setArtist(artistRes.data);
-
         setError(null);
       } catch (err: unknown) {
         console.error("Failed to fetch artist data:", err);
-        let errorMessage =
-          "Failed to load artist information. Please try again later.";
+        let errorMessage = t("pages.artist.error");
         if (axios.isAxiosError(err) && err.response) {
           errorMessage = err.response.data.message || errorMessage;
         } else if (err instanceof Error) {
@@ -62,16 +58,15 @@ const ArtistPage = () => {
         setLoading(false);
       }
     };
-
     fetchArtistData();
     fetchLikedSongs();
     fetchFollowedArtists();
-  }, [id, fetchLikedSongs, fetchFollowedArtists]);
+  }, [id, fetchLikedSongs, fetchFollowedArtists, t]);
 
   if (loading) {
     return (
       <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
-        <p>Loading artist...</p>
+        <p>{t("pages.artist.loading")}</p>
       </main>
     );
   }
@@ -87,21 +82,18 @@ const ArtistPage = () => {
   if (!artist) {
     return (
       <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-zinc-400">
-        <p>Artist not found.</p>
+        <p>{t("pages.artist.notFound")}</p>
       </main>
     );
   }
 
   const allArtistSongs: Song[] = artist.songs || [];
   const allArtistAlbums: Album[] = artist.albums || [];
-
   const popularSongs = allArtistSongs.slice(0, 5);
-
   const albums = allArtistAlbums.filter((album) => album.type === "Album");
   const singlesAndEps = allArtistAlbums.filter(
     (album) => album.type === "Single" || album.type === "EP"
   );
-
   const isAnyPopularSongPlaying =
     isPlaying && popularSongs.some((song) => song._id === currentSong?._id);
 
@@ -110,18 +102,13 @@ const ArtistPage = () => {
       toast.error("No popular songs available to play.");
       return;
     }
-
-    if (isAnyPopularSongPlaying) {
-      togglePlay();
-    } else {
-      playAlbum(popularSongs, 0);
-    }
+    if (isAnyPopularSongPlaying) togglePlay();
+    else playAlbum(popularSongs, 0);
   };
 
   const handlePlaySpecificSong = (song: Song, index: number) => {
-    if (currentSong?._id === song._id) {
-      togglePlay();
-    } else {
+    if (currentSong?._id === song._id) togglePlay();
+    else {
       setCurrentSong(song);
       playAlbum(popularSongs, index);
     }
@@ -130,16 +117,14 @@ const ArtistPage = () => {
   const getArtistNames = (
     artistData: (Artist | string)[] | undefined
   ): string => {
-    if (!artistData || artistData.length === 0) {
-      return "Unknown Artist";
-    }
+    if (!artistData || artistData.length === 0)
+      return t("common.unknownArtist");
     return artistData
-      .map((item) => {
-        if (typeof item === "object" && item !== null && "name" in item) {
-          return item.name;
-        }
-        return String(item);
-      })
+      .map((item) =>
+        typeof item === "object" && item !== null && "name" in item
+          ? item.name
+          : String(item)
+      )
       .join(", ");
   };
 
@@ -162,23 +147,18 @@ const ArtistPage = () => {
     <main className="rounded-md overflow-hidden h-full bg-zinc-950">
       <ScrollArea className="h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-220px)] lg:h-[calc(100vh-170px)] w-full pb-20 md:pb-0">
         <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
-          {/* Фон (баннер или аватарка как фон, либо градиент на десктопе) */}
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 window.innerWidth >= 1024
                   ? artist.bannerUrl
-                    ? `url(${artist.bannerUrl})` // ✅ десктоп с баннером
-                    : "linear-gradient(to bottom, #333, #111)" // ❌ десктоп без баннера
-                  : `url(${artist.imageUrl || "/default-artist-cover.png"})`, // ✅ мобила/планшет — всегда аватарка
+                    ? `url(${artist.bannerUrl})`
+                    : "linear-gradient(to bottom, #333, #111)"
+                  : `url(${artist.imageUrl || "/default-artist-cover.png"})`,
             }}
           />
-
-          {/* Затемнение поверх фона */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
-
-          {/* ✅ Десктоп: отображать аватарку-кружок, если нет баннера */}
           {!artist.bannerUrl && artist.imageUrl && (
             <div className="hidden lg:block absolute bottom-10 left-10 z-10">
               <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
@@ -190,30 +170,25 @@ const ArtistPage = () => {
               </div>
             </div>
           )}
-
-          {/* Контент: имя артиста и кнопки */}
           <div
-            className={`
-      relative z-10 h-full flex flex-col justify-end
-      px-6 sm:px-10 pb-6 sm:pb-10
-      ${!artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""}
-    `}
+            className={`relative z-10 h-full flex flex-col justify-end px-6 sm:px-10 pb-6 sm:pb-10 ${
+              !artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""
+            }`}
           >
             <p className="text-white text-sm font-semibold uppercase mb-2">
-              Artist
+              {t("pages.artist.type")}
             </p>
             <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
               {artist.name}
             </h1>
-
             <div className="mt-4 flex items-center gap-4">
               <Button
                 className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
                 onClick={handlePlayArtistSongs}
                 title={
                   isAnyPopularSongPlaying
-                    ? "Pause"
-                    : `Play all songs by ${artist.name}`
+                    ? t("pages.artist.actions.pause")
+                    : `${t("pages.artist.actions.play")} ${artist.name}`
                 }
               >
                 {isAnyPopularSongPlaying ? (
@@ -222,7 +197,6 @@ const ArtistPage = () => {
                   <Play className="h-7 w-7 fill-current" />
                 )}
               </Button>
-
               <Button
                 variant="outline"
                 className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
@@ -231,23 +205,23 @@ const ArtistPage = () => {
                 {isArtistFollowed(artist._id) ? (
                   <>
                     <UserCheck className="h-5 w-5" />
-                    Following
+                    {t("pages.artist.actions.following")}
                   </>
                 ) : (
                   <>
                     <UserPlus className="h-5 w-5" />
-                    Follow
+                    {t("pages.artist.actions.follow")}
                   </>
                 )}
               </Button>
             </div>
           </div>
         </div>
-
-        {/* Секция "Popular" - ручной рендеринг для кнопки "лайка" */}
         {popularSongs.length > 0 && (
           <div className="px-6 md:px-10 py-4">
-            <h2 className="text-2xl font-bold text-white mb-4">Popular</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              {t("pages.artist.popular")}
+            </h2>
             <div className="grid grid-cols-1 gap-4">
               {popularSongs.map((song, index) => {
                 const isCurrentSong = currentSong?._id === song._id;
@@ -258,8 +232,6 @@ const ArtistPage = () => {
                     onClick={() => handlePlaySpecificSong(song, index)}
                   >
                     <div className="flex items-center justify-center w-4">
-                      {" "}
-                      {/* Контейнер для номера/эквалайзера */}
                       {isCurrentSong && isPlaying ? (
                         <div className="z-10">
                           <Equalizer />
@@ -271,7 +243,6 @@ const ArtistPage = () => {
                         <Play className="h-4 w-4 hidden group-hover:block" />
                       )}
                     </div>
-
                     <div className="w-12 h-12 flex-shrink-0">
                       <img
                         src={song.imageUrl || "/default-song-cover.png"}
@@ -291,9 +262,9 @@ const ArtistPage = () => {
                         {getArtistNames(song.artist)}
                       </p>
                     </div>
-                    {/* Отображение счетчика прослушиваний */}
                     <span className="text-zinc-400 text-sm ml-2 hidden sm:block">
-                      {song.playCount?.toLocaleString() || 0} plays
+                      {song.playCount?.toLocaleString() || 0}{" "}
+                      {t("pages.artist.plays")}
                     </span>
                     <Button
                       size="icon"
@@ -308,7 +279,9 @@ const ArtistPage = () => {
                         toggleSongLike(song._id);
                       }}
                       title={
-                        isSongLiked(song._id) ? "Unlike song" : "Like song"
+                        isSongLiked(song._id)
+                          ? t("player.unlike")
+                          : t("player.like")
                       }
                     >
                       <Heart className="h-4 w-4 fill-current" />
@@ -322,27 +295,26 @@ const ArtistPage = () => {
             </div>
           </div>
         )}
-
         <div className="px-6 py-4">
-          {/* Секция "Albums" */}
           {albums.length > 0 && (
-            <AlbumGrid title="Albums" albums={albums} isLoading={loading} />
+            <AlbumGrid
+              title={t("pages.artist.albums")}
+              albums={albums}
+              isLoading={loading}
+            />
           )}
-
-          {/* Секция "Singles and EPs" */}
           {singlesAndEps.length > 0 && (
             <AlbumGrid
-              title="Singles and EPs"
+              title={t("pages.artist.singlesAndEps")}
               albums={singlesAndEps}
               isLoading={loading}
             />
           )}
         </div>
-
         {artist.bio && (
           <div className="px-6 py-4">
             <h2 className="text-2xl font-bold text-white mb-4">
-              About {artist.name}
+              {t("pages.artist.about")} {artist.name}
             </h2>
             <p className="text-zinc-300 whitespace-pre-wrap">{artist.bio}</p>
           </div>
@@ -352,7 +324,6 @@ const ArtistPage = () => {
   );
 };
 
-// Вспомогательная функция для форматирования времени
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
   const minutes = Math.floor(seconds / 60);

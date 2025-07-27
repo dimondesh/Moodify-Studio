@@ -7,7 +7,7 @@ import {
   LogOut,
   Settings,
   UserIcon,
-} from "lucide-react"; // Добавили Settings
+} from "lucide-react";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
 import { Button, buttonVariants } from "./button";
@@ -19,12 +19,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator, // Может пригодиться для разделения пунктов
+  DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
-
-import WaveAnalyzer from "./WaveAnalyzer"; // Импортируем новый компонент анализатора волны
+import WaveAnalyzer from "./WaveAnalyzer";
+import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 
 const Topbar = () => {
+  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
@@ -72,20 +73,15 @@ const Topbar = () => {
 
   return (
     <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md sm:px-6">
-      {/* Logo and Wave Analyzer - hide on mobile if search is active */}
       <div
         className={`flex gap-3 items-center ${
           isSearchVisible ? "hidden sm:flex" : "flex"
         }`}
       >
         <img src="/Moodify.png" alt="Moodify" className="h-8 w-auto" />
-        {/* Add wave analyzer here */}
-        <WaveAnalyzer width={120} height={30} />{" "}
-        {/* Adjust dimensions to your liking, screenshot shows it narrower */}
+        <WaveAnalyzer width={120} height={30} />
       </div>
 
-      {/* Search */}
-      {/* On mobile: Search icon, clicking it reveals the input */}
       <div
         className={`relative flex-1 max-w-lg ${
           isSearchVisible ? "block" : "hidden md:block"
@@ -94,26 +90,14 @@ const Topbar = () => {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
         <input
           type="text"
-          placeholder="Artists, songs, or podcasts"
+          placeholder={t("topbar.searchPlaceholder")}
           value={query}
           onChange={handleChange}
           autoFocus={isSearchVisible}
           className="
-            w-full
-            bg-zinc-800
-            rounded-full
-            py-2.5
-            pl-12
-            pr-4
-            text-sm
-            text-zinc-200
-            placeholder:text-zinc-500
-            focus:outline-none
-            focus:ring-2
-            focus:ring-violet-500
-            transition
-            duration-150
-            ease-in-out
+            w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm
+            text-zinc-200 placeholder:text-zinc-500 focus:outline-none
+            focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out
           "
           spellCheck={false}
           autoComplete="off"
@@ -125,12 +109,11 @@ const Topbar = () => {
             className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white md:hidden"
             onClick={() => setIsSearchVisible(false)}
           >
-            Cancel
+            {t("topbar.cancel")}
           </Button>
         )}
       </div>
 
-      {/* Buttons on the right */}
       <div
         className={`flex items-center gap-4 ${
           isSearchVisible ? "hidden" : "flex"
@@ -154,8 +137,7 @@ const Topbar = () => {
             )}
           >
             <LayoutDashboardIcon className="w-4 h-4 mr-2" />
-            <span className="hidden md:inline">Admin</span>{" "}
-            {/* Compact on sm */}
+            <span className="hidden md:inline">{t("topbar.admin")}</span>
           </Link>
         )}
 
@@ -183,15 +165,14 @@ const Topbar = () => {
                   {user.displayName}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-zinc-700" />{" "}
-              {/* Separator */}
+              <DropdownMenuSeparator className="bg-zinc-700" />
               <DropdownMenuItem
                 asChild
                 className="p-2 cursor-pointer hover:bg-zinc-700"
               >
                 <Link to={`/users/${authUser?.id}`}>
                   <UserIcon className="w-4 h-4 mr-2" />
-                  Profile
+                  {t("topbar.profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -199,10 +180,8 @@ const Topbar = () => {
                 className="p-2 cursor-pointer hover:bg-zinc-700"
               >
                 <Link to="/settings">
-                  {" "}
-                  {/* Link to settings page */}
                   <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                  {t("topbar.settings")}
                 </Link>
               </DropdownMenuItem>
               {isAdmin && (
@@ -212,7 +191,7 @@ const Topbar = () => {
                 >
                   <Link to="/admin">
                     <LayoutDashboardIcon className="w-4 h-4 mr-2" />
-                    Admin Dashboard
+                    {t("topbar.adminDashboard")}
                   </Link>
                 </DropdownMenuItem>
               )}
@@ -221,7 +200,7 @@ const Topbar = () => {
                 className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Log Out
+                {t("topbar.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
