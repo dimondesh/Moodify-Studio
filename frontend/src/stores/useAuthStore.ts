@@ -167,13 +167,16 @@ export const useAuthStore = create<AuthStore>()(
               fullName:
                 syncedUserFromBackend.fullName || syncedUserFromBackend.email,
               imageUrl: syncedUserFromBackend.imageUrl || null,
+              language: syncedUserFromBackend.language,
             },
             isLoading: false,
             error: null,
           });
           console.log(
             "AuthStore: User synced with backend. MongoDB ID:",
-            syncedUserFromBackend._id
+            syncedUserFromBackend._id,
+            "AuthStore: User synced with backend. Language:",
+            syncedUserFromBackend.language
           );
         } catch (error: any) {
           console.error("AuthStore: Sync error:", error);

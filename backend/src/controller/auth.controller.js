@@ -53,7 +53,7 @@ export const syncUserWithDb = async (req, res) => {
         email: user.email,
         fullName: user.fullName,
         imageUrl: user.imageUrl,
-        language: "en",
+        language: user.language,
       },
     });
   } catch (error) {

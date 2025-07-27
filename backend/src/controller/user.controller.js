@@ -219,7 +219,6 @@ export const updateUserLanguage = async (req, res, next) => {
     next(error);
   }
 };
-
 export const getMutualFollowers = async (req, res, next) => {
   try {
     const currentUserMongoId = req.user.id;
