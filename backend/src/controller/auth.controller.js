@@ -32,6 +32,7 @@ export const syncUserWithDb = async (req, res) => {
         email: email,
         fullName: name || email.split("@")[0], // Используем name или часть email как имя по умолчанию
         imageUrl: picture || null, // Картинка по умолчанию
+        language: "en",
       });
       await user.save();
       console.log(
