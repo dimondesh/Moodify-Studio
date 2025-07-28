@@ -4,18 +4,18 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
-import toast from "react-hot-toast"; // <-- 1. ИМПОРТ TOAST
-import { useOfflineStore } from "./useOfflineStore"; // <-- 2. ИМПОРТ OFFLINE STORE
+import toast from "react-hot-toast";
+import { useOfflineStore } from "./useOfflineStore";
 
 interface PlayerStore {
   currentSong: Song | null;
   isPlaying: boolean;
-  queue: Song[];
-  currentIndex: number;
+  queue: Song[]; // Оригинальная очередь
+  currentIndex: number; // Индекс в оригинальной очереди
   repeatMode: "off" | "all" | "one";
   isShuffle: boolean;
-  shuffleHistory: number[];
-  shufflePointer: number;
+  shuffleHistory: number[]; // История индексов из оригинальной очереди
+  shufflePointer: number; // Указатель на текущий индекс в shuffleHistory
   isFullScreenPlayerOpen: boolean;
   vocalsVolume: number;
   masterVolume: number;
@@ -175,6 +175,7 @@ export const usePlayerStore = create<PlayerStore>()(
             currentIndex: targetIndexInQueue,
             shuffleHistory: newShuffleHistory,
             shufflePointer: newShufflePointer,
+            currentTime: 0,
           };
           set(newState);
 
@@ -225,7 +226,7 @@ export const usePlayerStore = create<PlayerStore>()(
             currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
             shuffleHistory: newShuffleHistory,
             shufflePointer: newShufflePointer,
-            currentTime: 0, // Сбрасываем время при смене трека
+            currentTime: 0,
           };
           set(newState);
 
@@ -282,7 +283,7 @@ export const usePlayerStore = create<PlayerStore>()(
         });
       },
 
-      // ===== ОБНОВЛЕННАЯ ФУНКЦИЯ playNext =====
+      // ===== НОВАЯ, ОБЪЕДИНЕННАЯ ЛОГИКА =====
       playNext: () => {
         const {
           queue,
@@ -292,170 +293,171 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
           currentIndex,
         } = get();
+        const { isOffline } = useOfflineStore.getState();
         const { isDownloaded } = useOfflineStore.getState().actions;
-        const isOffline = useOfflineStore.getState().isOffline;
 
-        if (queue.length === 0) return;
-        if (repeatMode === "one") set({ repeatMode: "all" });
+        if (queue.length === 0) {
+          set({ isPlaying: false });
+          return;
+        }
 
-        let nextIndexInQueue = -1;
-        let newShufflePointer = shufflePointer;
-        let newShuffleHistory = [...shuffleHistory];
+        // ИСПРАВЛЕНИЕ: Логика для repeatMode: 'one'
+        if (repeatMode === "one") {
+          set({ repeatMode: "all" });
+          // Дальше код продолжится как обычно, но уже с новым repeatMode
+        }
+
+        // Временные переменные, чтобы не мутировать состояние сразу
+        let tempShufflePointer = shufflePointer;
+        let tempShuffleHistory = [...shuffleHistory];
+        let nextIndex = -1;
 
         if (isShuffle) {
-          // --- Логика для SHUFFLE режима ---
-          if (newShuffleHistory.length === 0 && queue.length > 0) {
-            // Если история пуста, создаем ее
-            newShuffleHistory = shuffleQueue(queue.length);
-            const currentPos = newShuffleHistory.indexOf(currentIndex);
+          if (tempShuffleHistory.length === 0 && queue.length > 0) {
+            tempShuffleHistory = shuffleQueue(queue.length);
+            const currentPos = tempShuffleHistory.indexOf(currentIndex);
             if (currentPos !== -1) {
-              [newShuffleHistory[0], newShuffleHistory[currentPos]] = [
-                newShuffleHistory[currentPos],
-                newShuffleHistory[0],
+              [tempShuffleHistory[0], tempShuffleHistory[currentPos]] = [
+                tempShuffleHistory[currentPos],
+                tempShuffleHistory[0],
               ];
             }
-            newShufflePointer = 0;
+            tempShufflePointer = 0;
           }
 
-          let checkedIndexes = 0; // Счетчик, чтобы избежать бесконечного цикла
-          while (checkedIndexes < newShuffleHistory.length) {
-            newShufflePointer++;
-            if (newShufflePointer >= newShuffleHistory.length) {
-              if (repeatMode === "all") {
-                newShufflePointer = 0; // Начинаем заново
+          let checkedCount = 0;
+          let potentialPointer = tempShufflePointer;
+          while (checkedCount < tempShuffleHistory.length) {
+            potentialPointer++;
+            if (potentialPointer >= tempShuffleHistory.length) {
+              if (get().repeatMode === "all") {
+                // Проверяем актуальный repeatMode
+                potentialPointer = 0;
               } else {
-                toast("End of queue.");
-                set({ isPlaying: false });
-                return;
+                break;
               }
             }
-            const potentialIndex = newShuffleHistory[newShufflePointer];
+            const potentialIndex = tempShuffleHistory[potentialPointer];
             if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
-              nextIndexInQueue = potentialIndex;
-              break; // Нашли подходящий трек
-            }
-            checkedIndexes++;
-          }
-
-          if (nextIndexInQueue === -1) {
-            // Если после цикла ничего не нашли
-            toast("No other downloaded songs in queue.");
-            set({ isPlaying: false });
-            return;
-          }
-        } else {
-          // --- Логика для ОБЫЧНОГО режима ---
-          let nextIndex = currentIndex;
-          for (let i = 0; i < queue.length; i++) {
-            nextIndex = (nextIndex + 1) % queue.length;
-            const isLastSong = currentIndex === queue.length - 1 && i === 0;
-
-            if (!isOffline || isDownloaded(queue[nextIndex]._id)) {
-              nextIndexInQueue = nextIndex;
+              nextIndex = potentialIndex;
+              tempShufflePointer = potentialPointer;
               break;
             }
-            // Если дошли до конца и не нашли, проверяем repeat
-            if (isLastSong && repeatMode !== "all") {
-              toast("End of downloaded queue.");
-              set({ isPlaying: false });
-              return;
-            }
+            checkedCount++;
           }
-          if (nextIndexInQueue === -1) {
-            // Если после цикла ничего не нашли
-            toast("No other downloaded songs in queue.");
-            set({ isPlaying: false });
-            return;
+        } else {
+          let potentialIndex = currentIndex;
+          for (let i = 0; i < queue.length; i++) {
+            potentialIndex = (potentialIndex + 1) % queue.length;
+            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+              nextIndex = potentialIndex;
+              break;
+            }
+            if (potentialIndex === currentIndex) break;
+          }
+          if (nextIndex <= currentIndex && get().repeatMode !== "all") {
+            nextIndex = -1; // Не нашли следующего трека
           }
         }
 
+        if (nextIndex === -1) {
+          toast(isOffline ? "No other downloaded songs." : "End of queue.");
+          set({ isPlaying: false });
+          return;
+        }
+
         set({
-          currentSong: queue[nextIndexInQueue],
-          currentIndex: nextIndexInQueue,
+          currentSong: queue[nextIndex],
+          currentIndex: nextIndex,
           isPlaying: true,
-          shuffleHistory: newShuffleHistory,
-          shufflePointer: newShufflePointer,
+          shuffleHistory: tempShuffleHistory,
+          shufflePointer: tempShufflePointer,
           currentTime: 0,
         });
       },
 
-      // ===== ОБНОВЛЕННАЯ ФУНКЦИЯ playPrevious =====
       playPrevious: () => {
         const {
+          currentIndex,
           queue,
           repeatMode,
           isShuffle,
           shuffleHistory,
           shufflePointer,
-          currentIndex,
+          currentTime,
         } = get();
+        const { isOffline } = useOfflineStore.getState();
         const { isDownloaded } = useOfflineStore.getState().actions;
-        const isOffline = useOfflineStore.getState().isOffline;
 
-        if (queue.length === 0) return;
-        if (repeatMode === "one") set({ repeatMode: "all" });
+        if (queue.length === 0) {
+          set({ isPlaying: false });
+          return;
+        }
 
-        let prevIndexInQueue = -1;
-        let newShufflePointer = shufflePointer;
+        // ИСПРАВЛЕНИЕ: Логика для repeatMode: 'one' и времени трека
+        if (currentTime > 3) {
+          set({ currentTime: 0 });
+          return;
+        }
+        if (repeatMode === "one") {
+          set({ repeatMode: "all" });
+        }
+
+        let tempShufflePointer = shufflePointer;
+        let prevIndex = -1;
 
         if (isShuffle) {
-          // --- Логика для SHUFFLE режима ---
-          let checkedIndexes = 0;
-          while (checkedIndexes < shuffleHistory.length) {
-            newShufflePointer--;
-            if (newShufflePointer < 0) {
-              if (repeatMode === "all") {
-                newShufflePointer = shuffleHistory.length - 1;
+          let checkedCount = 0;
+          let potentialPointer = tempShufflePointer;
+          while (checkedCount < shuffleHistory.length) {
+            potentialPointer--;
+            if (potentialPointer < 0) {
+              if (get().repeatMode === "all") {
+                potentialPointer = shuffleHistory.length - 1;
               } else {
-                toast("Start of queue.");
-                set({ isPlaying: false });
-                return;
+                break;
               }
             }
-            const potentialIndex = shuffleHistory[newShufflePointer];
+            const potentialIndex = shuffleHistory[potentialPointer];
             if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
-              prevIndexInQueue = potentialIndex;
+              prevIndex = potentialIndex;
+              tempShufflePointer = potentialPointer;
               break;
             }
-            checkedIndexes++;
-          }
-          if (prevIndexInQueue === -1) {
-            toast("No other downloaded songs in queue.");
-            set({ isPlaying: false });
-            return;
+            checkedCount++;
           }
         } else {
-          // --- Логика для ОБЫЧНОГО режима ---
-          let prevIndex = currentIndex;
+          let potentialIndex = currentIndex;
           for (let i = 0; i < queue.length; i++) {
-            prevIndex = (prevIndex - 1 + queue.length) % queue.length;
-            const isFirstSong = currentIndex === 0 && i === 0;
-
-            if (!isOffline || isDownloaded(queue[prevIndex]._id)) {
-              prevIndexInQueue = prevIndex;
+            potentialIndex = (potentialIndex - 1 + queue.length) % queue.length;
+            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+              prevIndex = potentialIndex;
               break;
             }
-            if (isFirstSong && repeatMode !== "all") {
-              toast("Start of downloaded queue.");
-              set({ isPlaying: false });
-              return;
-            }
+            if (potentialIndex === currentIndex) break;
           }
-          if (prevIndexInQueue === -1) {
-            toast("No other downloaded songs in queue.");
-            set({ isPlaying: false });
-            return;
+          if (prevIndex >= currentIndex && get().repeatMode !== "all") {
+            prevIndex = -1;
           }
         }
 
+        if (prevIndex === -1) {
+          toast(
+            isOffline ? "No previous downloaded songs." : "Start of queue."
+          );
+          set({ isPlaying: false });
+          return;
+        }
+
         set({
-          currentSong: queue[prevIndexInQueue],
-          currentIndex: prevIndexInQueue,
+          currentSong: queue[prevIndex],
+          currentIndex: prevIndex,
           isPlaying: true,
-          shufflePointer: newShufflePointer,
+          shufflePointer: tempShufflePointer,
           currentTime: 0,
         });
       },
+      // ==========================================
 
       setRepeatMode: (mode) => set({ repeatMode: mode }),
       setIsFullScreenPlayerOpen: (isOpen: boolean) =>
@@ -476,6 +478,7 @@ export const usePlayerStore = create<PlayerStore>()(
         });
       },
     }),
+
     {
       name: "music-player-storage",
       storage: createJSONStorage(() => localStorage),
