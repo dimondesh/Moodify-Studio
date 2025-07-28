@@ -110,14 +110,28 @@ export const useOfflineStore = create<OfflineState>()(
 
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
+            const allUrls = Array.from(urlsToCache).filter(Boolean);
 
-            const urls = Array.from(urlsToCache).filter(Boolean);
-            const imageUrls = urls.filter((url) => url.includes("cloudinary"));
-            const audioUrls = urls.filter((url) => !url.includes("cloudinary"));
+            // Функция для кэширования одного URL
+            const cacheUrl = async (url: string) => {
+              const isImage = url.includes("cloudinary");
+              const cache = isImage ? imageCache : audioCache;
 
-            if (audioUrls.length > 0) await audioCache.addAll(audioUrls);
-            if (imageUrls.length > 0) await imageCache.addAll(imageUrls);
+              // Проверяем, есть ли уже в кэше
+              const cachedResponse = await cache.match(url);
+              if (cachedResponse) {
+                console.log(`[Cache] URL уже в кэше: ${url}`);
+                return;
+              }
 
+              // Делаем запрос. Для изображений используем no-cors
+              const requestMode = isImage ? "no-cors" : "cors";
+              const response = await fetch(url, { mode: requestMode });
+              await cache.put(url, response);
+            };
+
+            // Выполняем все запросы на кэширование параллельно
+            await Promise.all(allUrls.map(cacheUrl));
             const itemToSave: DownloadableItemWithValue = {
               ...itemData,
               songsData,
