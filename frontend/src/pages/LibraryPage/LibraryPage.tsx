@@ -62,7 +62,16 @@ const LibraryPage = () => {
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
+  const isOffline = useOfflineStore((s) => s.isOffline);
+
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
+
+  // ИЗМЕНЕНИЕ: Автоматически переключаем фильтр в офлайн-режиме
+  useEffect(() => {
+    if (isOffline) {
+      setActiveFilter("downloaded");
+    }
+  }, [isOffline]);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -170,16 +179,17 @@ const LibraryPage = () => {
       : []),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
+  // ИЗМЕНЕНИЕ: Обновляем логику фильтрации
   const filteredLibraryItems = libraryItems.filter((item) => {
-    if (activeFilter === "downloaded") {
-      // Исключаем 'liked-songs' и 'artist', так как мы их не скачиваем
+    if (activeFilter === "downloaded" || isOffline) {
       if (item.type === "liked-songs" || item.type === "artist") {
         return false;
       }
       return isDownloaded(item._id);
     }
-    return true; // Показываем все для фильтра 'all'
+    return true;
   });
+
   return (
     <>
       <Helmet>
@@ -214,23 +224,26 @@ const LibraryPage = () => {
                 )}
               </div>
 
+              {/* ИЗМЕНЕНИЕ: Обновляем логику отображения кнопок */}
               <div className="flex items-center gap-2 mb-6">
-                <Button
-                  onClick={() => setActiveFilter("all")}
-                  className={cn(
-                    "rounded-full h-8 px-4 text-xs font-semibold",
-                    activeFilter === "all"
-                      ? "bg-white text-black hover:bg-white/90"
-                      : "bg-zinc-800 text-white hover:bg-zinc-700"
-                  )}
-                >
-                  All
-                </Button>
+                {!isOffline && (
+                  <Button
+                    onClick={() => setActiveFilter("all")}
+                    className={cn(
+                      "rounded-full h-8 px-4 text-xs font-semibold",
+                      activeFilter === "all"
+                        ? "bg-white text-black hover:bg-white/90"
+                        : "bg-zinc-800 text-white hover:bg-zinc-700"
+                    )}
+                  >
+                    All
+                  </Button>
+                )}
                 <Button
                   onClick={() => setActiveFilter("downloaded")}
                   className={cn(
                     "rounded-full h-8 px-4 text-xs font-semibold",
-                    activeFilter === "downloaded"
+                    activeFilter === "downloaded" || isOffline
                       ? "bg-white text-black hover:bg-white/90"
                       : "bg-zinc-800 text-white hover:bg-zinc-700"
                   )}
@@ -240,17 +253,15 @@ const LibraryPage = () => {
               </div>
 
               <div className="flex flex-col gap-2">
-                {/* 5. ИСПОЛЬЗУЕМ ОТФИЛЬТРОВАННЫЙ МАССИВ */}
                 {filteredLibraryItems.length === 0 ? (
                   <p className="text-zinc-400 px-2">
                     {activeFilter === "downloaded"
-                      ? "У вас пока нет скачанного контента."
+                      ? "You have no downloaded content yet."
                       : t("sidebar.emptyLibrary")}
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredLibraryItems.map((item) => {
-                      // ... вся остальная логика внутри map остается без изменений ...
                       let linkPath: string;
                       let subtitle: string;
                       let coverImageUrl: string | null | undefined =

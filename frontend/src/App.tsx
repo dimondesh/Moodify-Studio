@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom"; // <-- ИЗМЕНЕНИЕ
 import HomePage from "./pages/HomePage/HomePage";
 import MainLayout from "./layout/MainLayout";
 import ChatPage from "./pages/ChatPage/ChatPage";
@@ -25,28 +25,24 @@ import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import DisplayListPage from "./pages/DisplayListPage/DisplayListPage";
 import MixDetailsPage from "./pages/MixDetailsPage/MixDetailsPage";
 import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
+import OfflinePage from "./pages/OfflinePage/OfflinePage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
+  const { isOffline } = useOfflineStore();
+  const location = useLocation();
 
-  // ИСПРАВЛЕНИЕ: Получаем actions и флаг гидратации отдельно
-  const offlineActions = useOfflineStore((s) => s.actions);
-  const offlineStoreHasHydrated = useOfflineStore((s) => s._hasHydrated);
-
+  // Инициализация стора
   useEffect(() => {
-    // Запускаем init только после того, как стор восстановил свое состояние
-    if (offlineStoreHasHydrated) {
-      offlineActions.init();
-
-      window.addEventListener("online", offlineActions.checkOnlineStatus);
-      window.addEventListener("offline", offlineActions.checkOnlineStatus);
-
-      return () => {
-        window.removeEventListener("online", offlineActions.checkOnlineStatus);
-        window.removeEventListener("offline", offlineActions.checkOnlineStatus);
-      };
-    }
-  }, [offlineStoreHasHydrated, offlineActions]);
+    const { init, checkOnlineStatus } = useOfflineStore.getState().actions;
+    init();
+    window.addEventListener("online", checkOnlineStatus);
+    window.addEventListener("offline", checkOnlineStatus);
+    return () => {
+      window.removeEventListener("online", checkOnlineStatus);
+      window.removeEventListener("offline", checkOnlineStatus);
+    };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -63,6 +59,22 @@ function App() {
 
     return () => unsubscribe();
   }, [fetchUser, logout, user]);
+
+  // Логика редиректа в офлайн-режиме
+  const isSafeOfflinePath =
+    location.pathname.startsWith("/library") ||
+    location.pathname.startsWith("/settings") ||
+    location.pathname.startsWith("/albums/") ||
+    location.pathname.startsWith("/playlists/") ||
+    location.pathname.startsWith("/mixes/");
+
+  if (isOffline && !isSafeOfflinePath) {
+    return (
+      <Routes>
+        <Route path="*" element={<OfflinePage />} />
+      </Routes>
+    );
+  }
 
   return (
     <>
@@ -89,6 +101,8 @@ function App() {
           <Route path="/list" element={<DisplayListPage />} />
           <Route path="/mixes/:mixId" element={<MixDetailsPage />} />
           <Route path="/all-mixes/:category" element={<AllMixesPage />} />
+          {/* Роут /offline нужен для MainLayout, если мы перейдем на него вручную */}
+          <Route path="/offline" element={<OfflinePage />} />
         </Route>
       </Routes>
       <Toaster
