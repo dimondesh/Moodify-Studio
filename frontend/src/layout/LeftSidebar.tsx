@@ -30,10 +30,12 @@ import {
   MixItem,
 } from "../types";
 import { useMusicStore } from "../stores/useMusicStore";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
+import { Download } from "lucide-react";
+import { useOfflineStore } from "../stores/useOfflineStore";
 
 const LeftSidebar = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const {
     albums,
     playlists,
@@ -51,6 +53,7 @@ const LeftSidebar = () => {
 
   const [user, loadingUser] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { isDownloaded } = useOfflineStore((s) => s.actions);
 
   const { artists, fetchArtists } = useMusicStore();
 
@@ -300,9 +303,14 @@ const LeftSidebar = () => {
                       <p className="font-md truncate text-white">
                         {item.title}
                       </p>
-                      <p className="text-sm text-zinc-400 truncate">
-                        {subtitle}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        {isDownloaded(item._id) && (
+                          <Download className="size-3 text-violet-400 flex-shrink-0" />
+                        )}
+                        <p className="text-sm text-zinc-400 truncate">
+                          {subtitle}
+                        </p>
+                      </div>
                     </div>
                   </Link>
                 );

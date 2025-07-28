@@ -21,11 +21,14 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
 import { Plus } from "lucide-react";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { Download } from "lucide-react";
+import { useOfflineStore } from "../../stores/useOfflineStore";
+import { cn } from "@/lib/utils";
 
 const LibraryPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const {
     likedSongs,
     albums,
@@ -58,6 +61,8 @@ const LibraryPage = () => {
   const errorMessage = combinedError;
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { isDownloaded } = useOfflineStore((s) => s.actions);
+  const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -165,6 +170,16 @@ const LibraryPage = () => {
       : []),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
+  const filteredLibraryItems = libraryItems.filter((item) => {
+    if (activeFilter === "downloaded") {
+      // Исключаем 'liked-songs' и 'artist', так как мы их не скачиваем
+      if (item.type === "liked-songs" || item.type === "artist") {
+        return false;
+      }
+      return isDownloaded(item._id);
+    }
+    return true; // Показываем все для фильтра 'all'
+  });
   return (
     <>
       <Helmet>
@@ -198,14 +213,44 @@ const LibraryPage = () => {
                   </Button>
                 )}
               </div>
+
+              <div className="flex items-center gap-2 mb-6">
+                <Button
+                  onClick={() => setActiveFilter("all")}
+                  className={cn(
+                    "rounded-full h-8 px-4 text-xs font-semibold",
+                    activeFilter === "all"
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "bg-zinc-800 text-white hover:bg-zinc-700"
+                  )}
+                >
+                  All
+                </Button>
+                <Button
+                  onClick={() => setActiveFilter("downloaded")}
+                  className={cn(
+                    "rounded-full h-8 px-4 text-xs font-semibold",
+                    activeFilter === "downloaded"
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "bg-zinc-800 text-white hover:bg-zinc-700"
+                  )}
+                >
+                  Downloaded
+                </Button>
+              </div>
+
               <div className="flex flex-col gap-2">
-                {libraryItems.length === 0 ? (
+                {/* 5. ИСПОЛЬЗУЕМ ОТФИЛЬТРОВАННЫЙ МАССИВ */}
+                {filteredLibraryItems.length === 0 ? (
                   <p className="text-zinc-400 px-2">
-                    {t("sidebar.emptyLibrary")}
+                    {activeFilter === "downloaded"
+                      ? "У вас пока нет скачанного контента."
+                      : t("sidebar.emptyLibrary")}
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {libraryItems.map((item) => {
+                    {filteredLibraryItems.map((item) => {
+                      // ... вся остальная логика внутри map остается без изменений ...
                       let linkPath: string;
                       let subtitle: string;
                       let coverImageUrl: string | null | undefined =
@@ -285,9 +330,14 @@ const LibraryPage = () => {
                           <h3 className="font-medium mb-1 truncate text-white">
                             {item.title}
                           </h3>
-                          <p className="text-sm text-zinc-400 truncate">
-                            {subtitle}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            {isDownloaded(item._id) && (
+                              <Download className="size-3 text-violet-400 flex-shrink-0" />
+                            )}
+                            <p className="text-sm text-zinc-400 truncate">
+                              {subtitle}
+                            </p>
+                          </div>
                         </Link>
                       );
                     })}

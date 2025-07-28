@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
-import { useOfflineStore } from "./stores/useOfflineStore"; // <-- 1. ИМПОРТ
+import { useOfflineStore } from "./stores/useOfflineStore";
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
 import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
 import ArtistPage from "./pages/ArtistPage/ArtistPage";
@@ -28,22 +28,34 @@ import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
-  const { init: initOfflineStore, checkOnlineStatus } = useOfflineStore(
-    (s) => s.actions
-  ); // <-- 2. ПОЛУЧАЕМ ДЕЙСТВИЯ
+
+  // ИСПРАВЛЕНИЕ: Получаем actions и флаг гидратации отдельно
+  const offlineActions = useOfflineStore((s) => s.actions);
+  const offlineStoreHasHydrated = useOfflineStore((s) => s._hasHydrated);
+
+  useEffect(() => {
+    // Запускаем init только после того, как стор восстановил свое состояние
+    if (offlineStoreHasHydrated) {
+      offlineActions.init();
+
+      window.addEventListener("online", offlineActions.checkOnlineStatus);
+      window.addEventListener("offline", offlineActions.checkOnlineStatus);
+
+      return () => {
+        window.removeEventListener("online", offlineActions.checkOnlineStatus);
+        window.removeEventListener("offline", offlineActions.checkOnlineStatus);
+      };
+    }
+  }, [offlineStoreHasHydrated, offlineActions]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         if (!user || user.firebaseUid !== firebaseUser.uid) {
-          console.log(
-            "Firebase user detected, fetching user data and admin status..."
-          );
           await fetchUser(firebaseUser.uid);
         }
       } else {
         if (user) {
-          console.log("No Firebase user detected, logging out from store...");
           logout();
         }
       }
@@ -51,22 +63,6 @@ function App() {
 
     return () => unsubscribe();
   }, [fetchUser, logout, user]);
-
-  // <-- 3. ДОБАВЬТЕ НОВЫЙ useEffect ДЛЯ ОФЛАЙН-РЕЖИМА
-  useEffect(() => {
-    // Инициализируем состояние скачанных элементов из IndexedDB
-    initOfflineStore();
-
-    // Добавляем слушатели для отслеживания статуса сети
-    window.addEventListener("online", checkOnlineStatus);
-    window.addEventListener("offline", checkOnlineStatus);
-
-    // Убираем слушатели при размонтировании компонента, чтобы избежать утечек памяти
-    return () => {
-      window.removeEventListener("online", checkOnlineStatus);
-      window.removeEventListener("offline", checkOnlineStatus);
-    };
-  }, [initOfflineStore, checkOnlineStatus]); // Зависимости гарантируют, что эффект выполнится один раз
 
   return (
     <>
@@ -87,12 +83,12 @@ function App() {
             path="/playlists/:playlistId"
             element={<PlaylistDetailsPage />}
           />
-          <Route path="/settings" element={<SettingsPage />} />{" "}
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/artists/:id" element={<ArtistPage />} />
           <Route path="/users/:userId" element={<ProfilePage />} />
-          <Route path="/list" element={<DisplayListPage />} />{" "}
-          <Route path="/mixes/:mixId" element={<MixDetailsPage />} />{" "}
-          <Route path="/all-mixes/:category" element={<AllMixesPage />} />{" "}
+          <Route path="/list" element={<DisplayListPage />} />
+          <Route path="/mixes/:mixId" element={<MixDetailsPage />} />
+          <Route path="/all-mixes/:category" element={<AllMixesPage />} />
         </Route>
       </Routes>
       <Toaster

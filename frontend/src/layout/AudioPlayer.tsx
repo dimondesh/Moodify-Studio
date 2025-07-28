@@ -205,12 +205,31 @@ const AudioPlayer = () => {
     const vocalsUrl = currentSong.vocalsUrl;
 
     const loadAudio = async (url: string): Promise<AudioBuffer> => {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      if (!audioContext || audioContext.state === "closed") {
-        throw new Error("AudioContext closed during fetch/decode.");
+      try {
+        // Мы всегда пытаемся сделать fetch. Service Worker его перехватит.
+        // 'cache: "default"' - это стандартное поведение, но мы указываем его явно
+        // для ясности. Service Worker сам решит, идти в сеть или нет.
+        const response = await fetch(url, { cache: "default" });
+
+        if (!response.ok) {
+          throw new Error(
+            `HTTP error! status: ${response.status} for url ${url}`
+          );
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        if (!audioContext || audioContext.state === "closed") {
+          throw new Error("AudioContext closed during fetch/decode.");
+        }
+        return audioContext.decodeAudioData(arrayBuffer);
+      } catch (error) {
+        console.error(
+          `[AudioPlayer] Failed to fetch or decode audio from ${url}:`,
+          error
+        );
+        // Пробрасываем ошибку дальше, чтобы ее обработал `fetchAndDecodeAudio`
+        throw error;
       }
-      return audioContext.decodeAudioData(arrayBuffer);
     };
 
     const fetchAndDecodeAudio = async () => {

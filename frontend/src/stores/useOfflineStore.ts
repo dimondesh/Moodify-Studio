@@ -2,7 +2,13 @@
 // frontend/src/stores/useOfflineStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { getAllKeys, getItem, saveItem, deleteItem } from "@/lib/offline-db";
+import {
+  getAllKeys,
+  getItem,
+  saveItem,
+  deleteItem,
+  getDb,
+} from "@/lib/offline-db";
 import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
@@ -17,12 +23,15 @@ interface OfflineState {
   downloadedItemIds: Set<string>;
   downloadingItemIds: Set<string>;
   isOffline: boolean;
+  _hasHydrated: boolean; // Флаг для отслеживания гидратации
   actions: {
-    init: () => Promise<void>;
+    init: () => Promise<void>; // init снова здесь
     checkOnlineStatus: () => void;
     isDownloaded: (itemId: string) => boolean;
     isDownloading: (itemId: string) => boolean;
     downloadItem: (itemId: string, itemType: ItemType) => Promise<void>;
+    getStorageUsage: () => Promise<{ usage: number; quota: number }>; // <-- НОВЫЙ ACTION
+    clearAllDownloads: () => Promise<void>; // <-- НОВЫЙ ACTION
     deleteItem: (
       itemId: string,
       itemType: ItemType,
@@ -37,6 +46,8 @@ export const useOfflineStore = create<OfflineState>()(
       downloadedItemIds: new Set(),
       downloadingItemIds: new Set(),
       isOffline: !navigator.onLine,
+      _hasHydrated: false, // Инициализируем как false
+
       actions: {
         init: async () => {
           const [albumKeys, playlistKeys, mixKeys] = await Promise.all([
@@ -184,19 +195,63 @@ export const useOfflineStore = create<OfflineState>()(
             toast.error(`Could not remove "${itemTitle}".`);
           }
         },
+        getStorageUsage: async () => {
+          if (navigator.storage && navigator.storage.estimate) {
+            const estimation = await navigator.storage.estimate();
+            return {
+              usage: estimation.usage || 0,
+              quota: estimation.quota || 0,
+            };
+          }
+          return { usage: 0, quota: 0 };
+        },
+        clearAllDownloads: async () => {
+          const downloadedIds = Array.from(get().downloadedItemIds);
+          if (downloadedIds.length === 0) {
+            toast.success("No downloads to clear.");
+            return;
+          }
+
+          toast.loading("Clearing all downloads...");
+          try {
+            // Очищаем кэши
+            await caches.delete("moodify-audio-cache");
+            await caches.delete("cloudinary-images-cache");
+
+            // Очищаем IndexedDB
+            const db = await getDb();
+            await Promise.all([
+              db.clear("albums"),
+              db.clear("playlists"),
+              db.clear("mixes"),
+              db.clear("songs"),
+            ]);
+
+            // Очищаем состояние
+            set({
+              downloadedItemIds: new Set(),
+              downloadingItemIds: new Set(),
+            });
+
+            toast.dismiss();
+            toast.success("All downloads have been cleared.");
+          } catch (error) {
+            console.error("Failed to clear all downloads:", error);
+            toast.dismiss();
+            toast.error("An error occurred while clearing downloads.");
+          }
+        },
       },
     }),
     {
       name: "moodify-offline-storage",
       storage: createJSONStorage(() => localStorage, {
-        // ИСПРАВЛЕНИЕ: Убираем неиспользуемый 'key' и типизируем 'value'
         replacer: (_, value: any) => {
           if (value instanceof Set) {
             return { __type: "Set", value: Array.from(value) };
           }
           return value;
         },
-        // ИСПРАВЛЕНИЕ: Убираем неиспользуемый 'key' и типизируем 'value'
         reviver: (_, value: any) => {
           if (value && value.__type === "Set") {
             return new Set(value.value);
@@ -205,9 +260,14 @@ export const useOfflineStore = create<OfflineState>()(
         },
       }),
       partialize: (state) => ({
-        ...state, // Возвращаем все состояние, но localStorage сохранит только то, что указано в storage-адаптере
         downloadedItemIds: state.downloadedItemIds,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Устанавливаем флаг после восстановления состояния
+        if (state) {
+          state._hasHydrated = true;
+        }
+      },
     }
   )
 );

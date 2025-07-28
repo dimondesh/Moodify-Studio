@@ -4,23 +4,25 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
+import toast from "react-hot-toast"; // <-- 1. ИМПОРТ TOAST
+import { useOfflineStore } from "./useOfflineStore"; // <-- 2. ИМПОРТ OFFLINE STORE
 
 interface PlayerStore {
   currentSong: Song | null;
   isPlaying: boolean;
-  queue: Song[]; // Оригинальная очередь
-  currentIndex: number; // Индекс в оригинальной очереди
+  queue: Song[];
+  currentIndex: number;
   repeatMode: "off" | "all" | "one";
   isShuffle: boolean;
-  shuffleHistory: number[]; // История индексов из оригинальной очереди
-  shufflePointer: number; // Указатель на текущий индекс в shuffleHistory
+  shuffleHistory: number[];
+  shufflePointer: number;
   isFullScreenPlayerOpen: boolean;
   vocalsVolume: number;
   masterVolume: number;
   currentTime: number;
   duration: number;
-  isDesktopLyricsOpen: boolean; // <-- НОВОЕ: Для десктопной страницы текстов
-  isMobileLyricsFullScreen: boolean; // <-- НОВОЕ: Для полноэкранных текстов на мобильном
+  isDesktopLyricsOpen: boolean;
+  isMobileLyricsFullScreen: boolean;
   dominantColor: string | null;
   setDominantColor: (color: string) => void;
 
@@ -37,12 +39,11 @@ interface PlayerStore {
   setMasterVolume: (volume: number) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
-  setIsDesktopLyricsOpen: (isOpen: boolean) => void; // <-- НОВОЕ действие
-  setIsMobileLyricsFullScreen: (isOpen: boolean) => void; // <-- НОВОЕ действие
-  seekToTime: (time: number) => void; // <--- НОВОЕ ДЕЙСТВИЕ ДЛЯ ПЕРЕМОТКИ
+  setIsDesktopLyricsOpen: (isOpen: boolean) => void;
+  setIsMobileLyricsFullScreen: (isOpen: boolean) => void;
+  seekToTime: (time: number) => void;
 }
 
-// Вспомогательная функция для перемешивания массива индексов
 const shuffleQueue = (length: number) => {
   const arr = Array.from({ length }, (_, i) => i);
   for (let i = arr.length - 1; i > 0; i--) {
@@ -68,10 +69,10 @@ export const usePlayerStore = create<PlayerStore>()(
       masterVolume: 75,
       currentTime: 0,
       duration: 0,
-      isDesktopLyricsOpen: false, // Инициализация
-      isMobileLyricsFullScreen: false, // Инициализация
-      dominantColor: null, // <--- новое поле
-      setDominantColor: (color: string) => set({ dominantColor: color }), // <--
+      isDesktopLyricsOpen: false,
+      isMobileLyricsFullScreen: false,
+      dominantColor: null,
+      setDominantColor: (color: string) => set({ dominantColor: color }),
 
       initializeQueue: (songs: Song[]) => {
         set((state) => {
@@ -224,6 +225,7 @@ export const usePlayerStore = create<PlayerStore>()(
             currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
             shuffleHistory: newShuffleHistory,
             shufflePointer: newShufflePointer,
+            currentTime: 0, // Сбрасываем время при смене трека
           };
           set(newState);
 
@@ -280,147 +282,178 @@ export const usePlayerStore = create<PlayerStore>()(
         });
       },
 
+      // ===== ОБНОВЛЕННАЯ ФУНКЦИЯ playNext =====
       playNext: () => {
         const {
-          currentIndex,
           queue,
           repeatMode,
           isShuffle,
           shuffleHistory,
           shufflePointer,
+          currentIndex,
         } = get();
+        const { isDownloaded } = useOfflineStore.getState().actions;
+        const isOffline = useOfflineStore.getState().isOffline;
 
-        if (queue.length === 0) {
-          set({ isPlaying: false });
-          return;
-        }
+        if (queue.length === 0) return;
+        if (repeatMode === "one") set({ repeatMode: "all" });
 
-        if (repeatMode === "one") {
-          set({ repeatMode: "all" });
-        }
-
-        let nextIndexInQueue: number;
-        let newShufflePointer: number = shufflePointer;
-        let newShuffleHistory: number[] = [...shuffleHistory];
+        let nextIndexInQueue = -1;
+        let newShufflePointer = shufflePointer;
+        let newShuffleHistory = [...shuffleHistory];
 
         if (isShuffle) {
-          if (newShuffleHistory.length === 0) {
+          // --- Логика для SHUFFLE режима ---
+          if (newShuffleHistory.length === 0 && queue.length > 0) {
+            // Если история пуста, создаем ее
             newShuffleHistory = shuffleQueue(queue.length);
-            const currentSongQueueIndex = queue.findIndex(
-              (s) => s._id === get().currentSong?._id
-            );
-            if (currentSongQueueIndex !== -1) {
-              const currentPosInShuffle = newShuffleHistory.indexOf(
-                currentSongQueueIndex
-              );
-              if (currentPosInShuffle !== -1) {
-                [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
-                  [
-                    newShuffleHistory[currentPosInShuffle],
-                    newShuffleHistory[0],
-                  ];
-              } else {
-                newShuffleHistory.unshift(currentSongQueueIndex);
-                newShuffleHistory.pop();
-              }
-              newShufflePointer = 0;
-            } else {
-              newShufflePointer = 0;
+            const currentPos = newShuffleHistory.indexOf(currentIndex);
+            if (currentPos !== -1) {
+              [newShuffleHistory[0], newShuffleHistory[currentPos]] = [
+                newShuffleHistory[currentPos],
+                newShuffleHistory[0],
+              ];
             }
+            newShufflePointer = 0;
           }
 
-          if (newShufflePointer < newShuffleHistory.length - 1) {
+          let checkedIndexes = 0; // Счетчик, чтобы избежать бесконечного цикла
+          while (checkedIndexes < newShuffleHistory.length) {
             newShufflePointer++;
-            nextIndexInQueue = newShuffleHistory[newShufflePointer];
-          } else {
-            if (repeatMode === "all") {
-              newShuffleHistory = shuffleQueue(queue.length);
-              newShufflePointer = 0;
-              nextIndexInQueue = newShuffleHistory[newShufflePointer];
-            } else {
+            if (newShufflePointer >= newShuffleHistory.length) {
+              if (repeatMode === "all") {
+                newShufflePointer = 0; // Начинаем заново
+              } else {
+                toast("End of queue.");
+                set({ isPlaying: false });
+                return;
+              }
+            }
+            const potentialIndex = newShuffleHistory[newShufflePointer];
+            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+              nextIndexInQueue = potentialIndex;
+              break; // Нашли подходящий трек
+            }
+            checkedIndexes++;
+          }
+
+          if (nextIndexInQueue === -1) {
+            // Если после цикла ничего не нашли
+            toast("No other downloaded songs in queue.");
+            set({ isPlaying: false });
+            return;
+          }
+        } else {
+          // --- Логика для ОБЫЧНОГО режима ---
+          let nextIndex = currentIndex;
+          for (let i = 0; i < queue.length; i++) {
+            nextIndex = (nextIndex + 1) % queue.length;
+            const isLastSong = currentIndex === queue.length - 1 && i === 0;
+
+            if (!isOffline || isDownloaded(queue[nextIndex]._id)) {
+              nextIndexInQueue = nextIndex;
+              break;
+            }
+            // Если дошли до конца и не нашли, проверяем repeat
+            if (isLastSong && repeatMode !== "all") {
+              toast("End of downloaded queue.");
               set({ isPlaying: false });
               return;
             }
           }
-        } else {
-          let potentialNextIndex = currentIndex + 1;
-          if (potentialNextIndex >= queue.length) {
-            if (repeatMode === "all") {
-              nextIndexInQueue = 0;
-            } else {
-              set({ isPlaying: false });
-              return;
-            }
-          } else {
-            nextIndexInQueue = potentialNextIndex;
+          if (nextIndexInQueue === -1) {
+            // Если после цикла ничего не нашли
+            toast("No other downloaded songs in queue.");
+            set({ isPlaying: false });
+            return;
           }
         }
 
-        const nextSong = queue[nextIndexInQueue];
         set({
-          currentSong: nextSong,
+          currentSong: queue[nextIndexInQueue],
           currentIndex: nextIndexInQueue,
           isPlaying: true,
           shuffleHistory: newShuffleHistory,
           shufflePointer: newShufflePointer,
+          currentTime: 0,
         });
       },
 
+      // ===== ОБНОВЛЕННАЯ ФУНКЦИЯ playPrevious =====
       playPrevious: () => {
         const {
-          currentIndex,
           queue,
           repeatMode,
           isShuffle,
           shuffleHistory,
           shufflePointer,
+          currentIndex,
         } = get();
+        const { isDownloaded } = useOfflineStore.getState().actions;
+        const isOffline = useOfflineStore.getState().isOffline;
 
-        if (queue.length === 0) {
-          set({ isPlaying: false });
-          return;
-        }
+        if (queue.length === 0) return;
+        if (repeatMode === "one") set({ repeatMode: "all" });
 
-        if (repeatMode === "one") {
-          set({ repeatMode: "all" });
-        }
-
-        let prevIndexInQueue: number;
-        let newShufflePointer: number = shufflePointer;
+        let prevIndexInQueue = -1;
+        let newShufflePointer = shufflePointer;
 
         if (isShuffle) {
-          if (newShufflePointer > 0) {
+          // --- Логика для SHUFFLE режима ---
+          let checkedIndexes = 0;
+          while (checkedIndexes < shuffleHistory.length) {
             newShufflePointer--;
-            prevIndexInQueue = shuffleHistory[newShufflePointer];
-          } else {
-            if (repeatMode === "all" && shuffleHistory.length > 0) {
-              newShufflePointer = shuffleHistory.length - 1;
-              prevIndexInQueue = shuffleHistory[newShufflePointer];
-            } else {
+            if (newShufflePointer < 0) {
+              if (repeatMode === "all") {
+                newShufflePointer = shuffleHistory.length - 1;
+              } else {
+                toast("Start of queue.");
+                set({ isPlaying: false });
+                return;
+              }
+            }
+            const potentialIndex = shuffleHistory[newShufflePointer];
+            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+              prevIndexInQueue = potentialIndex;
+              break;
+            }
+            checkedIndexes++;
+          }
+          if (prevIndexInQueue === -1) {
+            toast("No other downloaded songs in queue.");
+            set({ isPlaying: false });
+            return;
+          }
+        } else {
+          // --- Логика для ОБЫЧНОГО режима ---
+          let prevIndex = currentIndex;
+          for (let i = 0; i < queue.length; i++) {
+            prevIndex = (prevIndex - 1 + queue.length) % queue.length;
+            const isFirstSong = currentIndex === 0 && i === 0;
+
+            if (!isOffline || isDownloaded(queue[prevIndex]._id)) {
+              prevIndexInQueue = prevIndex;
+              break;
+            }
+            if (isFirstSong && repeatMode !== "all") {
+              toast("Start of downloaded queue.");
               set({ isPlaying: false });
               return;
             }
           }
-        } else {
-          let potentialPrevIndex = currentIndex - 1;
-          if (potentialPrevIndex < 0) {
-            if (repeatMode === "all") {
-              prevIndexInQueue = queue.length - 1;
-            } else {
-              set({ isPlaying: false });
-              return;
-            }
-          } else {
-            prevIndexInQueue = potentialPrevIndex;
+          if (prevIndexInQueue === -1) {
+            toast("No other downloaded songs in queue.");
+            set({ isPlaying: false });
+            return;
           }
         }
 
-        const prevSong = queue[prevIndexInQueue];
         set({
-          currentSong: prevSong,
+          currentSong: queue[prevIndexInQueue],
           currentIndex: prevIndexInQueue,
           isPlaying: true,
           shufflePointer: newShufflePointer,
+          currentTime: 0,
         });
       },
 
@@ -431,36 +464,32 @@ export const usePlayerStore = create<PlayerStore>()(
       setMasterVolume: (volume) => set({ masterVolume: volume }),
       setCurrentTime: (time) => set({ currentTime: time }),
       setDuration: (duration) => set({ duration: duration }),
-      setIsDesktopLyricsOpen: (isOpen) => set({ isDesktopLyricsOpen: isOpen }), // <-- НОВОЕ действие
+      setIsDesktopLyricsOpen: (isOpen) => set({ isDesktopLyricsOpen: isOpen }),
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
         console.log("Setting isMobileLyricsFullScreen to:", isOpen);
         set({ isMobileLyricsFullScreen: isOpen });
       },
-      // <--- НОВОЕ ДЕЙСТВИЕ seekToTime
       seekToTime: (time: number) => {
         set((state) => {
-          // Убедимся, что время находится в допустимом диапазоне [0, duration]
           const newTime = Math.max(0, Math.min(time, state.duration));
-          return { currentTime: newTime, isPlaying: true }; // Начинаем воспроизведение при перемотке
+          return { currentTime: newTime, isPlaying: true };
         });
       },
     }),
-
     {
       name: "music-player-storage",
       storage: createJSONStorage(() => localStorage),
-      // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: Убираем дублирование currentSong и queue ---
       partialize: (state) => ({
         currentSong: state.currentSong
           ? {
               ...state.currentSong,
-              lyrics: state.currentSong.lyrics, // Убеждаемся, что lyrics сохраняется
+              lyrics: state.currentSong.lyrics,
             }
           : null,
         isPlaying: state.isPlaying,
         queue: state.queue.map((song) => ({
           ...song,
-          lyrics: song.lyrics, // Убеждаемся, что lyrics сохраняется для каждой песни в очереди
+          lyrics: song.lyrics,
         })),
         currentIndex: state.currentIndex,
         repeatMode: state.repeatMode,
@@ -476,13 +505,7 @@ export const usePlayerStore = create<PlayerStore>()(
             console.log("an error happened during rehydration", error);
           }
           if (persistedState) {
-            // Мы больше НЕ сбрасываем currentSong
-            // persistedState.currentSong = null;
-
-            // Но мы ВСЕГДА сбрасываем isPlaying, чтобы музыка не начинала играть сама
             persistedState.isPlaying = false;
-
-            // Также сбрасываем временные состояния UI
             persistedState.isFullScreenPlayerOpen = false;
             persistedState.currentTime = 0;
           }

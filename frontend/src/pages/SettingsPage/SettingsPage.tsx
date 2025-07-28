@@ -1,6 +1,6 @@
 // frontend/src/pages/SettingsPage/SettingsPage.tsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   defaultFrequencies,
   equalizerPresets,
@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { Helmet } from "react-helmet-async";
+import { useOfflineStore } from "../../stores/useOfflineStore";
 
 const SettingsPage: React.FC = () => {
   const {
@@ -92,6 +93,23 @@ const SettingsPage: React.FC = () => {
         console.error("Failed to save language preference:", error);
       }
     }
+  };
+  const { getStorageUsage, clearAllDownloads } = useOfflineStore(
+    (s) => s.actions
+  );
+  const [storageUsage, setStorageUsage] = useState({ usage: 0, quota: 0 });
+
+  useEffect(() => {
+    getStorageUsage().then(setStorageUsage);
+  }, [getStorageUsage]);
+
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
   };
 
   return (
@@ -345,6 +363,50 @@ const SettingsPage: React.FC = () => {
               <p className="text-zinc-400 text-sm mt-2 text-center">
                 {t("settings.resetAudioDesc")}
               </p>
+            </div>
+          </Card>
+          {/* ===== 4. НОВЫЙ РАЗДЕЛ ДЛЯ СКАЧИВАНИЙ ===== */}
+          <h1 className="text-3xl font-bold text-white mb-6 mt-8">Downloads</h1>
+          <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
+            <div>
+              <Label className="text-xl font-semibold mb-4 block">
+                Storage Management
+              </Label>
+              <div className="bg-zinc-700/50 p-4 rounded-md">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-zinc-400">Used Storage</span>
+                  <span className="font-semibold">
+                    {formatBytes(storageUsage.usage)}
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-600 rounded-full h-2.5 mt-2">
+                  <div
+                    className="bg-violet-600 h-2.5 rounded-full"
+                    style={{
+                      width: `${
+                        (storageUsage.usage / storageUsage.quota) * 100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-zinc-500 mt-2 text-right">
+                  Total available: {formatBytes(storageUsage.quota)}
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <Button
+                  onClick={clearAllDownloads}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  Clear All Downloads
+                </Button>
+                <p className="text-zinc-400 text-sm mt-2 text-center">
+                  This will remove all downloaded songs, albums, and playlists
+                  from this device.
+                </p>
+              </div>
             </div>
           </Card>
         </div>
