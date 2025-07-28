@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import type { Song, Album, Stats, Artist, Genre, Mood } from "../types/index"; // <-- Импортируем Genre и Mood
 import toast from "react-hot-toast";
+import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТ
+import { getItem } from "../lib/offline-db"; // <-- 2. ИМПОРТ
 
 interface MusicStore {
   albums: Album[];
@@ -207,6 +209,23 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
   fetchAlbumbyId: async (id: string) => {
     set({ isLoading: true, error: null });
+    const { isOffline } = useOfflineStore.getState();
+    const { isDownloaded } = useOfflineStore.getState().actions;
+    if (isDownloaded(id)) {
+      console.log(`[Offline] Загрузка альбома ${id} из IndexedDB.`);
+      const localAlbum = await getItem("albums", id);
+      if (localAlbum) {
+        set({ currentAlbum: localAlbum, isLoading: false });
+        return;
+      }
+    }
+
+    if (isOffline) {
+      const errorMsg = "Этот альбом не скачан и недоступен в офлайн-режиме.";
+      set({ currentAlbum: null, error: errorMsg, isLoading: false });
+      toast.error(errorMsg);
+      return;
+    }
     try {
       const response = await axiosInstance.get(`/albums/${id}`);
       set({ currentAlbum: response.data.album });

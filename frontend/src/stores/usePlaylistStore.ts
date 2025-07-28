@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios"; // Используем абсолютный импорт
 import type { Playlist } from "@/types"; // Используем абсолютный импорт
 import toast from "react-hot-toast"; // Импорт react-hot-toast
+import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТИРУЕМ ОФЛАЙН-СТОР
+import { getItem } from "@/lib/offline-db"; // <-- 2. ИМПОРТИРУЕМ ФУНКЦИЮ ДЛЯ ЧТЕНИЯ ИЗ БД
 
 interface PlaylistStore {
   myPlaylists: Playlist[];
@@ -276,6 +278,24 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
 
   fetchPlaylistDetails: async (playlistId: string) => {
     set({ currentPlaylist: null, error: null, isLoading: true });
+    const { isOffline } = useOfflineStore.getState();
+    const { isDownloaded } = useOfflineStore.getState().actions;
+    if (isDownloaded(playlistId)) {
+      console.log(`[Offline] Загрузка плейлиста ${playlistId} из IndexedDB.`);
+      const localPlaylist = await getItem("playlists", playlistId);
+      if (localPlaylist) {
+        set({ currentPlaylist: localPlaylist, isLoading: false });
+        return;
+      }
+    }
+
+    if (isOffline) {
+      console.log(`[Offline] Нет сети и плейлист ${playlistId} не скачан.`);
+      const errorMsg = "Этот плейлист не скачан и недоступен в офлайн-режиме.";
+      set({ currentPlaylist: null, error: errorMsg, isLoading: false });
+      toast.error(errorMsg);
+      return;
+    }
     try {
       const res = await axiosInstance.get(`/playlists/${playlistId}`);
       set({ currentPlaylist: res.data, isLoading: false });

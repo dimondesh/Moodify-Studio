@@ -4,6 +4,8 @@ import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import type { Mix } from "@/types";
 import { useLibraryStore } from "./useLibraryStore"; // Импортируем для вызова обновления
+import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТ
+import { getItem } from "@/lib/offline-db"; // <-- 2. ИМПОРТ
 
 interface MixesData {
   genreMixes: Mix[];
@@ -65,6 +67,23 @@ export const useMixesStore = create<MixesStore>((set) => ({
   fetchMixById: async (id: string) => {
     // <-- ДОБАВИТЬ ВСЮ ФУНКЦИЮ
     set({ isLoading: true, error: null });
+    const { isOffline } = useOfflineStore.getState();
+    const { isDownloaded } = useOfflineStore.getState().actions;
+    if (isDownloaded(id)) {
+      console.log(`[Offline] Загрузка микса ${id} из IndexedDB.`);
+      const localMix = await getItem("mixes", id);
+      if (localMix) {
+        set({ currentMix: localMix, isLoading: false });
+        return;
+      }
+    }
+
+    if (isOffline) {
+      const errorMsg = "Этот микс не скачан и недоступен в офлайн-режиме.";
+      set({ currentMix: null, error: errorMsg, isLoading: false });
+      toast.error(errorMsg);
+      return;
+    }
     try {
       const response = await axiosInstance.get(`/mixes/${id}`);
       set({ currentMix: response.data, isLoading: false });
