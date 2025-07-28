@@ -23,20 +23,20 @@ interface OfflineState {
   downloadedItemIds: Set<string>;
   downloadingItemIds: Set<string>;
   isOffline: boolean;
-  _hasHydrated: boolean; // Флаг для отслеживания гидратации
+  _hasHydrated: boolean;
   actions: {
-    init: () => Promise<void>; // init снова здесь
+    init: () => Promise<void>;
     checkOnlineStatus: () => void;
     isDownloaded: (itemId: string) => boolean;
     isDownloading: (itemId: string) => boolean;
     downloadItem: (itemId: string, itemType: ItemType) => Promise<void>;
-    getStorageUsage: () => Promise<{ usage: number; quota: number }>; // <-- НОВЫЙ ACTION
-    clearAllDownloads: () => Promise<void>; // <-- НОВЫЙ ACTION
     deleteItem: (
       itemId: string,
       itemType: ItemType,
       itemTitle: string
     ) => Promise<void>;
+    getStorageUsage: () => Promise<{ usage: number; quota: number }>;
+    clearAllDownloads: () => Promise<void>;
   };
 }
 
@@ -46,7 +46,7 @@ export const useOfflineStore = create<OfflineState>()(
       downloadedItemIds: new Set(),
       downloadingItemIds: new Set(),
       isOffline: !navigator.onLine,
-      _hasHydrated: false, // Инициализируем как false
+      _hasHydrated: false,
 
       actions: {
         init: async () => {
@@ -108,30 +108,30 @@ export const useOfflineStore = create<OfflineState>()(
               if (song.vocalsUrl) urlsToCache.add(song.vocalsUrl);
             });
 
-            const audioCache = await caches.open("moodify-audio-cache");
-            const imageCache = await caches.open("cloudinary-images-cache");
             const allUrls = Array.from(urlsToCache).filter(Boolean);
 
-            // Функция для кэширования одного URL
-            const cacheUrl = async (url: string) => {
-              const isImage = url.includes("cloudinary");
-              const cache = isImage ? imageCache : audioCache;
+            // ===== ИЗМЕНЕНИЕ: Возвращаемся к cache.addAll, т.к. CORS должен быть настроен =====
+            const audioCache = await caches.open("moodify-audio-cache");
+            const imageCache = await caches.open("cloudinary-images-cache");
 
-              // Проверяем, есть ли уже в кэше
-              const cachedResponse = await cache.match(url);
-              if (cachedResponse) {
-                console.log(`[Cache] URL уже в кэше: ${url}`);
-                return;
-              }
+            const imageUrls = allUrls.filter((url) =>
+              url.includes("cloudinary")
+            );
+            const audioUrls = allUrls.filter(
+              (url) => !url.includes("cloudinary")
+            );
 
-              // Делаем запрос. Для изображений используем no-cors
-              const requestMode = isImage ? "no-cors" : "cors";
-              const response = await fetch(url, { mode: requestMode });
-              await cache.put(url, response);
-            };
+            // Выполняем кэширование параллельно
+            await Promise.all([
+              audioUrls.length > 0
+                ? audioCache.addAll(audioUrls)
+                : Promise.resolve(),
+              imageUrls.length > 0
+                ? imageCache.addAll(imageUrls)
+                : Promise.resolve(),
+            ]);
+            // ===========================================================================
 
-            // Выполняем все запросы на кэширование параллельно
-            await Promise.all(allUrls.map(cacheUrl));
             const itemToSave: DownloadableItemWithValue = {
               ...itemData,
               songsData,
@@ -228,11 +228,9 @@ export const useOfflineStore = create<OfflineState>()(
 
           toast.loading("Clearing all downloads...");
           try {
-            // Очищаем кэши
             await caches.delete("moodify-audio-cache");
             await caches.delete("cloudinary-images-cache");
 
-            // Очищаем IndexedDB
             const db = await getDb();
             await Promise.all([
               db.clear("albums"),
@@ -241,7 +239,6 @@ export const useOfflineStore = create<OfflineState>()(
               db.clear("songs"),
             ]);
 
-            // Очищаем состояние
             set({
               downloadedItemIds: new Set(),
               downloadingItemIds: new Set(),
@@ -277,7 +274,6 @@ export const useOfflineStore = create<OfflineState>()(
         downloadedItemIds: state.downloadedItemIds,
       }),
       onRehydrateStorage: () => (state) => {
-        // Устанавливаем флаг после восстановления состояния
         if (state) {
           state._hasHydrated = true;
         }
