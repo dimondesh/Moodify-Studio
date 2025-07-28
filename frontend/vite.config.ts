@@ -50,7 +50,8 @@ export default defineConfig({
           {
             // ИСПРАВЛЕНИЕ: Используем фактический URL вашего API.
             // ЗАМЕНИТЕ "http://localhost:5000" НА ВАШ РЕАЛЬНЫЙ URL API, ЕСЛИ ОН ДРУГОЙ
-            urlPattern: ({ url }) => url.origin === "http://localhost:5000",
+            urlPattern: ({ url }) =>
+              url.origin === "https://moodify-yf1r.onrender.com/api",
             handler: "NetworkFirst",
             options: {
               cacheName: "moodify-api-cache",
