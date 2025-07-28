@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 import { Helmet } from "react-helmet-async";
+import { DownloadButton } from "@/components/ui/DownloadButton";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -223,6 +224,11 @@ const AlbumPage = () => {
                     )}
                   </Button>
                 )}
+                <DownloadButton
+                  itemId={currentAlbum._id}
+                  itemType="albums" // Важно: должно совпадать с именем хранилища в IndexedDB
+                  itemTitle={currentAlbum.title}
+                />
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">

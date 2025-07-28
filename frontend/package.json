@@ -32,6 +32,7 @@
     "fast-average-color": "^9.5.0",
     "firebase": "^11.10.0",
     "i18next": "^25.3.2",
+    "idb": "^8.0.3",
     "lodash": "^4.17.21",
     "lucide-react": "^0.509.0",
     "react": "^19.1.0",
@@ -63,6 +64,7 @@
     "tw-animate-css": "^1.2.9",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.0.2"
   }
 }

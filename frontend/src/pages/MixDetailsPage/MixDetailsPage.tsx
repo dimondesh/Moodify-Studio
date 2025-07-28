@@ -23,6 +23,7 @@ import { FastAverageColor } from "fast-average-color";
 import { useMixesStore } from "../../stores/useMixesStore";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 import { Helmet } from "react-helmet-async";
+import { DownloadButton } from "@/components/ui/DownloadButton";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -259,6 +260,11 @@ const MixDetailsPage = () => {
                     <PlusCircle className="size-5 sm:size-6 text-white" />
                   )}
                 </Button>
+                <DownloadButton
+                  itemId={currentMix._id}
+                  itemType="mixes" // Важно: должно совпадать с именем хранилища
+                  itemTitle={currentMix.name}
+                />
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">

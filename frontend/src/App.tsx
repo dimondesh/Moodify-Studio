@@ -1,3 +1,5 @@
+// frontend/src/App.tsx
+
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage/HomePage";
 import MainLayout from "./layout/MainLayout";
@@ -14,6 +16,7 @@ import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
+import { useOfflineStore } from "./stores/useOfflineStore"; // <-- 1. ИМПОРТ
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
 import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
 import ArtistPage from "./pages/ArtistPage/ArtistPage";
@@ -25,6 +28,9 @@ import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
+  const { init: initOfflineStore, checkOnlineStatus } = useOfflineStore(
+    (s) => s.actions
+  ); // <-- 2. ПОЛУЧАЕМ ДЕЙСТВИЯ
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -45,6 +51,23 @@ function App() {
 
     return () => unsubscribe();
   }, [fetchUser, logout, user]);
+
+  // <-- 3. ДОБАВЬТЕ НОВЫЙ useEffect ДЛЯ ОФЛАЙН-РЕЖИМА
+  useEffect(() => {
+    // Инициализируем состояние скачанных элементов из IndexedDB
+    initOfflineStore();
+
+    // Добавляем слушатели для отслеживания статуса сети
+    window.addEventListener("online", checkOnlineStatus);
+    window.addEventListener("offline", checkOnlineStatus);
+
+    // Убираем слушатели при размонтировании компонента, чтобы избежать утечек памяти
+    return () => {
+      window.removeEventListener("online", checkOnlineStatus);
+      window.removeEventListener("offline", checkOnlineStatus);
+    };
+  }, [initOfflineStore, checkOnlineStatus]); // Зависимости гарантируют, что эффект выполнится один раз
+
   return (
     <>
       <Routes>
@@ -65,15 +88,11 @@ function App() {
             element={<PlaylistDetailsPage />}
           />
           <Route path="/settings" element={<SettingsPage />} />{" "}
-          {/* Новый маршрут */}
           <Route path="/artists/:id" element={<ArtistPage />} />
           <Route path="/users/:userId" element={<ProfilePage />} />
           <Route path="/list" element={<DisplayListPage />} />{" "}
           <Route path="/mixes/:mixId" element={<MixDetailsPage />} />{" "}
           <Route path="/all-mixes/:category" element={<AllMixesPage />} />{" "}
-          {/* <-- ДОБАВЛЕННЫЙ РОУТ */}
-          {/* <-- НОВЫЙ РОУТ */}
-          {/* <-- НОВЫЙ РОУТ */}
         </Route>
       </Routes>
       <Toaster

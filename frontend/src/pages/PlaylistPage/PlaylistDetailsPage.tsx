@@ -58,6 +58,7 @@ import Equalizer from "../../components/ui/equalizer";
 import { FastAverageColor } from "fast-average-color";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { DownloadButton } from "@/components/ui/DownloadButton";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -438,26 +439,33 @@ const PlaylistDetailsPage = () => {
                   </Button>
                 )}
                 {!isOwner ? (
-                  <Button
-                    onClick={handleTogglePlaylistInLibrary}
-                    disabled={isTogglingLibrary}
-                    variant="ghost"
-                    size="icon"
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors flex-shrink-0 ${
-                      isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
-                    }`}
-                    title={
-                      isInLibrary
-                        ? t("pages.playlist.actions.removeFromLibrary")
-                        : t("pages.playlist.actions.addToLibrary")
-                    }
-                  >
-                    {isInLibrary ? (
-                      <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
-                    ) : (
-                      <PlusCircle className="size-5 sm:size-6 text-white" />
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleTogglePlaylistInLibrary}
+                      disabled={isTogglingLibrary}
+                      variant="ghost"
+                      size="icon"
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors flex-shrink-0 ${
+                        isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
+                      }`}
+                      title={
+                        isInLibrary
+                          ? t("pages.playlist.actions.removeFromLibrary")
+                          : t("pages.playlist.actions.addToLibrary")
+                      }
+                    >
+                      {isInLibrary ? (
+                        <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                      ) : (
+                        <PlusCircle className="size-5 sm:size-6 text-white" />
+                      )}
+                    </Button>
+                    <DownloadButton
+                      itemId={currentPlaylist._id}
+                      itemType="playlists" // Важно: должно совпадать с именем хранилища
+                      itemTitle={currentPlaylist.title}
+                    />
+                  </>
                 ) : (
                   <>
                     <Button
@@ -469,6 +477,12 @@ const PlaylistDetailsPage = () => {
                     >
                       <Plus className="size-4 sm:size-5" />
                     </Button>
+                    <DownloadButton
+                      itemId={currentPlaylist._id}
+                      itemType="playlists" // Важно: должно совпадать с именем хранилища
+                      itemTitle={currentPlaylist.title}
+                    />
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
