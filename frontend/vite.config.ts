@@ -15,6 +15,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,wav}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // Увеличиваем лимит до 5 МБ
+
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
