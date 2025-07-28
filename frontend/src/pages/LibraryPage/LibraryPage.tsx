@@ -22,6 +22,7 @@ import { auth } from "../../lib/firebase";
 import { CreatePlaylistDialog } from "../PlaylistPage/CreatePlaylistDialog";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { Helmet } from "react-helmet-async";
 
 const LibraryPage = () => {
   const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
@@ -165,132 +166,143 @@ const LibraryPage = () => {
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
-    <div className="h-full">
-      <ScrollArea className="h-full rounded-md md:pb-0">
-        <div className="relative min-h-screen p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
-            aria-hidden="true"
-          />
-          <div className="relative z-10">
-            <div className="flex justify-between items-baseline">
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
-                {t("sidebar.library")}
-              </h1>
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-zinc-800 "
-                  onClick={() => setIsCreateDialogOpen(true)}
-                  title={t("sidebar.createPlaylist")}
-                >
-                  <Plus className="size-6" />
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              {libraryItems.length === 0 ? (
-                <p className="text-zinc-400 px-2">
-                  {t("sidebar.emptyLibrary")}
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {libraryItems.map((item) => {
-                    let linkPath: string;
-                    let subtitle: string;
-                    let coverImageUrl: string | null | undefined =
-                      item.imageUrl;
-                    let imageClass = "rounded-md";
+    <>
+      <Helmet>
+        <title>Your Library - Moodify</title>
+        <meta
+          name="description"
+          content="Access your saved albums, playlists, followed artists, and liked songs all in one place on Moodify."
+        />
+      </Helmet>
+      <div className="h-full">
+        <ScrollArea className="h-full rounded-md md:pb-0">
+          <div className="relative min-h-screen p-4 sm:p-6">
+            <div
+              className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
+              aria-hidden="true"
+            />
+            <div className="relative z-10">
+              <div className="flex justify-between items-baseline">
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
+                  {t("sidebar.library")}
+                </h1>
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-zinc-800 "
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    title={t("sidebar.createPlaylist")}
+                  >
+                    <Plus className="size-6" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                {libraryItems.length === 0 ? (
+                  <p className="text-zinc-400 px-2">
+                    {t("sidebar.emptyLibrary")}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {libraryItems.map((item) => {
+                      let linkPath: string;
+                      let subtitle: string;
+                      let coverImageUrl: string | null | undefined =
+                        item.imageUrl;
+                      let imageClass = "rounded-md";
 
-                    if (item.type === "liked-songs") {
-                      const likedItem = item as LikedSongsItem;
-                      linkPath = "/liked-songs";
-                      subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                        likedItem.songsCount
-                      } ${
-                        likedItem.songsCount !== 1
-                          ? t("sidebar.subtitle.songs")
-                          : t("sidebar.subtitle.song")
-                      }`;
-                      coverImageUrl = item.imageUrl;
-                    } else if (item.type === "album") {
-                      const albumItem = item as AlbumItem;
-                      linkPath = `/albums/${albumItem._id}`;
-                      subtitle = `${
-                        t(`sidebar.subtitle.${albumItem.albumType}`) ||
-                        t("sidebar.subtitle.album")
-                      } • ${getArtistNames(albumItem.artist)}`;
-                      coverImageUrl =
-                        item.imageUrl || "/default-album-cover.png";
-                    } else if (item.type === "playlist") {
-                      const playlistItem = item as PlaylistItem;
-                      linkPath = `/playlists/${playlistItem._id}`;
-                      subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                        playlistItem.owner?.fullName ||
-                        t("common.unknownArtist")
-                      }`;
-                      coverImageUrl =
-                        item.imageUrl || "/default-album-cover.png";
-                    } else if (item.type === "artist") {
-                      const artistItem = item as FollowedArtistItem;
-                      linkPath = `/artists/${artistItem._id}`;
-                      subtitle = t("sidebar.subtitle.artist");
-                      coverImageUrl =
-                        item.imageUrl || "/default-artist-cover.png";
-                      imageClass = "rounded-full";
-                    } else if (item.type === "mix") {
-                      linkPath = `/mixes/${item._id}`;
-                      subtitle = t("sidebar.subtitle.dailyMix");
-                      coverImageUrl =
-                        item.imageUrl || "/default-album-cover.png";
-                      imageClass = "rounded-md";
-                    } else {
-                      linkPath = "#";
-                      subtitle = "";
-                      coverImageUrl = "/default-album-cover.png";
-                    }
-                    return (
-                      <Link
-                        key={item._id}
-                        to={linkPath}
-                        className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
-                      >
-                        <div className="relative mb-4">
-                          <div
-                            className={`aspect-square shadow-lg overflow-hidden ${imageClass}`}
-                          >
-                            <img
-                              src={coverImageUrl || "/default-album-cover.png"}
-                              alt={item.title}
-                              className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "/default-album-cover.png";
-                              }}
-                            />
+                      if (item.type === "liked-songs") {
+                        const likedItem = item as LikedSongsItem;
+                        linkPath = "/liked-songs";
+                        subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                          likedItem.songsCount
+                        } ${
+                          likedItem.songsCount !== 1
+                            ? t("sidebar.subtitle.songs")
+                            : t("sidebar.subtitle.song")
+                        }`;
+                        coverImageUrl = item.imageUrl;
+                      } else if (item.type === "album") {
+                        const albumItem = item as AlbumItem;
+                        linkPath = `/albums/${albumItem._id}`;
+                        subtitle = `${
+                          t(`sidebar.subtitle.${albumItem.albumType}`) ||
+                          t("sidebar.subtitle.album")
+                        } • ${getArtistNames(albumItem.artist)}`;
+                        coverImageUrl =
+                          item.imageUrl || "/default-album-cover.png";
+                      } else if (item.type === "playlist") {
+                        const playlistItem = item as PlaylistItem;
+                        linkPath = `/playlists/${playlistItem._id}`;
+                        subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                          playlistItem.owner?.fullName ||
+                          t("common.unknownArtist")
+                        }`;
+                        coverImageUrl =
+                          item.imageUrl || "/default-album-cover.png";
+                      } else if (item.type === "artist") {
+                        const artistItem = item as FollowedArtistItem;
+                        linkPath = `/artists/${artistItem._id}`;
+                        subtitle = t("sidebar.subtitle.artist");
+                        coverImageUrl =
+                          item.imageUrl || "/default-artist-cover.png";
+                        imageClass = "rounded-full";
+                      } else if (item.type === "mix") {
+                        linkPath = `/mixes/${item._id}`;
+                        subtitle = t("sidebar.subtitle.dailyMix");
+                        coverImageUrl =
+                          item.imageUrl || "/default-album-cover.png";
+                        imageClass = "rounded-md";
+                      } else {
+                        linkPath = "#";
+                        subtitle = "";
+                        coverImageUrl = "/default-album-cover.png";
+                      }
+                      return (
+                        <Link
+                          key={item._id}
+                          to={linkPath}
+                          className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
+                        >
+                          <div className="relative mb-4">
+                            <div
+                              className={`aspect-square shadow-lg overflow-hidden ${imageClass}`}
+                            >
+                              <img
+                                src={
+                                  coverImageUrl || "/default-album-cover.png"
+                                }
+                                alt={item.title}
+                                className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "/default-album-cover.png";
+                                }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                        <h3 className="font-medium mb-1 truncate text-white">
-                          {item.title}
-                        </h3>
-                        <p className="text-sm text-zinc-400 truncate">
-                          {subtitle}
-                        </p>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+                          <h3 className="font-medium mb-1 truncate text-white">
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-zinc-400 truncate">
+                            {subtitle}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </ScrollArea>
-      <CreatePlaylistDialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
-      />
-    </div>
+        </ScrollArea>
+        <CreatePlaylistDialog
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+        />
+      </div>
+    </>
   );
 };
 

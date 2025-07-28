@@ -15,6 +15,7 @@ import BottomNavigationBar from "./BottomNavigationBar";
 import { useEffect, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage"; // Убедитесь, что этот путь правильный
+import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
 // Добавим импорты для Button и ChevronDown если они используются в LyricsPage и вы его вернули
 // import { Button } from "../components/ui/button";
 // import { ChevronDown } from "lucide-react";
@@ -77,9 +78,9 @@ const MainLayout = () => {
 
   return (
     <div className="h-screen bg-black text-white flex flex-col">
+      <DynamicTitleUpdater /> {/* <-- 2. РАЗМЕЩАЕМ КОМПОНЕНТ ЗДЕСЬ */}
       <AudioPlayer />
       <Topbar />
-
       <ResizablePanelGroup
         direction="horizontal"
         className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`}
@@ -141,9 +142,7 @@ const MainLayout = () => {
           </>
         )}
       </ResizablePanelGroup>
-
       <PlaybackControls />
-
       {/* НОВОЕ: Навигация видна только на мобильных и ТОЛЬКО если полноэкранный плеер ИЛИ лирика НЕ открыты */}
       {isCompactView &&
         !isFullScreenPlayerOpen &&

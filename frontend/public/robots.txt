@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://moodify-ruddy.vercel.app/sitemap.xml

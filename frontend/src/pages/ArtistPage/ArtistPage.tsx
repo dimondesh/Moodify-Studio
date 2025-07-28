@@ -13,6 +13,7 @@ import Equalizer from "../../components/ui/equalizer";
 import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { Helmet } from "react-helmet-async";
 
 const ArtistPage = () => {
   const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
@@ -65,25 +66,49 @@ const ArtistPage = () => {
 
   if (loading) {
     return (
-      <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
-        <p>{t("pages.artist.loading")}</p>
-      </main>
+      <>
+        <Helmet>
+          <title>Loading... | Moodify</title>
+        </Helmet>
+        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
+          <p>{t("pages.artist.loading")}</p>
+        </main>
+      </>
     );
   }
 
   if (error) {
     return (
-      <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-red-500">
-        <p>{error}</p>
-      </main>
+      <>
+        {" "}
+        <Helmet>
+          <title>Artist Not Found | Moodify</title>
+          <meta
+            name="description"
+            content="Sorry, the requested artist could not be found on Moodify."
+          />
+        </Helmet>
+        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-red-500">
+          <p>{error}</p>
+        </main>
+      </>
     );
   }
 
   if (!artist) {
     return (
-      <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-zinc-400">
-        <p>{t("pages.artist.notFound")}</p>
-      </main>
+      <>
+        <Helmet>
+          <title>Artist Not Found | Moodify</title>
+          <meta
+            name="description"
+            content="Sorry, the requested artist could not be found on Moodify."
+          />
+        </Helmet>
+        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-zinc-400">
+          <p>{t("pages.artist.notFound")}</p>
+        </main>
+      </>
     );
   }
 
@@ -127,7 +152,11 @@ const ArtistPage = () => {
       )
       .join(", ");
   };
-
+  const metaDescription = `Listen to ${
+    artist.name
+  } on Moodify. Discover popular tracks, albums, and the full discography. ${
+    artist.bio ? artist.bio.substring(0, 120) + "..." : ""
+  }`;
   const handleToggleFollow = async () => {
     if (!artist) return;
     try {
@@ -144,183 +173,191 @@ const ArtistPage = () => {
   };
 
   return (
-    <main className="rounded-md overflow-hidden h-full bg-zinc-950">
-      <ScrollArea className="h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-220px)] lg:h-[calc(100vh-170px)] w-full pb-20 md:pb-0">
-        <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage:
-                window.innerWidth >= 1024
-                  ? artist.bannerUrl
-                    ? `url(${artist.bannerUrl})`
-                    : "linear-gradient(to bottom, #333, #111)"
-                  : `url(${artist.imageUrl || "/default-artist-cover.png"})`,
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
-          {!artist.bannerUrl && artist.imageUrl && (
-            <div className="hidden lg:block absolute bottom-10 left-10 z-10">
-              <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
-                <img
-                  src={artist.imageUrl}
-                  alt={artist.name}
-                  className="w-full h-full object-cover"
-                />
+    <>
+      <Helmet>
+        <title>{`${artist.name} | Moodify`}</title>
+        <meta name="description" content={metaDescription} />
+      </Helmet>
+      <main className="rounded-md overflow-hidden h-full bg-zinc-950">
+        <ScrollArea className="h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-220px)] lg:h-[calc(100vh-170px)] w-full pb-20 md:pb-0">
+          <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage:
+                  window.innerWidth >= 1024
+                    ? artist.bannerUrl
+                      ? `url(${artist.bannerUrl})`
+                      : "linear-gradient(to bottom, #333, #111)"
+                    : `url(${artist.imageUrl || "/default-artist-cover.png"})`,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
+            {!artist.bannerUrl && artist.imageUrl && (
+              <div className="hidden lg:block absolute bottom-10 left-10 z-10">
+                <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
+                  <img
+                    src={artist.imageUrl}
+                    alt={artist.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+            <div
+              className={`relative z-10 h-full flex flex-col justify-end px-6 sm:px-10 pb-6 sm:pb-10 ${
+                !artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""
+              }`}
+            >
+              <p className="text-white text-sm font-semibold uppercase mb-2">
+                {t("pages.artist.type")}
+              </p>
+              <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
+                {artist.name}
+              </h1>
+              <div className="mt-4 flex items-center gap-4">
+                <Button
+                  className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
+                  onClick={handlePlayArtistSongs}
+                  title={
+                    isAnyPopularSongPlaying
+                      ? t("pages.artist.actions.pause")
+                      : `${t("pages.artist.actions.play")} ${artist.name}`
+                  }
+                >
+                  {isAnyPopularSongPlaying ? (
+                    <Pause className="h-7 w-7 fill-current" />
+                  ) : (
+                    <Play className="h-7 w-7 fill-current" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
+                  onClick={handleToggleFollow}
+                >
+                  {isArtistFollowed(artist._id) ? (
+                    <>
+                      <UserCheck className="h-5 w-5" />
+                      {t("pages.artist.actions.following")}
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-5 w-5" />
+                      {t("pages.artist.actions.follow")}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+          {popularSongs.length > 0 && (
+            <div className="px-6 md:px-10 py-4">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {t("pages.artist.popular")}
+              </h2>
+              <div className="grid grid-cols-1 gap-4">
+                {popularSongs.map((song, index) => {
+                  const isCurrentSong = currentSong?._id === song._id;
+                  return (
+                    <div
+                      key={song._id}
+                      className="flex items-center md:px-4 gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer "
+                      onClick={() => handlePlaySpecificSong(song, index)}
+                    >
+                      <div className="flex items-center justify-center w-4">
+                        {isCurrentSong && isPlaying ? (
+                          <div className="z-10">
+                            <Equalizer />
+                          </div>
+                        ) : (
+                          <span className="group-hover:hidden">
+                            {index + 1}
+                          </span>
+                        )}
+                        {!isCurrentSong && (
+                          <Play className="h-4 w-4 hidden group-hover:block" />
+                        )}
+                      </div>
+                      <div className="w-12 h-12 flex-shrink-0">
+                        <img
+                          src={song.imageUrl || "/default-song-cover.png"}
+                          alt={song.title}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`font-medium ${
+                            isCurrentSong ? "text-violet-400" : "text-white"
+                          } truncate`}
+                        >
+                          {song.title}
+                        </p>
+                        <p className="text-zinc-400 text-sm truncate">
+                          {getArtistNames(song.artist)}
+                        </p>
+                      </div>
+                      <span className="text-zinc-400 text-sm ml-2 hidden sm:block">
+                        {song.playCount?.toLocaleString() || 0}{" "}
+                        {t("pages.artist.plays")}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`hover:text-white ${
+                          isSongLiked(song._id)
+                            ? "text-violet-500"
+                            : "text-zinc-400"
+                        } w-8 h-8`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSongLike(song._id);
+                        }}
+                        title={
+                          isSongLiked(song._id)
+                            ? t("player.unlike")
+                            : t("player.like")
+                        }
+                      >
+                        <Heart className="h-4 w-4 fill-current" />
+                      </Button>
+                      <span className="text-zinc-400 text-sm ml-2">
+                        {formatTime(song.duration)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
-          <div
-            className={`relative z-10 h-full flex flex-col justify-end px-6 sm:px-10 pb-6 sm:pb-10 ${
-              !artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""
-            }`}
-          >
-            <p className="text-white text-sm font-semibold uppercase mb-2">
-              {t("pages.artist.type")}
-            </p>
-            <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
-              {artist.name}
-            </h1>
-            <div className="mt-4 flex items-center gap-4">
-              <Button
-                className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
-                onClick={handlePlayArtistSongs}
-                title={
-                  isAnyPopularSongPlaying
-                    ? t("pages.artist.actions.pause")
-                    : `${t("pages.artist.actions.play")} ${artist.name}`
-                }
-              >
-                {isAnyPopularSongPlaying ? (
-                  <Pause className="h-7 w-7 fill-current" />
-                ) : (
-                  <Play className="h-7 w-7 fill-current" />
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
-                onClick={handleToggleFollow}
-              >
-                {isArtistFollowed(artist._id) ? (
-                  <>
-                    <UserCheck className="h-5 w-5" />
-                    {t("pages.artist.actions.following")}
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-5 w-5" />
-                    {t("pages.artist.actions.follow")}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-        {popularSongs.length > 0 && (
-          <div className="px-6 md:px-10 py-4">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              {t("pages.artist.popular")}
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
-              {popularSongs.map((song, index) => {
-                const isCurrentSong = currentSong?._id === song._id;
-                return (
-                  <div
-                    key={song._id}
-                    className="flex items-center md:px-4 gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer "
-                    onClick={() => handlePlaySpecificSong(song, index)}
-                  >
-                    <div className="flex items-center justify-center w-4">
-                      {isCurrentSong && isPlaying ? (
-                        <div className="z-10">
-                          <Equalizer />
-                        </div>
-                      ) : (
-                        <span className="group-hover:hidden">{index + 1}</span>
-                      )}
-                      {!isCurrentSong && (
-                        <Play className="h-4 w-4 hidden group-hover:block" />
-                      )}
-                    </div>
-                    <div className="w-12 h-12 flex-shrink-0">
-                      <img
-                        src={song.imageUrl || "/default-song-cover.png"}
-                        alt={song.title}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`font-medium ${
-                          isCurrentSong ? "text-violet-400" : "text-white"
-                        } truncate`}
-                      >
-                        {song.title}
-                      </p>
-                      <p className="text-zinc-400 text-sm truncate">
-                        {getArtistNames(song.artist)}
-                      </p>
-                    </div>
-                    <span className="text-zinc-400 text-sm ml-2 hidden sm:block">
-                      {song.playCount?.toLocaleString() || 0}{" "}
-                      {t("pages.artist.plays")}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className={`hover:text-white ${
-                        isSongLiked(song._id)
-                          ? "text-violet-500"
-                          : "text-zinc-400"
-                      } w-8 h-8`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSongLike(song._id);
-                      }}
-                      title={
-                        isSongLiked(song._id)
-                          ? t("player.unlike")
-                          : t("player.like")
-                      }
-                    >
-                      <Heart className="h-4 w-4 fill-current" />
-                    </Button>
-                    <span className="text-zinc-400 text-sm ml-2">
-                      {formatTime(song.duration)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <div className="px-6 py-4">
-          {albums.length > 0 && (
-            <AlbumGrid
-              title={t("pages.artist.albums")}
-              albums={albums}
-              isLoading={loading}
-            />
-          )}
-          {singlesAndEps.length > 0 && (
-            <AlbumGrid
-              title={t("pages.artist.singlesAndEps")}
-              albums={singlesAndEps}
-              isLoading={loading}
-            />
-          )}
-        </div>
-        {artist.bio && (
           <div className="px-6 py-4">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              {t("pages.artist.about")} {artist.name}
-            </h2>
-            <p className="text-zinc-300 whitespace-pre-wrap">{artist.bio}</p>
+            {albums.length > 0 && (
+              <AlbumGrid
+                title={t("pages.artist.albums")}
+                albums={albums}
+                isLoading={loading}
+              />
+            )}
+            {singlesAndEps.length > 0 && (
+              <AlbumGrid
+                title={t("pages.artist.singlesAndEps")}
+                albums={singlesAndEps}
+                isLoading={loading}
+              />
+            )}
           </div>
-        )}
-      </ScrollArea>
-    </main>
+          {artist.bio && (
+            <div className="px-6 py-4">
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {t("pages.artist.about")} {artist.name}
+              </h2>
+              <p className="text-zinc-300 whitespace-pre-wrap">{artist.bio}</p>
+            </div>
+          )}
+        </ScrollArea>
+      </main>
+    </>
   );
 };
 

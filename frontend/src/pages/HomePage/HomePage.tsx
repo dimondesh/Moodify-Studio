@@ -12,6 +12,7 @@ import { useMixesStore } from "../../stores/useMixesStore";
 import MixGrid from "./MixGrid";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { Helmet } from "react-helmet-async";
 
 const HomePage = () => {
   const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
@@ -92,58 +93,67 @@ const HomePage = () => {
   };
 
   return (
-    <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-      <ScrollArea className="h-[calc(100vh-180px)]">
-        <div className="p-4 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
-            {getGreeting()}
-          </h1>
+    <>
+      <Helmet>
+        <title>Home - Moodify</title>
+        <meta
+          name="description"
+          content="Listen to trending music, discover personal mixes, and explore public playlists. Moodify - your ultimate guide in the world of music."
+        />
+      </Helmet>
+      <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+        <ScrollArea className="h-[calc(100vh-180px)]">
+          <div className="p-4 sm:p-6">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
+              {getGreeting()}
+            </h1>
 
-          <FeaturedSection />
+            <FeaturedSection />
 
-          <div className="space-y-8">
-            {madeForYouSongs && recentlyListenedSongs.length >= 5 && (
+            <div className="space-y-8">
+              {madeForYouSongs && recentlyListenedSongs.length >= 5 && (
+                <SectionGrid
+                  title={t("homepage.madeForYou")}
+                  songs={madeForYouSongs}
+                  isLoading={isLoading}
+                  showAllPath="/full-songs"
+                />
+              )}
+              {recentlyListenedSongs && recentlyListenedSongs.length >= 10 && (
+                <SectionGrid
+                  title={t("homepage.recentlyListened")}
+                  songs={recentlyListenedSongs}
+                  isLoading={isLoading}
+                />
+              )}
+              <MixGrid
+                title={t("homepage.genreMixes")}
+                mixes={genreMixes}
+                isLoading={areMixesLoading}
+              />
+              <MixGrid
+                title={t("homepage.moodMixes")}
+                mixes={moodMixes}
+                isLoading={areMixesLoading}
+              />
               <SectionGrid
-                title={t("homepage.madeForYou")}
-                songs={madeForYouSongs}
+                title={t("homepage.trending")}
+                songs={trendingSongs}
                 isLoading={isLoading}
                 showAllPath="/full-songs"
               />
-            )}
-            {recentlyListenedSongs && recentlyListenedSongs.length >= 10 && (
-              <SectionGrid
-                title={t("homepage.recentlyListened")}
-                songs={recentlyListenedSongs}
-                isLoading={isLoading}
-              />
-            )}
-            <MixGrid
-              title={t("homepage.genreMixes")}
-              mixes={genreMixes}
-              isLoading={areMixesLoading}
-            />
-            <MixGrid
-              title={t("homepage.moodMixes")}
-              mixes={moodMixes}
-              isLoading={areMixesLoading}
-            />
-            <SectionGrid
-              title={t("homepage.trending")}
-              songs={trendingSongs}
-              isLoading={isLoading}
-              showAllPath="/full-songs"
-            />
-            {publicPlaylists.length > 0 && (
-              <PlaylistGrid
-                title={t("homepage.playlistsForYou")}
-                playlists={publicPlaylists}
-                isLoading={isPlaylistsLoading}
-              />
-            )}
+              {publicPlaylists.length > 0 && (
+                <PlaylistGrid
+                  title={t("homepage.playlistsForYou")}
+                  playlists={publicPlaylists}
+                  isLoading={isPlaylistsLoading}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </ScrollArea>
-    </main>
+        </ScrollArea>
+      </main>
+    </>
   );
 };
 export default HomePage;
