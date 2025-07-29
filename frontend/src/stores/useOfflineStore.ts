@@ -20,7 +20,8 @@ type DownloadableItemWithValue = (Album | Playlist | Mix) & {
 type ItemType = "albums" | "playlists" | "mixes";
 
 interface OfflineState {
-  downloadedItemIds: Set<string>;
+  downloadedItemIds: Set<string>; // ID для альбомов, плейлистов, миксов
+  downloadedSongIds: Set<string>; // ===== ИЗМЕНЕНИЕ: ID для песен =====
   downloadingItemIds: Set<string>;
   isOffline: boolean;
   _hasHydrated: boolean;
@@ -28,6 +29,7 @@ interface OfflineState {
     init: () => Promise<void>;
     checkOnlineStatus: () => void;
     isDownloaded: (itemId: string) => boolean;
+    isSongDownloaded: (songId: string) => boolean; // ===== ИЗМЕНЕНИЕ: Новая функция проверки =====
     isDownloading: (itemId: string) => boolean;
     downloadItem: (itemId: string, itemType: ItemType) => Promise<void>;
     deleteItem: (
@@ -44,21 +46,30 @@ export const useOfflineStore = create<OfflineState>()(
   persist(
     (set, get) => ({
       downloadedItemIds: new Set(),
+      downloadedSongIds: new Set(), // ===== ИЗМЕНЕНИЕ: Инициализация =====
       downloadingItemIds: new Set(),
       isOffline: !navigator.onLine,
       _hasHydrated: false,
 
       actions: {
         init: async () => {
-          const [albumKeys, playlistKeys, mixKeys] = await Promise.all([
-            getAllKeys("albums"),
-            getAllKeys("playlists"),
-            getAllKeys("mixes"),
-          ]);
-          const allKeys = [...albumKeys, ...playlistKeys, ...mixKeys].map(
+          // ===== ИЗМЕНЕНИЕ: Загружаем ключи для песен тоже =====
+          const [albumKeys, playlistKeys, mixKeys, songKeys] =
+            await Promise.all([
+              getAllKeys("albums"),
+              getAllKeys("playlists"),
+              getAllKeys("mixes"),
+              getAllKeys("songs"),
+            ]);
+          const allItemKeys = [...albumKeys, ...playlistKeys, ...mixKeys].map(
             String
           );
-          set({ downloadedItemIds: new Set(allKeys) });
+          const allSongKeys = songKeys.map(String);
+
+          set({
+            downloadedItemIds: new Set(allItemKeys),
+            downloadedSongIds: new Set(allSongKeys),
+          });
 
           get().actions.checkOnlineStatus();
           window.addEventListener("online", get().actions.checkOnlineStatus);
@@ -68,6 +79,7 @@ export const useOfflineStore = create<OfflineState>()(
           set({ isOffline: !navigator.onLine });
         },
         isDownloaded: (itemId) => get().downloadedItemIds.has(itemId),
+        isSongDownloaded: (songId) => get().downloadedSongIds.has(songId), // ===== ИЗМЕНЕНИЕ: Реализация новой функции =====
         isDownloading: (itemId) => get().downloadingItemIds.has(itemId),
 
         downloadItem: async (itemId, itemType) => {
@@ -110,10 +122,8 @@ export const useOfflineStore = create<OfflineState>()(
 
             const allUrls = Array.from(urlsToCache).filter(Boolean);
 
-            // ===== ИЗМЕНЕНИЕ: Возвращаемся к cache.addAll, т.к. CORS должен быть настроен =====
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
-
             const imageUrls = allUrls.filter((url) =>
               url.includes("cloudinary")
             );
@@ -121,7 +131,6 @@ export const useOfflineStore = create<OfflineState>()(
               (url) => !url.includes("cloudinary")
             );
 
-            // Выполняем кэширование параллельно
             await Promise.all([
               audioUrls.length > 0
                 ? audioCache.addAll(audioUrls)
@@ -130,7 +139,6 @@ export const useOfflineStore = create<OfflineState>()(
                 ? imageCache.addAll(imageUrls)
                 : Promise.resolve(),
             ]);
-            // ===========================================================================
 
             const itemToSave: DownloadableItemWithValue = {
               ...itemData,
@@ -148,9 +156,15 @@ export const useOfflineStore = create<OfflineState>()(
               );
               const newDownloading = new Set(state.downloadingItemIds);
               newDownloading.delete(itemId);
+
+              // ===== ИЗМЕНЕНИЕ: Обновляем Set песен =====
+              const newDownloadedSongs = new Set(state.downloadedSongIds);
+              songsData.forEach((song) => newDownloadedSongs.add(song._id));
+
               return {
                 downloadedItemIds: newDownloaded,
                 downloadingItemIds: newDownloading,
+                downloadedSongIds: newDownloadedSongs,
               };
             });
           } catch (error) {
@@ -196,12 +210,25 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
+            // ===== ИЗМЕНЕНИЕ: Удаляем песни из IndexedDB =====
+            for (const song of songs) {
+              await deleteItem("songs", song._id);
+            }
+
             await deleteItem(itemType, itemId);
 
             set((state) => {
               const newDownloaded = new Set(state.downloadedItemIds);
               newDownloaded.delete(itemId);
-              return { downloadedItemIds: newDownloaded };
+
+              // ===== ИЗМЕНЕНИЕ: Обновляем Set песен =====
+              const newDownloadedSongs = new Set(state.downloadedSongIds);
+              songs.forEach((song) => newDownloadedSongs.delete(song._id));
+
+              return {
+                downloadedItemIds: newDownloaded,
+                downloadedSongIds: newDownloadedSongs,
+              };
             });
             toast.success(`"${itemTitle}" removed from downloads.`);
           } catch (error) {
@@ -242,6 +269,7 @@ export const useOfflineStore = create<OfflineState>()(
             set({
               downloadedItemIds: new Set(),
               downloadingItemIds: new Set(),
+              downloadedSongIds: new Set(), // ===== ИЗМЕНЕНИЕ: Очищаем Set песен =====
             });
 
             toast.dismiss();
@@ -270,8 +298,10 @@ export const useOfflineStore = create<OfflineState>()(
           return value;
         },
       }),
+      // ===== ИЗМЕНЕНИЕ: Сохраняем оба Set в localStorage =====
       partialize: (state) => ({
         downloadedItemIds: state.downloadedItemIds,
+        downloadedSongIds: state.downloadedSongIds,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

@@ -208,31 +208,46 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbumbyId: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, currentAlbum: null }); // <-- ИЗМЕНЕНИЕ: Очищаем currentAlbum перед загрузкой
+
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
-    if (isDownloaded(id)) {
-      console.log(`[Offline] Загрузка альбома ${id} из IndexedDB.`);
-      const localAlbum = await getItem("albums", id);
-      if (localAlbum) {
-        set({ currentAlbum: localAlbum, isLoading: false });
+
+    // --- ИЗМЕНЕНИЕ: Логика для оффлайн-режима ---
+    if (isOffline) {
+      if (isDownloaded(id)) {
+        console.log(`[Offline] Загрузка альбома ${id} из IndexedDB.`);
+        try {
+          const localAlbum = await getItem("albums", id);
+          if (localAlbum) {
+            set({ currentAlbum: localAlbum, isLoading: false });
+            return;
+          } else {
+            throw new Error("Album not found in offline storage.");
+          }
+        } catch (e) {
+          const errorMsg = "Failed to load album from offline storage.";
+          set({ currentAlbum: null, error: errorMsg, isLoading: false });
+          toast.error(errorMsg);
+          return;
+        }
+      } else {
+        const errorMsg =
+          "This album is not downloaded and unavailable offline.";
+        set({ currentAlbum: null, error: errorMsg, isLoading: false });
+        toast.error(errorMsg);
         return;
       }
     }
 
-    if (isOffline) {
-      const errorMsg = "Этот альбом не скачан и недоступен в офлайн-режиме.";
-      set({ currentAlbum: null, error: errorMsg, isLoading: false });
-      toast.error(errorMsg);
-      return;
-    }
     try {
       const response = await axiosInstance.get(`/albums/${id}`);
-      set({ currentAlbum: response.data.album });
+      set({ currentAlbum: response.data.album, isLoading: false });
     } catch (error: any) {
-      set({ error: error.response.data.message || "Failed to fetch album" });
-    } finally {
-      set({ isLoading: false });
+      set({
+        error: error.response?.data?.message || "Failed to fetch album",
+        isLoading: false,
+      });
     }
   },
 

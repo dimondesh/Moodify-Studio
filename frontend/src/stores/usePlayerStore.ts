@@ -283,31 +283,30 @@ export const usePlayerStore = create<PlayerStore>()(
         });
       },
 
-      // ===== НОВАЯ, ОБЪЕДИНЕННАЯ ЛОГИКА =====
       playNext: () => {
+        // --- ВАША ОРИГИНАЛЬНАЯ ЛОГИКА ДЛЯ REPEAT:ONE ---
+        if (get().repeatMode === "one") {
+          set({ repeatMode: "all" });
+        }
+        // --- КОНЕЦ ВАШЕЙ ЛОГИКИ ---
+
         const {
           queue,
-          repeatMode,
           isShuffle,
           shuffleHistory,
           shufflePointer,
           currentIndex,
         } = get();
+        const repeatMode = get().repeatMode; // Получаем обновленный repeatMode
+
         const { isOffline } = useOfflineStore.getState();
-        const { isDownloaded } = useOfflineStore.getState().actions;
+        const { isSongDownloaded } = useOfflineStore.getState().actions;
 
         if (queue.length === 0) {
           set({ isPlaying: false });
           return;
         }
 
-        // ИСПРАВЛЕНИЕ: Логика для repeatMode: 'one'
-        if (repeatMode === "one") {
-          set({ repeatMode: "all" });
-          // Дальше код продолжится как обычно, но уже с новым repeatMode
-        }
-
-        // Временные переменные, чтобы не мутировать состояние сразу
         let tempShufflePointer = shufflePointer;
         let tempShuffleHistory = [...shuffleHistory];
         let nextIndex = -1;
@@ -330,15 +329,14 @@ export const usePlayerStore = create<PlayerStore>()(
           while (checkedCount < tempShuffleHistory.length) {
             potentialPointer++;
             if (potentialPointer >= tempShuffleHistory.length) {
-              if (get().repeatMode === "all") {
-                // Проверяем актуальный repeatMode
+              if (repeatMode === "all") {
                 potentialPointer = 0;
               } else {
                 break;
               }
             }
             const potentialIndex = tempShuffleHistory[potentialPointer];
-            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
               nextIndex = potentialIndex;
               tempShufflePointer = potentialPointer;
               break;
@@ -349,14 +347,14 @@ export const usePlayerStore = create<PlayerStore>()(
           let potentialIndex = currentIndex;
           for (let i = 0; i < queue.length; i++) {
             potentialIndex = (potentialIndex + 1) % queue.length;
-            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
               nextIndex = potentialIndex;
               break;
             }
             if (potentialIndex === currentIndex) break;
           }
-          if (nextIndex <= currentIndex && get().repeatMode !== "all") {
-            nextIndex = -1; // Не нашли следующего трека
+          if (nextIndex <= currentIndex && repeatMode !== "all") {
+            nextIndex = -1;
           }
         }
 
@@ -377,30 +375,33 @@ export const usePlayerStore = create<PlayerStore>()(
       },
 
       playPrevious: () => {
-        const {
-          currentIndex,
-          queue,
-          repeatMode,
-          isShuffle,
-          shuffleHistory,
-          shufflePointer,
-          currentTime,
-        } = get();
-        const { isOffline } = useOfflineStore.getState();
-        const { isDownloaded } = useOfflineStore.getState().actions;
+        const { currentTime } = get();
 
-        if (queue.length === 0) {
-          set({ isPlaying: false });
-          return;
-        }
-
-        // ИСПРАВЛЕНИЕ: Логика для repeatMode: 'one' и времени трека
+        // --- ВАША ОРИГИНАЛЬНАЯ ЛОГИКА ---
         if (currentTime > 3) {
           set({ currentTime: 0 });
           return;
         }
-        if (repeatMode === "one") {
+        if (get().repeatMode === "one") {
           set({ repeatMode: "all" });
+        }
+        // --- КОНЕЦ ВАШЕЙ ЛОГИКИ ---
+
+        const {
+          currentIndex,
+          queue,
+          isShuffle,
+          shuffleHistory,
+          shufflePointer,
+        } = get();
+        const repeatMode = get().repeatMode; // Получаем обновленный repeatMode
+
+        const { isOffline } = useOfflineStore.getState();
+        const { isSongDownloaded } = useOfflineStore.getState().actions;
+
+        if (queue.length === 0) {
+          set({ isPlaying: false });
+          return;
         }
 
         let tempShufflePointer = shufflePointer;
@@ -412,14 +413,14 @@ export const usePlayerStore = create<PlayerStore>()(
           while (checkedCount < shuffleHistory.length) {
             potentialPointer--;
             if (potentialPointer < 0) {
-              if (get().repeatMode === "all") {
+              if (repeatMode === "all") {
                 potentialPointer = shuffleHistory.length - 1;
               } else {
                 break;
               }
             }
             const potentialIndex = shuffleHistory[potentialPointer];
-            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
               prevIndex = potentialIndex;
               tempShufflePointer = potentialPointer;
               break;
@@ -430,13 +431,13 @@ export const usePlayerStore = create<PlayerStore>()(
           let potentialIndex = currentIndex;
           for (let i = 0; i < queue.length; i++) {
             potentialIndex = (potentialIndex - 1 + queue.length) % queue.length;
-            if (!isOffline || isDownloaded(queue[potentialIndex]._id)) {
+            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
               prevIndex = potentialIndex;
               break;
             }
             if (potentialIndex === currentIndex) break;
           }
-          if (prevIndex >= currentIndex && get().repeatMode !== "all") {
+          if (prevIndex >= currentIndex && repeatMode !== "all") {
             prevIndex = -1;
           }
         }
@@ -445,7 +446,7 @@ export const usePlayerStore = create<PlayerStore>()(
           toast(
             isOffline ? "No previous downloaded songs." : "Start of queue."
           );
-          set({ isPlaying: false });
+          set({ currentTime: 0 }); // Сбрасываем текущий трек на начало
           return;
         }
 
@@ -457,7 +458,6 @@ export const usePlayerStore = create<PlayerStore>()(
           currentTime: 0,
         });
       },
-      // ==========================================
 
       setRepeatMode: (mode) => set({ repeatMode: mode }),
       setIsFullScreenPlayerOpen: (isOpen: boolean) =>
@@ -466,9 +466,9 @@ export const usePlayerStore = create<PlayerStore>()(
       setMasterVolume: (volume) => set({ masterVolume: volume }),
       setCurrentTime: (time) => set({ currentTime: time }),
       setDuration: (duration) => set({ duration: duration }),
-      setIsDesktopLyricsOpen: (isOpen) => set({ isDesktopLyricsOpen: isOpen }),
+      setIsDesktopLyricsOpen: (isOpen: boolean) =>
+        set({ isDesktopLyricsOpen: isOpen }),
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
-        console.log("Setting isMobileLyricsFullScreen to:", isOpen);
         set({ isMobileLyricsFullScreen: isOpen });
       },
       seekToTime: (time: number) => {

@@ -47,22 +47,10 @@ const LibraryPage = () => {
     fetchMyPlaylists,
   } = usePlaylistStore();
   const { artists, fetchArtists } = useMusicStore();
-
-  useEffect(() => {
-    fetchLibrary();
-    fetchLikedSongs();
-    fetchMyPlaylists();
-    fetchArtists();
-  }, [fetchLibrary, fetchLikedSongs, fetchMyPlaylists, fetchArtists]);
-
-  const isLoading = isLoadingLibrary || isLoadingPlaylists;
-  const combinedError: string | null =
-    (libraryError as string | null) || (playlistsError as string | null);
-  const errorMessage = combinedError;
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const isOffline = useOfflineStore((s) => s.isOffline);
+  const { isOffline } = useOfflineStore.getState(); // <-- ИЗМЕНЕНИЕ
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
@@ -72,6 +60,22 @@ const LibraryPage = () => {
       setActiveFilter("downloaded");
     }
   }, [isOffline]);
+
+  useEffect(() => {
+    if (!isOffline) {
+      // <-- ИЗМЕНЕНИЕ: Загружаем данные только если есть сеть
+      fetchLibrary();
+      fetchLikedSongs();
+      fetchMyPlaylists();
+      fetchArtists();
+    }
+  }, [
+    isOffline,
+    fetchLibrary,
+    fetchLikedSongs,
+    fetchMyPlaylists,
+    fetchArtists,
+  ]);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -89,9 +93,14 @@ const LibraryPage = () => {
     return names.join(", ") || t("common.unknownArtist");
   };
 
+  const isLoading = (isLoadingLibrary || isLoadingPlaylists) && !isOffline;
+  const combinedError: string | null =
+    (libraryError as string | null) || (playlistsError as string | null);
+  const errorMessage = combinedError;
+
   if (isLoading) return <LibraryGridSkeleton />;
 
-  if (errorMessage) {
+  if (errorMessage && !isOffline) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white">
         <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
@@ -181,7 +190,8 @@ const LibraryPage = () => {
 
   // ИЗМЕНЕНИЕ: Обновляем логику фильтрации
   const filteredLibraryItems = libraryItems.filter((item) => {
-    if (activeFilter === "downloaded" || isOffline) {
+    if (activeFilter === "downloaded") {
+      // Исключаем типы, которые не могут быть скачаны
       if (item.type === "liked-songs" || item.type === "artist") {
         return false;
       }
@@ -211,20 +221,20 @@ const LibraryPage = () => {
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
                   {t("sidebar.library")}
                 </h1>
-                {user && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-zinc-800 "
-                    onClick={() => setIsCreateDialogOpen(true)}
-                    title={t("sidebar.createPlaylist")}
-                  >
-                    <Plus className="size-6" />
-                  </Button>
-                )}
+                {user &&
+                  !isOffline && ( // <-- ИЗМЕНЕНИЕ: Скрываем кнопку оффлайн
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-zinc-800 "
+                      onClick={() => setIsCreateDialogOpen(true)}
+                      title={t("sidebar.createPlaylist")}
+                    >
+                      <Plus className="size-6" />
+                    </Button>
+                  )}
               </div>
 
-              {/* ИЗМЕНЕНИЕ: Обновляем логику отображения кнопок */}
               <div className="flex items-center gap-2 mb-6">
                 {!isOffline && (
                   <Button
@@ -243,7 +253,7 @@ const LibraryPage = () => {
                   onClick={() => setActiveFilter("downloaded")}
                   className={cn(
                     "rounded-full h-8 px-4 text-xs font-semibold",
-                    activeFilter === "downloaded" || isOffline
+                    activeFilter === "downloaded"
                       ? "bg-white text-black hover:bg-white/90"
                       : "bg-zinc-800 text-white hover:bg-zinc-700"
                   )}

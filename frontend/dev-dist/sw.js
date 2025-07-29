@@ -82,7 +82,7 @@ define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.24pv4v83in"
+    "revision": "0.n16jvl47cb"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -108,7 +108,7 @@ define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
   }), 'GET');
   workbox.registerRoute(({
     url
-  }) => url.origin === "http://localhost:5000", new workbox.NetworkFirst({
+  }) => url.origin === "https://moodify-yf1r.onrender.com/api", new workbox.NetworkFirst({
     "cacheName": "moodify-api-cache",
     "networkTimeoutSeconds": 5,
     plugins: [new workbox.ExpirationPlugin({

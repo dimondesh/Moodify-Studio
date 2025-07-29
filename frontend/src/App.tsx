@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 
-import { Route, Routes, useLocation } from "react-router-dom"; // <-- ИЗМЕНЕНИЕ
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom"; // <-- ИЗМЕНЕНИЕ
 import HomePage from "./pages/HomePage/HomePage";
 import MainLayout from "./layout/MainLayout";
 import ChatPage from "./pages/ChatPage/ChatPage";
@@ -31,6 +31,7 @@ function App() {
   const { fetchUser, logout, user } = useAuthStore();
   const { isOffline } = useOfflineStore();
   const location = useLocation();
+  const navigate = useNavigate(); // <-- ДОБАВЛЕНО
 
   // Инициализация стора
   useEffect(() => {
@@ -60,28 +61,36 @@ function App() {
     return () => unsubscribe();
   }, [fetchUser, logout, user]);
 
-  // Логика редиректа в офлайн-режиме
-  const isSafeOfflinePath =
-    location.pathname.startsWith("/library") ||
-    location.pathname.startsWith("/settings") ||
-    location.pathname.startsWith("/albums/") ||
-    location.pathname.startsWith("/playlists/") ||
-    location.pathname.startsWith("/mixes/");
+  // --- ИЗМЕНЕНИЕ: Глобальная логика редиректа в офлайн-режиме ---
+  useEffect(() => {
+    // Список "безопасных" путей, которые могут работать оффлайн
+    const safeOfflinePaths = [
+      "/library",
+      "/settings",
+      "/albums/",
+      "/playlists/",
+      "/mixes/",
+      "/offline",
+    ];
 
-  if (isOffline && !isSafeOfflinePath) {
-    return (
-      <Routes>
-        <Route path="*" element={<OfflinePage />} />
-      </Routes>
+    const isSafe = safeOfflinePaths.some((path) =>
+      location.pathname.startsWith(path)
     );
-  }
+
+    if (isOffline && !isSafe) {
+      // Если мы оффлайн и на "небезопасной" странице, перенаправляем
+      navigate("/offline", { replace: true });
+    }
+  }, [isOffline, location.pathname, navigate]);
 
   return (
     <>
       <Routes>
+        {/* "Небезопасные" роуты, которые будут перехвачены */}
         <Route path="admin" element={<AdminPage />} />
         <Route path="login" element={<LoginPage />} />
 
+        {/* Роуты внутри MainLayout, которые мы сделали "безопасными" */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-songs/:category?" element={<AllSongsPage />} />
