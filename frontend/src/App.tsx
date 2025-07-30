@@ -26,6 +26,7 @@ import DisplayListPage from "./pages/DisplayListPage/DisplayListPage";
 import MixDetailsPage from "./pages/MixDetailsPage/MixDetailsPage";
 import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
+import { Helmet } from "react-helmet-async";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -85,6 +86,15 @@ function App() {
 
   return (
     <>
+      <Helmet
+        defaultTitle="Moodify - Discover Your Music"
+        titleTemplate="%s | Moodify"
+      >
+        <meta
+          name="description"
+          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood."
+        />
+      </Helmet>
       <Routes>
         {/* "Небезопасные" роуты, которые будут перехвачены */}
         <Route path="admin" element={<AdminPage />} />
