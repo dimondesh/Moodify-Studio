@@ -95,7 +95,6 @@ export const useOfflineStore = create<OfflineState>()(
           }));
 
           let itemData: DownloadableItemData | null = null;
-
           try {
             const endpoint =
               itemType === "albums"
@@ -110,10 +109,8 @@ export const useOfflineStore = create<OfflineState>()(
             }
 
             const songsData = itemData.songs as Song[];
-
             const urlsToCache = new Set<string>();
             if (itemData.imageUrl) urlsToCache.add(itemData.imageUrl);
-
             songsData.forEach((song) => {
               if (song.imageUrl) urlsToCache.add(song.imageUrl);
               if (song.instrumentalUrl) urlsToCache.add(song.instrumentalUrl);
@@ -121,24 +118,21 @@ export const useOfflineStore = create<OfflineState>()(
             });
 
             const allUrls = Array.from(urlsToCache).filter(Boolean);
-
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
-            const imageUrls = allUrls.filter((url) =>
-              url.includes("cloudinary")
-            );
-            const audioUrls = allUrls.filter(
-              (url) => !url.includes("cloudinary")
-            );
 
-            await Promise.all([
-              audioUrls.length > 0
-                ? audioCache.addAll(audioUrls)
-                : Promise.resolve(),
-              imageUrls.length > 0
-                ? imageCache.addAll(imageUrls)
-                : Promise.resolve(),
-            ]);
+            // --- ИЗМЕНЕНИЕ: Индивидуальное кеширование ---
+            for (const url of allUrls) {
+              try {
+                const cache = url.includes("cloudinary")
+                  ? imageCache
+                  : audioCache;
+                await cache.add(url);
+              } catch (cacheError) {
+                console.warn(`Could not cache URL: ${url}`, cacheError);
+              }
+            }
+            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
             const itemToSave: DownloadableItemWithValue = {
               ...itemData,
@@ -156,11 +150,8 @@ export const useOfflineStore = create<OfflineState>()(
               );
               const newDownloading = new Set(state.downloadingItemIds);
               newDownloading.delete(itemId);
-
-              // ===== ИЗМЕНЕНИЕ: Обновляем Set песен =====
               const newDownloadedSongs = new Set(state.downloadedSongIds);
               songsData.forEach((song) => newDownloadedSongs.add(song._id));
-
               return {
                 downloadedItemIds: newDownloaded,
                 downloadingItemIds: newDownloading,
@@ -181,6 +172,8 @@ export const useOfflineStore = create<OfflineState>()(
               newDownloading.delete(itemId);
               return { downloadingItemIds: newDownloading };
             });
+            // Re-throw to be caught by toast.promise if used
+            throw error;
           }
         },
 

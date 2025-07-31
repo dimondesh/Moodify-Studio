@@ -8,6 +8,7 @@ import { webAudioService } from "../lib/webAudio";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
+import { useOfflineStore } from "@/stores/useOfflineStore"; // ИМПОРТ
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -45,6 +46,8 @@ const AudioPlayer = () => {
     currentTime,
     duration,
   } = usePlayerStore();
+
+  const { isOffline } = useOfflineStore();
 
   const { user } = useAuthStore();
   const listenRecordedRef = useRef(false);
@@ -486,23 +489,20 @@ const AudioPlayer = () => {
   }, [currentSong]);
 
   useEffect(() => {
-    // Добавляем явную проверку на наличие currentSong._id
+    // ИЗМЕНЕНИЕ: Добавляем проверку на оффлайн
     if (
       isPlaying &&
       user &&
       currentSong &&
-      currentSong._id && // <-- ВАЖНАЯ ПРОВЕРКА
+      currentSong._id &&
       currentTime >= 30 &&
-      !listenRecordedRef.current
+      !listenRecordedRef.current &&
+      !isOffline // <-- ПРОВЕРКА
     ) {
-      listenRecordedRef.current = true; // Устанавливаем флаг немедленно
-
+      listenRecordedRef.current = true;
       const songId = currentSong._id;
       const requestUrl = `/songs/${songId}/listen`;
-
-      // Добавляем логирование ПЕРЕД отправкой запроса
       console.log(`[AudioPlayer] Preparing to send POST to: ${requestUrl}`);
-
       axiosInstance
         .post(requestUrl)
         .then((response) => {
@@ -513,22 +513,17 @@ const AudioPlayer = () => {
           }
           useMusicStore.getState().fetchRecentlyListenedSongs();
         })
-
         .catch((error) => {
-          // Если произошла ошибка, сбрасываем флаг, чтобы можно было попробовать еще раз
           listenRecordedRef.current = false;
-          // Улучшенное логирование ошибки
           console.error("[AudioPlayer] Failed to record listen. Details:", {
             errorMessage: error.message,
             requestUrl: requestUrl,
             songId: songId,
-            errorResponse: error.response?.data, // Показываем ответ от сервера, если он есть
+            errorResponse: error.response?.data,
           });
         });
     }
-  }, [currentTime, isPlaying, currentSong, user]);
-  // ----------------------------------------------------
-
+  }, [currentTime, isPlaying, currentSong, user, isOffline]); // <-- Добавляем isOffline в зависимости
   return null;
 };
 

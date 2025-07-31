@@ -11,11 +11,12 @@ import PlaylistGrid from "../SearchPage/PlaylistGrid";
 import { useMixesStore } from "../../stores/useMixesStore";
 import MixGrid from "./MixGrid";
 import { useAuthStore } from "../../stores/useAuthStore";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { useOfflineStore } from "@/stores/useOfflineStore";
 
 const HomePage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const {
     fetchFeaturedSongs,
     fetchMadeForYouSongs,
@@ -44,19 +45,22 @@ const HomePage = () => {
 
   const { initializeQueue, toggleShuffle, isShuffle, currentSong } =
     usePlayerStore();
+  const { isOffline } = useOfflineStore();
 
   useEffect(() => {
-    fetchFeaturedSongs();
-    fetchTrendingSongs();
-    fetchDailyMixes();
-
-    fetchPublicPlaylists();
-    if (user) {
-      fetchMadeForYouSongs();
-      fetchRecentlyListenedSongs();
+    if (!isOffline) {
+      fetchFeaturedSongs();
+      fetchTrendingSongs();
+      fetchDailyMixes();
+      fetchPublicPlaylists();
+      if (user) {
+        fetchMadeForYouSongs();
+        fetchRecentlyListenedSongs();
+      }
     }
   }, [
     user,
+    isOffline,
     fetchFeaturedSongs,
     fetchTrendingSongs,
     fetchMadeForYouSongs,
