@@ -40,6 +40,10 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   error: null,
 
   fetchLibrary: async () => {
+    if (useOfflineStore.getState().isOffline) {
+      console.log("[Offline] Skipping fetchLibrary.");
+      return;
+    }
     set({ isLoading: true, error: null });
     try {
       console.log("useLibraryStore: Attempting to fetch all library data...");
@@ -114,6 +118,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleAlbum: async (albumId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       await axiosInstance.post("/library/albums/toggle", { albumId });
       await get().fetchLibrary(); // Полное обновление - самый надежный способ
@@ -124,6 +130,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleSongLike: async (songId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       await axiosInstance.post("/library/songs/toggle-like", { songId });
       // Можно обновлять точечно или полностью
@@ -135,6 +143,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   togglePlaylist: async (playlistId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       await axiosInstance.post("/library/playlists/toggle", { playlistId });
       await get().fetchLibrary();
@@ -145,6 +155,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleArtistFollow: async (artistId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       await axiosInstance.post("/library/artists/toggle", { artistId });
       await get().fetchLibrary();
@@ -156,6 +168,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   // --- НОВАЯ ФУНКЦИЯ ДЛЯ ПЕРЕКЛЮЧЕНИЯ МИКСОВ ---
   toggleMixInLibrary: async (mixId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       await axiosInstance.post("/library/mixes/toggle", { mixId });
       // После изменения вызываем полное обновление, чтобы все компоненты получили свежие данные
