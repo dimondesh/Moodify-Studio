@@ -94,6 +94,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   initSocket: async (mongoDbUserId: string) => {
+    if (useOfflineStore.getState().isOffline) {
+      console.log("[Offline] Skipping initSocket.");
+      return;
+    }
     if (!mongoDbUserId) {
       console.warn(
         "initSocket: MongoDB User ID is missing or invalid. Cannot initialize socket."

@@ -99,6 +99,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   // И эта тоже
   fetchFollowedArtists: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const res = await axiosInstance.get("/library/artists");

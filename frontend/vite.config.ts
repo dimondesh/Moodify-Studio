@@ -13,12 +13,17 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      includeAssets: [
+        "Moodify.png",
+        "liked.png",
+        "default-album-cover.png",
+        "ir/*.wav", // Кешируем все файлы реверберации
+        "robots.txt",
+        "Moodify.svg", // Добавляем и другие важные ассеты
+      ],
       workbox: {
-        globPatterns: [
-          "**/*.{js,css,html,ico,png,svg,wav}",
-          "public/*.png",
-          "public/ir/*.wav",
-        ],
+        globPatterns: ["**/*.{js,css,html,ico,svg}"],
+
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 
         runtimeCaching: [
