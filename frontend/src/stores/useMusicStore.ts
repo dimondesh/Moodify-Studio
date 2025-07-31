@@ -197,6 +197,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbums: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/albums");
@@ -225,6 +227,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
           } else {
             throw new Error("Album not found in offline storage.");
           }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
           const errorMsg = "Failed to load album from offline storage.";
           set({ currentAlbum: null, error: errorMsg, isLoading: false });
@@ -252,6 +255,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchFeaturedSongs: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/featured");
@@ -264,6 +269,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchMadeForYouSongs: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/made-for-you");
@@ -275,6 +282,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchRecentlyListenedSongs: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     try {
       const response = await axiosInstance.get("/songs/history");
       set({ recentlyListenedSongs: response.data.songs || [] });
@@ -288,6 +297,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchTrendingSongs: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/trending");
@@ -314,6 +325,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
 
   fetchArtists: async () => {
     // НОВАЯ ФУНКЦИЯ
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/artists"); // Предполагаемый роут для получения всех артистов

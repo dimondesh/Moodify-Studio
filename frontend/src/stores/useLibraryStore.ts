@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types"; // Убедитесь, что Mix импортирован
+import { useOfflineStore } from "./useOfflineStore";
 
 interface LibraryStore {
   albums: Album[];
@@ -82,6 +83,8 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   // Эта функция тоже может быть удалена, если вызывается только fetchLibrary
   fetchLikedSongs: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const res = await axiosInstance.get("/library/liked-songs");

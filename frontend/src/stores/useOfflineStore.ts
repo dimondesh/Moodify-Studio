@@ -12,6 +12,7 @@ import {
 import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
+import { useLibraryStore } from "./useLibraryStore"; // <-- Импорт стора библиотеки
 
 type DownloadableItemData = Album | Playlist | Mix;
 type DownloadableItemWithValue = (Album | Playlist | Mix) & {
@@ -90,6 +91,30 @@ export const useOfflineStore = create<OfflineState>()(
             return;
           }
 
+          // --- ИЗМЕНЕНИЕ: Авто-добавление в библиотеку ---
+          const library = useLibraryStore.getState();
+          let isInLibrary = false;
+          switch (itemType) {
+            case "albums":
+              isInLibrary = library.albums.some(
+                (album) => album._id === itemId
+              );
+              if (!isInLibrary) await library.toggleAlbum(itemId);
+              break;
+            case "playlists":
+              isInLibrary = library.playlists.some((pl) => pl._id === itemId);
+              if (!isInLibrary) await library.togglePlaylist(itemId);
+              break;
+            case "mixes":
+              isInLibrary = library.isMixSaved(itemId);
+              if (!isInLibrary) await library.toggleMixInLibrary(itemId);
+              break;
+          }
+          if (!isInLibrary) {
+            toast.success("Added to your library for offline access.");
+          }
+          // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
           set((state) => ({
             downloadingItemIds: new Set(state.downloadingItemIds).add(itemId),
           }));
@@ -121,7 +146,6 @@ export const useOfflineStore = create<OfflineState>()(
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
 
-            // --- ИЗМЕНЕНИЕ: Индивидуальное кеширование ---
             for (const url of allUrls) {
               try {
                 const cache = url.includes("cloudinary")
@@ -132,7 +156,6 @@ export const useOfflineStore = create<OfflineState>()(
                 console.warn(`Could not cache URL: ${url}`, cacheError);
               }
             }
-            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
             const itemToSave: DownloadableItemWithValue = {
               ...itemData,
@@ -172,7 +195,6 @@ export const useOfflineStore = create<OfflineState>()(
               newDownloading.delete(itemId);
               return { downloadingItemIds: newDownloading };
             });
-            // Re-throw to be caught by toast.promise if used
             throw error;
           }
         },

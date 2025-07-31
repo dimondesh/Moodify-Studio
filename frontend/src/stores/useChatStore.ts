@@ -7,6 +7,7 @@ import { io, Socket } from "socket.io-client";
 import type { DefaultEventsMap } from "@socket.io/component-emitter";
 import { auth } from "../lib/firebase";
 import { useAuthStore } from "./useAuthStore";
+import { useOfflineStore } from "./useOfflineStore";
 
 interface ChatStore {
   users: User[];
@@ -53,6 +54,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setSelectedUser: (user) => set({ selectedUser: user }),
 
   fetchUsers: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     const { user: authUser } = useAuthStore.getState();
     if (!authUser || !authUser.id) {
       console.warn(
@@ -275,6 +278,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   fetchMessages: async (userId: string) => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const currentUser = auth.currentUser;

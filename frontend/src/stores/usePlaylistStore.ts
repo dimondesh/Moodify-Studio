@@ -57,6 +57,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   setDominantColor: (color: string) => set({ dominantColor: color }), // <--
 
   fetchMyPlaylists: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/playlists/my");
@@ -72,6 +74,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   fetchPublicPlaylists: async () => {
+    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/playlists/public");
