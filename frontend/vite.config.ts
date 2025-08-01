@@ -69,7 +69,17 @@ export default defineConfig({
           },
         ],
       },
-      includeAssets: ["**/*.png", "**/*.svg", "**/*.wav", "robots.txt"],
+      includeAssets: [
+        "Moodify.png",
+        "Moodify.svg",
+        "liked.png",
+        "liked.svg",
+        "default-album-cover.png",
+        "robots.txt",
+        "ir/small-room.wav",
+        "ir/medium-room.wav",
+        "ir/large-hall.wav",
+      ],
       manifest: {
         name: "Moodify",
         short_name: "Moodify",
