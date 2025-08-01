@@ -12,16 +12,8 @@ export default defineConfig({
             devOptions: {
                 enabled: true,
             },
-            includeAssets: [
-                "Moodify.png",
-                "liked.png",
-                "default-album-cover.png",
-                "ir/*.wav", // Кешируем все файлы реверберации
-                "robots.txt",
-                "Moodify.svg", // Добавляем и другие важные ассеты
-            ],
             workbox: {
-                globPatterns: ["**/*.{js,css,html,ico,svg}"],
+                globPatterns: ["**/*.{js,css,html,ico,png,svg,wav}"],
                 maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
                 runtimeCaching: [
                     {
@@ -75,6 +67,17 @@ export default defineConfig({
                     },
                 ],
             },
+            includeAssets: [
+                "Moodify.png",
+                "Moodify.svg",
+                "liked.png",
+                "liked.svg",
+                "default-album-cover.png",
+                "robots.txt",
+                "ir/small-room.wav",
+                "ir/medium-room.wav",
+                "ir/large-hall.wav",
+            ],
             manifest: {
                 name: "Moodify",
                 short_name: "Moodify",
@@ -86,11 +89,13 @@ export default defineConfig({
                         src: "Moodify.png",
                         sizes: "192x192",
                         type: "image/png",
+                        purpose: "any maskable", // <-- Добавлено для лучшей поддержки PWA
                     },
                     {
                         src: "Moodify.png",
                         sizes: "512x512",
                         type: "image/png",
+                        purpose: "any maskable", // <-- Добавлено для лучшей поддержки PWA
                     },
                 ],
             },
