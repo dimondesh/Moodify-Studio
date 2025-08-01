@@ -469,11 +469,11 @@ class WebAudioService {
       return;
     }
 
-    // Проверяем кэш
+    // 1. Проверяем быстрый кэш в памяти (для текущей сессии)
     if (this.irBufferCache.has(roomSize)) {
       this.convolverNode.buffer = this.irBufferCache.get(roomSize)!;
-      console.log(`IR file for ${roomSize} loaded from cache.`);
-      this.applySettingsToGraph(); // Вызываем applySettingsToGraph после загрузки из кэша
+      console.log(`IR file for ${roomSize} loaded from memory cache.`);
+      this.applySettingsToGraph();
       return;
     }
 
@@ -484,32 +484,52 @@ class WebAudioService {
     }
 
     try {
-      console.log(`Loading IR file from: ${url}`);
-      const response = await fetch(url);
-      if (!response.ok) {
-        // Логируем статус и текст статуса для лучшей отладки
-        console.error(
-          `Failed to load IR file: HTTP status ${response.status}, ${response.statusText}`
+      // --- НАЧАЛО ИЗМЕНЕНИЯ: Программное кэширование ---
+
+      // 2. Определяем имя кэша и пытаемся получить доступ к нему
+      const cacheName = "moodify-ir-files-cache"; // Специальный кэш для IR-файлов
+      const cache = await caches.open(cacheName);
+      let response = await cache.match(url);
+
+      // 3. Если ответа нет в кэше, загружаем его из сети и сохраняем
+      if (!response) {
+        console.log(
+          `[Cache] IR file not found for ${url}. Fetching from network and caching...`
         );
-        throw new Error(`Failed to load IR file: ${response.statusText}`);
+        // Загружаем из сети
+        const fetchResponse = await fetch(url);
+        if (!fetchResponse.ok) {
+          throw new Error(
+            `Failed to fetch IR file: ${fetchResponse.status} ${fetchResponse.statusText}`
+          );
+        }
+        // Клонируем ответ, так как его тело можно прочитать только один раз
+        // Один клон пойдет в кэш, другой - для декодирования
+        await cache.put(url, fetchResponse.clone());
+        response = fetchResponse; // Используем оригинальный ответ для дальнейшей обработки
+      } else {
+        console.log(`[Cache] IR file for ${url} loaded from Cache Storage.`);
       }
+
+      // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
-      this.irBufferCache.set(roomSize, audioBuffer); // Кэшируем буфер
+      // Сохраняем в кэш в памяти для быстрого доступа в этой же сессии
+      this.irBufferCache.set(roomSize, audioBuffer);
       this.convolverNode.buffer = audioBuffer;
       console.log(`IR file for ${roomSize} loaded and set.`);
-      this.applySettingsToGraph(); // Вызываем applySettingsToGraph после успешной загрузки
+      this.applySettingsToGraph();
     } catch (error) {
       console.error(
         `Error loading or decoding IR file for ${roomSize}:`,
         error
       );
-      // В случае ошибки, можно сбросить convolverNode.buffer или использовать запасной
       if (this.convolverNode) {
         this.convolverNode.buffer = null;
       }
-      this.applySettingsToGraph(); // Вызываем applySettingsToGraph даже при ошибке, чтобы обновить граф
+      this.applySettingsToGraph();
     }
   }
 
