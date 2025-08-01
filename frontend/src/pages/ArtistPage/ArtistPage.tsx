@@ -14,6 +14,7 @@ import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
 import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
 import { Helmet } from "react-helmet-async";
+import { useOfflineStore } from "@/stores/useOfflineStore";
 
 const ArtistPage = () => {
   const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
@@ -35,6 +36,8 @@ const ArtistPage = () => {
 
   useEffect(() => {
     const fetchArtistData = async () => {
+      if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+
       if (!id) {
         setError("Artist ID is missing.");
         setLoading(false);
