@@ -1,12 +1,21 @@
 {
-  "rewrites": [
-	{"source": "/(.*)", "destination": "/"}
-  ],
   "redirects": [
     {
+      "has": [
+        {
+          "type": "host",
+          "value": "moodify-ruddy.vercel.app"
+        }
+      ],
       "source": "/(.*)",
-      "destination": "https://moodify-music.com/$1",
+      "destination": "https://moodify-music.vercel.app/$1",
       "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
