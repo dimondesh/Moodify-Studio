@@ -123,7 +123,7 @@ const MixDetailsPage = () => {
     return (
       <>
         <Helmet>
-          <title>Mix Not Found | Moodify</title>
+          <title>Mix Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested daily mix could not be found or has expired."
@@ -146,7 +146,7 @@ const MixDetailsPage = () => {
     return (
       <>
         <Helmet>
-          <title>Mix Not Found | Moodify</title>
+          <title>Mix Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested daily mix could not be found or has expired."
@@ -173,7 +173,7 @@ const MixDetailsPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`${currentMix.name} | Moodify`}</title>
+        <title>{`${currentMix.name}`}</title>
         <meta
           name="description"
           content={`Listen to ${currentMix.name}. A daily mix of songs based on your listening habits for '${currentMix.sourceName}'.`}

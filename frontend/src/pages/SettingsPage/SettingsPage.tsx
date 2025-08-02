@@ -116,7 +116,7 @@ const SettingsPage: React.FC = () => {
     <>
       {" "}
       <Helmet>
-        <title>Settings - Moodify</title>
+        <title>Settings</title>
         <meta
           name="description"
           content="Manage your language preferences and audio settings, including equalizer, reverb, and normalization, on Moodify."
@@ -365,16 +365,21 @@ const SettingsPage: React.FC = () => {
               </p>
             </div>
           </Card>
-          {/* ===== 4. НОВЫЙ РАЗДЕЛ ДЛЯ СКАЧИВАНИЙ ===== */}
-          <h1 className="text-3xl font-bold text-white mb-6 mt-8">Downloads</h1>
+          <h1 className="text-3xl font-bold text-white mb-6 mt-8">
+            {" "}
+            {t("settings.downloads")}
+          </h1>
           <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
             <div>
               <Label className="text-xl font-semibold mb-4 block">
-                Storage Management
+                {t("settings.storage")}
               </Label>
               <div className="bg-zinc-700/50 p-4 rounded-md">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-zinc-400">Used Storage</span>
+                  <span className="text-zinc-400">
+                    {" "}
+                    {t("settings.usedStorage")}
+                  </span>
                   <span className="font-semibold">
                     {formatBytes(storageUsage.usage)}
                   </span>
@@ -390,7 +395,8 @@ const SettingsPage: React.FC = () => {
                   ></div>
                 </div>
                 <p className="text-xs text-zinc-500 mt-2 text-right">
-                  Total available: {formatBytes(storageUsage.quota)}
+                  {t("settings.totalAvailable") + " "}
+                  {formatBytes(storageUsage.quota)}
                 </p>
               </div>
 
@@ -400,11 +406,10 @@ const SettingsPage: React.FC = () => {
                   variant="destructive"
                   className="w-full"
                 >
-                  Clear All Downloads
+                  {t("settings.clearAllDownloads")}
                 </Button>
                 <p className="text-zinc-400 text-sm mt-2 text-center">
-                  This will remove all downloaded songs, albums, and playlists
-                  from this device.
+                  {t("settings.clearLabel")}
                 </p>
               </div>
             </div>

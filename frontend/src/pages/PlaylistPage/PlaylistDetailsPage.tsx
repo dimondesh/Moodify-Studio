@@ -297,7 +297,7 @@ const PlaylistDetailsPage = () => {
       <>
         {" "}
         <Helmet>
-          <title>Playlist Not Found | Moodify</title>
+          <title>Playlist Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested playlist could not be found or is private."
@@ -340,7 +340,7 @@ const PlaylistDetailsPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`${currentPlaylist.title} by ${ownerName} | Moodify`}</title>
+        <title>{`${currentPlaylist.title} by ${ownerName}`}</title>
         <meta name="description" content={metaDescription.substring(0, 160)} />
       </Helmet>
       <div className="h-full">

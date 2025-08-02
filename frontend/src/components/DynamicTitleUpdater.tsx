@@ -23,7 +23,7 @@ const DynamicTitleUpdater = () => {
 
       if (isLyricsOpen) {
         // Приоритет №1: Открыт текст песни
-        document.title = `Lyrics: ${currentSong.title} by ${artistName} | Moodify`;
+        document.title = `Lyrics: ${currentSong.title} by ${artistName}`;
       } else if (isPlaying) {
         // Приоритет №2: Песня играет
         document.title = `${currentSong.title} • ${artistName}`;

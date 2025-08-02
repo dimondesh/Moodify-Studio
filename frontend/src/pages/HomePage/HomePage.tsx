@@ -99,7 +99,7 @@ const HomePage = () => {
   return (
     <>
       <Helmet>
-        <title>Home - Moodify</title>
+        <title>Home</title>
         <meta
           name="description"
           content="Listen to trending music, discover personal mixes, and explore public playlists. Moodify - your ultimate guide in the world of music."

@@ -139,7 +139,7 @@ const LikedSongsPage = () => {
     <>
       {" "}
       <Helmet>
-        <title>Liked Songs - Moodify</title>
+        <title>Liked Songs</title>
         <meta
           name="description"
           content={`Your collection of ${songsCount} liked songs. Play all your favorite tracks saved on Moodify.`}

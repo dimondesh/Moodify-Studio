@@ -9,7 +9,7 @@ const OfflinePage = () => {
   return (
     <>
       <Helmet>
-        <title>Offline | Moodify</title>
+        <title>Offline</title>
       </Helmet>
       <div className="h-full flex flex-col items-center justify-center text-center p-4">
         <WifiOff className="size-24 text-zinc-500 mb-8" />

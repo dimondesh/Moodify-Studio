@@ -112,7 +112,13 @@
     "waveAnalyzer": "Wave Analyzer",
     "waveAnalyzerDesc": "Show wave visualizer in the topbar.",
     "resetAudio": "Reset All Audio Settings",
-    "resetAudioDesc": "Resets equalizer, normalization, and wave analyzer settings to default values."
+    "resetAudioDesc": "Resets equalizer, normalization, and wave analyzer settings to default values.",
+    "downloads": "Downloads",
+    "storage": "Storage Management",
+    "usedStorage": "Used Storage",
+    "totalAvailable": "Total Available",
+    "clearAllDownloads": "Clear All Downloads",
+    "clearLabel": "This will remove all downloaded songs, albums, and playlists from this device."
   },
   "admin": {
     "unauthorized": "Unauthorized",

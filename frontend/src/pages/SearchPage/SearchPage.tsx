@@ -47,7 +47,7 @@ const SearchPage = () => {
     <>
       {" "}
       <Helmet>
-        <title>{`${title} | Moodify`}</title>
+        <title>{`${title}`}</title>
         <meta name="description" content={description} />
       </Helmet>
       <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">

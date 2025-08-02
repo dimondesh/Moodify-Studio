@@ -95,7 +95,7 @@ const ChatPage = () => {
     <>
       {" "}
       <Helmet>
-        <title>Chat | Moodify</title>
+        <title>Chat</title>
         {/* Этот тег говорит поисковикам не индексировать эту страницу */}
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>

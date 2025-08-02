@@ -71,7 +71,7 @@ const ArtistPage = () => {
     return (
       <>
         <Helmet>
-          <title>Loading... | Moodify</title>
+          <title>Loading...</title>
         </Helmet>
         <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
           <p>{t("pages.artist.loading")}</p>
@@ -85,7 +85,7 @@ const ArtistPage = () => {
       <>
         {" "}
         <Helmet>
-          <title>Artist Not Found | Moodify</title>
+          <title>Artist Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested artist could not be found on Moodify."
@@ -102,7 +102,7 @@ const ArtistPage = () => {
     return (
       <>
         <Helmet>
-          <title>Artist Not Found | Moodify</title>
+          <title>Artist Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested artist could not be found on Moodify."
@@ -178,7 +178,7 @@ const ArtistPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`${artist.name} | Moodify`}</title>
+        <title>{`${artist.name}`}</title>
         <meta name="description" content={metaDescription} />
       </Helmet>
       <main className="rounded-md overflow-hidden h-full bg-zinc-950">

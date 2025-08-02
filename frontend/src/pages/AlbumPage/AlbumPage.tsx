@@ -77,7 +77,7 @@ const AlbumPage = () => {
     return (
       <>
         <Helmet>
-          <title>Album Not Found | Moodify</title>
+          <title>Album Not Found</title>
           <meta
             name="description"
             content="Sorry, the requested album could not be found on Moodify."
@@ -121,7 +121,7 @@ const AlbumPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`${currentAlbum.title} - ${artistNames} | Moodify`}</title>
+        <title>{`${currentAlbum.title} - ${artistNames}`}</title>
         <meta name="description" content={metaDescription} />
       </Helmet>
       <div className="h-full">

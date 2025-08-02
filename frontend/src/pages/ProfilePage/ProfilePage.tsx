@@ -117,7 +117,7 @@ const ProfilePage = () => {
     return (
       <>
         <Helmet>
-          <title>User Not Found | Moodify</title>
+          <title>User Not Found</title>
           <meta
             name="description"
             content="The user profile you are looking for does not exist on Moodify."
@@ -133,7 +133,7 @@ const ProfilePage = () => {
     <>
       {" "}
       <Helmet>
-        <title>{`${profileData.fullName}'s Profile | Moodify`}</title>
+        <title>{`${profileData.fullName}'s Profile`}</title>
         <meta name="description" content={metaDescription} />
       </Helmet>
       <ScrollArea className="h-full">

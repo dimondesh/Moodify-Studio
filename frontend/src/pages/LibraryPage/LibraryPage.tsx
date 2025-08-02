@@ -203,7 +203,7 @@ const LibraryPage = () => {
   return (
     <>
       <Helmet>
-        <title>Your Library - Moodify</title>
+        <title>Your Library</title>
         <meta
           name="description"
           content="Access your saved albums, playlists, followed artists, and liked songs all in one place on Moodify."
