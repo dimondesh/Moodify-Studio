@@ -4,9 +4,7 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { FastAverageColor } from "fast-average-color";
 import { useCallback } from "react";
 
-// --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
-// Создаем экземпляр ОДИН РАЗ за пределами хука.
-// Теперь это стабильная константа для всего приложения.
+// Создаем экземпляр ОДИН РАЗ за пределами хука для лучшей производительности.
 const fac = new FastAverageColor();
 
 export const useDominantColor = () => {
@@ -14,20 +12,60 @@ export const useDominantColor = () => {
 
   const extractColor = useCallback(
     async (imageUrl: string) => {
+      // Переменная для временного URL, чтобы мы могли его очистить
+      let objectUrl: string | null = null;
+
       try {
-        const color = await fac.getColorAsync(imageUrl);
-        // Теперь get.State() не нужен, так как мы не в Zustand
+        // 1. Загружаем изображение с CORS, чтобы получить читаемый ответ
+        const response = await fetch(imageUrl, { mode: "cors" });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+
+        // 2. Преобразуем ответ в Blob
+        const imageBlob = await response.blob();
+
+        // 3. Создаем временный локальный URL для этого Blob'а
+        objectUrl = URL.createObjectURL(imageBlob);
+
+        // 4. Создаем HTMLImageElement и ждем его загрузки.
+        // Это необходимо, так как getColorAsync ожидает загруженный элемент.
+        const imageElement = await new Promise<HTMLImageElement>(
+          (resolve, reject) => {
+            const img = new Image();
+            // Важно: устанавливаем crossorigin, чтобы избежать "загрязнения" холста (canvas)
+            img.crossOrigin = "Anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = (err) => reject(err);
+            img.src = objectUrl!;
+          }
+        );
+
+        // 5. Получаем цвет из загруженного элемента изображения
+        const color = await fac.getColorAsync(imageElement);
+
+        // Обновляем состояние, если цвет изменился
         if (usePlayerStore.getState().dominantColor !== color.hex) {
           setDominantColor(color.hex);
         }
-        // Возвращаем цвет, чтобы его можно было использовать напрямую
+
         return color.hex;
       } catch (error) {
         console.error("Ошибка при извлечении цвета:", error);
-        return null; // Возвращаем null в случае ошибки
+
+        const fallbackColor = "#18181b";
+        if (usePlayerStore.getState().dominantColor !== fallbackColor) {
+          setDominantColor(fallbackColor);
+        }
+        return fallbackColor;
+      } finally {
+        // 6. ВАЖНО: Освобождаем память, удаляя временный URL
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
       }
     },
-    [setDominantColor] // Теперь `fac` не нужно в зависимостях, так как он стабилен
+    [setDominantColor]
   );
 
   const resetDominantColor = useCallback(() => {
