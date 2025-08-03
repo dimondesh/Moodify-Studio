@@ -12,7 +12,7 @@ import AudioPlayer from "./AudioPlayer";
 import PlaybackControls from "./PlaybackControls";
 import Topbar from "../components/ui/Topbar";
 import BottomNavigationBar from "./BottomNavigationBar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage"; // Убедитесь, что этот путь правильный
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
@@ -25,10 +25,37 @@ const MainLayout = () => {
   const {
     currentSong,
     isFullScreenPlayerOpen,
+    isPlaying,
+
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen, // <--- Важно
     // setIsFullScreenPlayerOpen // Нам не нужно это здесь, если мы не будем его напрямую менять из MainLayout
   } = usePlayerStore();
+
+  const silentAudioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const silentAudio = silentAudioRef.current;
+    if (!silentAudio) return;
+
+    if (isPlaying) {
+      // Пытаемся запустить воспроизведение. На iOS это может не сработать сразу,
+      // но сработает после первого взаимодействия пользователя с основным плеером.
+      const playPromise = silentAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.log("Silent audio play was prevented.", error);
+          // Это нормально при первой загрузке страницы, браузер блокирует автоплей.
+          // После того как пользователь нажмет play на основном плеере, эта проблема исчезнет.
+        });
+      }
+    } else {
+      silentAudio.pause();
+    }
+  }, [isPlaying]);
+  // =======================================================================
+  // ===== КОНЕЦ ИСПРАВЛЕНИЯ ДЛЯ ФОНОВОГО ВОСПРОИЗВЕДЕНИЯ НА iOS =====
+  // =======================================================================
 
   useEffect(() => {
     const checkScreenSize = () => {
