@@ -78,7 +78,7 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
 };
 
 const PlaybackControls = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const {
@@ -123,6 +123,88 @@ const PlaybackControls = () => {
   const dominantColor = usePlayerStore((state) => state.dominantColor);
   const currentSongImage = currentSong?.imageUrl;
   const lastImageUrlRef = useRef<string | null>(null);
+
+  // =========================================================================
+  // ===== НОВЫЙ ЭФФЕКТ ДЛЯ MEDIA SESSION API (УПРАВЛЕНИЕ С ЭКРАНА БЛОКИРОВКИ) =====
+  // =========================================================================
+  useEffect(() => {
+    if ("mediaSession" in navigator) {
+      if (!currentSong) {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+        return;
+      }
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentSong.title,
+        artist: getArtistNames(currentSong.artist, []),
+        album: currentSong.albumTitle || "",
+        artwork: [
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "96x96",
+            type: "image/png",
+          },
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "128x128",
+            type: "image/png",
+          },
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "256x256",
+            type: "image/png",
+          },
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "384x384",
+            type: "image/png",
+          },
+          {
+            src: currentSong.imageUrl || "/Moodify.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      });
+
+      navigator.mediaSession.setActionHandler("play", () => {
+        if (!isPlaying) togglePlay();
+      });
+
+      navigator.mediaSession.setActionHandler("pause", () => {
+        if (isPlaying) togglePlay();
+      });
+
+      navigator.mediaSession.setActionHandler("nexttrack", () => {
+        playNext();
+      });
+
+      navigator.mediaSession.setActionHandler("previoustrack", () => {
+        if (currentTime > 3) {
+          setPlayerCurrentTime(0);
+        } else {
+          playPrevious();
+        }
+      });
+    }
+  }, [
+    currentSong,
+    isPlaying,
+    playNext,
+    playPrevious,
+    togglePlay,
+    currentTime,
+    setPlayerCurrentTime,
+  ]);
 
   useEffect(() => {
     if (
