@@ -73,8 +73,16 @@ const AddAlbumFromSpotifyDialog = () => {
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
-          <Plus className="mr-2 h-4 w-4" />
-          {t("admin.albums.addFromSpotify")}
+          <Plus className="mr-0 md:mr-2 h-4 w-4" />
+          <p className="hidden md:inline">
+            {" "}
+            {t("admin.albums.addFromSpotify")}
+          </p>{" "}
+          <img
+            src="/Spotify.svg"
+            alt="Spotify logo"
+            className="block md:hidden w-5"
+          />
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200">

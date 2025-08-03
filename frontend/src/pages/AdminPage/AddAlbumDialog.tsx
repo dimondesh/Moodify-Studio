@@ -94,7 +94,7 @@ const AddAlbumDialog = () => {
       <DialogTrigger asChild>
         <Button className="bg-violet-500 hover:bg-violet-600 text-white">
           <Plus className="mr-2 h-4 w-4" />
-          {t("admin.albums.add")}
+          <p className="hidden md:inline"> {t("admin.albums.add")}</p>{" "}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-200">
