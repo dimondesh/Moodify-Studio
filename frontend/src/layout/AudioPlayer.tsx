@@ -153,6 +153,48 @@ const AudioPlayer = () => {
     };
   }, []);
 
+  // =========================================================================
+  // ===== НОВЫЙ ЭФФЕКТ ДЛЯ РЕШЕНИЯ ПРОБЛЕМЫ ВОСПРОИЗВЕДЕНИЯ НА iOS =====
+  // =========================================================================
+  useEffect(() => {
+    const audioContext = audioContextRef.current;
+    if (!audioContext) return;
+
+    const handleVisibilityChange = () => {
+      // Когда пользователь возвращается на вкладку
+      if (document.visibilityState === "visible") {
+        if (audioContext.state === "suspended") {
+          console.log(
+            "AudioPlayer: Контекст был приостановлен, возобновляю..."
+          );
+          audioContext
+            .resume()
+            .catch((e) =>
+              console.error("Не удалось возобновить AudioContext", e)
+            );
+        }
+      }
+    };
+
+    const suspendContext = () => {
+      if (audioContext.state === "running") {
+        audioContext.suspend();
+      }
+    };
+
+    // Слушаем изменение видимости страницы
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // iOS также использует эти события при сворачивании браузера
+    window.addEventListener("pagehide", suspendContext);
+    window.addEventListener("pageshow", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", suspendContext);
+      window.removeEventListener("pageshow", handleVisibilityChange);
+    };
+  }, [isAudioContextReady]); // Запускаем эффект, когда AudioContext готов
+
   // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
     if (!isAudioContextReady) {
@@ -209,9 +251,6 @@ const AudioPlayer = () => {
 
     const loadAudio = async (url: string): Promise<AudioBuffer> => {
       try {
-        // Мы всегда пытаемся сделать fetch. Service Worker его перехватит.
-        // 'cache: "default"' - это стандартное поведение, но мы указываем его явно
-        // для ясности. Service Worker сам решит, идти в сеть или нет.
         const response = await fetch(url, { cache: "default" });
 
         if (!response.ok) {
@@ -230,7 +269,6 @@ const AudioPlayer = () => {
           `[AudioPlayer] Failed to fetch or decode audio from ${url}:`,
           error
         );
-        // Пробрасываем ошибку дальше, чтобы ее обработал `fetchAndDecodeAudio`
         throw error;
       }
     };
