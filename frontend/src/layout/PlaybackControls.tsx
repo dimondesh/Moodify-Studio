@@ -331,7 +331,7 @@ const PlaybackControls = () => {
     return (
       <>
         {!isFullScreenPlayerOpen && (
-          <footer className="fixed bottom-16 left-0 right-0 h-16 sm:h-20 bg-zinc-800 border-t border-zinc-700 px-3 sm:px-4 flex items-center justify-between z-[61]">
+          <footer className="fixed bottom-20 left-0 right-0 h-16 sm:h-20 bg-zinc-800 border-t border-zinc-700 px-3 sm:px-4 flex items-center justify-between z-[61]">
             <div
               className="flex items-center gap-3 flex-1 cursor-pointer min-w-0"
               onClick={() => setIsFullScreenPlayerOpen(true)}
