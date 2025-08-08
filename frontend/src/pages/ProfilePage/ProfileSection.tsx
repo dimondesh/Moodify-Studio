@@ -68,8 +68,11 @@ const ProfileSection = ({ title, items, apiEndpoint }: ProfileSectionProps) => {
                 />
               </div>
             ) : (
-              <Avatar className="w-full h-auto object-cover aspect-square mb-2 transition-transform group-hover:scale-105">
-                <AvatarImage src={item.imageUrl} />
+              <Avatar className="w-auto h-auto object-cover aspect-square mb-2 transition-transform group-hover:scale-105">
+                <AvatarImage
+                  src={item.imageUrl}
+                  className="w-auto h-auto object-cover group-hover:scale-105 transition-all duration-300"
+                />
                 <AvatarFallback>{item.name?.[0] || "?"}</AvatarFallback>
               </Avatar>
             )}

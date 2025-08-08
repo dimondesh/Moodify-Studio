@@ -46,10 +46,10 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
             onClick={() => navigate(`/users/${user._id}`)}
           >
             <div className="relative mb-4">
-              <Avatar className="w-full h-auto aspect-square object-cover shadow-lg">
+              <Avatar className="w-auto h-auto object-cover shadow-lg">
                 <AvatarImage
                   src={user.imageUrl}
-                  className="group-hover:scale-105 transition-all duration-300"
+                  className=" object-cover group-hover:scale-105 transition-all duration-300"
                 />
                 <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
               </Avatar>
