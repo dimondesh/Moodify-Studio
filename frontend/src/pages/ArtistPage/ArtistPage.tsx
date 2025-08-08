@@ -5,7 +5,7 @@ import axios from "axios";
 import { Button } from "../../components/ui/button";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import AlbumGrid from "../SearchPage/AlbumGrid";
-import { Play, Heart, UserPlus, UserCheck, Pause } from "lucide-react";
+import { Play, Heart, UserPlus, UserCheck, Pause, Loader2 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import toast from "react-hot-toast";
 import { useLibraryStore } from "../../stores/useLibraryStore";
@@ -74,7 +74,7 @@ const ArtistPage = () => {
           <title>Loading...</title>
         </Helmet>
         <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
-          <p>{t("pages.artist.loading")}</p>
+          <Loader2 className="animate-spin text-violet-500 size-12" />
         </main>
       </>
     );

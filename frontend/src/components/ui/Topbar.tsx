@@ -68,7 +68,6 @@ const Topbar = () => {
   };
   const handleBlur = () => {
     setQuery("");
-    navigate("/search");
     setIsSearchVisible(false);
   };
 

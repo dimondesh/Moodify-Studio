@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminPage/AddAlbumFromSpotifyDialog.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../../lib/axios";
@@ -162,7 +162,11 @@ const AddAlbumFromSpotifyDialog = () => {
             className="bg-violet-500 hover:bg-violet-600 text-zinc-200"
             disabled={isLoading || !spotifyAlbumUrl || !albumAudioZip}
           >
-            {isLoading ? t("admin.common.loading") : t("admin.albums.add")}
+            {isLoading ? (
+              <Loader2 className="animate-spin text-white size-5" />
+            ) : (
+              t("admin.albums.add")
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

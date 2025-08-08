@@ -11,6 +11,7 @@ import {
   Play,
   PlusCircle,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
@@ -68,9 +69,14 @@ const AlbumPage = () => {
 
   if (isLoading)
     return (
-      <Helmet>
-        <title>Loading Album...</title>
-      </Helmet>
+      <>
+        <Helmet>
+          <title>Loading Album...</title>
+        </Helmet>
+        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
+          <Loader2 className="animate-spin text-violet-500 size-12" />
+        </main>
+      </>
     );
 
   if (!currentAlbum) {
