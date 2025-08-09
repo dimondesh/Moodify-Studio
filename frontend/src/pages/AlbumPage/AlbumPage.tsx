@@ -11,7 +11,6 @@ import {
   Play,
   PlusCircle,
   Heart,
-  Loader2,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
