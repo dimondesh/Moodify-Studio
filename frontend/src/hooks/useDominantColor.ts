@@ -1,8 +1,9 @@
-// src/hooks/useDominantColor.ts
+// frontend/src/hooks/useDominantColor.ts
 
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { FastAverageColor } from "fast-average-color";
 import { useCallback } from "react";
+import { axiosInstance } from "@/lib/axios"; // Убедитесь, что axiosInstance импортирован
 
 // Создаем экземпляр ОДИН РАЗ за пределами хука для лучшей производительности.
 const fac = new FastAverageColor();
@@ -12,30 +13,32 @@ export const useDominantColor = () => {
 
   const extractColor = useCallback(
     async (imageUrl: string) => {
-      // Переменная для временного URL, чтобы мы могли его очистить
       let objectUrl: string | null = null;
+      const fallbackColor = "#18181b"; // Безопасный цвет по умолчанию
 
       try {
-        // 1. Самостоятельно загружаем изображение с 'cors' режимом.
-        // Это гарантирует, что service worker вернет читаемый ответ из кэша.
-        const response = await fetch(imageUrl, { mode: "cors" });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.statusText}`);
-        }
+        // --- НОВОЕ РЕШЕНИЕ: ЗАПРОС ЧЕРЕЗ БЭКЕНД-ПРОКСИ ---
+        // 1. Формируем URL к нашему новому эндпоинту на бэкенде.
+        const proxyUrl = `/songs/image-proxy?url=${encodeURIComponent(
+          imageUrl
+        )}`;
 
-        // 2. Преобразуем ответ в Blob (бинарные данные).
-        const imageBlob = await response.blob();
+        // 2. Запрашиваем изображение через наш прокси.
+        // AxiosInstance автоматически добавит нужные заголовки аутентификации.
+        // Мы ожидаем получить бинарные данные (blob).
+        const response = await axiosInstance.get(proxyUrl, {
+          responseType: "blob",
+        });
+
+        const imageBlob = response.data;
 
         // 3. Создаем временный локальный URL для этого Blob'а.
         objectUrl = URL.createObjectURL(imageBlob);
 
         // 4. Создаем HTMLImageElement и ждем его полной загрузки.
-        // Это необходимо, так как getColorAsync ожидает загруженный элемент.
         const imageElement = await new Promise<HTMLImageElement>(
           (resolve, reject) => {
             const img = new Image();
-            // Важно: устанавливаем crossOrigin, чтобы избежать "загрязнения" холста (canvas),
-            // что является основной причиной проблем на iOS.
             img.crossOrigin = "Anonymous";
             img.onload = () => resolve(img);
             img.onerror = (err) => reject(err);
@@ -53,16 +56,15 @@ export const useDominantColor = () => {
 
         return color.hex;
       } catch (error) {
-        console.error("Ошибка при извлечении цвета:", error);
+        console.error("Ошибка при извлечении цвета через прокси:", error);
 
-        // В случае любой ошибки устанавливаем безопасный фоновый цвет по умолчанию.
-        const fallbackColor = "#18181b";
+        // В случае любой ошибки устанавливаем цвет по умолчанию.
         if (usePlayerStore.getState().dominantColor !== fallbackColor) {
           setDominantColor(fallbackColor);
         }
         return fallbackColor;
       } finally {
-        // 6. КРИТИЧЕСКИ ВАЖНО: Освобождаем память, удаляя временный URL.
+        // 6. КРИТИЧЕСКИ ВАЖНО: Освобождаем память.
         if (objectUrl) {
           URL.revokeObjectURL(objectUrl);
         }

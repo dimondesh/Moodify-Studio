@@ -3,6 +3,7 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   getAllSongs,
   getFeaturedSongs,
+  getImageForColorAnalysis,
   getListenHistory,
   getMadeForYouSongs,
   getTrendingSongs,
@@ -17,5 +18,6 @@ router.get("/made-for-you", protectRoute, getMadeForYouSongs);
 router.get("/trending", getTrendingSongs);
 router.post("/:id/listen", protectRoute, recordListen);
 router.get("/history", protectRoute, getListenHistory);
+router.get("/image-proxy", getImageForColorAnalysis);
 
 export default router;

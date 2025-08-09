@@ -1,6 +1,7 @@
 // backend/src/controller/song.controller.js
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
+import axios from "axios"; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
 
 export const getAllSongs = async (req, res, next) => {
   try {
@@ -257,5 +258,33 @@ export const getListenHistory = async (req, res, next) => {
   } catch (error) {
     console.error("Error fetching listen history:", error);
     next(error);
+  }
+};
+
+export const getImageForColorAnalysis = async (req, res, next) => {
+  try {
+    const { url } = req.query;
+    if (!url) {
+      return res.status(400).send({ message: "Image URL is required" });
+    }
+
+    const decodedUrl = decodeURIComponent(url);
+
+    // Запрашиваем изображение с Cloudinary как поток данных
+    const response = await axios({
+      method: "get",
+      url: decodedUrl,
+      responseType: "stream",
+    });
+
+    // Устанавливаем правильный заголовок Content-Type из ответа Cloudinary
+    res.setHeader("Content-Type", response.headers["content-type"]);
+
+    // Передаем поток изображения напрямую в ответ клиенту
+    response.data.pipe(res);
+  } catch (error) {
+    console.error("Image proxy error:", error.message);
+    // Передаем ошибку в глобальный обработчик
+    next(new Error("Failed to proxy image"));
   }
 };
