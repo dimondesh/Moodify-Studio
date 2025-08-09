@@ -1,41 +1,39 @@
 // frontend/src/hooks/useDominantColor.ts
 
-import { usePlayerStore } from "@/stores/usePlayerStore";
-import { FastAverageColor } from "fast-average-color";
 import { useCallback } from "react";
-import { axiosInstance } from "@/lib/axios"; // Убедитесь, что axiosInstance импортирован
+import { FastAverageColor } from "fast-average-color";
+import { axiosInstance } from "@/lib/axios";
 
 // Создаем экземпляр ОДИН РАЗ за пределами хука для лучшей производительности.
 const fac = new FastAverageColor();
 
+/**
+ * Хук, предоставляющий функцию для извлечения доминантного цвета из изображения.
+ * Больше не зависит от какого-либо хранилища.
+ */
 export const useDominantColor = () => {
-  const setDominantColor = usePlayerStore((state) => state.setDominantColor);
-
   const extractColor = useCallback(
-    async (imageUrl: string) => {
+    async (imageUrl: string | null | undefined): Promise<string> => {
+      // Если URL не предоставлен, сразу возвращаем цвет по умолчанию
+      if (!imageUrl) {
+        return "#18181b";
+      }
+
       let objectUrl: string | null = null;
-      const fallbackColor = "#18181b"; // Безопасный цвет по умолчанию
+      const fallbackColor = "#18181b";
 
       try {
-        // --- НОВОЕ РЕШЕНИЕ: ЗАПРОС ЧЕРЕЗ БЭКЕНД-ПРОКСИ ---
-        // 1. Формируем URL к нашему новому эндпоинту на бэкенде.
+        // Запрашиваем изображение через наш бэкенд-прокси
         const proxyUrl = `/songs/image-proxy?url=${encodeURIComponent(
           imageUrl
         )}`;
-
-        // 2. Запрашиваем изображение через наш прокси.
-        // AxiosInstance автоматически добавит нужные заголовки аутентификации.
-        // Мы ожидаем получить бинарные данные (blob).
         const response = await axiosInstance.get(proxyUrl, {
           responseType: "blob",
         });
 
         const imageBlob = response.data;
-
-        // 3. Создаем временный локальный URL для этого Blob'а.
         objectUrl = URL.createObjectURL(imageBlob);
 
-        // 4. Создаем HTMLImageElement и ждем его полной загрузки.
         const imageElement = await new Promise<HTMLImageElement>(
           (resolve, reject) => {
             const img = new Image();
@@ -46,36 +44,22 @@ export const useDominantColor = () => {
           }
         );
 
-        // 5. Получаем цвет из загруженного элемента изображения.
+        // Получаем и возвращаем цвет
         const color = await fac.getColorAsync(imageElement);
-
-        // Обновляем состояние в сторе, если цвет изменился.
-        if (usePlayerStore.getState().dominantColor !== color.hex) {
-          setDominantColor(color.hex);
-        }
-
         return color.hex;
       } catch (error) {
         console.error("Ошибка при извлечении цвета через прокси:", error);
-
-        // В случае любой ошибки устанавливаем цвет по умолчанию.
-        if (usePlayerStore.getState().dominantColor !== fallbackColor) {
-          setDominantColor(fallbackColor);
-        }
+        // В случае любой ошибки возвращаем цвет по умолчанию
         return fallbackColor;
       } finally {
-        // 6. КРИТИЧЕСКИ ВАЖНО: Освобождаем память.
+        // Очищаем временный URL
         if (objectUrl) {
           URL.revokeObjectURL(objectUrl);
         }
       }
     },
-    [setDominantColor]
-  );
+    []
+  ); // Пустой массив зависимостей, так как функция не зависит от внешних состояний
 
-  const resetDominantColor = useCallback(() => {
-    setDominantColor("#18181b");
-  }, [setDominantColor]);
-
-  return { extractColor, resetDominantColor };
+  return { extractColor };
 };

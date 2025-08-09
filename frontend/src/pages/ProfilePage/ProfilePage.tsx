@@ -17,7 +17,7 @@ import { EditProfileDialog } from "./EditProfileDialog";
 import ProfileSection from "./ProfileSection";
 import { useDominantColor } from "../../hooks/useDominantColor";
 import PlaylistRow from "./PlaylistRow";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
 interface ListItem {
@@ -28,7 +28,7 @@ interface ListItem {
 }
 
 const ProfilePage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
@@ -36,7 +36,11 @@ const ProfilePage = () => {
   const [profileData, setProfileData] = useState<User | null>(null);
   const [followers, setFollowers] = useState<ListItem[]>([]);
   const [following, setFollowing] = useState<ListItem[]>([]);
+
+  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета и его загрузки ---
   const [pageBackgroundColor, setPageBackgroundColor] = useState("#18181b");
+  const [isColorLoading, setIsColorLoading] = useState(true);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -54,21 +58,30 @@ const ProfilePage = () => {
       setFollowers(followersRes.data.items);
       setFollowing(followingRes.data.items);
       setIsFollowingUser(profile.followers.includes(currentUser?.id));
-      if (profile.imageUrl) {
-        const color = await extractColor(profile.imageUrl);
-        setPageBackgroundColor(color || "#18181b");
-      }
     } catch (error) {
       console.error("Failed to fetch profile data:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [userId, currentUser?.id, extractColor]);
+  }, [userId, currentUser?.id]);
 
   useEffect(() => {
     setIsLoading(true);
     fetchProfileData();
   }, [fetchProfileData]);
+
+  // --- ИЗМЕНЕНИЕ 2: Отдельный useEffect для цвета ---
+  useEffect(() => {
+    if (profileData?.imageUrl) {
+      setIsColorLoading(true);
+      extractColor(profileData.imageUrl)
+        .then((color) => setPageBackgroundColor(color || "#18181b"))
+        .finally(() => setIsColorLoading(false));
+    } else if (profileData) {
+      setPageBackgroundColor("#18181b");
+      setIsColorLoading(false);
+    }
+  }, [profileData, extractColor]);
 
   const handleFollow = async () => {
     if (!userId) return;
@@ -99,10 +112,10 @@ const ProfilePage = () => {
   const { user: liveCurrentUser } = useAuthStore();
   const isMyProfile = liveCurrentUser?.id === userId;
 
-  if (isLoading) {
+  // --- ИЗМЕНЕНИЕ 3: Обновленное условие загрузки ---
+  if (isLoading || isColorLoading) {
     return (
       <>
-        {" "}
         <Helmet>
           <title>Loading Profile...</title>
         </Helmet>
@@ -131,7 +144,6 @@ const ProfilePage = () => {
 
   return (
     <>
-      {" "}
       <Helmet>
         <title>{`${profileData.fullName}'s Profile`}</title>
         <meta name="description" content={metaDescription} />

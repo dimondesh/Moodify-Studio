@@ -19,21 +19,20 @@ import { Song } from "../../types";
 import toast from "react-hot-toast";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import Equalizer from "../../components/ui/equalizer";
-import { FastAverageColor } from "fast-average-color";
 import { useMixesStore } from "../../stores/useMixesStore";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
+import { useDominantColor } from "@/hooks/useDominantColor"; // <-- Импорт хука
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
-const fac = new FastAverageColor();
 
 const MixDetailsPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const { mixId } = useParams<{ mixId: string }>();
   const navigate = useNavigate();
   const { currentMix, error, fetchMixById } = useMixesStore();
@@ -41,25 +40,14 @@ const MixDetailsPage = () => {
     useLibraryStore();
   const { playAlbum, togglePlay, isPlaying, currentSong, queue } =
     usePlayerStore();
-  const [localIsLoading, setLocalIsLoading] = useState(true);
-  const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
-  const [dominantColor, setDominantColor] = useState("#18181b");
 
-  useEffect(() => {
-    const imageUrl = currentMix?.imageUrl;
-    if (imageUrl && imageUrl.trim() !== "") {
-      fac
-        .getColorAsync(imageUrl)
-        .then((color) => {
-          setDominantColor(color.hex);
-        })
-        .catch(() => {
-          setDominantColor("#18181b");
-        });
-    } else {
-      setDominantColor("#18181b");
-    }
-  }, [currentMix?.imageUrl]);
+  const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
+  const { extractColor } = useDominantColor();
+
+  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета и его загрузки ---
+  const [dominantColor, setDominantColor] = useState("#18181b");
+  const [isColorLoading, setIsColorLoading] = useState(true);
+  const [localIsLoading, setLocalIsLoading] = useState(true);
 
   const isInLibrary = mixId ? isMixSaved(mixId) : false;
 
@@ -71,6 +59,19 @@ const MixDetailsPage = () => {
     };
     loadMix();
   }, [mixId, fetchMixById]);
+
+  // --- ИЗМЕНЕНИЕ 2: Отдельный useEffect для цвета ---
+  useEffect(() => {
+    if (currentMix?.imageUrl) {
+      setIsColorLoading(true);
+      extractColor(currentMix.imageUrl)
+        .then((color) => setDominantColor(color || "#18181b"))
+        .finally(() => setIsColorLoading(false));
+    } else if (currentMix) {
+      setDominantColor("#18181b");
+      setIsColorLoading(false);
+    }
+  }, [currentMix, extractColor]);
 
   const handlePlayMix = () => {
     if (!currentMix || currentMix.songs.length === 0) return;
@@ -110,7 +111,8 @@ const MixDetailsPage = () => {
     }
   };
 
-  if (localIsLoading)
+  // --- ИЗМЕНЕНИЕ 3: Обновленное условие загрузки ---
+  if (localIsLoading || isColorLoading) {
     return (
       <>
         <Helmet>
@@ -119,6 +121,8 @@ const MixDetailsPage = () => {
         <PlaylistDetailsSkeleton />
       </>
     );
+  }
+
   if (error) {
     return (
       <>
@@ -183,7 +187,7 @@ const MixDetailsPage = () => {
         <ScrollArea className="h-full rounded-md md:pb-0">
           <div className="relative min-h-screen">
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none transition-colors duration-1000"
               aria-hidden="true"
               style={{
                 background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
@@ -262,7 +266,7 @@ const MixDetailsPage = () => {
                 </Button>
                 <DownloadButton
                   itemId={currentMix._id}
-                  itemType="mixes" // Важно: должно совпадать с именем хранилища
+                  itemType="mixes"
                   itemTitle={currentMix.name}
                 />
               </div>

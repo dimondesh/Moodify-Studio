@@ -1,4 +1,3 @@
-/* eslint-disable prefer-const */
 // frontend/src/stores/usePlayerStore.ts
 
 import { create } from "zustand";
@@ -10,12 +9,12 @@ import { useOfflineStore } from "./useOfflineStore";
 interface PlayerStore {
   currentSong: Song | null;
   isPlaying: boolean;
-  queue: Song[]; // Оригинальная очередь
-  currentIndex: number; // Индекс в оригинальной очереди
+  queue: Song[];
+  currentIndex: number;
   repeatMode: "off" | "all" | "one";
   isShuffle: boolean;
-  shuffleHistory: number[]; // История индексов из оригинальной очереди
-  shufflePointer: number; // Указатель на текущий индекс в shuffleHistory
+  shuffleHistory: number[];
+  shufflePointer: number;
   isFullScreenPlayerOpen: boolean;
   vocalsVolume: number;
   masterVolume: number;
@@ -23,8 +22,6 @@ interface PlayerStore {
   duration: number;
   isDesktopLyricsOpen: boolean;
   isMobileLyricsFullScreen: boolean;
-  dominantColor: string | null;
-  setDominantColor: (color: string) => void;
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -71,8 +68,6 @@ export const usePlayerStore = create<PlayerStore>()(
       duration: 0,
       isDesktopLyricsOpen: false,
       isMobileLyricsFullScreen: false,
-      dominantColor: null,
-      setDominantColor: (color: string) => set({ dominantColor: color }),
 
       initializeQueue: (songs: Song[]) => {
         set((state) => {
@@ -284,11 +279,9 @@ export const usePlayerStore = create<PlayerStore>()(
       },
 
       playNext: () => {
-        // --- ВАША ОРИГИНАЛЬНАЯ ЛОГИКА ДЛЯ REPEAT:ONE ---
         if (get().repeatMode === "one") {
           set({ repeatMode: "all" });
         }
-        // --- КОНЕЦ ВАШЕЙ ЛОГИКИ ---
 
         const {
           queue,
@@ -297,7 +290,7 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
           currentIndex,
         } = get();
-        const repeatMode = get().repeatMode; // Получаем обновленный repeatMode
+        const repeatMode = get().repeatMode;
 
         const { isOffline } = useOfflineStore.getState();
         const { isSongDownloaded } = useOfflineStore.getState().actions;
@@ -377,7 +370,6 @@ export const usePlayerStore = create<PlayerStore>()(
       playPrevious: () => {
         const { currentTime } = get();
 
-        // --- ВАША ОРИГИНАЛЬНАЯ ЛОГИКА ---
         if (currentTime > 3) {
           set({ currentTime: 0 });
           return;
@@ -385,7 +377,6 @@ export const usePlayerStore = create<PlayerStore>()(
         if (get().repeatMode === "one") {
           set({ repeatMode: "all" });
         }
-        // --- КОНЕЦ ВАШЕЙ ЛОГИКИ ---
 
         const {
           currentIndex,
@@ -394,7 +385,7 @@ export const usePlayerStore = create<PlayerStore>()(
           shuffleHistory,
           shufflePointer,
         } = get();
-        const repeatMode = get().repeatMode; // Получаем обновленный repeatMode
+        const repeatMode = get().repeatMode;
 
         const { isOffline } = useOfflineStore.getState();
         const { isSongDownloaded } = useOfflineStore.getState().actions;
@@ -446,7 +437,7 @@ export const usePlayerStore = create<PlayerStore>()(
           toast(
             isOffline ? "No previous downloaded songs." : "Start of queue."
           );
-          set({ currentTime: 0 }); // Сбрасываем текущий трек на начало
+          set({ currentTime: 0 });
           return;
         }
 

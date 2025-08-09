@@ -7,7 +7,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import { Button } from "../../components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useDominantColor } from "@/hooks/useDominantColor";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 const parseLrc = (lrcContent: string): LyricLine[] => {
   const lines = lrcContent.split("\n");
@@ -39,7 +39,7 @@ interface LyricsPageProps {
 const LyricsPage: React.FC<LyricsPageProps> = ({
   isMobileFullScreen = false,
 }) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const {
     currentSong,
     currentTime,
@@ -53,15 +53,25 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- ЛОГИКА ЦВЕТА ТЕПЕРЬ ВНУТРИ КОМПОНЕНТА ---
   const { extractColor } = useDominantColor();
-  const dominantColor = usePlayerStore((state) => state.dominantColor);
-  const currentSongImage = currentSong?.imageUrl;
+  const [dominantColor, setDominantColor] = useState("#18181b");
+  const lastImageUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (currentSongImage) {
-      extractColor(currentSong.imageUrl);
+    if (
+      currentSong?.imageUrl &&
+      currentSong.imageUrl !== lastImageUrlRef.current
+    ) {
+      lastImageUrlRef.current = currentSong.imageUrl;
+      extractColor(currentSong.imageUrl).then((color) => {
+        setDominantColor(color || "#18181b");
+      });
+    } else if (!currentSong) {
+      setDominantColor("#18181b");
     }
-  }, [currentSong?.imageUrl, currentSongImage, extractColor]);
+  }, [currentSong, extractColor]);
 
   useEffect(() => {
     if (currentSong?.lyrics) {

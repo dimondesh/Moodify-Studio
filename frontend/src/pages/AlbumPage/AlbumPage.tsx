@@ -20,7 +20,6 @@ import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
-// ИЗМЕНЕНИЕ: Импортируем скелетон, который будем использовать
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 
 const formatDuration = (seconds: number) => {
@@ -44,9 +43,9 @@ const AlbumPage = () => {
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const { extractColor } = useDominantColor();
-  const dominantColor = usePlayerStore((state) => state.dominantColor);
 
-  // --- ИЗМЕНЕНИЕ 1: Добавляем локальное состояние для загрузки цвета ---
+  // --- ЛОКАЛЬНОЕ СОСТОЯНИЕ ДЛЯ ЦВЕТА И ЗАГРУЗКИ ---
+  const [dominantColor, setDominantColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
 
   useEffect(() => {
@@ -55,16 +54,14 @@ const AlbumPage = () => {
     }
   }, [albumId, fetchAlbumbyId]);
 
-  // --- ИЗМЕНЕНИЕ 2: Обновляем эффект для извлечения цвета ---
-  // Теперь он также управляет состоянием isColorLoading
   useEffect(() => {
     if (currentAlbum?.imageUrl) {
-      setIsColorLoading(true); // Начинаем процесс загрузки цвета
-      extractColor(currentAlbum.imageUrl).finally(() => {
-        setIsColorLoading(false); // Завершаем процесс, даже если была ошибка
-      });
+      setIsColorLoading(true);
+      extractColor(currentAlbum.imageUrl)
+        .then((color) => setDominantColor(color || "#18181b"))
+        .finally(() => setIsColorLoading(false));
     } else if (currentAlbum) {
-      // Если у альбома нет картинки, просто завершаем загрузку
+      setDominantColor("#18181b");
       setIsColorLoading(false);
     }
   }, [currentAlbum, extractColor]);
@@ -84,15 +81,12 @@ const AlbumPage = () => {
     setIsToggling(false);
   };
 
-  // --- ИЗМЕНЕНИЕ 3: Обновляем условие отображения скелетона ---
-  // Теперь мы ждем и загрузку данных альбома, и загрузку цвета
   if (isAlbumDataLoading || isColorLoading) {
     return (
       <>
         <Helmet>
           <title>Loading Album...</title>
         </Helmet>
-        {/* Используем тот же самый скелетон, что и для плейлистов для консистентности */}
         <PlaylistDetailsSkeleton />
       </>
     );
@@ -117,16 +111,16 @@ const AlbumPage = () => {
       </>
     );
   }
+
   const artistNames = currentAlbum.artist.map((a) => a.name).join(", ");
   const metaDescription = `Listen to the album "${currentAlbum.title}" by ${artistNames}. Released in ${currentAlbum.releaseYear}. Available now on Moodify.`;
+
   const handlePlayAlbum = () => {
     const isCurrentAlbumPlaying = currentAlbum.songs.some(
       (song) => song._id === currentSong?._id
     );
     if (isCurrentAlbumPlaying) togglePlay();
-    else {
-      playAlbum(currentAlbum.songs, 0);
-    }
+    else playAlbum(currentAlbum.songs, 0);
   };
 
   const handlePlaySong = (index: number) => {
@@ -153,7 +147,7 @@ const AlbumPage = () => {
         <ScrollArea className="h-full rounded-md pb- md:pb-0">
           <div className="relative min-h-screen">
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none transition-colors duration-1000"
               aria-hidden="true"
               style={{
                 background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
@@ -251,7 +245,7 @@ const AlbumPage = () => {
                 )}
                 <DownloadButton
                   itemId={currentAlbum._id}
-                  itemType="albums" // Важно: должно совпадать с именем хранилища в IndexedDB
+                  itemType="albums"
                   itemTitle={currentAlbum.title}
                 />
               </div>

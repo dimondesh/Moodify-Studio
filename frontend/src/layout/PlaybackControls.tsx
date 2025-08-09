@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
-import { useDominantColor } from "@/hooks/useDominantColor";
+import { useDominantColor } from "@/hooks/useDominantColor"; // Наш хук остается прежним!
 import { useAudioSettingsStore } from "../lib/webAudio";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 import {
   Heart,
@@ -119,14 +119,12 @@ const PlaybackControls = () => {
   const topSwipeAreaRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
 
+  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета плеера ---
   const { extractColor } = useDominantColor();
-  const dominantColor = usePlayerStore((state) => state.dominantColor);
-  const currentSongImage = currentSong?.imageUrl;
+  const [playerDominantColor, setPlayerDominantColor] = useState("#18181b");
+
   const lastImageUrlRef = useRef<string | null>(null);
 
-  // =========================================================================
-  // ===== НОВЫЙ ЭФФЕКТ ДЛЯ MEDIA SESSION API (УПРАВЛЕНИЕ С ЭКРАНА БЛОКИРОВКИ) =====
-  // =========================================================================
   useEffect(() => {
     if ("mediaSession" in navigator) {
       if (!currentSong) {
@@ -206,16 +204,18 @@ const PlaybackControls = () => {
     setPlayerCurrentTime,
   ]);
 
+  // --- ИЗМЕНЕНИЕ 2: Эффект для извлечения цвета текущей песни ---
   useEffect(() => {
     if (
-      currentSongImage &&
       currentSong?.imageUrl &&
       currentSong.imageUrl !== lastImageUrlRef.current
     ) {
       lastImageUrlRef.current = currentSong.imageUrl;
-      extractColor(currentSong.imageUrl);
+      extractColor(currentSong.imageUrl).then((color) => {
+        setPlayerDominantColor(color || "#18181b");
+      });
     }
-  }, [currentSong?.imageUrl, extractColor, currentSongImage]);
+  }, [currentSong, extractColor]);
 
   useEffect(() => {
     fetchLikedSongs();
@@ -410,8 +410,9 @@ const PlaybackControls = () => {
             <DialogContent
               aria-describedby={undefined}
               className={`fixed w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
+              // --- ИЗМЕНЕНИЕ 3: Используем локальное состояние для фона ---
               style={{
-                background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
+                background: `linear-gradient(to bottom, ${playerDominantColor} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
                 transition: "background 1s ease-in-out",
               }}
             >

@@ -55,17 +55,16 @@ import {
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
 import Equalizer from "../../components/ui/equalizer";
-import { FastAverageColor } from "fast-average-color";
+import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 };
-const fac = new FastAverageColor();
 
 const PlaylistDetailsPage = () => {
   const { t } = useTranslation();
@@ -88,15 +87,18 @@ const PlaylistDetailsPage = () => {
     toggleSongLike,
   } = useLibraryStore();
 
-  const [localIsLoading, setLocalIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddSongDialogOpen, setIsAddSongDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
-  const [playlistPageDominantColor, setPlaylistPageDominantColor] =
-    useState("#18181b");
+
+  const { extractColor } = useDominantColor();
+  const [dominantColor, setDominantColor] = useState("#18181b");
+  const [isColorLoading, setIsColorLoading] = useState(true);
+  const [localIsLoading, setLocalIsLoading] = useState(true);
+
   const {
     songs: searchSongs,
     loading: searchLoading,
@@ -110,26 +112,6 @@ const PlaylistDetailsPage = () => {
     currentSong,
     queue,
   } = usePlayerStore();
-
-  useEffect(() => {
-    const imageUrl = currentPlaylist?.imageUrl;
-    if (imageUrl && imageUrl.trim() !== "") {
-      fac
-        .getColorAsync(imageUrl)
-        .then((color) => {
-          setPlaylistPageDominantColor(color.hex);
-        })
-        .catch((error) => {
-          console.error(
-            "Ошибка при извлечении цвета для страницы плейлиста:",
-            error
-          );
-          setPlaylistPageDominantColor("#18181b");
-        });
-    } else {
-      setPlaylistPageDominantColor("#18181b");
-    }
-  }, [currentPlaylist?.imageUrl]);
 
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
@@ -145,6 +127,18 @@ const PlaylistDetailsPage = () => {
     };
     loadPlaylist();
   }, [playlistId, fetchPlaylistDetails]);
+
+  useEffect(() => {
+    if (currentPlaylist?.imageUrl) {
+      setIsColorLoading(true);
+      extractColor(currentPlaylist.imageUrl)
+        .then((color) => setDominantColor(color || "#18181b"))
+        .finally(() => setIsColorLoading(false));
+    } else if (currentPlaylist) {
+      setDominantColor("#18181b");
+      setIsColorLoading(false);
+    }
+  }, [currentPlaylist, extractColor]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -185,8 +179,13 @@ const PlaylistDetailsPage = () => {
     }
   };
 
-  const handleSongTitleClick = (albumId: string) =>
-    navigate(`/albums/${albumId}`);
+  // --- ИСПРАВЛЕНИЕ 1: Добавляем проверку на null ---
+  const handleSongTitleClick = (albumId: string | null | undefined) => {
+    if (albumId) {
+      navigate(`/albums/${albumId}`);
+    }
+  };
+
   const handleArtistNameClick = (artistId: string) =>
     navigate(`/artists/${artistId}`);
   const handleOwnerClick = () => {
@@ -269,7 +268,7 @@ const PlaylistDetailsPage = () => {
     }
   };
 
-  if (localIsLoading)
+  if (localIsLoading || isColorLoading) {
     return (
       <>
         <Helmet>
@@ -278,6 +277,7 @@ const PlaylistDetailsPage = () => {
         <PlaylistDetailsSkeleton />
       </>
     );
+  }
 
   if (error) {
     return (
@@ -295,7 +295,6 @@ const PlaylistDetailsPage = () => {
   if (!currentPlaylist) {
     return (
       <>
-        {" "}
         <Helmet>
           <title>Playlist Not Found</title>
           <meta
@@ -347,10 +346,10 @@ const PlaylistDetailsPage = () => {
         <ScrollArea className="h-full rounded-md md:pb-0">
           <div className="relative min-h-screen">
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none transition-colors duration-1000"
               aria-hidden="true"
               style={{
-                background: `linear-gradient(to bottom, ${playlistPageDominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+                background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
               }}
             />
             <div className="relative z-10">
@@ -462,7 +461,7 @@ const PlaylistDetailsPage = () => {
                     </Button>
                     <DownloadButton
                       itemId={currentPlaylist._id}
-                      itemType="playlists" // Важно: должно совпадать с именем хранилища
+                      itemType="playlists"
                       itemTitle={currentPlaylist.title}
                     />
                   </>
@@ -479,7 +478,7 @@ const PlaylistDetailsPage = () => {
                     </Button>
                     <DownloadButton
                       itemId={currentPlaylist._id}
-                      itemType="playlists" // Важно: должно совпадать с именем хранилища
+                      itemType="playlists"
                       itemTitle={currentPlaylist.title}
                     />
 
@@ -547,7 +546,7 @@ const PlaylistDetailsPage = () => {
                 <div className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
                   <div>#</div>
                   <div>{t("pages.playlist.headers.title")}</div>
-                  <div className="hidden md:flex justify-between">
+                  <div className="hidden md:block">
                     {t("pages.playlist.headers.dateAdded")}
                   </div>
                   <div className="flex items-center justify-center">
@@ -587,36 +586,33 @@ const PlaylistDetailsPage = () => {
                               <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
                             )}
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 overflow-hidden">
                             <button
-                              onClick={() => {
-                                if (song.albumId)
-                                  handleSongTitleClick(song.albumId);
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSongTitleClick(song.albumId);
                               }}
+                              className="flex-shrink-0"
                             >
                               <img
                                 src={song.imageUrl || "/default-song-cover.png"}
                                 alt={song.title}
                                 className="size-10 object-cover rounded-md flex-shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "/default-song-cover.png";
-                                }}
                               />
                             </button>
-                            <div className="flex flex-col overflow-hidden">
+                            <div className="flex flex-col min-w-0">
                               <button
-                                onClick={() =>
-                                  song.albumId &&
-                                  handleSongTitleClick(song.albumId)
-                                }
-                                className={`font-medium truncate text-left hover:underline focus:outline-none focus:underline ${
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSongTitleClick(song.albumId);
+                                }}
+                                className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
                                   isCurrentSong
                                     ? "text-violet-400"
                                     : "text-white"
                                 }`}
                               >
-                                {song.title}
+                                <p className="truncate">{song.title}</p>
                               </button>
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
@@ -636,7 +632,7 @@ const PlaylistDetailsPage = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="items-center hidden md:flex justify-baseline text-xs">
+                          <div className="items-center hidden md:flex text-xs">
                             {song.createdAt
                               ? format(new Date(song.createdAt), "MMM dd, yyyy")
                               : "N/A"}
@@ -644,7 +640,7 @@ const PlaylistDetailsPage = () => {
                           <div className="flex items-center text-xs sm:text-sm flex-shrink-0">
                             {formatDuration(song.duration)}
                           </div>
-                          <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
+                          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
                             <Button
                               size="icon"
                               variant="ghost"
@@ -742,9 +738,7 @@ const PlaylistDetailsPage = () => {
                       >
                         <div className="flex flex-col truncate">
                           <button
-                            onClick={() =>
-                              song.albumId && handleSongTitleClick(song.albumId)
-                            }
+                            onClick={() => handleSongTitleClick(song.albumId)}
                             className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
                           >
                             {song.title}
