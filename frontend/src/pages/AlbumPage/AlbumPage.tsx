@@ -18,9 +18,11 @@ import Equalizer from "../../components/ui/equalizer";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { format } from "date-fns";
 import { useDominantColor } from "@/hooks/useDominantColor";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
+// ИЗМЕНЕНИЕ: Импортируем скелетон, который будем использовать
+import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -30,17 +32,43 @@ const formatDuration = (seconds: number) => {
 };
 
 const AlbumPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const { albumId } = useParams();
   const navigate = useNavigate();
-  const { fetchAlbumbyId, currentAlbum, isLoading } = useMusicStore();
+  const {
+    fetchAlbumbyId,
+    currentAlbum,
+    isLoading: isAlbumDataLoading,
+  } = useMusicStore();
   const { currentSong, isPlaying, playAlbum, togglePlay } = usePlayerStore();
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const { extractColor } = useDominantColor();
   const dominantColor = usePlayerStore((state) => state.dominantColor);
-  const currentAlbumImage = currentAlbum?.imageUrl;
+
+  // --- ИЗМЕНЕНИЕ 1: Добавляем локальное состояние для загрузки цвета ---
+  const [isColorLoading, setIsColorLoading] = useState(true);
+
+  useEffect(() => {
+    if (albumId) {
+      fetchAlbumbyId(albumId);
+    }
+  }, [albumId, fetchAlbumbyId]);
+
+  // --- ИЗМЕНЕНИЕ 2: Обновляем эффект для извлечения цвета ---
+  // Теперь он также управляет состоянием isColorLoading
+  useEffect(() => {
+    if (currentAlbum?.imageUrl) {
+      setIsColorLoading(true); // Начинаем процесс загрузки цвета
+      extractColor(currentAlbum.imageUrl).finally(() => {
+        setIsColorLoading(false); // Завершаем процесс, даже если была ошибка
+      });
+    } else if (currentAlbum) {
+      // Если у альбома нет картинки, просто завершаем загрузку
+      setIsColorLoading(false);
+    }
+  }, [currentAlbum, extractColor]);
 
   useEffect(() => {
     if (!currentAlbum) return;
@@ -50,12 +78,6 @@ const AlbumPage = () => {
     setInLibrary(exists);
   }, [albums, currentAlbum]);
 
-  useEffect(() => {
-    if (currentAlbumImage) {
-      extractColor(currentAlbum.imageUrl);
-    }
-  }, [currentAlbum?.imageUrl, currentAlbumImage, extractColor]);
-
   const handleToggleAlbum = async () => {
     if (!currentAlbum || isToggling) return;
     setIsToggling(true);
@@ -63,21 +85,19 @@ const AlbumPage = () => {
     setIsToggling(false);
   };
 
-  useEffect(() => {
-    if (albumId) fetchAlbumbyId(albumId);
-  }, [albumId, fetchAlbumbyId]);
-
-  if (isLoading)
+  // --- ИЗМЕНЕНИЕ 3: Обновляем условие отображения скелетона ---
+  // Теперь мы ждем и загрузку данных альбома, и загрузку цвета
+  if (isAlbumDataLoading || isColorLoading) {
     return (
       <>
         <Helmet>
           <title>Loading Album...</title>
         </Helmet>
-        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
-          <Loader2 className="animate-spin text-violet-500 size-12" />
-        </main>
+        {/* Используем тот же самый скелетон, что и для плейлистов для консистентности */}
+        <PlaylistDetailsSkeleton />
       </>
     );
+  }
 
   if (!currentAlbum) {
     return (
