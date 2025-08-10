@@ -18,7 +18,7 @@ import {
 } from "../../components/ui/sheet";
 import { Avatar, AvatarImage } from "../../components/ui/avatar";
 import MessageInput from "./MessageInput";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 import { Helmet } from "react-helmet-async";
 
 const formatTime = (date: string) => {
@@ -30,7 +30,7 @@ const formatTime = (date: string) => {
 };
 
 const ChatPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const { user: mongoUser } = useAuthStore();
   const {
     users,
@@ -51,7 +51,6 @@ const ChatPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // ... (existing useEffects without text)
   }, []);
 
   const scrollToBottom = () => {

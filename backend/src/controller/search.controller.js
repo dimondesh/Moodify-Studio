@@ -55,7 +55,6 @@ export const searchSongs = async (req, res, next) => {
         .lean(),
     ]);
 
-    // --- НАЧАЛО НЕДОСТАЮЩЕГО БЛОКА ---
 
     const songs = songsRaw.map((song) => ({
       ...song,
@@ -82,7 +81,6 @@ export const searchSongs = async (req, res, next) => {
       songs: playlist.songs ? playlist.songs.map((s) => s.toString()) : [],
     }));
 
-    // --- КОНЕЦ НЕДОСТАЮЩЕГО БЛОКА ---
 
     const artists = matchingArtists.map((artist) => ({
       ...artist,

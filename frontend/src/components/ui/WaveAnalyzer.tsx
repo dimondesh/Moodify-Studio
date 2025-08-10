@@ -30,8 +30,7 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
     const analyser = webAudioService.getAnalyserNode();
     const audioContext = webAudioService.getAudioContext();
 
-    // Если анализатор или аудиоконтекст еще не инициализированы, то не можем рисовать.
-    // Это может произойти, если AudioPlayer еще не успел создать их.
+   
     if (!analyser || !audioContext) {
       console.log("WaveAnalyzer: Analyser or AudioContext not available yet.");
       canvasCtx.clearRect(0, 0, width, height);
@@ -46,14 +45,12 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
     const dataArray = new Uint8Array(bufferLength);
 
     const draw = () => {
-      // Получаем актуальные значения в каждом кадре
       const currentAnalyser = webAudioService.getAnalyserNode();
       const currentAudioContext = webAudioService.getAudioContext();
       const currentWaveAnalyzerEnabled =
         useAudioSettingsStore.getState().waveAnalyzerEnabled;
 
-      // Главное условие для продолжения отрисовки: настройка включена.
-      // Если контекст suspended, мы все равно рисуем (но плоскую линию).
+      
       if (
         !currentWaveAnalyzerEnabled ||
         !currentAnalyser ||
@@ -72,12 +69,10 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
 
       animationFrameId.current = requestAnimationFrame(draw);
 
-      // Если AudioContext suspended, рисуем плоскую линию
       if (
         currentAudioContext.state === "suspended" ||
         currentAudioContext.state === "closed"
       ) {
-        // console.log("WaveAnalyzer: AudioContext suspended or closed, drawing flat line.");
         canvasCtx.clearRect(0, 0, width, height);
         canvasCtx.lineWidth = 1;
         canvasCtx.strokeStyle = "#8b5cf6";
@@ -86,7 +81,6 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
         canvasCtx.lineTo(width, height / 2);
         canvasCtx.stroke();
       } else {
-        // AudioContext в состоянии 'running', рисуем реальную волну
         currentAnalyser.getByteTimeDomainData(dataArray);
 
         canvasCtx.clearRect(0, 0, width, height);
@@ -116,8 +110,7 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
       }
     };
 
-    // Запускаем цикл отрисовки, только если waveAnalyzerEnabled включен.
-    // Состояние AudioContext будет обрабатываться внутри draw().
+  
     if (waveAnalyzerEnabled) {
       console.log("WaveAnalyzer: Starting initial animation loop.");
       draw();
@@ -140,12 +133,11 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;
       }
-      canvasCtx.clearRect(0, 0, width, height); // Очищаем канвас при очистке эффекта
+      canvasCtx.clearRect(0, 0, width, height); 
     };
-  }, [waveAnalyzerEnabled, width, height]); // Зависимости: эти пропсы/состояния влияют на отрисовку
+  }, [waveAnalyzerEnabled, width, height]);
 
-  // Компонент canvas рендерится в DOM только если waveAnalyzerEnabled включен.
-  // Содержимое canvas будет динамически управляться useEffect.
+
   if (!waveAnalyzerEnabled) {
     return null;
   }

@@ -10,8 +10,8 @@ const userSchema = new mongoose.Schema(
     firebaseUid: { type: String, required: true, unique: true },
     language: {
       type: String,
-      enum: ["ru", "uk", "en"], // Допустимые значения языка
-      default: "ru", // Язык по умолчанию для новых пользователей
+      enum: ["ru", "uk", "en"],
+      default: "ru",
     },
     playlists: [
       {
@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema(
         ref: "Playlist",
       },
     ],
-    // --- НОВЫЕ ПОЛЯ ---
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,

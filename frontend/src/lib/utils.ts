@@ -23,19 +23,16 @@ export const getArtistNames = (
 
   const names = artistsArray
     .map((item) => {
-      // Если это объект Artist, берем его имя
       if (typeof item === "object" && item !== null && "name" in item) {
         return item.name;
       }
-      // Если это строка (предположительно ID), пытаемся найти имя в allArtists
       if (typeof item === "string" && allArtists.length > 0) {
         const foundArtist = allArtists.find((artist) => artist._id === item);
         return foundArtist ? foundArtist.name : null;
       }
-      // Если это строка, но allArtists не предоставлен или не найден, возвращаем саму строку
       return String(item);
     })
-    .filter(Boolean); // Отфильтровываем null и undefined значения
+    .filter(Boolean); 
 
   return names.join(", ") || "Unknown artist";
 };

@@ -10,7 +10,7 @@ import { Button } from "../../components/ui/button";
 import { Clock, Heart, Pause, Play } from "lucide-react";
 import Equalizer from "../../components/ui/equalizer";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 import { Helmet } from "react-helmet-async";
 
 interface Artist {
@@ -26,7 +26,7 @@ const formatDuration = (seconds: number) => {
 };
 
 const LikedSongsPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const navigate = useNavigate();
   const { likedSongs, isLoading, error, fetchLikedSongs, toggleSongLike } =
     useLibraryStore();

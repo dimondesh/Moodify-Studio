@@ -32,9 +32,8 @@ function App() {
   const { fetchUser, logout, user } = useAuthStore();
   const { isOffline } = useOfflineStore();
   const location = useLocation();
-  const navigate = useNavigate(); // <-- ДОБАВЛЕНО
+  const navigate = useNavigate(); 
 
-  // Инициализация стора
   useEffect(() => {
     const { init, checkOnlineStatus } = useOfflineStore.getState().actions;
     init();
@@ -62,9 +61,7 @@ function App() {
     return () => unsubscribe();
   }, [fetchUser, logout, user]);
 
-  // --- ИЗМЕНЕНИЕ: Глобальная логика редиректа в офлайн-режиме ---
   useEffect(() => {
-    // Список "безопасных" путей, которые могут работать оффлайн
     const safeOfflinePaths = [
       "/library",
       "/settings",
@@ -79,7 +76,6 @@ function App() {
     );
 
     if (isOffline && !isSafe) {
-      // Если мы оффлайн и на "небезопасной" странице, перенаправляем
       navigate("/offline", { replace: true });
     }
   }, [isOffline, location.pathname, navigate]);
@@ -96,11 +92,9 @@ function App() {
         />
       </Helmet>
       <Routes>
-        {/* "Небезопасные" роуты, которые будут перехвачены */}
         <Route path="admin" element={<AdminPage />} />
         <Route path="login" element={<LoginPage />} />
 
-        {/* Роуты внутри MainLayout, которые мы сделали "безопасными" */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-songs/:category?" element={<AllSongsPage />} />
@@ -120,7 +114,6 @@ function App() {
           <Route path="/list" element={<DisplayListPage />} />
           <Route path="/mixes/:mixId" element={<MixDetailsPage />} />
           <Route path="/all-mixes/:category" element={<AllMixesPage />} />
-          {/* Роут /offline нужен для MainLayout, если мы перейдем на него вручную */}
           <Route path="/offline" element={<OfflinePage />} />
         </Route>
       </Routes>

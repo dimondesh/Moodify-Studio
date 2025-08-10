@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Song, Album, Stats, Artist, Genre, Mood } from "../types/index"; // <-- Импортируем Genre и Mood
+import type { Song, Album, Stats, Artist, Genre, Mood } from "../types/index";
 import toast from "react-hot-toast";
-import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТ
-import { getItem } from "../lib/offline-db"; // <-- 2. ИМПОРТ
+import { useOfflineStore } from "./useOfflineStore";
+import { getItem } from "../lib/offline-db";
 
 interface MusicStore {
   albums: Album[];
   songs: Song[];
-  artists: Artist[]; // НОВОЕ: Состояние для артистов
+  artists: Artist[];
   isLoading: boolean;
   error: string | null;
   currentAlbum: Album | null;
-  recentlyListenedSongs: Song[]; // <-- ДОБАВИТЬ НОВОЕ СОСТОЯНИЕ
+  recentlyListenedSongs: Song[];
 
   featuredSongs: Song[];
-  genres: Genre[]; // <-- НОВОЕ
-  moods: Mood[]; // <-- НОВОЕ
+  genres: Genre[];
+  moods: Mood[];
   madeForYouSongs: Song[];
   trendingSongs: Song[];
   stats: Stats;
@@ -26,24 +26,24 @@ interface MusicStore {
   fetchFeaturedSongs: () => Promise<void>;
   fetchMadeForYouSongs: () => Promise<void>;
   fetchTrendingSongs: () => Promise<void>;
-  fetchGenres: () => Promise<void>; // <-- НОВОЕ
-  fetchMoods: () => Promise<void>; // <-- НОВОЕ
+  fetchGenres: () => Promise<void>;
+  fetchMoods: () => Promise<void>;
   fetchStats: () => Promise<void>;
   fetchSongs: () => Promise<void>;
-  fetchRecentlyListenedSongs: () => Promise<void>; // <-- ДОБАВИТЬ НОВУЮ ФУНКЦИЮ
+  fetchRecentlyListenedSongs: () => Promise<void>;
 
-  fetchArtists: () => Promise<void>; // НОВОЕ: Функция для получения артистов
+  fetchArtists: () => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
   deleteAlbum: (id: string) => Promise<void>;
-  deleteArtist: (id: string) => Promise<void>; // НОВОЕ: Функция для удаления артиста
-  updateArtist: (artistId: string, formData: FormData) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ
-  updateSong: (songId: string, formData: FormData) => Promise<void>; // НОВОЕ: Функция для обновления песни
+  deleteArtist: (id: string) => Promise<void>;
+  updateArtist: (artistId: string, formData: FormData) => Promise<void>;
+  updateSong: (songId: string, formData: FormData) => Promise<void>;
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
   albums: [],
   songs: [],
-  artists: [], // Инициализируем массив артистов
+  artists: [],
   isLoading: false,
   error: null,
   genres: [],
@@ -53,7 +53,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   featuredSongs: [],
   madeForYouSongs: [],
   trendingSongs: [],
-  recentlyListenedSongs: [], // <-- ИНИЦИАЛИЗИРОВАТЬ ПУСТЫМ МАССИВОМ
+  recentlyListenedSongs: [],
 
   stats: {
     totalSongs: 0,
@@ -102,7 +102,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
       await axiosInstance.delete(`/admin/albums/${id}`);
       set((state) => ({
         albums: state.albums.filter((album) => album._id !== id),
-        // Также нужно обновить песни, у которых был этот альбом
         songs: state.songs.map((song) =>
           song.albumId === id ? { ...song, albumId: null } : song
         ),
@@ -116,25 +115,23 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   deleteArtist: async (id) => {
-    // НОВАЯ ФУНКЦИЯ
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/admin/artists/${id}`);
       set((state) => ({
         artists: state.artists.filter((artist) => artist._id !== id),
-        // Также нужно обновить песни и альбомы, которые были связаны с этим артистом
         songs: state.songs
           .map((song) => ({
             ...song,
-            artist: song.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
+            artist: song.artist.filter((artist) => artist._id !== id), 
           }))
-          .filter((song) => song.artist.length > 0), // Удаляем песни, если у них не осталось артистов
+          .filter((song) => song.artist.length > 0), 
         albums: state.albums
           .map((album) => ({
             ...album,
-            artist: album.artist.filter((artist) => artist._id !== id), // Удаляем артиста из массива
+            artist: album.artist.filter((artist) => artist._id !== id), 
           }))
-          .filter((album) => album.artist.length > 0), // Удаляем альбомы, если у них не осталось артистов
+          .filter((album) => album.artist.length > 0), 
       }));
       toast.success(
         "Artist and associated content relationships updated/deleted successfully"
@@ -166,7 +163,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       toast.success("Artist updated successfully!");
     } catch (error: any) {
       console.error("Error updating artist:", error);
-      throw error; // Пробрасываем ошибку, чтобы она могла быть обработана в компоненте
+      throw error; 
     } finally {
       set({ isLoading: false });
     }
@@ -197,7 +194,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbums: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -210,12 +207,11 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbumbyId: async (id: string) => {
-    set({ isLoading: true, error: null, currentAlbum: null }); // <-- ИЗМЕНЕНИЕ: Очищаем currentAlbum перед загрузкой
+    set({ isLoading: true, error: null, currentAlbum: null }); 
 
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
 
-    // --- ИЗМЕНЕНИЕ: Логика для оффлайн-режима ---
     if (isOffline) {
       if (isDownloaded(id)) {
         console.log(`[Offline] Загрузка альбома ${id} из IndexedDB.`);
@@ -255,7 +251,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchFeaturedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -269,7 +265,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchMadeForYouSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -282,8 +278,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchRecentlyListenedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
-
+    if (useOfflineStore.getState().isOffline) return; 
     try {
       const response = await axiosInstance.get("/songs/history");
       set({ recentlyListenedSongs: response.data.songs || [] });
@@ -297,7 +292,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchTrendingSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -314,7 +309,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs");
-      // Backend теперь возвращает Artist[] вместо string
       set({ songs: response.data.songs });
     } catch (error: any) {
       set({ error: error.message });
@@ -324,12 +318,11 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchArtists: async () => {
-    // НОВАЯ ФУНКЦИЯ
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get("/artists"); // Предполагаемый роут для получения всех артистов
+      const response = await axiosInstance.get("/artists"); 
       set({ artists: response.data });
     } catch (error: any) {
       set({ error: error.message });

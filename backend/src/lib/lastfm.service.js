@@ -7,7 +7,6 @@ import { Mood } from "../models/mood.model.js";
 const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 const LASTFM_API_URL = "http://ws.audioscrobbler.com/2.0/";
 
-// --- СПИСКИ ЖАНРОВ (остаются для определения жанров) ---
 const EXPANDED_KNOWN_GENRES = [
   "rock",
   "pop",
@@ -56,7 +55,6 @@ const EXPANDED_KNOWN_GENRES = [
   "experimental",
 ];
 
-// --- КАРТА СООТВЕТСТВИЙ ТЕГОВ И НАСТРОЕНИЙ (КЛЮЧЕВОЕ ИЗМЕНЕНИЕ) ---
 const MOOD_MAPPINGS = {
   Energetic: [
     "techno",
@@ -119,7 +117,6 @@ const MOOD_MAPPINGS = {
   Funky: ["funk", "funky", "groovy", "disco", "soul"],
 };
 
-// Вспомогательная функция для поиска или создания сущности
 const findOrCreate = async (model, name) => {
   let entity = await model.findOne({ name });
   if (!entity) {
@@ -150,13 +147,12 @@ const processTags = async (tags) => {
     }
   });
 
-  // 2. НОВАЯ ЛОГИКА: Обработка НАСТРОЕНИЙ через карту соответствий
   lowerCaseTags.forEach((tag) => {
     for (const [mood, keywords] of Object.entries(MOOD_MAPPINGS)) {
       for (const keyword of keywords) {
         if (tag.includes(keyword)) {
-          matchedMoods.add(mood); // Добавляем сам ключ настроения, например "Energetic"
-          break; // Переходим к следующему тегу, чтобы не добавлять несколько настроений по одному тегу
+          matchedMoods.add(mood);
+          break; 
         }
       }
     }
@@ -181,7 +177,6 @@ const processTags = async (tags) => {
   return { genreIds, moodIds };
 };
 
-// Основная функция с каскадным поиском (без изменений)
 export const getGenresAndMoodsForTrack = async (
   artistName,
   trackName,
@@ -194,7 +189,6 @@ export const getGenresAndMoodsForTrack = async (
     return { genreIds: [], moodIds: [] };
   }
 
-  // Попытка 1: ТРЕК
   try {
     console.log(`[LastFM] Попытка 1: Поиск тегов для трека "${trackName}"`);
     const trackResponse = await axios.get(LASTFM_API_URL, {
@@ -213,10 +207,8 @@ export const getGenresAndMoodsForTrack = async (
         return result;
     }
   } catch (e) {
-    /* Игнор */
   }
 
-  // Попытка 2: АЛЬБОМ
   try {
     console.log(
       `[LastFM] Попытка 2 (Fallback): Поиск тегов для альбома "${albumName}"`
@@ -237,10 +229,8 @@ export const getGenresAndMoodsForTrack = async (
         return result;
     }
   } catch (e) {
-    /* Игнор */
   }
 
-  // Попытка 3: АРТИСТ
   try {
     console.log(
       `[LastFM] Попытка 3 (Fallback): Поиск тегов для артиста "${artistName}"`
@@ -258,7 +248,6 @@ export const getGenresAndMoodsForTrack = async (
       return await processTags(artistResponse.data.toptags.tag);
     }
   } catch (e) {
-    /* Игнор */
   }
 
   console.log(

@@ -1,8 +1,7 @@
 // backend/testSpotifyService.js
 import { getAlbumDataFromSpotify } from "./spotifyService.js";
 
-// !!! ЗАМЕНИТЕ ЭТОТ URL НА РЕАЛЬНЫЙ SPOTIFY URL ПОПУЛЯРНОГО АЛЬБОМА !!!
-const TEST_ALBUM_URL = "https://open.spotify.com/album/47rlABSBChwZC7qxAKzOWw"; // Пример: альбом "Divide" Ed Sheeran
+const TEST_ALBUM_URL = "https://open.spotify.com/album/47rlABSBChwZC7qxAKzOWw"; 
 
 async function runTest() {
   console.log(
@@ -15,7 +14,7 @@ async function runTest() {
     console.log("\n--- Полученные данные альбома ---");
     console.log("Название альбома:", albumData.name);
     console.log("Артисты:", albumData.artists.map((a) => a.name).join(", "));
-    console.log("Год выпуска:", albumData.release_date.split("-")[0]); // Берем только год
+    console.log("Год выпуска:", albumData.release_date.split("-")[0]); 
     console.log(
       "URL обложки (первый):",
       albumData.images.length > 0 ? albumData.images[0].url : "Нет"

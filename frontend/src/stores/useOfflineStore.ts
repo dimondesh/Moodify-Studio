@@ -12,7 +12,7 @@ import {
 import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
-import { useLibraryStore } from "./useLibraryStore"; // <-- Импорт стора библиотеки
+import { useLibraryStore } from "./useLibraryStore"; 
 
 type DownloadableItemData = Album | Playlist | Mix;
 type DownloadableItemWithValue = (Album | Playlist | Mix) & {
@@ -21,8 +21,8 @@ type DownloadableItemWithValue = (Album | Playlist | Mix) & {
 type ItemType = "albums" | "playlists" | "mixes";
 
 interface OfflineState {
-  downloadedItemIds: Set<string>; // ID для альбомов, плейлистов, миксов
-  downloadedSongIds: Set<string>; // ===== ИЗМЕНЕНИЕ: ID для песен =====
+  downloadedItemIds: Set<string>; 
+  downloadedSongIds: Set<string>; 
   downloadingItemIds: Set<string>;
   isOffline: boolean;
   _hasHydrated: boolean;
@@ -30,7 +30,7 @@ interface OfflineState {
     init: () => Promise<void>;
     checkOnlineStatus: () => void;
     isDownloaded: (itemId: string) => boolean;
-    isSongDownloaded: (songId: string) => boolean; // ===== ИЗМЕНЕНИЕ: Новая функция проверки =====
+    isSongDownloaded: (songId: string) => boolean; 
     isDownloading: (itemId: string) => boolean;
     downloadItem: (itemId: string, itemType: ItemType) => Promise<void>;
     deleteItem: (
@@ -47,14 +47,13 @@ export const useOfflineStore = create<OfflineState>()(
   persist(
     (set, get) => ({
       downloadedItemIds: new Set(),
-      downloadedSongIds: new Set(), // ===== ИЗМЕНЕНИЕ: Инициализация =====
+      downloadedSongIds: new Set(), 
       downloadingItemIds: new Set(),
       isOffline: !navigator.onLine,
       _hasHydrated: false,
 
       actions: {
         init: async () => {
-          // ===== ИЗМЕНЕНИЕ: Загружаем ключи для песен тоже =====
           const [albumKeys, playlistKeys, mixKeys, songKeys] =
             await Promise.all([
               getAllKeys("albums"),
@@ -80,7 +79,7 @@ export const useOfflineStore = create<OfflineState>()(
           set({ isOffline: !navigator.onLine });
         },
         isDownloaded: (itemId) => get().downloadedItemIds.has(itemId),
-        isSongDownloaded: (songId) => get().downloadedSongIds.has(songId), // ===== ИЗМЕНЕНИЕ: Реализация новой функции =====
+        isSongDownloaded: (songId) => get().downloadedSongIds.has(songId), 
         isDownloading: (itemId) => get().downloadingItemIds.has(itemId),
 
         downloadItem: async (itemId, itemType) => {
@@ -91,7 +90,6 @@ export const useOfflineStore = create<OfflineState>()(
             return;
           }
 
-          // --- ИЗМЕНЕНИЕ: Авто-добавление в библиотеку ---
           const library = useLibraryStore.getState();
           let isInLibrary = false;
           switch (itemType) {
@@ -113,7 +111,6 @@ export const useOfflineStore = create<OfflineState>()(
           if (!isInLibrary) {
             toast.success("Added to your library for offline access.");
           }
-          // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
           set((state) => ({
             downloadingItemIds: new Set(state.downloadingItemIds).add(itemId),
@@ -225,7 +222,6 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
-            // ===== ИЗМЕНЕНИЕ: Удаляем песни из IndexedDB =====
             for (const song of songs) {
               await deleteItem("songs", song._id);
             }
@@ -236,7 +232,6 @@ export const useOfflineStore = create<OfflineState>()(
               const newDownloaded = new Set(state.downloadedItemIds);
               newDownloaded.delete(itemId);
 
-              // ===== ИЗМЕНЕНИЕ: Обновляем Set песен =====
               const newDownloadedSongs = new Set(state.downloadedSongIds);
               songs.forEach((song) => newDownloadedSongs.delete(song._id));
 
@@ -284,7 +279,7 @@ export const useOfflineStore = create<OfflineState>()(
             set({
               downloadedItemIds: new Set(),
               downloadingItemIds: new Set(),
-              downloadedSongIds: new Set(), // ===== ИЗМЕНЕНИЕ: Очищаем Set песен =====
+              downloadedSongIds: new Set(), 
             });
 
             toast.dismiss();
@@ -313,7 +308,6 @@ export const useOfflineStore = create<OfflineState>()(
           return value;
         },
       }),
-      // ===== ИЗМЕНЕНИЕ: Сохраняем оба Set в localStorage =====
       partialize: (state) => ({
         downloadedItemIds: state.downloadedItemIds,
         downloadedSongIds: state.downloadedSongIds,

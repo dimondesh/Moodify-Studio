@@ -1,12 +1,12 @@
 export interface Artist {
   _id: string;
   name: string;
-  bio?: string; // Опционально
+  bio?: string;
   imageUrl: string;
-  songs: Song[]; // ИЗМЕНЕНО: Теперь массив объектов Song, так как бэкенд их populate'ит
-  albums: Album[]; // ИЗМЕНЕНО: Теперь массив объектов Album, так как бэкенд их populate'ит
-  addedAt?: string; // <--- ДОБАВЛЕНО: Это поле приходит из библиотеки для followedArtists
-  bannerUrl?: string; // <--- Убедитесь, что это поле присутствует
+  songs: Song[];
+  albums: Album[];
+  addedAt?: string;
+  bannerUrl?: string;
 
   createdAt: string;
   updatedAt: string;
@@ -24,7 +24,7 @@ export interface Mix {
   imageUrl: string;
   createdAt: string;
   updatedAt: string;
-  addedAt?: string; // <-- ДОБАВЬТЕ ЭТО ОПЦИОНАЛЬНОЕ ПОЛЕ
+  addedAt?: string;
 }
 
 export interface Mood {
@@ -34,37 +34,33 @@ export interface Mood {
 export interface Song {
   _id: string;
   title: string;
-  // ИЗМЕНЕНО: теперь массив объектов Artist (для удобства отображения)
-  // или массив строк (для передачи ID на бэкенд)
-  artist: Artist[]; // <-- Убедитесь, что это Artist[]
+  artist: Artist[];
   albumId: string | null;
   imageUrl: string;
-  instrumentalUrl: string; // <-- ИЗМЕНЕНО: Теперь instrumentalUrl
-  vocalsUrl?: string; // <-- НОВОЕ ПОЛЕ: Опциональная вокальная дорожка
-  duration: number; // in seconds
-  playCount: number; // <-- НОВОЕ ПОЛЕ
-  genres: Genre[]; // или string[] в зависимости от populate
+  instrumentalUrl: string;
+  vocalsUrl?: string;
+  duration: number;
+  playCount: number;
+  genres: Genre[];
   moods: Mood[];
   createdAt: string;
   updatedAt: string;
   albumTitle?: string;
   likedAt?: string;
-  lyrics?: string; // <-- НОВОЕ ПОЛЕ: Для хранения текста песни в формате LRC
+  lyrics?: string;
 }
 
 export interface Album {
   _id: string;
   title: string;
-  // ИЗМЕНЕНО: теперь массив объектов Artist (для удобства отображения)
-  // или массив строк (для передачи ID на бэкенд)
-  artist: Artist[]; // <-- Убедитесь, что это Artist[]
+  artist: Artist[];
   imageUrl: string;
   releaseYear: number;
   songs: Song[];
   type: string;
   createdAt: string;
   updatedAt: string;
-  addedAt?: string; // Сделаем опциональным, так как не всегда будет
+  addedAt?: string;
 }
 
 export interface Stats {
@@ -83,8 +79,6 @@ export interface Message {
   updatedAt: string;
 }
 
-// frontend/src/types/index.ts
-
 export interface User {
   _id: string;
   firebaseUid: string;
@@ -94,12 +88,10 @@ export interface User {
   isAdmin?: boolean;
   playlists?: Playlist[];
 
-  // --- НОВЫЕ ПОЛЯ ---
-  followers: string[]; // Массивы ID
+  followers: string[];
   followingUsers: string[];
   followingArtists: string[];
 
-  // --- НОВЫЕ СЧЕТЧИКИ (приходят с бэкенда для страницы профиля) ---
   followersCount?: number;
   followingUsersCount?: number;
   followingArtistsCount?: number;
@@ -111,8 +103,8 @@ export interface SearchState {
   songs: Song[];
   albums: Album[];
   playlists: Playlist[];
-  artists: Artist[]; // <-- ДОБАВЛЕНО: Артисты в результатах поиска
-  users: User[]; // <-- НОВОЕ ПОЛЕ
+  artists: Artist[];
+  users: User[];
 
   loading: boolean;
   error: string | null;
@@ -154,7 +146,6 @@ export interface LikedSongsItem extends BaseLibraryItem {
 
 export interface AlbumItem extends BaseLibraryItem {
   type: "album";
-  // ИЗМЕНЕНО: теперь массив объектов Artist, чтобы соответствовать Song и Album
   artist: Artist[];
   albumType?: string;
 }
@@ -163,15 +154,13 @@ export interface PlaylistItem extends BaseLibraryItem {
   owner: User;
 }
 export interface MixItem extends BaseLibraryItem {
-  // Наследуемся от BaseLibraryItem
   type: "mix";
-  sourceName: string; // "Rock", "Sad" и т.д.
+  sourceName: string;
 }
 export interface FollowedArtistItem extends BaseLibraryItem {
-  // <-- НОВЫЙ ТИП
   type: "artist";
-  artistId: string; // ID артиста
-  addedAt?: string; // <-- ЭТУ СТРОКУ НУЖНО ДОБАВИТЬ/ПРОВЕРИТЬ
+  artistId: string;
+  addedAt?: string;
 }
 
 export type LibraryItem =

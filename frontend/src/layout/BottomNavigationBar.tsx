@@ -5,10 +5,10 @@ import { HomeIcon, Search, Library, MessageCircle } from "lucide-react";
 import { useAuthStore } from "../stores/useAuthStore";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 const BottomNavigationBar = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const location = useLocation();
   const { user } = useAuthStore();
 
@@ -16,25 +16,25 @@ const BottomNavigationBar = () => {
     {
       to: "/",
       icon: HomeIcon,
-      label: t("bottomNav.home"), // <-- ПЕРЕВОД
+      label: t("bottomNav.home"), 
       authRequired: false,
     },
     {
       to: "/search",
       icon: Search,
-      label: t("bottomNav.search"), // <-- ПЕРЕВОД
+      label: t("bottomNav.search"),
       authRequired: false,
     },
     {
       to: "/library",
       icon: Library,
-      label: t("bottomNav.library"), // <-- ПЕРЕВОД
+      label: t("bottomNav.library"), 
       authRequired: true,
     },
     {
       to: "/chat",
       icon: MessageCircle,
-      label: t("bottomNav.chat"), // <-- ПЕРЕВОД
+      label: t("bottomNav.chat"), 
       authRequired: true,
     },
   ];

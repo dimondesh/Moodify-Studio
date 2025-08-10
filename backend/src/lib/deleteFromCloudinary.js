@@ -1,4 +1,4 @@
-import cloudinary from "./cloudinary.js"; // Убедись, что это правильный путь к твоему файлу инициализации Cloudinary
+import cloudinary from "./cloudinary.js";
 
 /**
  * Извлекает public_id из URL Cloudinary.
@@ -13,13 +13,11 @@ export const extractPublicId = (url) => {
 
   let publicId = url.substring(uploadIndex + "/upload/".length);
 
-  // Удаляем версию (e.g., 'v12345/') если она есть
   const versionRegex = /^v\d+\//;
   if (versionRegex.test(publicId)) {
     publicId = publicId.substring(publicId.indexOf("/") + 1);
   }
 
-  // Удаляем расширение файла
   const dotIndex = publicId.lastIndexOf(".");
   if (dotIndex !== -1) {
     publicId = publicId.substring(0, dotIndex);
@@ -50,7 +48,6 @@ export const deleteFromCloudinary = async (
       resource_type: resourceType,
     });
 
-    // Проверяем результат от Cloudinary
     if (result.result === "ok") {
       console.log(`[Cloudinary] Successfully deleted ${publicId}.`);
     } else {

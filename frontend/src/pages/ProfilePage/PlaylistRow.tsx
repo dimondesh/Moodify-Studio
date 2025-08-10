@@ -3,14 +3,14 @@
 import { Link } from "react-router-dom";
 import { Playlist } from "@/types";
 import { Music } from "lucide-react";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 interface PlaylistRowProps {
   playlist: Playlist;
 }
 
 const PlaylistRow = ({ playlist }: PlaylistRowProps) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   return (
     <Link
       to={`/playlists/${playlist._id}`}

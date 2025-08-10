@@ -23,7 +23,7 @@ import { useMixesStore } from "../../stores/useMixesStore";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
-import { useDominantColor } from "@/hooks/useDominantColor"; // <-- Импорт хука
+import { useDominantColor } from "@/hooks/useDominantColor";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -44,7 +44,6 @@ const MixDetailsPage = () => {
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
   const { extractColor } = useDominantColor();
 
-  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета и его загрузки ---
   const [dominantColor, setDominantColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
   const [localIsLoading, setLocalIsLoading] = useState(true);
@@ -60,7 +59,6 @@ const MixDetailsPage = () => {
     loadMix();
   }, [mixId, fetchMixById]);
 
-  // --- ИЗМЕНЕНИЕ 2: Отдельный useEffect для цвета ---
   useEffect(() => {
     if (currentMix?.imageUrl) {
       setIsColorLoading(true);
@@ -111,7 +109,6 @@ const MixDetailsPage = () => {
     }
   };
 
-  // --- ИЗМЕНЕНИЕ 3: Обновленное условие загрузки ---
   if (localIsLoading || isColorLoading) {
     return (
       <>

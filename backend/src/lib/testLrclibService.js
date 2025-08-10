@@ -1,12 +1,11 @@
 // backend/testLrclibService.js
 import { getLrcLyricsFromLrclib } from "./lyricsService.js";
 
-// *** ЗАМЕНИ ЭТИ ДАННЫЕ НА РЕАЛЬНЫЕ ДАННЫЕ ПОПУЛЯРНОЙ ПЕСНИ ***
 const TEST_SONG_DATA = {
   artistName: "Queen",
   songName: "Bohemian Rhapsody",
   albumName: "A Night at the Opera",
-  songDuration: 354000, // Длительность в миллисекундах (5 минут 54 секунды)
+  songDuration: 354000,
 };
 
 async function runTest() {

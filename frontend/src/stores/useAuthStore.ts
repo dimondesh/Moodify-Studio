@@ -11,7 +11,7 @@ interface AuthUser {
   fullName: string;
   imageUrl?: string | null;
   isAdmin?: boolean;
-  language?: string; // <-- ДОБАВЛЕНО ПОЛЕ
+  language?: string;
 }
 
 interface UpdateProfileData {
@@ -38,8 +38,8 @@ interface AuthStore {
   fetchUser: (firebaseUid: string) => Promise<void>;
   logout: () => Promise<void>;
   reset: () => void;
-  updateUserProfile: (data: UpdateProfileData) => Promise<void>; // <-- ДОБАВЛЕНО
-  updateUserLanguage: (language: string) => Promise<void>; // <-- ДОБАВЛЕН МЕТОД
+  updateUserProfile: (data: UpdateProfileData) => Promise<void>;
+  updateUserLanguage: (language: string) => Promise<void>;
 }
 
 const getAuthHeaders = async () => {
@@ -96,12 +96,10 @@ export const useAuthStore = create<AuthStore>()(
 
           const authHeaders = await getAuthHeaders();
 
-          // --- ИСПРАВЛЕНИЕ ОШИБКИ №2 ---
-          // Мы создаем один объект config, где все заголовки лежат внутри `headers`
           const config = {
             headers: {
-              ...authHeaders.headers, // Распространяем заголовки авторизации
-              "Content-Type": "multipart/form-data", // Добавляем Content-Type
+              ...authHeaders.headers,
+              "Content-Type": "multipart/form-data",
             },
           };
 

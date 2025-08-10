@@ -23,7 +23,7 @@ export interface EqualizerPreset {
   gains: { [key: string]: number };
 }
 
-// Обновленные пресеты эквалайзера для 6 полос
+// пресеты эквалайзера для 6 полос
 export const equalizerPresets: EqualizerPreset[] = [
   {
     name: "Flat",
@@ -185,7 +185,7 @@ export const equalizerPresets: EqualizerPreset[] = [
   },
 ];
 
-// --- НОВЫЕ ТИПЫ ДЛЯ РЕВЕРБЕРАЦИИ ---
+// --- ТИПЫ ДЛЯ РЕВЕРБЕРАЦИИ ---
 export type ReverbRoomSize = "small" | "medium" | "large";
 
 // Маппинг размеров комнат к путям IR-файлов
@@ -201,7 +201,7 @@ interface AudioSettings {
   equalizerGains: { [key: string]: number };
   normalizationMode: NormalizationMode;
   waveAnalyzerEnabled: boolean;
-  activePresetName: string; // Добавили активный пресет
+  activePresetName: string; // активный пресет
   reverbEnabled: boolean;
   reverbMix: number; // 0.0 (dry) to 1.0 (wet)
   reverbRoomSize: ReverbRoomSize;
@@ -213,7 +213,7 @@ interface AudioStore extends AudioSettings {
   setEqualizerGain: (frequency: string, gain: number) => void;
   setNormalizationMode: (mode: NormalizationMode) => void;
   setWaveAnalyzerEnabled: (enabled: boolean) => void;
-  applyPreset: (preset: EqualizerPreset) => void; // Новый метод для применения пресета
+  applyPreset: (preset: EqualizerPreset) => void; 
   resetAudioSettings: () => void;
   updateCustomPreset: () => void; // Метод для установки "Custom" при ручной настройке
   setReverbEnabled: (enabled: boolean) => void;
@@ -279,7 +279,6 @@ export const useAudioSettingsStore = create<AudioStore>()(
       updateCustomPreset: () => {
         set({ activePresetName: "Custom" });
       },
-      // --- НОВЫЕ ДЕЙСТВИЯ ДЛЯ РЕВЕРБЕРАЦИИ ---
       setReverbEnabled: (enabled) => {
         set({ reverbEnabled: enabled });
         webAudioService.applySettingsToGraph();
@@ -297,7 +296,7 @@ export const useAudioSettingsStore = create<AudioStore>()(
     }),
     {
       name: "audio-settings-storage",
-      version: 2, // Версия для этого стора
+      version: 2, 
       migrate: (persistedState: any, version) => {
         if (version === 0 && persistedState) {
           persistedState.activePresetName = "Flat";
@@ -326,7 +325,6 @@ class WebAudioService {
   private compressorNode: DynamicsCompressorNode | null = null;
   private internalOutputNode: GainNode | null = null; // Узел, к которому подключаются все эффекты перед анализатором/выходом
 
-  // --- НОВЫЕ УЗЛЫ ДЛЯ РЕВЕРБЕРАЦИИ ---
   private convolverNode: ConvolverNode | null = null;
   private dryGainNode: GainNode | null = null;
   private wetGainNode: GainNode | null = null;
@@ -343,7 +341,6 @@ class WebAudioService {
 
   public init(context: AudioContext, input: AudioNode, output: AudioNode) {
     // Если контекст уже инициализирован и узлы совпадают, просто применяем настройки
-    // Добавлена проверка на наличие узлов реверберации
     if (
       this.audioContext === context &&
       this.inputNode === input &&
@@ -462,7 +459,7 @@ class WebAudioService {
     this.internalOutputNode = null;
   }
 
-  // --- НОВЫЙ МЕТОД: Загрузка и кэширование IR-файлов ---
+  // --- Загрузка и кэширование IR-файлов ---
   public async loadIRFile(roomSize: ReverbRoomSize): Promise<void> {
     if (!this.audioContext || !this.convolverNode) {
       console.warn("AudioContext or ConvolverNode not ready for IR loading.");
@@ -484,7 +481,6 @@ class WebAudioService {
     }
 
     try {
-      // --- НАЧАЛО ИЗМЕНЕНИЯ: Программное кэширование ---
 
       // 2. Определяем имя кэша и пытаемся получить доступ к нему
       const cacheName = "moodify-ir-files-cache"; // Специальный кэш для IR-файлов
@@ -511,7 +507,6 @@ class WebAudioService {
         console.log(`[Cache] IR file for ${url} loaded from Cache Storage.`);
       }
 
-      // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
@@ -772,9 +767,7 @@ useAudioSettingsStore.subscribe((state, prevState) => {
       (key) => state.equalizerGains[key] !== prevState.equalizerGains[key]
     );
 
-    // Trigger graph rebuild if relevant settings change or if activePresetName changes to "Custom"
-    // to ensure UI updates and graph reflects current gains.
-    // Исключаем reverbRoomSize из этого блока, так как его изменение уже обрабатывается в loadIRFile
+   
     if (
       state.equalizerEnabled !== prevState.equalizerEnabled ||
       state.normalizationMode !== prevState.normalizationMode ||
@@ -791,7 +784,6 @@ useAudioSettingsStore.subscribe((state, prevState) => {
     // Отдельная обработка для изменения размера комнаты, так как это асинхронная операция
     // и loadIRFile уже вызывает applySettingsToGraph после загрузки
     if (state.reverbRoomSize !== prevState.reverbRoomSize) {
-      // webAudioService.loadIRFile(state.reverbRoomSize); // Этот вызов удален, так как он дублируется
     }
   }
 });

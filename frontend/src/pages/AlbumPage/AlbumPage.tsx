@@ -44,7 +44,6 @@ const AlbumPage = () => {
   const [isToggling, setIsToggling] = useState(false);
   const { extractColor } = useDominantColor();
 
-  // --- ЛОКАЛЬНОЕ СОСТОЯНИЕ ДЛЯ ЦВЕТА И ЗАГРУЗКИ ---
   const [dominantColor, setDominantColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
 

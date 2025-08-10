@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Library } from "../models/library.model.js";
 import { Playlist } from "../models/playlist.model.js";
 import { Song } from "../models/song.model.js";
-import { Artist } from "../models/artist.model.js"; // Импортируем модель Artist
+import { Artist } from "../models/artist.model.js"; 
 import { Mix } from "../models/mix.model.js";
 
 export const getLibraryAlbums = async (req, res, next) => {
@@ -20,7 +20,6 @@ export const getLibraryAlbums = async (req, res, next) => {
       return res.json({ albums: [] });
     }
 
-    // Убедимся, что albums является массивом
     if (!library.albums) {
       library.albums = [];
     }
@@ -65,7 +64,6 @@ export const getLikedSongs = async (req, res, next) => {
       return res.json({ songs: [] });
     }
 
-    // Убедимся, что likedSongs является массивом
     if (!library.likedSongs) {
       library.likedSongs = [];
     }
@@ -109,7 +107,6 @@ export const toggleAlbumInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // Убедимся, что albums является массивом перед использованием
     if (!library.albums) {
       library.albums = [];
     }
@@ -157,7 +154,6 @@ export const toggleSongLikeInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // Убедимся, что likedSongs является массивом перед использованием
     if (!library.likedSongs) {
       library.likedSongs = [];
     }
@@ -214,7 +210,6 @@ export const getPlaylistsInLibrary = async (req, res, next) => {
       return res.json({ playlists: [] });
     }
 
-    // Убедимся, что playlists является массивом
     if (!library.playlists) {
       library.playlists = [];
     }
@@ -259,7 +254,6 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // Убедимся, что playlists является массивом перед использованием
     if (!library.playlists) {
       library.playlists = [];
     }
@@ -300,9 +294,7 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
   }
 };
 
-// @desc    Toggle artist in user's library
-// @route   POST /api/library/artists/toggle
-// @access  Private
+
 export const toggleArtistInLibrary = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -322,7 +314,6 @@ export const toggleArtistInLibrary = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // Убедимся, что followedArtists является массивом перед использованием
     if (!library.followedArtists) {
       library.followedArtists = [];
     }
@@ -355,9 +346,7 @@ export const toggleArtistInLibrary = async (req, res, next) => {
   }
 };
 
-// @desc    Get followed artists for authenticated user
-// @route   GET /api/library/artists
-// @access  Private
+
 export const getFollowedArtists = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -369,7 +358,7 @@ export const getFollowedArtists = async (req, res, next) => {
       .populate({
         path: "followedArtists.artistId",
         model: "Artist",
-        select: "name imageUrl createdAt", // Убеждаемся, что createdAt выбрано
+        select: "name imageUrl createdAt", 
       })
       .lean();
 
@@ -378,7 +367,6 @@ export const getFollowedArtists = async (req, res, next) => {
       return res.json({ artists: [] });
     }
 
-    // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Убедимся, что followedArtists является массивом
     if (!library.followedArtists) {
       console.log(
         "library.followedArtists is undefined. Initializing to empty array."
@@ -412,8 +400,8 @@ export const getFollowedArtists = async (req, res, next) => {
           _id: item.artistId._id,
           name: item.artistId.name,
           imageUrl: item.artistId.imageUrl,
-          createdAt: item.artistId.createdAt || new Date().toISOString(), // Добавляем createdAt, с запасным вариантом
-          addedAt: item.addedAt, // Это поле из Library, не из Artist
+          createdAt: item.artistId.createdAt || new Date().toISOString(), 
+          addedAt: item.addedAt, 
         };
       });
 
@@ -468,7 +456,6 @@ export const toggleMixInLibrary = async (req, res, next) => {
   }
 };
 
-// Функция для получения сохраненных миксов
 export const getSavedMixes = async (req, res, next) => {
   try {
     const userId = req.user.id;

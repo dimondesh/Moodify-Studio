@@ -3,10 +3,10 @@
 import { Home, Music2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 export default function NotFoundPage() {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const navigate = useNavigate();
 
   return (

@@ -1,8 +1,8 @@
-import React, { useState } from "react"; // Добавьте import React
+import React, { useState } from "react"; 
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import type { Artist } from "../../types"; // Убедитесь, что ваш types.ts содержит интерфейс Artist
-import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"; // Общий скелетон
+import type { Artist } from "../../types"; 
+import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 
 type ArtistGridProps = {
   title: string;
@@ -10,7 +10,6 @@ type ArtistGridProps = {
   isLoading: boolean;
 };
 
-// Явно указываем React.FC для типизации компонента
 const ArtistGrid: React.FC<ArtistGridProps> = ({
   title,
   artists,
@@ -43,14 +42,13 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
           <div
             key={artist._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
-            onClick={() => navigate(`/artists/${artist._id}`)} // Переход на страницу деталей артиста
+            onClick={() => navigate(`/artists/${artist._id}`)} 
           >
             <div className="relative mb-4">
               <div className="aspect-square rounded-full shadow-lg overflow-hidden">
                 {" "}
-                {/* Rounded for artists */}
                 <img
-                  src={artist.imageUrl || "/default_artist_cover.png"} // Дефолтная обложка для артистов
+                  src={artist.imageUrl || "/default_artist_cover.png"} 
                   alt={artist.name}
                   className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {

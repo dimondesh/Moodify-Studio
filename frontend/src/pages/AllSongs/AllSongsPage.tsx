@@ -9,7 +9,7 @@ import axios from "axios";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import { useMusicStore } from "../../stores/useMusicStore";
 import React from "react";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 interface Artist {
   _id: string;
@@ -17,7 +17,7 @@ interface Artist {
 }
 
 const AllSongsPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +42,10 @@ const AllSongsPage = () => {
           if (Array.isArray(fetchedData)) {
             setSongs(fetchedData);
           } else {
-            setError(t("pages.playlist.error")); // Generic error
+            setError(t("pages.playlist.error")); 
           }
         } catch (err) {
-          setError(t("pages.playlist.error")); // Generic error
+          setError(t("pages.playlist.error")); 
         } finally {
           setIsLoading(false);
         }

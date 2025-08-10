@@ -25,7 +25,7 @@ const librarySchema = new mongoose.Schema(
       {
         mixId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Mix", // Прямая ссылка на модель Mix
+          ref: "Mix", 
           required: true,
         },
         addedAt: {
@@ -61,7 +61,6 @@ const librarySchema = new mongoose.Schema(
       },
     ],
     followedArtists: [
-      // <-- НОВОЕ ПОЛЕ: для отслеживания подписанных артистов
       {
         artistId: {
           type: mongoose.Schema.Types.ObjectId,

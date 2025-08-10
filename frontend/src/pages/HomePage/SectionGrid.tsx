@@ -5,7 +5,7 @@ import PlayButton from "./PlayButton";
 import SectionGridSkeleton from "./SectionGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { JSX, useEffect } from "react";
-import React from "react"; // Добавил импорт React
+import React from "react"; 
 
 interface Artist {
   _id: string;
@@ -33,7 +33,6 @@ const SectionGrid = ({
     fetchArtists();
   }, [fetchArtists]);
 
-  // Новая функция для отображения кликабельных имен артистов
   const getArtistNamesDisplay = (
     artistsInput: (string | Artist)[] | undefined
   ) => {
@@ -62,7 +61,7 @@ const SectionGrid = ({
           <span key={artistId}>
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Предотвратить переход по альбому при клике на артиста
+                e.stopPropagation(); 
                 handleNavigateToArtist(artistId);
               }}
               className="hover:underline focus:outline-none focus:underline"
@@ -79,10 +78,10 @@ const SectionGrid = ({
   };
 
   const handleNavigateToAlbum = (
-    e: React.MouseEvent, // Используем React.MouseEvent
+    e: React.MouseEvent,
     albumId: string | null | undefined
   ) => {
-    e.stopPropagation(); // Остановить распространение события, чтобы избежать двойного перехода
+    e.stopPropagation(); 
     if (albumId) {
       const albumIdStr = String(albumId);
       if (albumIdStr.length > 0) {
@@ -141,7 +140,6 @@ const SectionGrid = ({
             key={song._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
             onClick={() => {
-              // Основной клик по карточке, ведущий на альбом
               if (song.albumId) {
                 const albumIdStr = String(song.albumId);
                 if (albumIdStr.length > 0) {
@@ -157,7 +155,6 @@ const SectionGrid = ({
           >
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
-                {/* Обложка альбома теперь кликабельна */}
                 <button
                   onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
                   className="w-full h-full block"
@@ -175,7 +172,6 @@ const SectionGrid = ({
               </div>
               <PlayButton song={song} />
             </div>
-            {/* Название песни теперь кликабельно */}
             <h3 className="font-medium mb-2 truncate">
               <button
                 onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
@@ -185,7 +181,6 @@ const SectionGrid = ({
               </button>
             </h3>
             <p className="text-sm text-zinc-400 truncate">
-              {/* Имена артистов теперь кликабельны */}
               {getArtistNamesDisplay(song.artist)}
             </p>
           </div>

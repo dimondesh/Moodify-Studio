@@ -5,10 +5,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import type { Mix } from "../../types/index";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 const AllMixesPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const [mixes, setMixes] = useState<Mix[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

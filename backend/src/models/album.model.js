@@ -6,12 +6,11 @@ const albumSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // Изменено: теперь это массив ссылок на модель Artist
     artist: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Artist",
-        required: true, // Каждый альбом должен быть связан хотя бы с одним артистом
+        required: true,
       },
     ],
     imageUrl: {
@@ -20,8 +19,6 @@ const albumSchema = new mongoose.Schema(
     },
     imagePublicId: {
       type: String,
-      // Мы не делаем его required, чтобы не сломать старые записи,
-      // но новый код будет его всегда заполнять.
     },
     releaseYear: {
       type: Number,
@@ -43,7 +40,6 @@ const albumSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Добавление индексов
 albumSchema.index({ title: 1 });
 albumSchema.index({ artist: 1 });
 

@@ -19,19 +19,16 @@ export const syncUserWithDb = async (req, res) => {
       return res.status(400).json({ error: "Token is missing UID or email" });
     }
 
-    // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ЛОГИКИ ---
 
-    // 1. Ищем пользователя в нашей БД
     let user = await User.findOne({ firebaseUid: uid });
 
-    // 2. Если пользователя нет, создаем его
     if (!user) {
       console.log(`User with firebaseUid ${uid} not found. Creating new user.`);
       user = new User({
         firebaseUid: uid,
         email: email,
-        fullName: name || email.split("@")[0], // Используем name или часть email как имя по умолчанию
-        imageUrl: picture || null, // Картинка по умолчанию
+        fullName: name || email.split("@")[0],
+        imageUrl: picture || null, 
         language: "en",
       });
       await user.save();
@@ -44,7 +41,6 @@ export const syncUserWithDb = async (req, res) => {
       );
     }
 
-    // 3. Отправляем на фронтенд актуальные данные из НАШЕЙ базы данных
     res.status(200).json({
       message: "User synced successfully",
       user: {
@@ -57,7 +53,6 @@ export const syncUserWithDb = async (req, res) => {
       },
     });
   } catch (error) {
-    // ... обработка ошибок остается прежней ...
     console.error("❌ User sync error caught on backend:", error);
     if (error.code === "auth/id-token-expired") {
       return res

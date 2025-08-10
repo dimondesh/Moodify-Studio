@@ -19,13 +19,10 @@ const listenHistorySchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: false } // Отключаем createdAt/updatedAt, так как listenedAt выполняет эту роль
+  { timestamps: false }
 );
 
-// --- ВАЖНЫЕ ИНДЕКСЫ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ ---
-// Для быстрого поиска истории прослушиваний пользователя
 listenHistorySchema.index({ user: 1, listenedAt: -1 });
-// Для быстрого подсчета трендов по трекам
 listenHistorySchema.index({ song: 1, listenedAt: -1 });
 
 export const ListenHistory = mongoose.model(

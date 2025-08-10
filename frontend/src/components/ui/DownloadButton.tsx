@@ -5,7 +5,6 @@ import { useOfflineStore } from "@/stores/useOfflineStore";
 import { Button } from "./button";
 import toast from "react-hot-toast";
 
-// Определяем типы для четкости
 type ItemType = "albums" | "playlists" | "mixes";
 
 interface DownloadButtonProps {
@@ -19,7 +18,6 @@ export const DownloadButton = ({
   itemType,
   itemTitle,
 }: DownloadButtonProps) => {
-  // Получаем нужные состояния и действия из нашего стора
   const { isDownloaded, isDownloading, downloadItem, deleteItem } =
     useOfflineStore((s) => s.actions);
 
@@ -30,7 +28,7 @@ export const DownloadButton = ({
     : "idle";
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Важно, чтобы клик не "проваливался" на родительский элемент (например, на карточку песни)
+    e.stopPropagation(); 
 
     if (status === "idle") {
       toast.promise(downloadItem(itemId, itemType), {
@@ -39,7 +37,6 @@ export const DownloadButton = ({
         error: (err) => `Failed to download: ${err.toString()}`,
       });
     } else if (status === "downloaded") {
-      // Пока просто показываем уведомление. Позже можно будет добавить удаление.
       deleteItem(itemId, itemType, itemTitle);
     }
   };
@@ -63,7 +60,7 @@ export const DownloadButton = ({
       size="icon"
       className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0"
       disabled={status === "downloading"}
-      title={getTooltipText()} // Добавляем title для подсказки при наведении
+      title={getTooltipText()} 
     >
       {status === "downloading" && (
         <Loader2 className="animate-spin text-zinc-400 size-6" />

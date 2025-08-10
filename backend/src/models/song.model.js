@@ -24,21 +24,17 @@ const songSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // --- НОВЫЕ ПОЛЯ ДЛЯ PUBLIC_ID ---
     imagePublicId: {
-      // Добавим для консистентности, если вы захотите управлять обложками песен
       type: String,
       default: null,
     },
-    // -------------------------------
     instrumentalUrl: {
       type: String,
       required: true,
     },
     instrumentalPublicId: {
-      // <-- ДОБАВЛЕНО
       type: String,
-      required: true, // Считаем обязательным, если есть URL
+      required: true, 
       default: null,
     },
 
@@ -47,13 +43,12 @@ const songSchema = new mongoose.Schema(
       default: null,
     },
     vocalsPublicId: {
-      // <-- ДОБАВЛЕНО
       type: String,
-      default: null, // Необязательно, если vocalsUrl null
+      default: null, 
     },
 
     duration: {
-      type: Number, // Длительность в секундах
+      type: Number, 
       required: true,
     },
     playCount: {
@@ -62,7 +57,7 @@ const songSchema = new mongoose.Schema(
       min: 0,
     },
     lyrics: {
-      type: String, // Для хранения LRC-текста
+      type: String,
       default: null,
     },
     genres: [
@@ -81,12 +76,11 @@ const songSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Добавление индексов для оптимизации поиска
 songSchema.index({ title: 1 });
 songSchema.index({ artist: 1 });
 songSchema.index({ albumId: 1 });
-songSchema.index({ playCount: -1 }); // Индекс для сортировки по популярности
-songSchema.index({ genres: 1 }); // <-- НОВЫЙ ИНДЕКС
-songSchema.index({ moods: 1 }); // <-- НОВЫЙ ИНДЕКС
+songSchema.index({ playCount: -1 }); 
+songSchema.index({ genres: 1 }); 
+songSchema.index({ moods: 1 }); 
 
 export const Song = mongoose.model("Song", songSchema);

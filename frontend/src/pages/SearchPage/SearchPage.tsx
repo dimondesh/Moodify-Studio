@@ -10,11 +10,11 @@ import PlaylistGrid from "./PlaylistGrid";
 import ArtistGrid from "./ArtistGrid";
 import useDebounce from "../../hooks/useDebounce";
 import UserGrid from "./UserGrid";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
 const SearchPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const queryParam = searchParams.get("q") || "";
 

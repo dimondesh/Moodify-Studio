@@ -46,8 +46,7 @@ export default defineConfig({
                         },
                     },
                     {
-                        // ИСПРАВЛЕНИЕ: Используем фактический URL вашего API.
-                        // ЗАМЕНИТЕ "http://localhost:5000" НА ВАШ РЕАЛЬНЫЙ URL API, ЕСЛИ ОН ДРУГОЙ
+                       
                         urlPattern: function (_a) {
                             var url = _a.url;
                             return url.origin === "https://moodify-yf1r.onrender.com/api";
@@ -89,13 +88,13 @@ export default defineConfig({
                         src: "Moodify.png",
                         sizes: "192x192",
                         type: "image/png",
-                        purpose: "any maskable", // <-- Добавлено для лучшей поддержки PWA
+                        purpose: "any maskable",
                     },
                     {
                         src: "Moodify.png",
                         sizes: "512x512",
                         type: "image/png",
-                        purpose: "any maskable", // <-- Добавлено для лучшей поддержки PWA
+                        purpose: "any maskable", 
                     },
                 ],
             },

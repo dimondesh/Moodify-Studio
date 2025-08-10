@@ -119,7 +119,6 @@ const PlaybackControls = () => {
   const topSwipeAreaRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
 
-  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета плеера ---
   const { extractColor } = useDominantColor();
   const [playerDominantColor, setPlayerDominantColor] = useState("#18181b");
 
@@ -204,7 +203,6 @@ const PlaybackControls = () => {
     setPlayerCurrentTime,
   ]);
 
-  // --- ИЗМЕНЕНИЕ 2: Эффект для извлечения цвета текущей песни ---
   useEffect(() => {
     if (
       currentSong?.imageUrl &&
@@ -410,7 +408,6 @@ const PlaybackControls = () => {
             <DialogContent
               aria-describedby={undefined}
               className={`fixed w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
-              // --- ИЗМЕНЕНИЕ 3: Используем локальное состояние для фона ---
               style={{
                 background: `linear-gradient(to bottom, ${playerDominantColor} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
                 transition: "background 1s ease-in-out",

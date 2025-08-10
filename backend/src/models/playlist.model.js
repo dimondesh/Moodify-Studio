@@ -42,7 +42,6 @@ const playlistSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Добавление индексов
 playlistSchema.index({ title: 1 });
 playlistSchema.index({ description: 1 });
 playlistSchema.index({ isPublic: 1 });

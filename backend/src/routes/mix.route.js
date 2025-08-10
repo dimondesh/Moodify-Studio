@@ -4,8 +4,7 @@ import { identifyUser } from "../middleware/identifyUser.middleware.js";
 
 const router = express.Router();
 
-// Роут для получения ежедневных миксов, доступен всем
-router.get("/", identifyUser, getDailyMixes); // <-- ИЗМЕНЕНИЕ
-router.get("/:id", getMixById); // <-- ДОБАВЬТЕ ЭТОТ РОУТ
+router.get("/", identifyUser, getDailyMixes);
+router.get("/:id", getMixById);
 
 export default router;

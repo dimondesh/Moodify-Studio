@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/button";
 import type { User } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 type UserGridProps = {
   title: string;
@@ -15,7 +15,7 @@ type UserGridProps = {
 };
 
 const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
 

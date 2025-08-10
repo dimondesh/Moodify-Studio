@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { Playlist, Song, Album, Artist, User } from "../types"; // Импортируем Artist
+import { Playlist, Song, Album, Artist, User } from "../types";
 
-// Обновленный интерфейс SearchState для включения artists
 interface SearchState {
   query: string;
   songs: Song[];
   albums: Album[];
   playlists: Playlist[];
-  users: User[]; // <-- НОВОЕ ПОЛЕ
+  users: User[];
 
-  artists: Artist[]; // Добавляем артистов
+  artists: Artist[];
   loading: boolean;
   error: string | null;
   setQuery: (q: string) => void;
@@ -23,8 +22,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   songs: [],
   albums: [],
   playlists: [],
-  artists: [], // Инициализируем пустое поле для артистов
-  users: [], // <-- НОВОЕ ПОЛЕ
+  artists: [],
+  users: [],
 
   loading: false,
   error: null,
@@ -37,8 +36,8 @@ export const useSearchStore = create<SearchState>((set) => ({
         songs: [],
         albums: [],
         playlists: [],
-        artists: [], // Очищаем и артистов
-        users: [], // <-- Очищаем
+        artists: [],
+        users: [],
 
         loading: false,
         error: null,
@@ -55,8 +54,8 @@ export const useSearchStore = create<SearchState>((set) => ({
         songs: res.data.songs || [],
         albums: res.data.albums || [],
         playlists: res.data.playlists || [],
-        artists: res.data.artists || [], // Обновляем состояние артистов
-        users: res.data.users || [], // <-- Обновляем
+        artists: res.data.artists || [],
+        users: res.data.users || [],
 
         loading: false,
       });

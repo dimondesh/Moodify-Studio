@@ -30,8 +30,6 @@ const CORE_GENRES_LIST = [
   "Ambient",
 ];
 
-// --- НОВАЯ ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ---
-// Создает паузу в выполнении кода.
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const findOrCreate = async (model, name) => {
@@ -104,19 +102,15 @@ Example Response: { "primaryGenre": "Alternative", "subGenres": ["Indie Pop", "J
       error.response?.data?.error?.message || error.message
     );
 
-    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: УМНАЯ ПАУЗА ---
-    // Если мы получили ошибку (скорее всего, 429 - лимит запросов),
-    // мы делаем паузу на 2 секунды, чтобы "успокоить" API.
     if (error.response && error.response.status === 429) {
       console.log(
         "[AI Service] Достигнут лимит запросов. Пауза на 2 секунды..."
       );
       await sleep(2000);
     } else {
-      await sleep(1000); // Небольшая пауза на всякий случай при других ошибках
+      await sleep(1000); 
     }
 
-    // Возвращаем пустые массивы, чтобы не сломать основной код
     return { genreIds: [], moodIds: [] };
   }
 };

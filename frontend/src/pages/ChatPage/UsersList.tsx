@@ -10,7 +10,7 @@ import UsersListSkeleton from "../../components/ui/skeletons/UsersListSkeleton";
 import { useChatStore } from "../../stores/useChatStore";
 import { useAuthStore } from "../../stores/useAuthStore";
 import type { User } from "../../types";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 interface UsersListProps {
   onUserSelect: (user: User) => void;
@@ -25,7 +25,7 @@ const UsersList = ({
   onlineUsers,
   userActivities,
 }: UsersListProps) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const { users, isLoading, error } = useChatStore();
   const { user: mongoUser } = useAuthStore();
 

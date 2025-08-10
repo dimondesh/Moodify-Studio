@@ -22,11 +22,11 @@ import {
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
 import WaveAnalyzer from "./WaveAnalyzer";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 import MoodifyLogo from "../MoodifyLogo";
 
 const Topbar = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
@@ -86,7 +86,6 @@ const Topbar = () => {
           <MoodifyLogo />
         </Link>
 
-        {/* <img src="/Moodify.svg" alt="Moodify" className="h-8 w-auto" /> */}
         <WaveAnalyzer width={120} height={30} />
       </div>
 

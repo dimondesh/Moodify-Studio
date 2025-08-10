@@ -8,7 +8,7 @@ import {
 import { useChatStore } from "../../stores/useChatStore";
 import { Button } from "../../components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 interface ChatHeaderProps {
   showBackButton?: boolean;
@@ -16,7 +16,7 @@ interface ChatHeaderProps {
 }
 
 const ChatHeader = ({ showBackButton = false, onBack }: ChatHeaderProps) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const { selectedUser, onlineUsers } = useChatStore();
 
   if (!selectedUser) return null;

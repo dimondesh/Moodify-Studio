@@ -62,9 +62,9 @@ export const getMyPlaylists = async (req, res, next) => {
     const createdPlaylists = await Playlist.find({ owner: userId })
       .populate("owner", "fullName imageUrl")
       .populate({
-        path: "songs", // Популируем песни
+        path: "songs",
         populate: {
-          path: "artist", // И внутри каждой песни популируем артиста
+          path: "artist",
           model: "Artist",
           select: "name imageUrl",
         },
@@ -81,9 +81,9 @@ export const getMyPlaylists = async (req, res, next) => {
             select: "fullName imageUrl",
           },
           {
-            path: "songs", // Популируем песни внутри плейлиста из библиотеки
+            path: "songs",
             populate: {
-              path: "artist", // И внутри этих песен популируем артиста
+              path: "artist",
               model: "Artist",
               select: "name imageUrl",
             },
@@ -94,9 +94,9 @@ export const getMyPlaylists = async (req, res, next) => {
 
     const addedPlaylists = userLibrary
       ? userLibrary.playlists
-          .filter((item) => item.playlistId) // Убеждаемся, что playlistId существует
+          .filter((item) => item.playlistId)
           .map((item) => ({
-            ...item.playlistId, // Разворачиваем данные популированного плейлиста (уже .lean())
+            ...item.playlistId,
             addedAt: item.addedAt,
           }))
       : [];
@@ -126,14 +126,14 @@ export const getPlaylistById = async (req, res, next) => {
     const playlist = await Playlist.findById(playlistId)
       .populate("owner", "fullName imageUrl")
       .populate({
-        path: "songs", // Популируем песни
+        path: "songs",
         populate: {
-          path: "artist", // И внутри каждой песни популируем артиста
+          path: "artist",
           model: "Artist",
           select: "name imageUrl",
         },
       })
-      .lean(); // Добавляем .lean() для получения простых JS объектов
+      .lean();
 
     if (!playlist) {
       return res.status(404).json({ message: "Playlist not found" });
@@ -230,7 +230,6 @@ export const addSongToPlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Song not found" });
     }
 
-    console.log("/////////////////////", req.user.id);
     if (playlist.owner.toString() !== req.user.id.toString()) {
       return res.status(403).json({
         message: "Access denied. You are not the owner of this playlist.",
@@ -295,15 +294,13 @@ export const likePlaylist = async (req, res, next) => {
       return res.status(404).json({ message: "Playlist not found" });
     }
 
-    // ИЗМЕНЕНО: likes теперь должен быть массивом ObjectId, а не числом
-    // Проверяем, есть ли userId в массиве likes
     if (playlist.likes.includes(userId)) {
       return res
         .status(400)
         .json({ message: "Playlist already liked by this user" });
     }
 
-    playlist.likes.push(userId); // Добавляем userId в массив likes
+    playlist.likes.push(userId);
     await playlist.save();
 
     res.status(200).json({ message: "Playlist liked successfully", playlist });
@@ -325,7 +322,6 @@ export const unlikePlaylist = async (req, res, next) => {
     }
 
     const initialLikeCount = playlist.likes.length;
-    // ИЗМЕНЕНО: фильтруем userId из массива likes
     playlist.likes = playlist.likes.filter((id) => id.toString() !== userId);
 
     if (playlist.likes.length === initialLikeCount) {
@@ -350,14 +346,14 @@ export const getPublicPlaylists = async (req, res, next) => {
     const publicPlaylists = await Playlist.find({ isPublic: true })
       .populate("owner", "fullName imageUrl")
       .populate({
-        path: "songs", // Популируем песни
+        path: "songs", 
         populate: {
-          path: "artist", // И внутри каждой песни популируем артиста
+          path: "artist", 
           model: "Artist",
           select: "name imageUrl",
         },
       })
-      .lean(); // Добавляем .lean()
+      .lean(); 
     res.status(200).json(publicPlaylists);
   } catch (error) {
     console.error("Error in getPublicPlaylists:", error);

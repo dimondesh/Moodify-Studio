@@ -12,12 +12,12 @@ import { useLibraryStore } from "../../stores/useLibraryStore";
 import Equalizer from "../../components/ui/equalizer";
 import type { Artist, Song, Album } from "../../types";
 import { axiosInstance } from "@/lib/axios";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 
 const ArtistPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ const ArtistPage = () => {
 
   useEffect(() => {
     const fetchArtistData = async () => {
-      if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+      if (useOfflineStore.getState().isOffline) return;
 
       if (!id) {
         setError("Artist ID is missing.");

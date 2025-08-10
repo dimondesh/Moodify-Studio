@@ -20,7 +20,7 @@ interface ChatStore {
   messages: Message[];
   selectedUser: User | null;
 
-  fetchUsers: () => Promise<void>; // Переименуем в fetchMutuals или изменим реализацию
+  fetchUsers: () => Promise<void>; 
 
   initSocket: (mongoDbUserId: string) => Promise<void>;
   disconnectSocket: () => void;
@@ -54,7 +54,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setSelectedUser: (user) => set({ selectedUser: user }),
 
   fetchUsers: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     const { user: authUser } = useAuthStore.getState();
     if (!authUser || !authUser.id) {
@@ -282,7 +282,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   fetchMessages: async (userId: string) => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {

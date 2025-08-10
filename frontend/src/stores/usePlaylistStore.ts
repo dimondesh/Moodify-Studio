@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
-import { axiosInstance } from "@/lib/axios"; // Используем абсолютный импорт
-import type { Playlist } from "@/types"; // Используем абсолютный импорт
-import toast from "react-hot-toast"; // Импорт react-hot-toast
-import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТИРУЕМ ОФЛАЙН-СТОР
-import { getItem } from "@/lib/offline-db"; // <-- 2. ИМПОРТИРУЕМ ФУНКЦИЮ ДЛЯ ЧТЕНИЯ ИЗ БД
+import { axiosInstance } from "@/lib/axios"; 
+import type { Playlist } from "@/types"; 
+import toast from "react-hot-toast"; 
+import { useOfflineStore } from "./useOfflineStore"; 
+import { getItem } from "@/lib/offline-db"; 
 
 interface PlaylistStore {
   myPlaylists: Playlist[];
@@ -35,16 +35,12 @@ interface PlaylistStore {
   addSongToPlaylist: (playlistId: string, songId: string) => Promise<void>;
   removeSongFromPlaylist: (playlistId: string, songId: string) => Promise<void>;
 
-  // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
-  // Функция для добавления/удаления плейлиста в/из ЛИЧНОЙ БИБЛИОТЕКИ
   togglePlaylistInUserLibrary: (playlistId: string) => Promise<void>;
-  // Функции для управления ЛАЙКАМИ ПОПУЛЯРНОСТИ на самом плейлисте
   addPlaylistLike: (playlistId: string) => Promise<void>;
   removePlaylistLike: (playlistId: string) => Promise<void>;
-  // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
-  resetCurrentPlaylist: () => void; // Для очистки текущего плейлиста при уходе со страницы
-  fetchPlaylistDetails: (playlistId: string) => Promise<void>; // ИСПРАВЛЕНО
+  resetCurrentPlaylist: () => void; 
+  fetchPlaylistDetails: (playlistId: string) => Promise<void>; 
 }
 
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
@@ -53,11 +49,11 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   currentPlaylist: null,
   isLoading: false,
   error: null,
-  dominantColor: null, // <--- новое поле
-  setDominantColor: (color: string) => set({ dominantColor: color }), // <--
+  dominantColor: null, 
+  setDominantColor: (color: string) => set({ dominantColor: color }), 
 
   fetchMyPlaylists: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -74,7 +70,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   fetchPublicPlaylists: async () => {
-    if (useOfflineStore.getState().isOffline) return; // ЗАЩИТА
+    if (useOfflineStore.getState().isOffline) return; 
 
     set({ isLoading: true, error: null });
     try {
@@ -124,7 +120,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           "Content-Type": "multipart/form-data",
         },
       });
-      get().fetchMyPlaylists(); // Обновить список плейлистов после создания
+      get().fetchMyPlaylists(); 
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {
@@ -153,7 +149,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           "Content-Type": "multipart/form-data",
         },
       });
-      get().fetchMyPlaylists(); // Обновить список плейлистов после обновления
+      get().fetchMyPlaylists();
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {
@@ -170,7 +166,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${id}`);
-      get().fetchMyPlaylists(); // Обновить список плейлистов после удаления
+      get().fetchMyPlaylists(); 
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to delete playlist:", err);
@@ -185,7 +181,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post(`/playlists/${playlistId}/songs`, { songId });
-      get().fetchPlaylistDetails(playlistId); // Обновляем детали текущего плейлиста
+      get().fetchPlaylistDetails(playlistId); 
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to add song to playlist:", err);
@@ -200,7 +196,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${playlistId}/songs/${songId}`);
-      get().fetchPlaylistDetails(playlistId); // Обновляем детали текущего плейлиста
+      get().fetchPlaylistDetails(playlistId); 
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to remove song from playlist:", err);
@@ -212,10 +208,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
-  // --- ОБНОВЛЕННЫЕ ФУНКЦИИ ---
-
-  // Новая функция для добавления/удаления плейлиста из ЛИЧНОЙ БИБЛИОТЕКИ пользователя.
-  // Эта функция должна быть вызвана кнопкой "добавить в библиотеку" / "сохранить".
+ 
   togglePlaylistInUserLibrary: async (playlistId: string) => {
     try {
       const response = await axiosInstance.post(
@@ -230,8 +223,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
             ? "Playlist added to library!"
             : "Playlist removed from library!")
       );
-      // ОЧЕНЬ ВАЖНО: После изменения библиотеки, обновляем список 'myPlaylists'
-      // так как он теперь включает элементы из библиотеки.
+  
       get().fetchMyPlaylists();
     } catch (err: any) {
       console.error("Failed to toggle playlist in library:", err);
@@ -243,16 +235,14 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
-  // Новая функция для увеличения счетчика ЛАЙКОВ ПОПУЛЯРНОСТИ на плейлисте.
-  // Это отдельная метрика от добавления в библиотеку.
+ 
   addPlaylistLike: async (playlistId: string) => {
     try {
       await axiosInstance.post(`/playlists/${playlistId}/like`);
       toast.success("Playlist liked!");
-      // Возможно, потребуется обновить `currentPlaylist` или `publicPlaylists`
-      // чтобы увидеть изменения в количестве лайков на фронтенде.
-      get().fetchPlaylistDetails(playlistId); // Обновить детали текущего плейлиста, если лайк поставлен на открытом плейлисте
-      get().fetchPublicPlaylists(); // Обновить публичные плейлисты, чтобы обновилось количество лайков
+   
+      get().fetchPlaylistDetails(playlistId); 
+      get().fetchPublicPlaylists(); 
     } catch (err: any) {
       console.error("Failed to like playlist:", err);
       set({ error: err.response?.data?.message || "Failed to like playlist" });
@@ -260,13 +250,12 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
-  // Новая функция для уменьшения счетчика ЛАЙКОВ ПОПУЛЯРНОСТИ на плейлисте.
   removePlaylistLike: async (playlistId: string) => {
     try {
-      await axiosInstance.delete(`/playlists/${playlistId}/unlike`); // Используем /unlike как в вашем router.delete
+      await axiosInstance.delete(`/playlists/${playlistId}/unlike`); 
       toast.success("Playlist unliked!");
-      get().fetchPlaylistDetails(playlistId); // Обновить детали текущего плейлиста
-      get().fetchPublicPlaylists(); // Обновить публичные плейлисты
+      get().fetchPlaylistDetails(playlistId);
+      get().fetchPublicPlaylists(); 
     } catch (err: any) {
       console.error("Failed to unlike playlist:", err);
       set({
@@ -276,7 +265,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
-  // --- КОНЕЦ ОБНОВЛЕННЫХ ФУНКЦИЙ ---
 
   resetCurrentPlaylist: () => set({ currentPlaylist: null }),
 

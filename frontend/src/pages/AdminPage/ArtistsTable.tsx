@@ -14,10 +14,10 @@ import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Artist } from "../../types";
 import EditArtistDialog from "./EditArtistDialog";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 const ArtistsTable = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const { artists, fetchArtists, deleteArtist } = useMusicStore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);

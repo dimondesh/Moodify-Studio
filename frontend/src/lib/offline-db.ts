@@ -1,6 +1,5 @@
 // frontend/src/lib/offline-db.ts
 
-// ИСПРАВЛЕНИЕ: Импортируем 'StoreNames' из библиотеки idb
 import { openDB, DBSchema, IDBPDatabase, StoreNames } from "idb";
 import type { Song, Album, Playlist, Mix } from "@/types";
 
@@ -40,13 +39,11 @@ const initDB = () => {
 
 export const getDb = initDB;
 
-// ИСПРАВЛЕНИЕ: Используем 'T extends StoreNames<MoodifyDB>' для более строгой типизации
 export const saveItem = async <T extends StoreNames<MoodifyDB>>(
   storeName: T,
   item: MoodifyDB[T]["value"]
 ): Promise<void> => {
   const db = await getDb();
-  // Теперь TypeScript понимает, что storeName и item соответствуют друг другу
   await db.put(storeName, item);
 };
 

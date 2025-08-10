@@ -17,7 +17,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { User } from "@/types";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 interface EditProfileDialogProps {
   user: User;
@@ -32,7 +32,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   user,
   onSuccess,
 }) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(

@@ -1,17 +1,15 @@
     {
       "compilerOptions": {
-        "baseUrl": ".", // Это очень важно! Указывает базовую директорию для разрешения модулей
+        "baseUrl": ".", 
         "paths": {
-          "@/*": ["./src/*"] // Это говорит TypeScript, что '@/...' соответствует './src/...'
+          "@/*": ["./src/*"] 
         },
-        // ... остальные опции compilerOptions ...
-        "target": "ES2020", // Убедитесь, что это или более новая версия
+        "target": "ES2020", 
         "useDefineForClassFields": true,
         "lib": ["ES2020", "DOM", "DOM.Iterable"],
         "module": "ESNext",
         "skipLibCheck": true,
 
-        /* Bundler mode */
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,
@@ -19,13 +17,12 @@
         "noEmit": true,
         "jsx": "react-jsx",
 
-        /* Linting */
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
       },
-      "include": ["src"], // Убедитесь, что src включен
+      "include": ["src"], 
       "references": [{ "path": "./tsconfig.node.json" }]
     }
     

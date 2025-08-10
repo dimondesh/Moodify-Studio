@@ -38,12 +38,10 @@ const artistSchema = new mongoose.Schema(
         ref: "Album",
       },
     ],
-    // Можно добавить другие поля, например, количество прослушиваний, жанры и т.д.
   },
   { timestamps: true }
 );
 
-// Добавление индекса
 artistSchema.index({ name: 1 });
 
 export const Artist = mongoose.model("Artist", artistSchema);

@@ -50,11 +50,10 @@ const LibraryPage = () => {
   const [user] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const { isOffline } = useOfflineStore.getState(); // <-- ИЗМЕНЕНИЕ
+  const { isOffline } = useOfflineStore.getState(); 
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
-  // ИЗМЕНЕНИЕ: Автоматически переключаем фильтр в офлайн-режиме
   useEffect(() => {
     if (isOffline) {
       setActiveFilter("downloaded");
@@ -63,7 +62,6 @@ const LibraryPage = () => {
 
   useEffect(() => {
     if (!isOffline) {
-      // <-- ИЗМЕНЕНИЕ: Загружаем данные только если есть сеть
       fetchLibrary();
       fetchLikedSongs();
       fetchMyPlaylists();
@@ -188,10 +186,8 @@ const LibraryPage = () => {
       : []),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  // ИЗМЕНЕНИЕ: Обновляем логику фильтрации
   const filteredLibraryItems = libraryItems.filter((item) => {
     if (activeFilter === "downloaded") {
-      // Исключаем типы, которые не могут быть скачаны
       if (item.type === "liked-songs" || item.type === "artist") {
         return false;
       }
@@ -222,7 +218,7 @@ const LibraryPage = () => {
                   {t("sidebar.library")}
                 </h1>
                 {user &&
-                  !isOffline && ( // <-- ИЗМЕНЕНИЕ: Скрываем кнопку оффлайн
+                  !isOffline && ( 
                     <Button
                       variant="ghost"
                       size="icon"

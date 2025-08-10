@@ -1,14 +1,14 @@
 // backend/src/controller/song.controller.js
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
-import axios from "axios"; // <-- ДОБАВЬТЕ ЭТОТ ИМПОРТ
+import axios from "axios";
 
 export const getAllSongs = async (req, res, next) => {
   try {
     const songs = await Song.find()
       .populate("artist", "name imageUrl")
-      .populate("genres") // <-- ДОБАВИТЬ ЭТУ СТРОКУ
-      .populate("moods") // <-- И ЭТУ СТРОКУ
+      .populate("genres") 
+      .populate("moods") 
       .sort({ createdAt: -1 });
     res.status(200).json({ songs });
   } catch (error) {
@@ -18,7 +18,6 @@ export const getAllSongs = async (req, res, next) => {
 
 export const getFeaturedSongs = async (req, res, next) => {
   try {
-    // Для Featured оставляем случайную выборку
     const songs = await Song.aggregate([
       { $sample: { size: 6 } },
       {
@@ -48,7 +47,6 @@ export const getFeaturedSongs = async (req, res, next) => {
   }
 };
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ TRENDING ---
 export const getTrendingSongs = async (req, res, next) => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -61,7 +59,6 @@ export const getTrendingSongs = async (req, res, next) => {
       { $project: { _id: 1 } },
     ]);
 
-    // 1. Получаем ID песен в ПРАВИЛЬНОМ порядке популярности
     const orderedSongIds = trendingSongIdsResult
       .map((item) => item._id)
       .filter((id) => id);
@@ -74,19 +71,15 @@ export const getTrendingSongs = async (req, res, next) => {
       return res.json(popularSongs);
     }
 
-    // 2. Получаем документы песен. Они придут в НЕПРАВИЛЬНОМ, "естественном" порядке
     const unorderedSongs = await Song.find({
       _id: { $in: orderedSongIds },
     }).populate("artist", "name imageUrl");
 
-    // 3. КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Принудительно сортируем полученные песни
-    // в том же порядке, в котором были наши ID.
-    // Для этого создаем карту для быстрого доступа.
+    
     const songMap = new Map(
       unorderedSongs.map((song) => [song._id.toString(), song])
     );
 
-    // Собираем итоговый массив, итерируясь по ПРАВИЛЬНО упорядоченному массиву ID
     const orderedSongs = orderedSongIds
       .map((id) => songMap.get(id.toString()))
       .filter(Boolean);
@@ -98,7 +91,6 @@ export const getTrendingSongs = async (req, res, next) => {
   }
 };
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
 export const getMadeForYouSongs = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -115,26 +107,20 @@ export const getMadeForYouSongs = async (req, res, next) => {
       return getTrendingSongs(req, res, next);
     }
 
-    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-    // Фильтруем записи, где песня была удалена (item.song === null)
     const validHistory = listenHistory.filter((item) => item.song !== null);
 
-    // Если после фильтрации история пуста, тоже возвращаем тренды
     if (validHistory.length === 0) {
       return getTrendingSongs(req, res, next);
     }
 
     const listenedSongIds = validHistory.map((item) => item.song._id);
-    // ------------------------------------
 
     const genreCounts = {};
     const moodCounts = {};
     const artistCounts = {};
 
-    // Используем отфильтрованную историю validHistory
     validHistory.forEach((item) => {
       const { song } = item;
-      // Дополнительная проверка на всякий случай
       if (song) {
         song.genres.forEach((genreId) => {
           genreCounts[genreId] = (genreCounts[genreId] || 0) + 1;
@@ -179,16 +165,13 @@ export const getMadeForYouSongs = async (req, res, next) => {
   }
 };
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
 export const recordListen = async (req, res, next) => {
   try {
     const { id: songId } = req.params;
 
-    // --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ---
-    // Берем ID пользователя из req.user.id, как вы и говорили.
+    
     const userId = req.user.id;
 
-    // Эта проверка теперь должна пройти успешно
     if (!songId || !userId) {
       console.error(
         `[recordListen] Validation Failed: songId=${songId}, userId=${userId}`
@@ -220,12 +203,10 @@ export const recordListen = async (req, res, next) => {
     next(error);
   }
 };
-// Старую функцию incrementPlayCount можно полностью удалить
 export const getListenHistory = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    // 1. Получаем всю историю, сортируя по последней дате прослушивания
     const fullHistory = await ListenHistory.find({ user: userId })
       .sort({ listenedAt: -1 })
       .populate({
@@ -236,18 +217,16 @@ export const getListenHistory = async (req, res, next) => {
           select: "name imageUrl",
         },
       })
-      .lean(); // .lean() для производительности
+      .lean(); 
 
     if (!fullHistory || fullHistory.length === 0) {
       return res.json({ songs: [] });
     }
 
-    // 2. Убираем дубликаты, сохраняя порядок последнего прослушивания
     const uniqueSongs = [];
     const seenSongIds = new Set();
 
     for (const record of fullHistory) {
-      // Пропускаем, если песня была удалена или уже добавлена в наш список
       if (record.song && !seenSongIds.has(record.song._id.toString())) {
         seenSongIds.add(record.song._id.toString());
         uniqueSongs.push(record.song);
@@ -270,21 +249,17 @@ export const getImageForColorAnalysis = async (req, res, next) => {
 
     const decodedUrl = decodeURIComponent(url);
 
-    // Запрашиваем изображение с Cloudinary как поток данных
     const response = await axios({
       method: "get",
       url: decodedUrl,
       responseType: "stream",
     });
 
-    // Устанавливаем правильный заголовок Content-Type из ответа Cloudinary
     res.setHeader("Content-Type", response.headers["content-type"]);
 
-    // Передаем поток изображения напрямую в ответ клиенту
     response.data.pipe(res);
   } catch (error) {
     console.error("Image proxy error:", error.message);
-    // Передаем ошибку в глобальный обработчик
     next(new Error("Failed to proxy image"));
   }
 };

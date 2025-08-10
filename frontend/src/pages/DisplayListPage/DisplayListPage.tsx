@@ -6,7 +6,7 @@ import { axiosInstance } from "@/lib/axios";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SectionGridSkeleton from "@/components/ui/skeletons/PlaylistSkeleton";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 interface ListItem {
   _id: string;
@@ -17,12 +17,12 @@ interface ListItem {
 }
 
 const DisplayListPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const [items, setItems] = useState<ListItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const { title, apiEndpoint } = location.state || {
-    title: t("pages.displayList.title"), // <-- ПЕРЕВОД
+    title: t("pages.displayList.title"), 
     apiEndpoint: null,
   };
 

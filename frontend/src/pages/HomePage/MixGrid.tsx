@@ -1,7 +1,7 @@
 import type { Mix } from "@/types";
 import { useNavigate } from "react-router-dom";
 import SectionGridSkeleton from "./SectionGridSkeleton";
-import { Button } from "@/components/ui/button"; // <-- Импортируем компонент кнопки
+import { Button } from "@/components/ui/button";
 
 interface MixGridProps {
   title: string;
@@ -21,11 +21,10 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
     return null;
   }
 
-  // Навигация на страницу со всеми миксами категории
   const handleShowAll = () => {
     navigate(`/all-mixes/${encodeURIComponent(title)}`, {
       state: {
-        mixes: mixes, // Передаем ВЕСЬ массив миксов
+        mixes: mixes,
         title: title,
       },
     });
@@ -37,10 +36,8 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
 
   return (
     <div className="mb-8">
-      {/* Обертка для заголовка и кнопки */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
-        {/* Кнопка "Show all" появляется, только если миксов больше 4 */}
         {mixes.length > 4 && (
           <Button
             variant="link"

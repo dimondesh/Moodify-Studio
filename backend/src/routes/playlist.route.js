@@ -16,19 +16,17 @@ import {
 
 const router = express.Router();
 
-// Public routes
 router.get("/public", getPublicPlaylists);
 
-// Protected routes
-router.use(protectRoute); // All routes below this will be protected
+router.use(protectRoute);
 
-router.post("/", createPlaylist); // Create a new playlist
-router.get("/my", getMyPlaylists); // Get all playlists for the authenticated user
-router.get("/:id", getPlaylistById); // Get a specific playlist by ID
-router.put("/:id", updatePlaylist); // Update a playlist
-router.delete("/:id", deletePlaylist); // Delete a playlist
+router.post("/", createPlaylist);
+router.get("/my", getMyPlaylists);
+router.get("/:id", getPlaylistById);
+router.put("/:id", updatePlaylist);
+router.delete("/:id", deletePlaylist);
 
-router.post("/:id/songs", addSongToPlaylist); // Add a song to a playlist
-router.delete("/:playlistId/songs/:songId", removeSongFromPlaylist); // Remove a song from a playlist
+router.post("/:id/songs", addSongToPlaylist);
+router.delete("/:playlistId/songs/:songId", removeSongFromPlaylist);
 
 export default router;

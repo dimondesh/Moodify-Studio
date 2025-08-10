@@ -84,7 +84,6 @@ export const initializeSocket = (server) => {
 
     console.log(`User ${userId} (MongoDB _id) connected via Socket.IO`);
 
-    // ОБНОВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ АКТИВНОСТИ
     socket.on("update_activity", async ({ songId }) => {
       console.log(
         `[Socket] Received update_activity for userId: ${userId}, songId: ${songId}`
@@ -94,11 +93,10 @@ export const initializeSocket = (server) => {
       if (songId) {
         try {
           // Находим песню и заполняем информацию об артисте
-          // Убедитесь, что 'artist' в вашей модели Song ссылается на модель Artist
           const song = await Song.findById(songId).populate({
-            path: "artist", // Имя поля в вашей модели Song, которое хранит ссылки на Artist(ов)
-            model: "Artist", // Имя вашей модели Artist (например, 'Artist', 'artists' и т.д.)
-            select: "name", // Выбираем только имя, чтобы избежать больших объектов
+            path: "artist", 
+            model: "Artist", 
+            select: "name", 
           });
 
           console.log(
@@ -108,7 +106,6 @@ export const initializeSocket = (server) => {
 
           if (song && song.artist) {
             let artistNames;
-            // Проверяем, является ли song.artist массивом (для нескольких артистов)
             if (Array.isArray(song.artist)) {
               artistNames = song.artist.map((a) => a.name).join(", ");
             } else if (
@@ -116,11 +113,8 @@ export const initializeSocket = (server) => {
               typeof song.artist === "object" &&
               "name" in song.artist
             ) {
-              // Если это одиночный объект артиста
               artistNames = song.artist.name;
             } else {
-              // Если это не объект с именем (например, просто ID, хотя populate должен был его заполнить)
-              // В таком случае, это скорее всего означает, что populate не сработал или данные некорректны
               console.warn(
                 `[Socket] Unexpected artist format for song ${song.title}:`,
                 song.artist
@@ -140,7 +134,7 @@ export const initializeSocket = (server) => {
             "Ошибка при получении данных песни для активности:",
             error
           );
-          activityString = "Unknown Activity (Error)"; // Обработка ошибок БД
+          activityString = "Unknown Activity (Error)";
         }
       } else {
         // Если songId не пришел (пользователь поставил на паузу, перестал слушать и т.д.)

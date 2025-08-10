@@ -3,9 +3,9 @@ import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import type { Mix } from "@/types";
-import { useLibraryStore } from "./useLibraryStore"; // Импортируем для вызова обновления
-import { useOfflineStore } from "./useOfflineStore"; // <-- 1. ИМПОРТ
-import { getItem } from "@/lib/offline-db"; // <-- 2. ИМПОРТ
+import { useLibraryStore } from "./useLibraryStore";
+import { useOfflineStore } from "./useOfflineStore";
+import { getItem } from "@/lib/offline-db";
 
 interface MixesData {
   genreMixes: Mix[];
@@ -15,13 +15,13 @@ interface MixesData {
 interface MixesStore {
   genreMixes: Mix[];
   moodMixes: Mix[];
-  currentMix: Mix | null; // <-- ДОБАВИТЬ
+  currentMix: Mix | null;
   isLoading: boolean;
   error: string | null;
-  fetchMixById: (id: string) => Promise<void>; // <-- ДОБАВИТЬ
+  fetchMixById: (id: string) => Promise<void>;
 
   fetchDailyMixes: () => Promise<void>;
-  toggleMixInLibrary: (mixId: string) => Promise<void>; // <-- ПЕРЕИМЕНОВАНО И ОБНОВЛЕНО
+  toggleMixInLibrary: (mixId: string) => Promise<void>;
 }
 
 export const useMixesStore = create<MixesStore>((set) => ({
@@ -29,7 +29,7 @@ export const useMixesStore = create<MixesStore>((set) => ({
   moodMixes: [],
   isLoading: false,
   error: null,
-  currentMix: null, // <-- ДОБАВИТЬ
+  currentMix: null,
 
   fetchDailyMixes: async () => {
     set({ isLoading: true, error: null });
@@ -46,7 +46,6 @@ export const useMixesStore = create<MixesStore>((set) => ({
     }
   },
 
-  // --- ОБНОВЛЕННАЯ ФУНКЦИЯ ---
   toggleMixInLibrary: async (mixId: string) => {
     try {
       const response = await axiosInstance.post(`/library/mixes/toggle`, {
@@ -57,7 +56,6 @@ export const useMixesStore = create<MixesStore>((set) => ({
         isSaved ? "Mix added to your library" : "Mix removed from your library"
       );
 
-      // Триггерим полное обновление библиотеки, чтобы UI везде обновился
       useLibraryStore.getState().fetchLibrary();
     } catch (err: any) {
       console.error("Failed to toggle mix in library:", err);
@@ -65,7 +63,6 @@ export const useMixesStore = create<MixesStore>((set) => ({
     }
   },
   fetchMixById: async (id: string) => {
-    // <-- ДОБАВИТЬ ВСЮ ФУНКЦИЮ
     set({ isLoading: true, error: null });
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;

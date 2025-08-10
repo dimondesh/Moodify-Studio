@@ -1,14 +1,12 @@
 // backend/src/services/spotifyService.js
 import axios from "axios";
 
-// Используем переменные окружения для безопасности
-// Убедитесь, что вы установили их в файле .env или в окружении Vercel/другого хостинга
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token"; // Эндпоинт для получения токена
+const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token"; 
 
-let accessToken = null; // Будем хранить токен доступа здесь
-let tokenExpiresAt = 0; // Время истечения срока действия токена
+let accessToken = null; 
+let tokenExpiresAt = 0; 
 
 /**
  * Получает или обновляет токен доступа Spotify.
@@ -23,7 +21,7 @@ const getAccessToken = async () => {
   try {
     const response = await axios.post(
       SPOTIFY_AUTH_URL,
-      "grant_type=client_credentials", // Тип авторизации для серверных приложений
+      "grant_type=client_credentials", 
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -37,7 +35,6 @@ const getAccessToken = async () => {
     );
 
     accessToken = response.data.access_token;
-    // Время истечения срока действия токена (в секундах), конвертируем в миллисекунды и добавляем к текущему времени
     tokenExpiresAt = Date.now() + response.data.expires_in * 1000;
 
     console.log(
@@ -99,7 +96,6 @@ export const getAlbumDataFromSpotify = async (albumUrl) => {
 
     const albumData = response.data;
 
-    // Извлекаем нужную информацию
     const extractedData = {
       id: albumData.id,
       name: albumData.name,
@@ -108,7 +104,6 @@ export const getAlbumDataFromSpotify = async (albumUrl) => {
         name: artist.name,
       })),
       release_date: albumData.release_date,
-      // Берем самую большую обложку (обычно последняя в массиве или ищем по размеру)
       images: albumData.images,
       album_type: albumData.album_type,
       total_tracks: albumData.total_tracks,
@@ -151,7 +146,7 @@ export const getArtistDataFromSpotify = async (artistId) => {
   }
 
   try {
-    const token = await getAccessToken(); // Используем уже существующую функцию для получения токена
+    const token = await getAccessToken(); 
     const response = await axios.get(
       `https://api.spotify.com/v1/artists/${artistId}`,
       {
@@ -164,7 +159,6 @@ export const getArtistDataFromSpotify = async (artistId) => {
     console.log(
       `[SpotifyService] Данные для артиста ${response.data.name} успешно получены.`
     );
-    // Мы возвращаем весь объект, так как он содержит массив images
     return response.data;
   } catch (error) {
     console.error(

@@ -6,7 +6,7 @@ import type { Song } from "../../types";
 import PlayButton from "../HomePage/PlayButton";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { getArtistNames } from "../../lib/utils"; // <-- Импорт новой функции
+import { getArtistNames } from "../../lib/utils"; 
 
 type SectionGridProps = {
   title: string;
@@ -23,7 +23,6 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
     fetchArtists();
   }, [fetchArtists]);
 
-  // УДАЛИТЕ эту вспомогательную функцию getArtistNames, она теперь импортируется
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -78,7 +77,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             <p className="text-sm text-zinc-400 truncate">
               {getArtistNames(
                 song.artist.map((artist) => artist._id),
-                artists // <-- Передача artists для резолва ID
+                artists 
               )}
             </p>
           </div>

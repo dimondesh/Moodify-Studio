@@ -32,8 +32,6 @@ export const extractZip = (zipFilePath, tempDir) => {
           const destPath = path.join(tempDir, decodedFileName);
           fs.mkdirSync(path.dirname(destPath), { recursive: true });
 
-          // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-          // Метод вызывается у `zipfile`, а не у `entry`
           zipfile.openReadStream(entry, (err, readStream) => {
             if (err)
               return reject(
@@ -76,7 +74,6 @@ export const extractZip = (zipFilePath, tempDir) => {
   });
 };
 
-// --- Функция parseTrackFileName остается без изменений ---
 export const parseTrackFileName = (filename) => {
   const baseName = path.basename(filename, path.extname(filename));
 
@@ -114,7 +111,6 @@ export const parseTrackFileName = (filename) => {
   return null;
 };
 
-// --- Функция cleanUpTempDir остается без изменений ---
 export const cleanUpTempDir = async (dirPath) => {
   try {
     await fsp.rm(dirPath, { recursive: true, force: true });

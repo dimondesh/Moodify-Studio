@@ -20,7 +20,7 @@ export const getArtistById = async (req, res, next) => {
           path: "artist",
           select: "name imageUrl",
         },
-        options: { sort: { playCount: -1 }, limit: 5 }, // <-- ИЗМЕНЕНО: Сортировка по playCount
+        options: { sort: { playCount: -1 }, limit: 5 }, 
       })
       .populate({
         path: "albums",

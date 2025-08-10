@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { webAudioService } from "../lib/webAudio";
 
-// --- ИМПОРТЫ ---
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
@@ -57,7 +56,6 @@ const AudioPlayer = () => {
 
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
-  // --- Эффект 1: Инициализация AudioContext и WebAudioService ---
   useEffect(() => {
     const AudioContextClass =
       window.AudioContext ||
@@ -520,14 +518,11 @@ const AudioPlayer = () => {
     };
   }, [isAudioContextReady, duration, setCurrentTime]);
 
-  // --- ИСПРАВЛЕННЫЙ ЭФФЕКТ 6: ЗАПИСЬ ПРОСЛУШИВАНИЯ ---
   useEffect(() => {
-    // Сбрасываем флаг при смене песни
     listenRecordedRef.current = false;
   }, [currentSong]);
 
   useEffect(() => {
-    // ИЗМЕНЕНИЕ: Добавляем проверку на оффлайн
     if (
       isPlaying &&
       user &&
@@ -535,7 +530,7 @@ const AudioPlayer = () => {
       currentSong._id &&
       currentTime >= 30 &&
       !listenRecordedRef.current &&
-      !isOffline // <-- ПРОВЕРКА
+      !isOffline 
     ) {
       listenRecordedRef.current = true;
       const songId = currentSong._id;
@@ -561,7 +556,7 @@ const AudioPlayer = () => {
           });
         });
     }
-  }, [currentTime, isPlaying, currentSong, user, isOffline]); // <-- Добавляем isOffline в зависимости
+  }, [currentTime, isPlaying, currentSong, user, isOffline]); 
   return null;
 };
 

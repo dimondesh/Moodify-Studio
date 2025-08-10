@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"; // Импортируем useRef
+import React, { useEffect, useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
@@ -14,11 +14,11 @@ interface AuthProviderProps {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [firebaseChecked, setFirebaseChecked] = useState(false);
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
 
   const { user, setUser, fetchUser, logout } = useAuthStore();
   const { initSocket, disconnectSocket, isConnected } = useChatStore();
-  const { i18n } = useTranslation(); // <-- ПОЛУЧАЕМ ЭКЗЕМПЛЯР i18n
+  const { i18n } = useTranslation();
 
   const socketInitializedRef = useRef(false);
   useEffect(() => {

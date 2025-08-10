@@ -4,14 +4,14 @@ import { useSearchStore } from "../../stores/useSearchStore";
 import AlbumGrid from "../SearchPage/AlbumGrid";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import SongGrid from "../SearchPage/SongGrid";
-import PlaylistGrid from "../SearchPage/PlaylistGrid"; // Импортируем новый компонент
+import PlaylistGrid from "../SearchPage/PlaylistGrid";
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const queryParam = searchParams.get("q") || "";
 
   const { query, songs, albums, playlists, loading, error, setQuery, search } =
-    useSearchStore(); // Добавляем playlists
+    useSearchStore();
 
   useEffect(() => {
     if (queryParam !== query) {
@@ -28,29 +28,26 @@ const SearchPage = () => {
           {queryParam ? (
             <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
               {" "}
-              {/* Добавил text-white */}
               Search results for &quot;{queryParam}&quot;
             </h1>
           ) : (
             <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
               {" "}
-              {/* Добавил text-white */}
               Find your favorite songs, albums, and playlists here
             </h1>
           )}
           {loading && <p className="text-zinc-400">Loading...</p>}{" "}
-          {/* Добавил цвет */}
           {error && <p className="text-red-500">{error}</p>}
           {!loading &&
             !error &&
             songs.length === 0 &&
             albums.length === 0 &&
-            playlists.length === 0 && ( // Проверяем и плейлисты
+            playlists.length === 0 && (
               <p className="text-zinc-400">No results found.</p>
             )}
           {!loading &&
             !error &&
-            (songs.length > 0 || albums.length > 0 || playlists.length > 0) && ( // Проверяем и плейлисты
+            (songs.length > 0 || albums.length > 0 || playlists.length > 0) && (
               <>
                 {songs.length > 0 && (
                   <SongGrid title="Songs" songs={songs} isLoading={loading} />
@@ -62,7 +59,7 @@ const SearchPage = () => {
                     isLoading={loading}
                   />
                 )}
-                {playlists.length > 0 && ( // Новая секция для плейлистов
+                {playlists.length > 0 && (
                   <PlaylistGrid
                     title="Playlists"
                     playlists={playlists}

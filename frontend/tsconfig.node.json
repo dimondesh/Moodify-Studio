@@ -5,13 +5,13 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "lib": ["ES2020", "DOM"], // Добавьте DOM, если у вас есть что-то, что его использует
+    "lib": ["ES2020", "DOM"], 
     "module": "ESNext",
-    "types": ["node"] // Это важно для Node.js типов
+    "types": ["node"] 
   },
   "include": [
     "vite.config.ts",
-    "postcss.config.cjs", // Убедитесь, что ваш postcss.config.cjs включен здесь
-    "**/*.d.ts" // Включает все файлы определений типов
+    "postcss.config.cjs",
+    "**/*.d.ts" 
   ]
 }

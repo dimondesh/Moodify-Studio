@@ -14,10 +14,10 @@ import { Button } from "../../components/ui/button";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Artist } from "../../types";
 import EditAlbumDialog from "./EditAlbumDialog";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next"; 
 
 const AlbumsTable = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation(); 
   const { albums, deleteAlbum, fetchAlbums, artists, fetchArtists } =
     useMusicStore();
 

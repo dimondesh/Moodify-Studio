@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import type { Playlist } from "../../types"; // Убедитесь, что ваш types.ts содержит интерфейс Playlist
-import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"; // Переименуйте или создайте скелетон, если AlbumGrid использует общий
+import type { Playlist } from "../../types";
+import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 
 type PlaylistGridProps = {
   title: string;
@@ -15,7 +15,7 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
 
-  if (isLoading) return <SectionGridSkeleton />; // Используем тот же скелетон, что и для альбомов/плейлистов
+  if (isLoading) return <SectionGridSkeleton />;
 
   const playlistsToShow = showAll ? playlists : playlists.slice(0, 4);
 
@@ -23,7 +23,6 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
     <div className="mb-8 w-full">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-white">{title}</h2>{" "}
-        {/* Добавил text-white для контраста */}
         {playlists.length > 4 && (
           <Button
             variant="link"
@@ -40,14 +39,14 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
           <div
             key={playlist._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
-            onClick={() => navigate(`/playlists/${playlist._id}`)} // Переход на страницу деталей плейлиста
+            onClick={() => navigate(`/playlists/${playlist._id}`)}
           >
             <div className="relative mb-4">
               <div className=" aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={playlist.imageUrl || "/default_playlist_cover.png"} // Используем дефолтную обложку для плейлистов
+                  src={playlist.imageUrl || "/default_playlist_cover.png"}
                   alt={playlist.title}
-                  className=" w-auto h-auto object-cover transition-transform duration-300 hover:scale-105" // object-cover для плейлистов
+                  className=" w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/default_playlist_cover.png";
@@ -58,10 +57,8 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
             <h3 className="font-medium mb-2 truncate text-white">
               {playlist.title}
             </h3>{" "}
-            {/* Добавил text-white */}
             <p className="text-sm text-zinc-400 truncate">
               {playlist.owner?.fullName || "Unknown Artist"}{" "}
-              {/* Отображаем владельца плейлиста */}
             </p>
           </div>
         ))}

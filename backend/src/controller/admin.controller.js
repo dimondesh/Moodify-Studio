@@ -8,31 +8,28 @@ import {
   deleteFromCloudinary,
 } from "../lib/deleteFromCloudinary.js";
 import * as mm from "music-metadata";
-import { getTagsFromAI } from "../lib/ai.service.js"; // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+import { getTagsFromAI } from "../lib/ai.service.js"; 
 
-// --- НОВЫЕ ИМПОРТЫ ДЛЯ АВТОМАТИЗАЦИИ АЛЬБОМА ---
 import {
   getAlbumDataFromSpotify,
   getArtistDataFromSpotify,
-} from "../lib/spotifyService.js"; // Для данных Spotify
-import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js"; // Для LRC текстов
+} from "../lib/spotifyService.js";
+import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js"; 
 import {
   extractZip,
   parseTrackFileName,
   cleanUpTempDir,
-} from "../lib/zipHandler.js"; // Для ZIP
-// uploadToCloudinary уже определен ниже, поэтому отдельный импорт не нужен
+} from "../lib/zipHandler.js"; 
 
-import path from "path"; // Для работы с путями файлов
-import fs from "fs/promises"; // Для работы с файловой системой (для удаления временных файлов)
-import { getGenresAndMoodsForTrack } from "../lib/lastfm.service.js"; // <-- НОВЫЙ ИМПОРТ
-import { Genre } from "../models/genre.model.js"; // <-- НОВЫЙ ИМПОРТ
-import { Mood } from "../models/mood.model.js"; // <-- НОВЫЙ ИМПОРТ
+import path from "path";
+import fs from "fs/promises"; 
+import { getGenresAndMoodsForTrack } from "../lib/lastfm.service.js"; 
+import { Genre } from "../models/genre.model.js"; 
+import { Mood } from "../models/mood.model.js"; 
 
-// --- ИСПРАВЛЕНИЕ 1: Функция теперь возвращает удобный объект ---
 const uploadToCloudinary = async (fileSource, folder) => {
   try {
-    // Определяем, является ли источник файлом (из req.files) или URL-адресом
+   
     const source =
       typeof fileSource === "string" ? fileSource : fileSource.tempFilePath;
 
@@ -53,31 +50,29 @@ const uploadToCloudinary = async (fileSource, folder) => {
   }
 };
 
-// Вспомогательная функция для проверки и добавления ID в массивы артистов
 const updateArtistsContent = async (artistIds, contentId, contentType) => {
   if (!artistIds || artistIds.length === 0) return;
 
   const updateField = contentType === "songs" ? "songs" : "albums";
 
   await Artist.updateMany(
-    { _id: { $in: artistIds } }, // Обновляем всех указанных артистов
-    { $addToSet: { [updateField]: contentId } } // Добавляем contentId в соответствующий массив, если его там нет
+    { _id: { $in: artistIds } }, 
+    { $addToSet: { [updateField]: contentId } } 
   );
   console.log(
     `[updateArtistsContent] Successfully updated ${contentType} for artists: ${artistIds}`
   );
 };
 
-// Вспомогательная функция для проверки и удаления ID из массивов артистов
-// ИЗМЕНЕНО: Использование updateMany с $pull для повышения эффективности
+
 const removeContentFromArtists = async (artistIds, contentId, contentType) => {
   if (!artistIds || artistIds.length === 0) return;
 
   const updateField = contentType === "songs" ? "songs" : "albums";
 
   await Artist.updateMany(
-    { _id: { $in: artistIds } }, // Обновляем всех указанных артистов
-    { $pull: { [updateField]: contentId } } // Удаляем contentId из соответствующего массива
+    { _id: { $in: artistIds } }, 
+    { $pull: { [updateField]: contentId } } 
   );
   console.log(
     `[removeContentFromArtists] Successfully removed ${contentType} for artists: ${artistIds}`
@@ -158,7 +153,7 @@ export const createSong = async (req, res, next) => {
           "songs/images"
         );
       } else {
-        imageUpload.url = existingAlbum.imageUrl; // Используем обложку альбома
+        imageUpload.url = existingAlbum.imageUrl; 
       }
     }
 
@@ -176,7 +171,7 @@ export const createSong = async (req, res, next) => {
       vocalsUrl: vocalsUpload.url,
       vocalsPublicId: vocalsUpload.publicId,
       imageUrl: imageUpload.url,
-      imagePublicId: imageUpload.publicId, // Сохраняется только если есть своя обложка
+      imagePublicId: imageUpload.publicId, 
       duration,
       lyrics: lyrics || null,
       genres: genreIdsJson ? JSON.parse(genreIdsJson) : [],
@@ -221,7 +216,6 @@ export const updateSong = async (req, res, next) => {
       return res.status(404).json({ message: "Song not found." });
     }
 
-    // 1. Обработка artistIds
     let parsedArtistIds;
     try {
       parsedArtistIds = artistIds ? JSON.parse(artistIds) : [];
@@ -263,7 +257,6 @@ export const updateSong = async (req, res, next) => {
         .json({ message: "Song must have at least one artist." });
     }
 
-    // 2. Обработка instrumentalFile
     if (instrumentalFile) {
       if (song.instrumentalPublicId) {
         await deleteFromCloudinary(song.instrumentalPublicId);
@@ -282,7 +275,6 @@ export const updateSong = async (req, res, next) => {
       }
     }
 
-    // 3. Обработка vocalsFile и clearVocals
     if (vocalsFile) {
       if (song.vocalsPublicId) {
         await deleteFromCloudinary(song.vocalsPublicId);
@@ -298,7 +290,6 @@ export const updateSong = async (req, res, next) => {
       song.vocalsPublicId = null;
     }
 
-    // 4. Обработка imageFile
     if (imageFile) {
       if (song.imageUrl) {
         await deleteFromCloudinary(extractPublicId(song.imageUrl));
@@ -311,10 +302,7 @@ export const updateSong = async (req, res, next) => {
       song.albumId === "none" ||
       song.albumId === ""
     ) {
-      // Если это сингл (нет albumId) и нет нового изображения, и старое изображение удалено
-      // Это условие нужно, если раньше было изображение, а сейчас его пытаются удалить без замены
-      // Однако, фронтенд не должен позволять отправить форму без изображения для сингла
-      // Эта проверка больше для бэкенда, чтобы убедиться в консистентности
+      
       if (!song.imageUrl) {
         // Если нет ни нового, ни старого изображения для сингла
         return res.status(400).json({
@@ -323,13 +311,11 @@ export const updateSong = async (req, res, next) => {
       }
     }
 
-    // 5. Обработка albumId
     if (albumId !== undefined) {
       const oldAlbumId = song.albumId ? song.albumId.toString() : null;
       const newAlbumId = albumId === "none" || albumId === "" ? null : albumId;
 
       if (oldAlbumId && oldAlbumId !== newAlbumId) {
-        // Удаляем песню из старого альбома
         await Album.findByIdAndUpdate(oldAlbumId, {
           $pull: { songs: song._id },
         });
@@ -340,7 +326,6 @@ export const updateSong = async (req, res, next) => {
         if (!newAlbum) {
           return res.status(404).json({ message: "New album not found." });
         }
-        // Проверяем, что артисты песни совпадают с артистами альбома
         const songArtists = song.artist.map((artist) => artist.toString());
         const albumArtists = newAlbum.artist.map((artist) => artist.toString());
         const hasCommonArtist = songArtists.some((id) =>
@@ -353,7 +338,6 @@ export const updateSong = async (req, res, next) => {
               "Cannot move song to an album of a different or unrelated artist.",
           });
         }
-        // Добавляем песню в новый альбом, если ее там нет
         if (!newAlbum.songs.includes(song._id)) {
           newAlbum.songs.push(song._id);
           await newAlbum.save();
@@ -362,7 +346,6 @@ export const updateSong = async (req, res, next) => {
       song.albumId = newAlbumId;
     }
 
-    // 6. Обновление title и lyrics
     song.title = title || song.title;
     song.lyrics = lyrics !== undefined ? lyrics : song.lyrics;
     if (genreIdsJson) {
@@ -370,7 +353,6 @@ export const updateSong = async (req, res, next) => {
         song.genres = JSON.parse(genreIdsJson);
       } catch (e) {
         console.error("Failed to parse genreIds JSON on update:", e);
-        // Можно вернуть ошибку или просто проигнорировать
       }
     }
     if (moodIdsJson) {
@@ -398,7 +380,6 @@ export const deleteSong = async (req, res, next) => {
 
     if (!song) return res.status(404).json({ message: "Song not found." });
 
-    // --- ИЗМЕНЕНИЕ ЗДЕСЬ: Указываем тип ресурса 'video' для аудио ---
     if (song.instrumentalPublicId)
       await deleteFromCloudinary(song.instrumentalPublicId, "video");
     if (song.vocalsPublicId)
@@ -420,7 +401,6 @@ export const deleteSong = async (req, res, next) => {
         });
       }
     } else if (song.imagePublicId) {
-      // Если это сингл без альбома, но с картинкой
       await deleteFromCloudinary(song.imagePublicId, "image");
     }
 
@@ -486,7 +466,7 @@ export const updateAlbum = async (req, res, next) => {
       artistIds: artistIdsJsonString,
       releaseYear,
       type,
-    } = req.body; // <-- ИЗМЕНЕНО: получаем как artistIdsJsonString
+    } = req.body; 
     const imageFile = req.files ? req.files.imageFile : null;
 
     const album = await Album.findById(id);
@@ -494,7 +474,7 @@ export const updateAlbum = async (req, res, next) => {
       return res.status(404).json({ message: "Album not found." });
     }
 
-    let newArtistIds; // <-- НОВАЯ ПЕРЕМЕННАЯ ДЛЯ РАСПАРСЕННЫХ ID
+    let newArtistIds; 
     try {
       newArtistIds = artistIdsJsonString ? JSON.parse(artistIdsJsonString) : [];
       if (!Array.isArray(newArtistIds)) {
@@ -505,7 +485,6 @@ export const updateAlbum = async (req, res, next) => {
       newArtistIds = [];
     }
 
-    // ИЗМЕНЕНО: Теперь используем newArtistIds
     if (newArtistIds.length > 0) {
       const existingArtists = await Artist.find({ _id: { $in: newArtistIds } });
       if (existingArtists.length !== newArtistIds.length) {
@@ -526,9 +505,8 @@ export const updateAlbum = async (req, res, next) => {
       );
       await updateArtistsContent(artistsToAdd, album._id, "albums");
 
-      album.artist = newArtistIds; // <-- Обновляем массив артистов в альбоме
+      album.artist = newArtistIds; 
     } else {
-      // Если newArtistIds пуст после парсинга
       return res
         .status(400)
         .json({ message: "Album must have at least one artist." });
@@ -638,7 +616,7 @@ export const updateArtist = async (req, res, next) => {
       return res.status(403).json({ message: "Access denied." });
 
     const { id } = req.params;
-    const { name, bio, bannerUrl } = req.body; // <-- Получаем bannerUrl из body
+    const { name, bio, bannerUrl } = req.body; 
     const imageFile = req.files?.imageFile;
     const bannerFile = req.files?.bannerFile;
 
@@ -653,9 +631,7 @@ export const updateArtist = async (req, res, next) => {
       artist.imagePublicId = imageUpload.publicId;
     }
 
-    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ ---
     if (bannerFile) {
-      // Если пришел новый файл баннера, удаляем старый и загружаем новый
       if (artist.bannerPublicId)
         await deleteFromCloudinary(artist.bannerPublicId, "image");
       const bannerUpload = await uploadToCloudinary(
@@ -665,13 +641,11 @@ export const updateArtist = async (req, res, next) => {
       artist.bannerUrl = bannerUpload.url;
       artist.bannerPublicId = bannerUpload.publicId;
     } else if (bannerUrl === "") {
-      // ЕСЛИ файла нет, но пришло поле bannerUrl: "", значит, нужно удалить существующий баннер
       if (artist.bannerPublicId)
         await deleteFromCloudinary(artist.bannerPublicId, "image");
       artist.bannerUrl = null;
       artist.bannerPublicId = null;
     }
-    // Если ни bannerFile, ни bannerUrl === "" не пришли, ничего не делаем с баннером
 
     artist.name = name || artist.name;
     artist.bio = bio !== undefined ? bio : artist.bio;
@@ -735,8 +709,6 @@ export const deleteArtist = async (req, res, next) => {
   }
 };
 
-// --- НОВЫЙ КОНТРОЛЛЕР ДЛЯ ЗАГРУЗКИ ПОЛНОГО АЛЬБОМА ---
-// backend/src/controller/admin.controller.js
 
 // --- АВТОМАТИЧЕСКАЯ ЗАГРУЗКА АЛЬБОМА ---
 
@@ -828,16 +800,14 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
         let imageUploadResult;
         if (artistImageUrl === DEFAULT_ARTIST_IMAGE_URL) {
-          // Если это заглушка, не загружаем ее, а используем URL напрямую
           console.log(
             "[AdminController] Используем URL заглушки напрямую, без повторной загрузки."
           );
           imageUploadResult = {
             url: DEFAULT_ARTIST_IMAGE_URL,
-            publicId: "default_artist_placeholder", // Используем строковый идентификатор, а не null
+            publicId: "default_artist_placeholder", 
           };
         } else {
-          // Если это новая картинка со Spotify, загружаем ее
           imageUploadResult = await uploadToCloudinary(
             artistImageUrl,
             "artists"
@@ -852,7 +822,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           bannerPublicId: imageUploadResult.publicId,
         });
         await artist.save();
-        // --- КОНЕЦ ИСПРАВЛЕНИЯ 1 ---
       }
       albumArtistIds.push(artist._id);
     }
@@ -867,7 +836,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     const albumImageUrl =
       spotifyAlbumData.images && spotifyAlbumData.images.length > 0
         ? spotifyAlbumData.images[0].url
-        : DEFAULT_ALBUM_IMAGE_URL; // Используем заглушку, если у альбома нет обложки
+        : DEFAULT_ALBUM_IMAGE_URL; 
 
     const albumImageUpload = await uploadToCloudinary(albumImageUrl, "albums");
 
@@ -891,7 +860,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       spotifyAlbumData.tracks.items || spotifyAlbumData.tracks;
 
     for (const spotifyTrack of tracksToProcess) {
-      // <-- ИСПРАВЛЕНИЕ 2: Объявляем переменные здесь
       const songName = spotifyTrack.name;
       const durationMs = spotifyTrack.duration_ms;
       console.log(`[AdminController] Обработка трека: ${songName}`);
@@ -923,7 +891,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           }
           let imageUploadResult;
           if (artistImageUrl === DEFAULT_ARTIST_IMAGE_URL) {
-            // Если это заглушка, не загружаем ее, а используем URL напрямую
             console.log(
               "[AdminController] Используем URL заглушки напрямую, без повторной загрузки."
             );
@@ -932,7 +899,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
               publicId: "default_artist_placeholder",
             };
           } else {
-            // Если это новая картинка со Spotify, загружаем ее
             imageUploadResult = await uploadToCloudinary(
               artistImageUrl,
               "artists"
@@ -947,7 +913,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
             bannerPublicId: imageUploadResult.publicId,
           });
           await artist.save();
-          // --- КОНЕЦ ИСПРАВЛЕНИЯ 2 ---
         }
         songArtistIds.push(artist._id);
       }
@@ -955,10 +920,10 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       const primaryArtistName = (await Artist.findById(songArtistIds[0])).name;
       const { genreIds, moodIds } = await getTagsFromAI(
         primaryArtistName,
-        songName // Теперь эта переменная существует
+        songName 
       );
 
-      const normalizedSpotifySongName = songName // Теперь эта переменная существует
+      const normalizedSpotifySongName = songName 
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]/gu, "");
       const filesForTrack = trackFilesMap[normalizedSpotifySongName];
@@ -998,14 +963,14 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       if (!lrcText) {
         lrcText = await getLrcLyricsFromLrclib({
           artistName: primaryArtistName,
-          songName: songName, // Теперь эта переменная существует
+          songName: songName, 
           albumName: album.title,
           songDuration: durationMs,
         });
       }
 
       const song = new Song({
-        title: songName, // Теперь эта переменная существует
+        title: songName, 
         artist: songArtistIds,
         albumId: album._id,
         vocalsUrl: vocalsUpload.url,

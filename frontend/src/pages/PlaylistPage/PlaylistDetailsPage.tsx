@@ -179,7 +179,6 @@ const PlaylistDetailsPage = () => {
     }
   };
 
-  // --- ИСПРАВЛЕНИЕ 1: Добавляем проверку на null ---
   const handleSongTitleClick = (albumId: string | null | undefined) => {
     if (albumId) {
       navigate(`/albums/${albumId}`);

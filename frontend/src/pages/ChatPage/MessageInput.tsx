@@ -5,7 +5,7 @@ import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Send } from "lucide-react";
 import type { User } from "../../types";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 interface MessageInputProps {
   value: string;
@@ -22,7 +22,7 @@ const MessageInput = ({
   selectedUser,
   currentUserId,
 }: MessageInputProps) => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const isSendDisabled = !value.trim() || !selectedUser || !currentUserId;
 
   return (

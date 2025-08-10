@@ -54,7 +54,6 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- ЛОГИКА ЦВЕТА ТЕПЕРЬ ВНУТРИ КОМПОНЕНТА ---
   const { extractColor } = useDominantColor();
   const [dominantColor, setDominantColor] = useState("#18181b");
   const lastImageUrlRef = useRef<string | null>(null);

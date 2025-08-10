@@ -3,16 +3,16 @@ import { Album } from "../models/album.model.js";
 export const getAllAlbums = async (req, res, next) => {
   try {
     const albums = await Album.find()
-      .populate("artist", "name imageUrl") // Заполняем поле 'artist' для самого альбома
+      .populate("artist", "name imageUrl")
       .populate({
-        path: "songs", // Заполняем песни
+        path: "songs",
         populate: {
-          path: "artist", // И внутри каждой песни заполняем поле 'artist'
-          model: "Artist", // Укажите вашу модель Artist
-          select: "name imageUrl", // Выбираем только нужные поля артиста
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
         },
       })
-      .lean(); // Добавьте .lean() для получения простых JS объектов
+      .lean();
 
     res.status(200).json(albums);
   } catch (error) {
@@ -25,16 +25,16 @@ export const getAlbumById = async (req, res, next) => {
     const { id } = req.params;
 
     const album = await Album.findById(id)
-      .populate("artist", "name imageUrl") // Заполняем поле 'artist' для самого альбома
+      .populate("artist", "name imageUrl")
       .populate({
-        path: "songs", // Заполняем песни
+        path: "songs",
         populate: {
-          path: "artist", // И внутри каждой песни заполняем поле 'artist'
-          model: "Artist", // Укажите вашу модель Artist
-          select: "name imageUrl", // Выбираем только нужные поля артиста
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
         },
       })
-      .lean(); // Добавьте .lean() для получения простых JS объектов
+      .lean();
 
     if (!album) {
       return res

@@ -37,7 +37,6 @@ const ProfilePage = () => {
   const [followers, setFollowers] = useState<ListItem[]>([]);
   const [following, setFollowing] = useState<ListItem[]>([]);
 
-  // --- ИЗМЕНЕНИЕ 1: Локальное состояние для цвета и его загрузки ---
   const [pageBackgroundColor, setPageBackgroundColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
 
@@ -70,7 +69,6 @@ const ProfilePage = () => {
     fetchProfileData();
   }, [fetchProfileData]);
 
-  // --- ИЗМЕНЕНИЕ 2: Отдельный useEffect для цвета ---
   useEffect(() => {
     if (profileData?.imageUrl) {
       setIsColorLoading(true);
@@ -112,7 +110,6 @@ const ProfilePage = () => {
   const { user: liveCurrentUser } = useAuthStore();
   const isMyProfile = liveCurrentUser?.id === userId;
 
-  // --- ИЗМЕНЕНИЕ 3: Обновленное условие загрузки ---
   if (isLoading || isColorLoading) {
     return (
       <>

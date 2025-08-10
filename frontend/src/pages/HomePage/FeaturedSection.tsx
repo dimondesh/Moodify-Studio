@@ -3,7 +3,7 @@ import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkel
 import { useMusicStore } from "../../stores/useMusicStore";
 import PlayButton from "./PlayButton";
 import { JSX, useEffect } from "react";
-import React from "react"; // Добавил импорт React
+import React from "react"; 
 
 interface Artist {
   _id: string;
@@ -19,7 +19,6 @@ const FeaturedSection = () => {
     fetchArtists();
   }, [fetchArtists]);
 
-  // Новая функция для отображения кликабельных имен артистов
   const getArtistNamesDisplay = (
     artistsInput: (string | Artist)[] | undefined
   ) => {
@@ -48,7 +47,7 @@ const FeaturedSection = () => {
           <span key={artistId}>
             <button
               onClick={(e) => {
-                e.stopPropagation(); // Предотвратить переход по альбому при клике на артиста
+                e.stopPropagation();
                 handleNavigateToArtist(artistId);
               }}
               className="hover:underline focus:outline-none focus:underline"
@@ -71,10 +70,10 @@ const FeaturedSection = () => {
   const songsArray = Array.isArray(featuredSongs) ? featuredSongs : [];
 
   const handleNavigateToAlbum = (
-    e: React.MouseEvent, // Используем React.MouseEvent
+    e: React.MouseEvent, 
     albumId: string | null | undefined
   ) => {
-    e.stopPropagation(); // Остановить распространение события, чтобы избежать двойного перехода
+    e.stopPropagation(); 
     if (albumId) {
       navigate(`/albums/${albumId}`);
     } else {
@@ -98,14 +97,12 @@ const FeaturedSection = () => {
           className="flex items-cengridter bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
              transition-colors group cursor-pointer relative "
           onClick={() => {
-            // Основной клик по карточке, ведущий на альбом
             handleNavigateToAlbum(
               new MouseEvent("click") as unknown as React.MouseEvent,
               song.albumId
             );
           }}
         >
-          {/* Обложка альбома теперь кликабельна */}
           <button
             onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
             className="flex-shrink-0"
@@ -120,7 +117,6 @@ const FeaturedSection = () => {
             />
           </button>
           <div className="flex-1 p-2 sm:p-4">
-            {/* Название песни теперь кликабельно */}
             <p className="font-md truncate">
               <button
                 onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
@@ -130,7 +126,6 @@ const FeaturedSection = () => {
               </button>
             </p>
             <p className="hidden sm:inline font-sm text-zinc-400 truncate">
-              {/* Имена артистов теперь кликабельны */}
               {getArtistNamesDisplay(song.artist)}
             </p>
           </div>
