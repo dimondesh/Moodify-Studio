@@ -55,20 +55,30 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { extractColor } = useDominantColor();
-  const [dominantColor, setDominantColor] = useState("#18181b");
   const lastImageUrlRef = useRef<string | null>(null);
 
+  const backgroundKeyRef = useRef(0);
+  const [backgrounds, setBackgrounds] = useState([
+    { key: 0, color: "#18181b" },
+  ]);
+
   useEffect(() => {
+    const updateBackgroundColor = (color: string) => {
+      backgroundKeyRef.current += 1;
+      const newKey = backgroundKeyRef.current;
+      setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
+    };
+
     if (
       currentSong?.imageUrl &&
       currentSong.imageUrl !== lastImageUrlRef.current
     ) {
       lastImageUrlRef.current = currentSong.imageUrl;
       extractColor(currentSong.imageUrl).then((color) => {
-        setDominantColor(color || "#18181b");
+        updateBackgroundColor(color || "#18181b");
       });
     } else if (!currentSong) {
-      setDominantColor("#18181b");
+      updateBackgroundColor("#18181b");
     }
   }, [currentSong, extractColor]);
 
@@ -113,7 +123,7 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
     scrollTimeoutRef.current = setTimeout(() => {
       setIsUserScrolling(false);
       scrollTimeoutRef.current = null;
-    }, 300);
+    }, 3000);
   }, [isUserScrolling]);
 
   useEffect(() => {
@@ -175,16 +185,28 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen overflow-hidden">
       <div
         className={`flex flex-col items-center justify-start h-[calc(100vh - 1px)] p-4 sm:p-8 text-white ${
           isMobileFullScreen ? "fixed inset-0 z-[80]" : "w-full"
         }`}
-        style={{
-          background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
-        }}
       >
-        <div className="flex justify-between items-center w-full max-w-4xl mb-4">
+        {backgrounds
+          .slice(0, 2)
+          .reverse()
+          .map((bg, index) => (
+            <div
+              key={bg.key}
+              className={`absolute inset-y-0 w-full ${
+                index === 1 ? "animate-fade-in" : ""
+              }`}
+              style={{
+                background: `linear-gradient(to bottom, ${bg.color} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+              }}
+            />
+          ))}
+
+        <div className="flex justify-between items-center w-full max-w-4xl mb-4 z-10">
           <Button
             variant="ghost"
             size="icon"
@@ -193,12 +215,12 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
           >
             <ChevronDown className="h-6 w-6" />
           </Button>
-          <div className="text-sm font-semibold text-zinc-400 uppercase">
+          <div className="text-sm font-semibold text-zinc-400 uppercase z-10">
             {t("player.lyrics")}
           </div>
-          <div className="w-10 h-10" />
+          <div className="w-10 h-10 z-10" />
         </div>
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 z-10">
           <h2 className="text-3xl font-bold mb-1">{currentSong.title}</h2>
           <p className="text-zinc-400 text-lg">
             {getArtistNames(currentSong.artist, [])}
