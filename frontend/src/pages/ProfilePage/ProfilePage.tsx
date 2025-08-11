@@ -130,7 +130,7 @@ const ProfilePage = () => {
         <Helmet>
           <title>Loading Profile...</title>
         </Helmet>
-        <div className="flex justify-center items-center h-full">
+        <div className="flex justify-center items-center h-full bg-zinc-950">
           <Loader2 className="animate-spin text-violet-500 size-12" />
         </div>
       </>
