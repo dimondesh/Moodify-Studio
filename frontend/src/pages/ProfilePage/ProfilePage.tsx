@@ -1,6 +1,6 @@
 // frontend/src/pages/ProfilePage/ProfilePage.tsx
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../stores/useAuthStore";
@@ -37,8 +37,12 @@ const ProfilePage = () => {
   const [followers, setFollowers] = useState<ListItem[]>([]);
   const [following, setFollowing] = useState<ListItem[]>([]);
 
-  const [pageBackgroundColor, setPageBackgroundColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
+
+  const backgroundKeyRef = useRef(0);
+  const [backgrounds, setBackgrounds] = useState([
+    { key: 0, color: "#18181b" },
+  ]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
@@ -46,6 +50,11 @@ const ProfilePage = () => {
 
   const fetchProfileData = useCallback(async () => {
     if (!userId) return;
+
+    backgroundKeyRef.current += 1;
+    setBackgrounds([{ key: backgroundKeyRef.current, color: "#18181b" }]);
+
+    setIsLoading(true);
     try {
       const [profileRes, followersRes, followingRes] = await Promise.all([
         axiosInstance.get(`/users/${userId}`),
@@ -65,18 +74,23 @@ const ProfilePage = () => {
   }, [userId, currentUser?.id]);
 
   useEffect(() => {
-    setIsLoading(true);
     fetchProfileData();
   }, [fetchProfileData]);
 
   useEffect(() => {
+    const updateBackgroundColor = (color: string) => {
+      backgroundKeyRef.current += 1;
+      const newKey = backgroundKeyRef.current;
+      setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
+    };
+
     if (profileData?.imageUrl) {
       setIsColorLoading(true);
       extractColor(profileData.imageUrl)
-        .then((color) => setPageBackgroundColor(color || "#18181b"))
+        .then((color) => updateBackgroundColor(color || "#18181b"))
         .finally(() => setIsColorLoading(false));
     } else if (profileData) {
-      setPageBackgroundColor("#18181b");
+      updateBackgroundColor("#18181b");
       setIsColorLoading(false);
     }
   }, [profileData, extractColor]);
@@ -147,12 +161,22 @@ const ProfilePage = () => {
       </Helmet>
       <ScrollArea className="h-full">
         <div className="relative min-h-screen pb-10">
-          <div
-            className="absolute inset-0 pointer-events-none transition-colors duration-1000 h-[40vh]"
-            style={{
-              background: `linear-gradient(to bottom, ${pageBackgroundColor}, transparent)`,
-            }}
-          />
+          <div className="absolute inset-0 pointer-events-none h-[40vh]">
+            {backgrounds
+              .slice(0, 2)
+              .reverse()
+              .map((bg, index) => (
+                <div
+                  key={bg.key}
+                  className={`absolute inset-0 ${
+                    index === 1 ? "animate-fade-in" : ""
+                  }`}
+                  style={{
+                    background: `linear-gradient(to bottom, ${bg.color}, transparent)`,
+                  }}
+                />
+              ))}
+          </div>
           <div className="relative z-10 p-4 pt-8 sm:pt-16 sm:p-8">
             <div className="flex flex-col items-center sm:flex-row sm:items-end gap-4">
               <Avatar className="w-24 h-24 sm:w-48 sm:h-48 shadow-2xl ring-4 ring-black/20 flex-shrink-0">

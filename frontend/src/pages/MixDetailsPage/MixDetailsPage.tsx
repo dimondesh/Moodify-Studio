@@ -1,6 +1,6 @@
 // frontend/src/pages/MixDetailsPage/MixDetailsPage.tsx
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
@@ -44,9 +44,13 @@ const MixDetailsPage = () => {
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
   const { extractColor } = useDominantColor();
 
-  const [dominantColor, setDominantColor] = useState("#18181b");
   const [isColorLoading, setIsColorLoading] = useState(true);
   const [localIsLoading, setLocalIsLoading] = useState(true);
+
+  const backgroundKeyRef = useRef(0);
+  const [backgrounds, setBackgrounds] = useState([
+    { key: 0, color: "#18181b" },
+  ]);
 
   const isInLibrary = mixId ? isMixSaved(mixId) : false;
 
@@ -60,13 +64,19 @@ const MixDetailsPage = () => {
   }, [mixId, fetchMixById]);
 
   useEffect(() => {
+    const updateBackgroundColor = (color: string) => {
+      backgroundKeyRef.current += 1;
+      const newKey = backgroundKeyRef.current;
+      setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
+    };
+
     if (currentMix?.imageUrl) {
       setIsColorLoading(true);
       extractColor(currentMix.imageUrl)
-        .then((color) => setDominantColor(color || "#18181b"))
+        .then((color) => updateBackgroundColor(color || "#18181b"))
         .finally(() => setIsColorLoading(false));
     } else if (currentMix) {
-      setDominantColor("#18181b");
+      updateBackgroundColor("#18181b");
       setIsColorLoading(false);
     }
   }, [currentMix, extractColor]);
@@ -183,13 +193,21 @@ const MixDetailsPage = () => {
       <div className="h-full">
         <ScrollArea className="h-full rounded-md md:pb-0">
           <div className="relative min-h-screen">
-            <div
-              className="absolute inset-0 pointer-events-none transition-colors duration-1000"
-              aria-hidden="true"
-              style={{
-                background: `linear-gradient(to bottom, ${dominantColor} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
-              }}
-            />
+            {backgrounds
+              .slice(0, 2)
+              .reverse()
+              .map((bg, index) => (
+                <div
+                  key={bg.key}
+                  className={`absolute inset-0 pointer-events-none  ${
+                    index === 1 ? "animate-fade-in" : ""
+                  }`}
+                  aria-hidden="true"
+                  style={{
+                    background: `linear-gradient(to bottom, ${bg.color} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+                  }}
+                />
+              ))}
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
                 <img
