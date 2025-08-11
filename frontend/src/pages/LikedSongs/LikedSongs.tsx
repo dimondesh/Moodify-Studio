@@ -10,7 +10,7 @@ import { Button } from "../../components/ui/button";
 import { Clock, Heart, Pause, Play } from "lucide-react";
 import Equalizer from "../../components/ui/equalizer";
 import LibraryGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
 interface Artist {
@@ -26,7 +26,7 @@ const formatDuration = (seconds: number) => {
 };
 
 const LikedSongsPage = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { likedSongs, isLoading, error, fetchLikedSongs, toggleSongLike } =
     useLibraryStore();
@@ -137,7 +137,6 @@ const LikedSongsPage = () => {
 
   return (
     <>
-      {" "}
       <Helmet>
         <title>Liked Songs</title>
         <meta
@@ -145,13 +144,13 @@ const LikedSongsPage = () => {
           content={`Your collection of ${songsCount} liked songs. Play all your favorite tracks saved on Moodify.`}
         />
       </Helmet>
-      <div className="h-full">
+      <div className="h-full relative">
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80 to-zinc-900 pointer-events-none animate-fade-in"
+          aria-hidden="true"
+        />
         <ScrollArea className="h-full rounded-md md:pb-0">
           <div className="relative min-h-screen">
-            <div
-              className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
-              aria-hidden="true"
-            />
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 items-center sm:items-end">
                 <img

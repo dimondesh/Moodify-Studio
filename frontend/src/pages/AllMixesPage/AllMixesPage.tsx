@@ -48,7 +48,7 @@ const AllMixesPage = () => {
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-120px)] w-full rounded-md pr-4">
+    <ScrollArea className="h-[calc(100vh-120px)] w-full rounded-md pr-4 bg-zinc-950">
       <div className="p-4 pt-0">
         <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

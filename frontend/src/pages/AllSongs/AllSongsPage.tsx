@@ -9,7 +9,7 @@ import axios from "axios";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import { useMusicStore } from "../../stores/useMusicStore";
 import React from "react";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 interface Artist {
   _id: string;
@@ -17,7 +17,7 @@ interface Artist {
 }
 
 const AllSongsPage = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +42,10 @@ const AllSongsPage = () => {
           if (Array.isArray(fetchedData)) {
             setSongs(fetchedData);
           } else {
-            setError(t("pages.playlist.error")); 
+            setError(t("pages.playlist.error"));
           }
         } catch (err) {
-          setError(t("pages.playlist.error")); 
+          setError(t("pages.playlist.error"));
         } finally {
           setIsLoading(false);
         }
@@ -128,8 +128,8 @@ const AllSongsPage = () => {
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-190px)] w-full rounded-md pr-4">
-      <div className="p-4 pt-0">
+    <ScrollArea className="h-[calc(100vh-180px)] w-full rounded-md pr-4 bg-zinc-950">
+      <div className="p-4 pt-4 pb-14 md:pb-16">
         <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {songs.map((song) => (
