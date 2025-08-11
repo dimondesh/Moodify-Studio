@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { webAudioService } from "../lib/webAudio";
+
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
-import { useOfflineStore } from "@/stores/useOfflineStore";
+import { useOfflineStore } from "@/stores/useOfflineStore"; // ИМПОРТ
 
 const AudioPlayer = () => {
   // --- Рефы для Web Audio API объектов ---
@@ -14,7 +15,6 @@ const AudioPlayer = () => {
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // НОВОЕ: Реф для скрытого <audio> элемента, который будет проигрывать тишину
   const silentAudioRef = useRef<HTMLAudioElement>(null);
 
   const instrumentalGainNodeRef = useRef<GainNode | null>(null);
@@ -49,15 +49,15 @@ const AudioPlayer = () => {
   } = usePlayerStore();
 
   const { isOffline } = useOfflineStore();
+
   const { user } = useAuthStore();
   const listenRecordedRef = useRef(false);
+
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
+
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
-  // НОВОЕ: Эффект для управления скрытым аудио-элементом.
-  // Он будет играть, когда играет основная музыка, и останавливаться, когда она на паузе.
-  // Это заставляет iOS думать, что приложение активно воспроизводит медиа.
   useEffect(() => {
     const silentAudio = silentAudioRef.current;
     if (!silentAudio) return;
@@ -67,8 +67,6 @@ const AudioPlayer = () => {
       if (playPromise !== undefined) {
         playPromise.catch((error) => {
           console.warn("Silent audio play() failed:", error);
-          // Эта ошибка ожидаема при первой загрузке до взаимодействия пользователя.
-          // Основная логика возобновления AudioContext обработает разблокировку звука.
         });
       }
     } else {
@@ -171,42 +169,46 @@ const AudioPlayer = () => {
     };
   }, []);
 
-  // =========================================================================
-  // ИЗМЕНЕНИЕ: Этот эффект больше не нужен, так как трюк с тихим аудио
-  // решает проблему более надежно, не позволяя AudioContext "заснуть".
-  // Мы его удаляем, чтобы избежать конфликтов.
-  // =========================================================================
-  /*
-    useEffect(() => {
-      const audioContext = audioContextRef.current;
-      if (!audioContext) return;
+  // ИЗМЕНЕНИЕ: Возвращаем упрощенный обработчик для "пробуждения" контекста
+  useEffect(() => {
+    const audioContext = audioContextRef.current;
+    if (!audioContext) return;
 
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === "visible") {
-          if (audioContext.state === "suspended") {
-            audioContext.resume().catch((e) => console.error("Не удалось возобновить AudioContext", e));
-          }
-        }
-      };
-      const suspendContext = () => {
-        if (audioContext.state === "running") {
-          audioContext.suspend();
-        }
-      };
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-      window.addEventListener("pagehide", suspendContext);
-      window.addEventListener("pageshow", handleVisibilityChange);
-      return () => {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
-        window.removeEventListener("pagehide", suspendContext);
-        window.removeEventListener("pageshow", handleVisibilityChange);
-      };
-    }, [isAudioContextReady]);
-    */
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        audioContext.state === "suspended"
+      ) {
+        audioContext
+          .resume()
+          .catch((e) =>
+            console.error("AudioContext resume failed on visibility change:", e)
+          );
+      }
+    };
+
+    // `pageshow` срабатывает, когда пользователь возвращается на страницу (в том числе из свернутого PWA)
+    const handlePageShow = () => {
+      if (audioContext.state === "suspended") {
+        audioContext
+          .resume()
+          .catch((e) =>
+            console.error("AudioContext resume failed on pageshow:", e)
+          );
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [isAudioContextReady]);
 
   // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
-    // ... остальной код этого эффекта без изменений
     if (!isAudioContextReady) {
       instrumentalBufferRef.current = null;
       vocalsBufferRef.current = null;
@@ -334,7 +336,6 @@ const AudioPlayer = () => {
 
   // --- Эффект 3: Управление воспроизведением (старт/пауза/перемотка) ---
   useEffect(() => {
-    // ... остальной код этого эффекта без изменений
     if (
       !isAudioContextReady ||
       !currentSong ||
@@ -475,7 +476,6 @@ const AudioPlayer = () => {
 
   // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
-    // ... остальной код этого эффекта без изменений
     if (!isAudioContextReady) return;
 
     if (masterGainNodeRef.current) {
@@ -492,7 +492,6 @@ const AudioPlayer = () => {
 
   // --- Эффект 5: Обновление текущего времени в сторе (для UI) ---
   useEffect(() => {
-    // ... остальной код этого эффекта без изменений
     if (!isAudioContextReady) return;
 
     const audioContext = audioContextRef.current;
@@ -572,7 +571,6 @@ const AudioPlayer = () => {
         });
     }
   }, [currentTime, isPlaying, currentSong, user, isOffline]);
-
   return (
     <>
       <audio ref={silentAudioRef} src="/silent.mp3" loop playsInline />

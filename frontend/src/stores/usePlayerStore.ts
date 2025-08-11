@@ -38,7 +38,7 @@ interface PlayerStore {
   setDuration: (duration: number) => void;
   setIsDesktopLyricsOpen: (isOpen: boolean) => void;
   setIsMobileLyricsFullScreen: (isOpen: boolean) => void;
-  seekToTime: (time: number) => void;
+  seekToTime: (time: number) => void; // <-- НОВОЕ
 }
 
 const shuffleQueue = (length: number) => {
@@ -462,10 +462,11 @@ export const usePlayerStore = create<PlayerStore>()(
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
         set({ isMobileLyricsFullScreen: isOpen });
       },
+      // НОВАЯ ФУНКЦИЯ
       seekToTime: (time: number) => {
         set((state) => {
           const newTime = Math.max(0, Math.min(time, state.duration));
-          return { currentTime: newTime, isPlaying: true };
+          return { currentTime: newTime, isPlaying: true }; // Убедимся, что воспроизведение активно после перемотки
         });
       },
     }),

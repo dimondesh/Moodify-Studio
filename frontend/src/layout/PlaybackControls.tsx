@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { Button } from "../components/ui/button";
-import { useDominantColor } from "@/hooks/useDominantColor"; 
+import { useDominantColor } from "@/hooks/useDominantColor";
 import { useAudioSettingsStore } from "../lib/webAudio";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -103,6 +103,7 @@ const PlaybackControls = () => {
     currentTime,
     duration,
     setCurrentTime: setPlayerCurrentTime,
+    seekToTime, // <-- ИЗМЕНЕНИЕ: Получаем новую функцию
   } = usePlayerStore();
 
   const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
@@ -120,18 +121,23 @@ const PlaybackControls = () => {
   const touchStartY = useRef(0);
 
   const { extractColor } = useDominantColor();
-  const [bgColors, setBgColors] = useState(["#18181b", "#18181b"]); 
+  const [bgColors, setBgColors] = useState(["#18181b", "#18181b"]);
 
   const lastImageUrlRef = useRef<string | null>(null);
 
+  // ИЗМЕНЕНИЕ: Основной useEffect для MediaSession API
   useEffect(() => {
     if ("mediaSession" in navigator) {
       if (!currentSong) {
         navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = "none";
         navigator.mediaSession.setActionHandler("play", null);
         navigator.mediaSession.setActionHandler("pause", null);
         navigator.mediaSession.setActionHandler("nexttrack", null);
         navigator.mediaSession.setActionHandler("previoustrack", null);
+        navigator.mediaSession.setActionHandler("seekto", null); // Очищаем обработчики
+        navigator.mediaSession.setActionHandler("seekforward", null);
+        navigator.mediaSession.setActionHandler("seekbackward", null);
         return;
       }
 
@@ -173,24 +179,30 @@ const PlaybackControls = () => {
         ],
       });
 
-      navigator.mediaSession.setActionHandler("play", () => {
-        if (!isPlaying) togglePlay();
-      });
-
-      navigator.mediaSession.setActionHandler("pause", () => {
-        if (isPlaying) togglePlay();
-      });
-
-      navigator.mediaSession.setActionHandler("nexttrack", () => {
-        playNext();
-      });
-
+      navigator.mediaSession.setActionHandler("play", () => togglePlay());
+      navigator.mediaSession.setActionHandler("pause", () => togglePlay());
+      navigator.mediaSession.setActionHandler("nexttrack", () => playNext());
       navigator.mediaSession.setActionHandler("previoustrack", () => {
         if (currentTime > 3) {
-          setPlayerCurrentTime(0);
+          seekToTime(0);
         } else {
           playPrevious();
         }
+      });
+
+      // НОВОЕ: Обработчики перемотки
+      navigator.mediaSession.setActionHandler("seekto", (details) => {
+        if (details.seekTime != null) {
+          seekToTime(details.seekTime);
+        }
+      });
+      navigator.mediaSession.setActionHandler("seekforward", (details) => {
+        const newTime = currentTime + (details.seekOffset || 10);
+        seekToTime(newTime);
+      });
+      navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+        const newTime = currentTime - (details.seekOffset || 10);
+        seekToTime(newTime);
       });
     }
   }, [
@@ -200,8 +212,27 @@ const PlaybackControls = () => {
     playPrevious,
     togglePlay,
     currentTime,
-    setPlayerCurrentTime,
+    seekToTime,
+    setPlayerCurrentTime, // `setPlayerCurrentTime` всё еще нужен для старого обработчика previoustrack
   ]);
+
+  // НОВОЕ: Отдельный useEffect для обновления состояния плеера (позиция, длительность)
+  useEffect(() => {
+    if (
+      "mediaSession" in navigator &&
+      "setPositionState" in navigator.mediaSession
+    ) {
+      if (currentSong && duration > 0) {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: 1,
+          position: currentTime,
+        });
+        // Обновляем состояние воспроизведения
+        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+      }
+    }
+  }, [currentTime, duration, isPlaying, currentSong]);
 
   useEffect(() => {
     if (
@@ -328,6 +359,7 @@ const PlaybackControls = () => {
     );
   }
 
+  // ... (весь ваш JSX остается без изменений) ...
   if (isCompactView) {
     return (
       <>
