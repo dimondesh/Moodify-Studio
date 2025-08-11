@@ -3,33 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { webAudioService } from "../lib/webAudio";
-
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
-import { useOfflineStore } from "@/stores/useOfflineStore"; // ИМПОРТ
+import { useOfflineStore } from "@/stores/useOfflineStore";
+import { silentAudioService } from "@/lib/silentAudioService"; // <-- ИЗМЕНЕНИЕ: Импортируем сервис
 
 const AudioPlayer = () => {
-  // --- Рефы для Web Audio API объектов ---
   const audioContextRef = useRef<AudioContext | null>(null);
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
-
   const silentAudioRef = useRef<HTMLAudioElement>(null);
-
   const instrumentalGainNodeRef = useRef<GainNode | null>(null);
   const vocalsGainNodeRef = useRef<GainNode | null>(null);
   const masterGainNodeRef = useRef<GainNode | null>(null);
-
   const instrumentalBufferRef = useRef<AudioBuffer | null>(null);
   const vocalsBufferRef = useRef<AudioBuffer | null>(null);
-
   const startTimeRef = useRef(0);
   const offsetTimeRef = useRef(0);
-
   const prevCurrentSongIdRef = useRef<string | null>(null);
   const currentLoadRequestIdRef = useRef<string | null>(null);
-
   const [isAudioContextReady, setIsAudioContextReady] = useState(false);
   const [, setAudioContextState] = useState<
     AudioContextState | "uninitialized"
@@ -49,30 +42,31 @@ const AudioPlayer = () => {
   } = usePlayerStore();
 
   const { isOffline } = useOfflineStore();
-
   const { user } = useAuthStore();
   const listenRecordedRef = useRef(false);
-
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
-
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
+  // <-- ИЗМЕНЕНИЕ: Инициализируем сервис при монтировании компонента
+  useEffect(() => {
+    if (silentAudioRef.current) {
+      silentAudioService.init(silentAudioRef.current);
+    }
+  }, []);
+
+  // <-- ИЗМЕНЕНИЕ: Этот useEffect больше не нужен, логика перенесена в usePlayerStore
+  /*
   useEffect(() => {
     const silentAudio = silentAudioRef.current;
     if (!silentAudio) return;
-
     if (isPlaying && currentSong) {
-      const playPromise = silentAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.warn("Silent audio play() failed:", error);
-        });
-      }
+      // ...
     } else {
       silentAudio.pause();
     }
   }, [isPlaying, currentSong]);
+  */
 
   useEffect(() => {
     const AudioContextClass =
@@ -169,7 +163,6 @@ const AudioPlayer = () => {
     };
   }, []);
 
-  // ИЗМЕНЕНИЕ: Возвращаем упрощенный обработчик для "пробуждения" контекста
   useEffect(() => {
     const audioContext = audioContextRef.current;
     if (!audioContext) return;
@@ -187,7 +180,6 @@ const AudioPlayer = () => {
       }
     };
 
-    // `pageshow` срабатывает, когда пользователь возвращается на страницу (в том числе из свернутого PWA)
     const handlePageShow = () => {
       if (audioContext.state === "suspended") {
         audioContext
@@ -207,7 +199,6 @@ const AudioPlayer = () => {
     };
   }, [isAudioContextReady]);
 
-  // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
     if (!isAudioContextReady) {
       instrumentalBufferRef.current = null;
@@ -334,7 +325,6 @@ const AudioPlayer = () => {
     };
   }, [currentSong, isAudioContextReady, setDuration, setCurrentTime]);
 
-  // --- Эффект 3: Управление воспроизведением (старт/пауза/перемотка) ---
   useEffect(() => {
     if (
       !isAudioContextReady ||
@@ -474,7 +464,6 @@ const AudioPlayer = () => {
     duration,
   ]);
 
-  // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 
@@ -490,7 +479,6 @@ const AudioPlayer = () => {
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
-  // --- Эффект 5: Обновление текущего времени в сторе (для UI) ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 

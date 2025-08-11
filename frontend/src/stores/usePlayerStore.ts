@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
+import { silentAudioService } from "@/lib/silentAudioService"; // <-- ИЗМЕНЕНИЕ: Импортируем сервис
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -38,7 +39,7 @@ interface PlayerStore {
   setDuration: (duration: number) => void;
   setIsDesktopLyricsOpen: (isOpen: boolean) => void;
   setIsMobileLyricsFullScreen: (isOpen: boolean) => void;
-  seekToTime: (time: number) => void; // <-- НОВОЕ
+  seekToTime: (time: number) => void;
 }
 
 const shuffleQueue = (length: number) => {
@@ -123,6 +124,7 @@ export const usePlayerStore = create<PlayerStore>()(
 
       playAlbum: (songs: Song[], startIndex = 0) => {
         if (songs.length === 0) {
+          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
           set({
             currentSong: null,
             isPlaying: false,
@@ -133,6 +135,8 @@ export const usePlayerStore = create<PlayerStore>()(
           });
           return;
         }
+
+        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
 
         set((state) => {
           const isShuffle = state.isShuffle;
@@ -180,6 +184,7 @@ export const usePlayerStore = create<PlayerStore>()(
 
       setCurrentSong: (song: Song | null) => {
         if (!song) {
+          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
           set({
             currentSong: null,
             isPlaying: false,
@@ -189,6 +194,8 @@ export const usePlayerStore = create<PlayerStore>()(
           });
           return;
         }
+
+        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
 
         set((state) => {
           const songIndex = state.queue.findIndex((s) => s._id === song._id);
@@ -230,7 +237,16 @@ export const usePlayerStore = create<PlayerStore>()(
       },
 
       togglePlay: () => {
-        set((state) => ({ isPlaying: !state.isPlaying }));
+        // <-- ИЗМЕНЕНИЕ: Вся логика теперь здесь
+        set((state) => {
+          const newIsPlaying = !state.isPlaying;
+          if (newIsPlaying) {
+            silentAudioService.play();
+          } else {
+            silentAudioService.pause();
+          }
+          return { isPlaying: newIsPlaying };
+        });
       },
 
       toggleShuffle: () => {
@@ -296,6 +312,7 @@ export const usePlayerStore = create<PlayerStore>()(
         const { isSongDownloaded } = useOfflineStore.getState().actions;
 
         if (queue.length === 0) {
+          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
           set({ isPlaying: false });
           return;
         }
@@ -353,10 +370,12 @@ export const usePlayerStore = create<PlayerStore>()(
 
         if (nextIndex === -1) {
           toast(isOffline ? "No other downloaded songs." : "End of queue.");
+          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
           set({ isPlaying: false });
           return;
         }
 
+        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
         set({
           currentSong: queue[nextIndex],
           currentIndex: nextIndex,
@@ -391,6 +410,7 @@ export const usePlayerStore = create<PlayerStore>()(
         const { isSongDownloaded } = useOfflineStore.getState().actions;
 
         if (queue.length === 0) {
+          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
           set({ isPlaying: false });
           return;
         }
@@ -441,6 +461,7 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
+        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
         set({
           currentSong: queue[prevIndex],
           currentIndex: prevIndex,
@@ -462,11 +483,11 @@ export const usePlayerStore = create<PlayerStore>()(
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
         set({ isMobileLyricsFullScreen: isOpen });
       },
-      // НОВАЯ ФУНКЦИЯ
       seekToTime: (time: number) => {
+        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
         set((state) => {
           const newTime = Math.max(0, Math.min(time, state.duration));
-          return { currentTime: newTime, isPlaying: true }; // Убедимся, что воспроизведение активно после перемотки
+          return { currentTime: newTime, isPlaying: true };
         });
       },
     }),

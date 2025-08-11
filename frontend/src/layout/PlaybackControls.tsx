@@ -103,7 +103,7 @@ const PlaybackControls = () => {
     currentTime,
     duration,
     setCurrentTime: setPlayerCurrentTime,
-    seekToTime, // <-- ИЗМЕНЕНИЕ: Получаем новую функцию
+    seekToTime,
   } = usePlayerStore();
 
   const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
@@ -125,7 +125,6 @@ const PlaybackControls = () => {
 
   const lastImageUrlRef = useRef<string | null>(null);
 
-  // ИЗМЕНЕНИЕ: Основной useEffect для MediaSession API
   useEffect(() => {
     if ("mediaSession" in navigator) {
       if (!currentSong) {
@@ -135,7 +134,7 @@ const PlaybackControls = () => {
         navigator.mediaSession.setActionHandler("pause", null);
         navigator.mediaSession.setActionHandler("nexttrack", null);
         navigator.mediaSession.setActionHandler("previoustrack", null);
-        navigator.mediaSession.setActionHandler("seekto", null); // Очищаем обработчики
+        navigator.mediaSession.setActionHandler("seekto", null);
         navigator.mediaSession.setActionHandler("seekforward", null);
         navigator.mediaSession.setActionHandler("seekbackward", null);
         return;
@@ -190,7 +189,6 @@ const PlaybackControls = () => {
         }
       });
 
-      // НОВОЕ: Обработчики перемотки
       navigator.mediaSession.setActionHandler("seekto", (details) => {
         if (details.seekTime != null) {
           seekToTime(details.seekTime);
@@ -213,10 +211,9 @@ const PlaybackControls = () => {
     togglePlay,
     currentTime,
     seekToTime,
-    setPlayerCurrentTime, // `setPlayerCurrentTime` всё еще нужен для старого обработчика previoustrack
   ]);
 
-  // НОВОЕ: Отдельный useEffect для обновления состояния плеера (позиция, длительность)
+  // <-- ИЗМЕНЕНИЕ: Добавлен `if (currentSong && duration > 0)`
   useEffect(() => {
     if (
       "mediaSession" in navigator &&
@@ -228,7 +225,6 @@ const PlaybackControls = () => {
           playbackRate: 1,
           position: currentTime,
         });
-        // Обновляем состояние воспроизведения
         navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
       }
     }
@@ -359,7 +355,6 @@ const PlaybackControls = () => {
     );
   }
 
-  // ... (весь ваш JSX остается без изменений) ...
   if (isCompactView) {
     return (
       <>
