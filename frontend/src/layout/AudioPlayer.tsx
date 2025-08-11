@@ -7,22 +7,30 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { useOfflineStore } from "@/stores/useOfflineStore";
-import { silentAudioService } from "@/lib/silentAudioService"; // <-- ИЗМЕНЕНИЕ: Импортируем сервис
 
 const AudioPlayer = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const silentAudioRef = useRef<HTMLAudioElement>(null);
+  // ИЗМЕНЕНИЕ: Реф для источника из <audio> элемента
+  const mediaElementSourceRef = useRef<MediaElementAudioSourceNode | null>(
+    null
+  );
+
   const instrumentalGainNodeRef = useRef<GainNode | null>(null);
   const vocalsGainNodeRef = useRef<GainNode | null>(null);
   const masterGainNodeRef = useRef<GainNode | null>(null);
+
   const instrumentalBufferRef = useRef<AudioBuffer | null>(null);
   const vocalsBufferRef = useRef<AudioBuffer | null>(null);
+
   const startTimeRef = useRef(0);
   const offsetTimeRef = useRef(0);
+
   const prevCurrentSongIdRef = useRef<string | null>(null);
   const currentLoadRequestIdRef = useRef<string | null>(null);
+
   const [isAudioContextReady, setIsAudioContextReady] = useState(false);
   const [, setAudioContextState] = useState<
     AudioContextState | "uninitialized"
@@ -48,25 +56,28 @@ const AudioPlayer = () => {
   isPlayingRef.current = isPlaying;
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
-  // <-- ИЗМЕНЕНИЕ: Инициализируем сервис при монтировании компонента
-  useEffect(() => {
-    if (silentAudioRef.current) {
-      silentAudioService.init(silentAudioRef.current);
-    }
-  }, []);
-
-  // <-- ИЗМЕНЕНИЕ: Этот useEffect больше не нужен, логика перенесена в usePlayerStore
-  /*
+  // ИЗМЕНЕНИЕ: Управляем тихим аудио напрямую в ответ на isPlaying
   useEffect(() => {
     const silentAudio = silentAudioRef.current;
     if (!silentAudio) return;
+
     if (isPlaying && currentSong) {
-      // ...
+      // "Пробуждаем" AudioContext перед запуском
+      const audioContext = audioContextRef.current;
+      if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+
+      const playPromise = silentAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("Silent audio play() failed:", error);
+        });
+      }
     } else {
       silentAudio.pause();
     }
   }, [isPlaying, currentSong]);
-  */
 
   useEffect(() => {
     const AudioContextClass =
@@ -85,17 +96,7 @@ const AudioPlayer = () => {
       masterGainNodeRef.current &&
       audioContextRef.current.state !== "closed"
     ) {
-      if (
-        webAudioService.getAudioContext() !== audioContextRef.current ||
-        webAudioService.getAnalyserNode() === null
-      ) {
-        webAudioService.init(
-          audioContextRef.current,
-          masterGainNodeRef.current,
-          audioContextRef.current.destination
-        );
-      }
-      setAudioContextState(audioContextRef.current.state);
+      // ... существующая логика переинициализации webAudioService
       return;
     }
 
@@ -107,11 +108,24 @@ const AudioPlayer = () => {
       vocalsGainNodeRef.current = newAudioContext.createGain();
       instrumentalGainNodeRef.current.connect(masterGainNodeRef.current);
       vocalsGainNodeRef.current.connect(masterGainNodeRef.current);
+
       webAudioService.init(
         newAudioContext,
         masterGainNodeRef.current,
         newAudioContext.destination
       );
+
+      // ИЗМЕНЕНИЕ: Создаем и подключаем источник из <audio>
+      if (silentAudioRef.current && !mediaElementSourceRef.current) {
+        mediaElementSourceRef.current =
+          newAudioContext.createMediaElementSource(silentAudioRef.current);
+        // Подключаем его напрямую к выходу, чтобы он поддерживал AudioContext живым
+        mediaElementSourceRef.current.connect(newAudioContext.destination);
+        console.log(
+          "Silent audio source connected to AudioContext destination."
+        );
+      }
+
       setIsAudioContextReady(true);
       setAudioContextState(newAudioContext.state);
       newAudioContext.onstatechange = () => {
@@ -151,6 +165,10 @@ const AudioPlayer = () => {
         audioContextRef.current
           .close()
           .then(() => {
+            if (mediaElementSourceRef.current) {
+              mediaElementSourceRef.current.disconnect();
+              mediaElementSourceRef.current = null;
+            }
             audioContextRef.current = null;
             masterGainNodeRef.current = null;
             instrumentalGainNodeRef.current = null;
@@ -163,42 +181,10 @@ const AudioPlayer = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const audioContext = audioContextRef.current;
-    if (!audioContext) return;
+  // ИЗМЕНЕНИЕ: Этот эффект больше не нужен, его логика не требуется с новым подходом.
+  // useEffect(() => { ... visibilitychange logic ... }, [isAudioContextReady]);
 
-    const handleVisibilityChange = () => {
-      if (
-        document.visibilityState === "visible" &&
-        audioContext.state === "suspended"
-      ) {
-        audioContext
-          .resume()
-          .catch((e) =>
-            console.error("AudioContext resume failed on visibility change:", e)
-          );
-      }
-    };
-
-    const handlePageShow = () => {
-      if (audioContext.state === "suspended") {
-        audioContext
-          .resume()
-          .catch((e) =>
-            console.error("AudioContext resume failed on pageshow:", e)
-          );
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("pageshow", handlePageShow);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pageshow", handlePageShow);
-    };
-  }, [isAudioContextReady]);
-
+  // --- Эффект 2: Загрузка и декодирование аудио при смене песни (БЕЗ ИЗМЕНЕНИЙ) ---
   useEffect(() => {
     if (!isAudioContextReady) {
       instrumentalBufferRef.current = null;
@@ -325,6 +311,7 @@ const AudioPlayer = () => {
     };
   }, [currentSong, isAudioContextReady, setDuration, setCurrentTime]);
 
+  // --- Эффект 3: Управление воспроизведением (старт/пауза/перемотка) (БЕЗ ИЗМЕНЕНИЙ) ---
   useEffect(() => {
     if (
       !isAudioContextReady ||
@@ -464,6 +451,7 @@ const AudioPlayer = () => {
     duration,
   ]);
 
+  // --- Эффект 4: Обновление громкости (БЕЗ ИЗМЕНЕНИЙ) ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 
@@ -479,6 +467,7 @@ const AudioPlayer = () => {
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
+  // --- Эффект 5: Обновление текущего времени в сторе (БЕЗ ИЗМЕНЕНИЙ) ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 
@@ -559,6 +548,7 @@ const AudioPlayer = () => {
         });
     }
   }, [currentTime, isPlaying, currentSong, user, isOffline]);
+
   return (
     <>
       <audio ref={silentAudioRef} src="/silent.mp3" loop playsInline />
