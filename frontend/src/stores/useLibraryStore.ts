@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types"; 
+import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types";
 import { useOfflineStore } from "./useOfflineStore";
 
 interface LibraryStore {
@@ -9,24 +9,26 @@ interface LibraryStore {
   likedSongs: Song[];
   playlists: LibraryPlaylist[];
   followedArtists: Artist[];
-  savedMixes: Mix[]; 
+  savedMixes: Mix[];
 
   isLoading: boolean;
   error: string | null;
 
   fetchLibrary: () => Promise<void>;
-  fetchLikedSongs: () => Promise<void>; 
-  fetchFollowedArtists: () => Promise<void>; 
+  fetchLikedSongs: () => Promise<void>;
+  fetchFollowedArtists: () => Promise<void>;
 
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
   togglePlaylist: (playlistId: string) => Promise<void>;
   toggleArtistFollow: (artistId: string) => Promise<void>;
-  toggleMixInLibrary: (mixId: string) => Promise<void>; 
+  toggleMixInLibrary: (mixId: string) => Promise<void>;
+  isAlbumInLibrary: (albumId: string) => boolean; 
+  isPlaylistInLibrary: (playlistId: string) => boolean; 
 
   isSongLiked: (songId: string) => boolean;
   isArtistFollowed: (artistId: string) => boolean;
-  isMixSaved: (mixId: string) => boolean; 
+  isMixSaved: (mixId: string) => boolean;
 }
 
 export const useLibraryStore = create<LibraryStore>((set, get) => ({
@@ -53,13 +55,13 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         likedSongsRes,
         playlistsRes,
         followedArtistsRes,
-        savedMixesRes, 
+        savedMixesRes,
       ] = await Promise.all([
         axiosInstance.get("/library/albums"),
         axiosInstance.get("/library/liked-songs"),
         axiosInstance.get("/library/playlists"),
         axiosInstance.get("/library/artists"),
-        axiosInstance.get("/library/mixes"), 
+        axiosInstance.get("/library/mixes"),
       ]);
 
       set({
@@ -67,7 +69,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         likedSongs: likedSongsRes.data.songs || [],
         playlists: playlistsRes.data.playlists || [],
         followedArtists: followedArtistsRes.data.artists || [],
-        savedMixes: savedMixesRes.data.mixes || [], 
+        savedMixes: savedMixesRes.data.mixes || [],
         isLoading: false,
       });
       console.log("useLibraryStore: All library data fetched successfully.");
@@ -80,7 +82,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   fetchLikedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -96,7 +98,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   // И эта тоже
   fetchFollowedArtists: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -111,11 +113,11 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleAlbum: async (albumId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     try {
       await axiosInstance.post("/library/albums/toggle", { albumId });
-      await get().fetchLibrary(); 
+      await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle album error", err);
       set({ error: "Failed to toggle album" });
@@ -123,7 +125,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleSongLike: async (songId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     try {
       await axiosInstance.post("/library/songs/toggle-like", { songId });
@@ -135,7 +137,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   togglePlaylist: async (playlistId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     try {
       await axiosInstance.post("/library/playlists/toggle", { playlistId });
@@ -147,7 +149,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   toggleArtistFollow: async (artistId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     try {
       await axiosInstance.post("/library/artists/toggle", { artistId });
@@ -157,9 +159,16 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       set({ error: "Failed to toggle artist follow" });
     }
   },
+  isAlbumInLibrary: (albumId: string) => {
+    return get().albums.some((album) => album._id === albumId);
+  },
+
+  isPlaylistInLibrary: (playlistId: string) => {
+    return get().playlists.some((playlist) => playlist._id === playlistId);
+  },
 
   toggleMixInLibrary: async (mixId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     try {
       await axiosInstance.post("/library/mixes/toggle", { mixId });

@@ -18,8 +18,11 @@ import {
 } from "../../components/ui/sheet";
 import { Avatar, AvatarImage } from "../../components/ui/avatar";
 import MessageInput from "./MessageInput";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { SharedContentMessage } from "./SharedContentMessage";
+import { Check, CheckCheck } from "lucide-react";
+import { TypingIndicator } from "./TypingIndicator";
 
 const formatTime = (date: string) => {
   return new Date(date).toLocaleTimeString("en-US", {
@@ -30,7 +33,7 @@ const formatTime = (date: string) => {
 };
 
 const ChatPage = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const { user: mongoUser } = useAuthStore();
   const {
     users,
@@ -44,14 +47,15 @@ const ChatPage = () => {
     isConnected,
     onlineUsers,
     userActivities,
+    typingUsers,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageContent, setMessageContent] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isPartnerTyping = selectedUser && typingUsers.get(selectedUser._id);
 
-  useEffect(() => {
-  }, []);
+  useEffect(() => {}, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,15 +94,71 @@ const ChatPage = () => {
     setIsSidebarOpen(true);
   };
 
+  const renderMessages = () =>
+    messages.map((message) => (
+      <div
+        key={message._id}
+        className={`flex items-start gap-3 w-full ${
+          message.senderId === mongoUser?.id ? "justify-end" : "justify-start"
+        }`}
+      >
+        <div
+          className={`flex items-start gap-3 max-w-[80%] sm:max-w-[70%] ${
+            message.senderId === mongoUser?.id ? "flex-row-reverse" : ""
+          }`}
+        >
+          <Avatar className="size-8 flex-shrink-0">
+            <AvatarImage
+              src={
+                message.senderId === mongoUser?.id
+                  ? mongoUser?.imageUrl || "/default-avatar.png"
+                  : users.find((u) => u._id === message.senderId)?.imageUrl ||
+                    "/default-avatar.png"
+              }
+            />
+          </Avatar>
+          <div
+            className={`rounded-lg max-w-full ${
+              message.type === "share"
+                ? "bg-transparent p-0"
+                : message.senderId === mongoUser?.id
+                ? "bg-violet-600 text-white p-3"
+                : "bg-zinc-800 text-white p-3"
+            }`}
+          >
+            {message.type === "share" && message.shareDetails ? (
+              <SharedContentMessage
+                entityType={message.shareDetails.entityType}
+                entityId={message.shareDetails.entityId}
+              />
+            ) : (
+              <div className="flex flex-col">
+                <p className="text-sm break-words">{message.content}</p>
+                <div className="flex items-center justify-end gap-1 text-xs text-zinc-400 mt-1 self-end">
+                  <span>{formatTime(message.createdAt)}</span>
+                  {message.senderId === mongoUser?.id &&
+                    (message.isRead ? (
+                      <CheckCheck className="size-4 text-violet-400" />
+                    ) : (
+                      <Check className="size-4" />
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ));
+
   return (
     <>
       {" "}
       <Helmet>
         <title>Chat</title>
-        {/* Этот тег говорит поисковикам не индексировать эту страницу */}
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <main className="h-full rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-900 overflow-hidden">
+        {/*ПК*/}
         <div className="hidden lg:grid lg:grid-cols-[300px_1fr] h-[calc(100vh-180px)]">
           <UsersList
             onUserSelect={handleUserSelect}
@@ -121,44 +181,15 @@ const ChatPage = () => {
                         <p className="text-sm">{t("pages.chat.noMessages")}</p>
                       </div>
                     ) : (
-                      messages.map((message) => (
-                        <div
-                          key={message._id}
-                          className={`flex items-start gap-3 ${
-                            message.senderId === mongoUser?.id
-                              ? "flex-row-reverse"
-                              : ""
-                          }`}
-                        >
-                          <Avatar className="size-8 flex-shrink-0">
-                            <AvatarImage
-                              src={
-                                message.senderId === mongoUser?.id
-                                  ? mongoUser?.imageUrl || "/default-avatar.png"
-                                  : users.find(
-                                      (u) => u._id === message.senderId
-                                    )?.imageUrl || "/default-avatar.png"
-                              }
-                            />
-                          </Avatar>
-                          <div
-                            className={`rounded-lg p-3 max-w-[70%] ${
-                              message.senderId === mongoUser?.id
-                                ? "bg-violet-600 text-white"
-                                : "bg-zinc-800 text-white"
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
-                            <span className="text-xs text-zinc-400 mt-1 block text-right">
-                              {formatTime(message.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                      renderMessages()
                     )}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
+                <div className="px-4 pb-2 h-6">
+                  {" "}
+                  {isPartnerTyping && <TypingIndicator />}
+                </div>
                 <MessageInput
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
@@ -172,6 +203,8 @@ const ChatPage = () => {
             )}
           </div>
         </div>
+        {/*Мобилка*/}
+
         <div className="lg:hidden h-[calc(100vh-180px)] flex flex-col">
           {selectedUser ? (
             <div className="flex flex-col h-full">
@@ -186,43 +219,15 @@ const ChatPage = () => {
                       <p className="text-sm">{t("pages.chat.noMessages")}</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message._id}
-                        className={`flex items-start gap-3 ${
-                          message.senderId === mongoUser?.id
-                            ? "flex-row-reverse"
-                            : ""
-                        }`}
-                      >
-                        <Avatar className="size-8 flex-shrink-0">
-                          <AvatarImage
-                            src={
-                              message.senderId === mongoUser?.id
-                                ? mongoUser?.imageUrl || "/default-avatar.png"
-                                : users.find((u) => u._id === message.senderId)
-                                    ?.imageUrl || "/default-avatar.png"
-                            }
-                          />
-                        </Avatar>
-                        <div
-                          className={`rounded-lg p-3 max-w-[70%] ${
-                            message.senderId === mongoUser?.id
-                              ? "bg-violet-600 text-white"
-                              : "bg-zinc-800 text-white"
-                          }`}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <span className="text-xs text-zinc-400 mt-1 block text-right">
-                            {formatTime(message.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    ))
+                    renderMessages()
                   )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
+              <div className="px-4 pb-2 h-6">
+                {" "}
+                {isPartnerTyping && <TypingIndicator />}
+              </div>
               <MessageInput
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}

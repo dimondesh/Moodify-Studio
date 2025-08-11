@@ -12,6 +12,7 @@ import { useOfflineStore } from "./useOfflineStore";
 interface ChatStore {
   users: User[];
   isLoading: boolean;
+
   error: string | null;
   socket: Socket<DefaultEventsMap, DefaultEventsMap>;
   isConnected: boolean;
@@ -19,14 +20,29 @@ interface ChatStore {
   userActivities: Map<string, string>;
   messages: Message[];
   selectedUser: User | null;
+  unreadMessages: Map<string, number>;
+  typingUsers: Map<string, boolean>;
 
-  fetchUsers: () => Promise<void>; 
+  fetchUsers: () => Promise<void>;
 
   initSocket: (mongoDbUserId: string) => Promise<void>;
   disconnectSocket: () => void;
-  sendMessage: (receiverId: string, senderId: string, content: string) => void;
+  sendMessage: (
+    receiverId: string,
+    senderId: string,
+    content: string,
+    type?: "text" | "share",
+    shareDetails?: {
+      entityType: "song" | "album" | "playlist";
+      entityId: string;
+    }
+  ) => void;
   fetchMessages: (userId: string) => Promise<void>;
   setSelectedUser: (user: User | null) => void;
+  markChatAsRead: (chatId: string) => void;
+  startTyping: (receiverId: string) => void;
+  stopTyping: (receiverId: string) => void;
+  markMessagesAsRead: (chatPartnerId: string) => void;
 }
 
 const baseURL = import.meta.env.VITE_SOCKETIO_URL;
@@ -50,11 +66,26 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   userActivities: new Map(),
   messages: [],
   selectedUser: null,
+  unreadMessages: new Map(),
+  typingUsers: new Map(),
 
-  setSelectedUser: (user) => set({ selectedUser: user }),
+  setSelectedUser: (user) => {
+    set({ selectedUser: user });
+    if (user) {
+      get().markChatAsRead(user._id);
+    }
+  },
+
+  markChatAsRead: (chatId: string) => {
+    set((state) => {
+      const newUnread = new Map(state.unreadMessages);
+      newUnread.delete(chatId);
+      return { unreadMessages: newUnread };
+    });
+  },
 
   fetchUsers: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     const { user: authUser } = useAuthStore.getState();
     if (!authUser || !authUser.id) {
@@ -209,11 +240,35 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             "Socket.IO: 'receive_message' event - Received message:",
             message
           );
-          set((state) => ({
-            messages: [...state.messages, message],
-          }));
+          const { selectedUser } = get();
+          if (selectedUser && selectedUser._id === message.senderId) {
+            set((state) => ({
+              messages: [...state.messages, { ...message, isRead: true }],
+            }));
+            get().markMessagesAsRead(message.senderId);
+          } else {
+            set((state) => {
+              const newUnread = new Map(state.unreadMessages);
+              newUnread.set(
+                message.senderId,
+                (newUnread.get(message.senderId) || 0) + 1
+              );
+              return { unreadMessages: newUnread };
+            });
+          }
         });
-
+        socket.on("messages_marked_read", ({ chatPartnerId }) => {
+          const { selectedUser } = get();
+          if (selectedUser && selectedUser._id === chatPartnerId) {
+            set((state) => ({
+              messages: state.messages.map((msg) =>
+                msg.senderId === useAuthStore.getState().user?.id
+                  ? { ...msg, isRead: true }
+                  : msg
+              ),
+            }));
+          }
+        });
         socket.on("message_sent", (message: Message) => {
           console.log(
             "Socket.IO: 'message_sent' event - Message sent confirmation:",
@@ -235,6 +290,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const newActivities = new Map(state.userActivities);
             newActivities.set(userId, activity);
             return { userActivities: newActivities };
+          });
+        });
+        socket.on("messages_marked_read", ({ chatPartnerId }) => {
+          const { selectedUser } = get();
+          if (selectedUser && selectedUser._id === chatPartnerId) {
+            set((state) => ({
+              messages: state.messages.map((msg) =>
+                msg.receiverId === chatPartnerId
+                  ? { ...msg, isRead: true }
+                  : msg
+              ),
+            }));
+          }
+        });
+
+        socket.on("typing_started", ({ senderId }) => {
+          set((state) => {
+            const newTypingUsers = new Map(state.typingUsers);
+            newTypingUsers.set(senderId, true);
+            return { typingUsers: newTypingUsers };
+          });
+        });
+
+        socket.on("typing_stopped", ({ senderId }) => {
+          set((state) => {
+            const newTypingUsers = new Map(state.typingUsers);
+            newTypingUsers.delete(senderId);
+            return { typingUsers: newTypingUsers };
           });
         });
 
@@ -266,7 +349,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
   },
 
-  sendMessage: (receiverId, senderId, content) => {
+  sendMessage: (receiverId, senderId, content, type = "text", shareDetails) => {
     const currentSocket = get().socket;
     if (!currentSocket || !get().isConnected) {
       console.error(
@@ -278,11 +361,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     console.log(
       `sendMessage: Emitting 'send_message' to ${receiverId} from ${senderId}...`
     );
-    currentSocket.emit("send_message", { receiverId, senderId, content });
+    currentSocket.emit("send_message", {
+      receiverId,
+      senderId,
+      content,
+      type,
+      shareDetails,
+    });
   },
 
   fetchMessages: async (userId: string) => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -298,6 +387,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         headers: { Authorization: `Bearer ${token}` },
       });
       set({ messages: response.data });
+      get().markMessagesAsRead(userId);
     } catch (error: any) {
       console.error("fetchMessages: Failed to fetch messages:", error);
       set({
@@ -306,5 +396,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+  startTyping: (receiverId) => {
+    get().socket.emit("typing_started", { receiverId });
+  },
+
+  stopTyping: (receiverId) => {
+    get().socket.emit("typing_stopped", { receiverId });
+  },
+
+  markMessagesAsRead: (chatPartnerId) => {
+    get().socket.emit("mark_messages_as_read", { chatPartnerId });
   },
 }));

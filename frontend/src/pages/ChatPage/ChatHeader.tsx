@@ -8,7 +8,8 @@ import {
 import { useChatStore } from "../../stores/useChatStore";
 import { Button } from "../../components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 interface ChatHeaderProps {
   showBackButton?: boolean;
@@ -16,7 +17,7 @@ interface ChatHeaderProps {
 }
 
 const ChatHeader = ({ showBackButton = false, onBack }: ChatHeaderProps) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const { selectedUser, onlineUsers } = useChatStore();
 
   if (!selectedUser) return null;
@@ -33,20 +34,25 @@ const ChatHeader = ({ showBackButton = false, onBack }: ChatHeaderProps) => {
           <ArrowLeft className="size-5" />
         </Button>
       )}
-      <Avatar>
-        <AvatarImage src={selectedUser.imageUrl || "/default-avatar.png"} />
-        <AvatarFallback>{selectedUser.fullName?.[0] || "U"}</AvatarFallback>
-      </Avatar>
-      <div>
-        <h2 className="font-medium text-white text-base truncate">
-          {selectedUser.fullName}
-        </h2>
-        <p className="text-sm text-zinc-400">
-          {onlineUsers.has(selectedUser._id)
-            ? t("pages.chat.online")
-            : t("pages.chat.offline")}
-        </p>
-      </div>
+      <Link
+        to={`/users/${selectedUser._id}`}
+        className="flex items-center gap-3 group"
+      >
+        <Avatar>
+          <AvatarImage src={selectedUser.imageUrl || "/default-avatar.png"} />
+          <AvatarFallback>{selectedUser.fullName?.[0] || "U"}</AvatarFallback>
+        </Avatar>
+        <div>
+          <h2 className="font-medium text-white text-base truncate group-hover:underline">
+            {selectedUser.fullName}
+          </h2>
+          <p className="text-sm text-zinc-400">
+            {onlineUsers.has(selectedUser._id)
+              ? t("pages.chat.online")
+              : t("pages.chat.offline")}
+          </p>
+        </div>
+      </Link>
     </div>
   );
 };

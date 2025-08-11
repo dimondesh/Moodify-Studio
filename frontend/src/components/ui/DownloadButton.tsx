@@ -28,7 +28,7 @@ export const DownloadButton = ({
     : "idle";
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
 
     if (status === "idle") {
       toast.promise(downloadItem(itemId, itemType), {
@@ -58,15 +58,19 @@ export const DownloadButton = ({
       onClick={handleClick}
       variant="ghost"
       size="icon"
-      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0"
+      className="w-9 h-9 sm:w-10 sm:h-10  rounded-md flex-shrink-0"
       disabled={status === "downloading"}
-      title={getTooltipText()} 
+      title={getTooltipText()}
     >
       {status === "downloading" && (
         <Loader2 className="animate-spin text-zinc-400 size-6" />
       )}
-      {status === "downloaded" && <Check className="text-violet-500 size-6" />}
-      {status === "idle" && <Download className="text-zinc-400 size-6" />}
+      {status === "downloaded" && (
+        <Check className="text-violet-500 w-9 h-9 sm:w-10 sm:h-10 " />
+      )}
+      {status === "idle" && (
+        <Download className="text-zinc-400 w-9 h-9 sm:w-10 sm:h-10 " />
+      )}
     </Button>
   );
 };

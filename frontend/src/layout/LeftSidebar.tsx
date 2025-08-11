@@ -33,6 +33,7 @@ import { useMusicStore } from "../stores/useMusicStore";
 import { useTranslation } from "react-i18next";
 import { Download } from "lucide-react";
 import { useOfflineStore } from "../stores/useOfflineStore";
+import { useChatStore } from "../stores/useChatStore";
 
 const LeftSidebar = () => {
   const { t } = useTranslation();
@@ -50,6 +51,11 @@ const LeftSidebar = () => {
     fetchMyPlaylists,
     isLoading: isLoadingPlaylists,
   } = usePlaylistStore();
+  const { unreadMessages } = useChatStore();
+  const totalUnread = Array.from(unreadMessages.values()).reduce(
+    (acc, count) => acc + count,
+    0
+  );
 
   const [user, loadingUser] = useAuthState(auth);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -180,12 +186,17 @@ const LeftSidebar = () => {
                 buttonVariants({
                   variant: "ghost",
                   className:
-                    "w-full justify-start text-white hover:bg-zinc-800",
+                    "w-full justify-start text-white hover:bg-zinc-800 relative",
                 })
               )}
             >
               <MessageCircle className="mr-2 size-5" />
               <span>{t("sidebar.messages")}</span>
+              {totalUnread > 0 && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-violet-600 text-white text-xs rounded-full h-5 px-1.5 flex items-center justify-center font-semibold">
+                  {totalUnread > 99 ? "99+" : totalUnread}
+                </span>
+              )}
             </Link>
           )}
 

@@ -8,10 +8,11 @@ import { useDominantColor } from "@/hooks/useDominantColor";
 import { useAudioSettingsStore } from "../lib/webAudio";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Share2 } from "lucide-react"; 
+import { ShareDialog } from "@/components/ui/ShareDialog"; 
 
 import {
   Heart,
-  Laptop2,
   Pause,
   Play,
   Repeat,
@@ -113,6 +114,7 @@ const PlaybackControls = () => {
 
   const [previousMasterVolume, setPreviousMasterVolume] =
     useState(masterVolume);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false); 
 
   const [isCompactView, setIsCompactView] = useState(false);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
@@ -213,7 +215,6 @@ const PlaybackControls = () => {
     seekToTime,
   ]);
 
-  // <-- ИЗМЕНЕНИЕ: Добавлен `if (currentSong && duration > 0)`
   useEffect(() => {
     if (
       "mediaSession" in navigator &&
@@ -748,8 +749,9 @@ const PlaybackControls = () => {
                         size="icon"
                         variant="ghost"
                         className="hover:text-white text-zinc-400"
+                        onClick={() => setIsShareDialogOpen(true)}
                       >
-                        <Laptop2 className="h-5 w-5" />
+                        <Share2 className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
@@ -1041,8 +1043,9 @@ const PlaybackControls = () => {
             size="icon"
             variant="ghost"
             className="hover:text-white text-zinc-400"
+            onClick={() => setIsShareDialogOpen(true)}
           >
-            <Laptop2 className="h-4 w-4" />
+            <Share2 className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
             <Button
@@ -1067,6 +1070,14 @@ const PlaybackControls = () => {
           </div>
         </div>
       </div>
+      {currentSong && (
+        <ShareDialog
+          isOpen={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
+          entityType="song"
+          entityId={currentSong._id}
+        />
+      )}
     </footer>
   );
 };

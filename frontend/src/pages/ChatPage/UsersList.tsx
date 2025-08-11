@@ -25,7 +25,7 @@ const UsersList = ({
   onlineUsers,
   userActivities,
 }: UsersListProps) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const { users, isLoading, error } = useChatStore();
   const { user: mongoUser } = useAuthStore();
 
@@ -65,6 +65,9 @@ const UsersList = ({
             filteredUsers.map((user) => {
               const isOnline = onlineUsers.has(user._id);
               const activity = userActivities.get(user._id);
+              const unreadCount =
+                useChatStore.getState().unreadMessages.get(user._id) || 0;
+
               const isPlaying =
                 activity &&
                 activity !== "Idle" &&
@@ -106,7 +109,7 @@ const UsersList = ({
                       }`}
                       aria-hidden="true"
                     />
-                  </div>
+                  </div>{" "}
                   <div className="flex-1 min-w-0">
                     <span className="font-medium truncate text-white text-sm">
                       {user.fullName}
@@ -115,6 +118,11 @@ const UsersList = ({
                       {statusText}
                     </p>
                   </div>
+                  {unreadCount > 0 && (
+                    <div className="ml-auto flex-shrink-0 bg-violet-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      {unreadCount}
+                    </div>
+                  )}
                 </div>
               );
             })

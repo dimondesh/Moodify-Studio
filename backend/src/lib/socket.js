@@ -94,9 +94,9 @@ export const initializeSocket = (server) => {
         try {
           // Находим песню и заполняем информацию об артисте
           const song = await Song.findById(songId).populate({
-            path: "artist", 
-            model: "Artist", 
-            select: "name", 
+            path: "artist",
+            model: "Artist",
+            select: "name",
           });
 
           console.log(
@@ -150,8 +150,10 @@ export const initializeSocket = (server) => {
 
     socket.on("send_message", async (data) => {
       try {
-        const { receiverId, content } = data;
+        const { receiverId, content, type, shareDetails } = data; 
+
         const senderId = userId;
+
         if (!receiverId || !content) {
           console.error("send_message error: receiverId or content missing.");
           socket.emit(
@@ -160,12 +162,53 @@ export const initializeSocket = (server) => {
           );
           return;
         }
+        // --- ПРОВЕРКА НА ВЗАИМНУЮ ПОДПИСКУ ---
+        const sender = await User.findById(senderId)
+          .select("followingUsers")
+          .lean();
+        const receiver = await User.findById(receiverId)
+          .select("followingUsers")
+          .lean();
 
-        const message = await Message.create({
+        if (!sender || !receiver) {
+          socket.emit("message_error", "User not found.");
+          return;
+        }
+
+        const senderFollowsReceiver = sender.followingUsers.some((id) =>
+          id.equals(receiverId)
+        );
+        const receiverFollowsSender = receiver.followingUsers.some((id) =>
+          id.equals(senderId)
+        );
+
+        if (!senderFollowsReceiver || !receiverFollowsSender) {
+          console.log(
+            `Message blocked: User ${senderId} and ${receiverId} are not mutual followers.`
+          );
+          socket.emit(
+            "message_error",
+            "You can only message mutual followers."
+          );
+          return;
+        }
+
+        const messageData = {
           senderId,
           receiverId,
           content,
-        });
+          type: type || "text",
+        };
+
+        if (type === "share" && shareDetails) {
+          messageData.shareDetails = {
+            entityType: shareDetails.entityType,
+            entityId: shareDetails.entityId,
+          };
+        }
+
+        const message = await Message.create(messageData);
+        // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
@@ -178,6 +221,40 @@ export const initializeSocket = (server) => {
       } catch (error) {
         console.error("Message error:", error);
         socket.emit("message_error", error.message);
+      }
+    });
+    socket.on("typing_started", ({ receiverId }) => {
+      const receiverSocketId = userSockets.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("typing_started", { senderId: userId });
+      }
+    });
+
+    // Когда пользователь прекращает печатать
+    socket.on("typing_stopped", ({ receiverId }) => {
+      const receiverSocketId = userSockets.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("typing_stopped", { senderId: userId });
+      }
+    });
+
+    // Когда пользователь открывает чат и читает сообщения
+    socket.on("mark_messages_as_read", async ({ chatPartnerId }) => {
+      try {
+        await Message.updateMany(
+          { senderId: chatPartnerId, receiverId: userId, isRead: false },
+          { $set: { isRead: true } }
+        );
+
+        // Уведомляем отправителя, что его сообщения прочитаны
+        const senderSocketId = userSockets.get(chatPartnerId);
+        if (senderSocketId) {
+          io.to(senderSocketId).emit("messages_marked_read", {
+            chatPartnerId: userId, // Сообщаем, в каком чате произошли изменения
+          });
+        }
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
       }
     });
 

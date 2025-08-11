@@ -21,7 +21,6 @@ const router = Router();
 router.get("/me", protectRoute, getCurrentUser);
 router.get("/messages/:userId", protectRoute, getMessages);
 
-
 router.get("/mutuals", protectRoute, getMutualFollowers);
 
 router.get("/:userId", protectRoute, getUserProfile);

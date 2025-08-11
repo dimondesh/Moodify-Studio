@@ -5,18 +5,24 @@ import { HomeIcon, Search, Library, MessageCircle } from "lucide-react";
 import { useAuthStore } from "../stores/useAuthStore";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
+import { useChatStore } from "../stores/useChatStore"; 
 
 const BottomNavigationBar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { user } = useAuthStore();
+  const { unreadMessages } = useChatStore(); 
+  const totalUnread = Array.from(unreadMessages.values()).reduce(
+    (acc, count) => acc + count,
+    0
+  );
 
   const navItems = [
     {
       to: "/",
       icon: HomeIcon,
-      label: t("bottomNav.home"), 
+      label: t("bottomNav.home"),
       authRequired: false,
     },
     {
@@ -28,13 +34,13 @@ const BottomNavigationBar = () => {
     {
       to: "/library",
       icon: Library,
-      label: t("bottomNav.library"), 
+      label: t("bottomNav.library"),
       authRequired: true,
     },
     {
       to: "/chat",
       icon: MessageCircle,
-      label: t("bottomNav.chat"), 
+      label: t("bottomNav.chat"),
       authRequired: true,
     },
   ];
@@ -53,12 +59,17 @@ const BottomNavigationBar = () => {
             to={item.to}
             className={cn(
               buttonVariants({ variant: "ghost", size: "sm" }),
-              "flex flex-col items-center justify-center p-0 h-full w-auto text-zinc-400 hover:text-white transition-colors duration-200",
+              "flex flex-col items-center justify-center p-0 h-full w-auto text-zinc-400 hover:text-white transition-colors duration-200 relative", // <-- ДОБАВЛЕНО relative
               isActive ? "text-white" : "text-zinc-400"
             )}
           >
             <item.icon className="h-5 w-5" />
             <span className="text-xs mt-1">{item.label}</span>
+            {item.to === "/chat" && totalUnread > 0 && (
+              <span className="absolute top-1 right-2 bg-violet-600 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                {totalUnread > 9 ? "9+" : totalUnread}
+              </span>
+            )}
           </Link>
         );
       })}

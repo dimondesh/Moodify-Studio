@@ -22,6 +22,7 @@ import { Playlist } from "./models/playlist.model.js";
 import artistRoutes from "./routes/artist.route.js";
 import mixRoutes from "./routes/mix.route.js";
 import cronRoutes from "./routes/cron.route.js";
+import shareRoutes from "./routes/share.route.js";
 
 dotenv.config();
 
@@ -82,6 +83,7 @@ app.use("/api/playlists", playlistRoutes);
 app.use("/api/artists", artistRoutes);
 app.use("/api/mixes", mixRoutes);
 app.use("/api/cron", cronRoutes);
+app.use("/api/share", shareRoutes);
 
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR HANDLER CAUGHT AN ERROR:");

@@ -25,6 +25,7 @@ import {
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
 import { useAuthStore } from "../../stores/useAuthStore";
+
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,8 @@ import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
+import { Share2 } from "lucide-react";
+import { ShareDialog } from "@/components/ui/ShareDialog";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -93,6 +96,7 @@ const PlaylistDetailsPage = () => {
   const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const { extractColor } = useDominantColor();
   const [isColorLoading, setIsColorLoading] = useState(true);
@@ -454,6 +458,15 @@ const PlaylistDetailsPage = () => {
                     )}
                   </Button>
                 )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-md border border-transparent p-2 transition-colors flex-shrink-0"
+                  title="Share Playlist"
+                  onClick={() => setIsShareDialogOpen(true)}
+                >
+                  <Share2 className="w-9 h-9 sm:w-10 sm:h-10  text-white" />
+                </Button>
                 {!isOwner ? (
                   <>
                     <Button
@@ -826,6 +839,15 @@ const PlaylistDetailsPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {currentPlaylist && (
+          <ShareDialog
+            isOpen={isShareDialogOpen}
+            onClose={() => setIsShareDialogOpen(false)}
+            entityType="playlist"
+            entityId={currentPlaylist._id}
+          />
+        )}
       </div>
     </>
   );

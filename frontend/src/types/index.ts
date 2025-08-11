@@ -77,6 +77,13 @@ export interface Message {
   content: string;
   createdAt: string;
   updatedAt: string;
+  type: "text" | "share";
+  isRead: boolean;
+
+  shareDetails?: {
+    entityType: "song" | "album" | "playlist";
+    entityId: string;
+  };
 }
 
 export interface User {

@@ -21,6 +21,8 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
+import { Share2 } from "lucide-react";
+import { ShareDialog } from "@/components/ui/ShareDialog";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -42,6 +44,8 @@ const AlbumPage = () => {
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
   const { extractColor } = useDominantColor();
 
   const [isColorLoading, setIsColorLoading] = useState(true);
@@ -264,6 +268,15 @@ const AlbumPage = () => {
                   itemType="albums"
                   itemTitle={currentAlbum.title}
                 />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors"
+                  title="Share"
+                  onClick={() => setIsShareDialogOpen(true)}
+                >
+                  <Share2 className="size-5 sm:size-6 text-white" />
+                </Button>
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
@@ -398,6 +411,14 @@ const AlbumPage = () => {
               </div>
             </div>
           </div>
+          {currentAlbum && (
+            <ShareDialog
+              isOpen={isShareDialogOpen}
+              onClose={() => setIsShareDialogOpen(false)}
+              entityType="album"
+              entityId={currentAlbum._id}
+            />
+          )}
         </ScrollArea>
       </div>
     </>
