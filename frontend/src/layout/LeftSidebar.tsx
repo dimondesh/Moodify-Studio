@@ -14,7 +14,7 @@ import { cn } from "../lib/utils";
 import { Button, buttonVariants } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import PlaylistSkeleton from "../components/ui/skeletons/PlaylistSkeleton";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { usePlaylistStore } from "../stores/usePlaylistStore";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -34,6 +34,7 @@ import { useTranslation } from "react-i18next";
 import { Download } from "lucide-react";
 import { useOfflineStore } from "../stores/useOfflineStore";
 import { useChatStore } from "../stores/useChatStore";
+import { useUIStore } from "../stores/useUIStore";
 
 const LeftSidebar = () => {
   const { t } = useTranslation();
@@ -58,8 +59,12 @@ const LeftSidebar = () => {
   );
 
   const [user, loadingUser] = useAuthState(auth);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
+  const {
+    isCreatePlaylistDialogOpen,
+    openCreatePlaylistDialog,
+    closeAllDialogs,
+  } = useUIStore(); // <-- ДОБАВИТЬ
 
   const { artists, fetchArtists } = useMusicStore();
 
@@ -229,7 +234,7 @@ const LeftSidebar = () => {
               variant="ghost"
               size="icon"
               className="hover:bg-zinc-800"
-              onClick={() => setIsCreateDialogOpen(true)}
+              onClick={openCreatePlaylistDialog}
               title={t("sidebar.createPlaylist")}
             >
               <Plus className="size-5" />
@@ -332,8 +337,8 @@ const LeftSidebar = () => {
       </div>
 
       <CreatePlaylistDialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        isOpen={isCreatePlaylistDialogOpen}
+        onClose={closeAllDialogs}
       />
     </div>
   );

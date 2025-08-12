@@ -1,11 +1,9 @@
-// frontend/src/stores/usePlayerStore.ts
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
-import { silentAudioService } from "@/lib/silentAudioService"; // <-- ИЗМЕНЕНИЕ: Импортируем сервис
+import { silentAudioService } from "@/lib/silentAudioService";
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -124,7 +122,7 @@ export const usePlayerStore = create<PlayerStore>()(
 
       playAlbum: (songs: Song[], startIndex = 0) => {
         if (songs.length === 0) {
-          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
+          silentAudioService.pause();
           set({
             currentSong: null,
             isPlaying: false,
@@ -136,7 +134,7 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
-        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
+        silentAudioService.play();
 
         set((state) => {
           const isShuffle = state.isShuffle;
@@ -184,7 +182,7 @@ export const usePlayerStore = create<PlayerStore>()(
 
       setCurrentSong: (song: Song | null) => {
         if (!song) {
-          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
+          silentAudioService.pause();
           set({
             currentSong: null,
             isPlaying: false,
@@ -195,7 +193,7 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
-        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
+        silentAudioService.play();
 
         set((state) => {
           const songIndex = state.queue.findIndex((s) => s._id === song._id);
@@ -237,7 +235,6 @@ export const usePlayerStore = create<PlayerStore>()(
       },
 
       togglePlay: () => {
-        // <-- ИЗМЕНЕНИЕ: Вся логика теперь здесь
         set((state) => {
           const newIsPlaying = !state.isPlaying;
           if (newIsPlaying) {
@@ -312,7 +309,7 @@ export const usePlayerStore = create<PlayerStore>()(
         const { isSongDownloaded } = useOfflineStore.getState().actions;
 
         if (queue.length === 0) {
-          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
+          silentAudioService.pause();
           set({ isPlaying: false });
           return;
         }
@@ -370,12 +367,12 @@ export const usePlayerStore = create<PlayerStore>()(
 
         if (nextIndex === -1) {
           toast(isOffline ? "No other downloaded songs." : "End of queue.");
-          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
+          silentAudioService.pause();
           set({ isPlaying: false });
           return;
         }
 
-        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
+        silentAudioService.play();
         set({
           currentSong: queue[nextIndex],
           currentIndex: nextIndex,
@@ -410,7 +407,7 @@ export const usePlayerStore = create<PlayerStore>()(
         const { isSongDownloaded } = useOfflineStore.getState().actions;
 
         if (queue.length === 0) {
-          silentAudioService.pause(); // <-- ИЗМЕНЕНИЕ
+          silentAudioService.pause();
           set({ isPlaying: false });
           return;
         }
@@ -461,7 +458,7 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
-        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
+        silentAudioService.play();
         set({
           currentSong: queue[prevIndex],
           currentIndex: prevIndex,
@@ -484,7 +481,7 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ isMobileLyricsFullScreen: isOpen });
       },
       seekToTime: (time: number) => {
-        silentAudioService.play(); // <-- ИЗМЕНЕНИЕ
+        silentAudioService.play();
         set((state) => {
           const newTime = Math.max(0, Math.min(time, state.duration));
           return { currentTime: newTime, isPlaying: true };

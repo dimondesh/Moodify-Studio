@@ -26,6 +26,7 @@ import { Helmet } from "react-helmet-async";
 import { Download } from "lucide-react";
 import { useOfflineStore } from "../../stores/useOfflineStore";
 import { cn } from "@/lib/utils";
+import { useUIStore } from "../../stores/useUIStore";
 
 const LibraryPage = () => {
   const { t } = useTranslation();
@@ -46,11 +47,16 @@ const LibraryPage = () => {
     error: playlistsError,
     fetchMyPlaylists,
   } = usePlaylistStore();
+  const {
+    isCreatePlaylistDialogOpen,
+    openCreatePlaylistDialog,
+    closeAllDialogs,
+  } = useUIStore(); // <-- ДОБАВИТЬ
+
   const { artists, fetchArtists } = useMusicStore();
   const [user] = useAuthState(auth);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const { isOffline } = useOfflineStore.getState(); 
+  const { isOffline } = useOfflineStore.getState();
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
@@ -217,18 +223,17 @@ const LibraryPage = () => {
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-6 text-white">
                   {t("sidebar.library")}
                 </h1>
-                {user &&
-                  !isOffline && ( 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-zinc-800 "
-                      onClick={() => setIsCreateDialogOpen(true)}
-                      title={t("sidebar.createPlaylist")}
-                    >
-                      <Plus className="size-6" />
-                    </Button>
-                  )}
+                {user && !isOffline && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-zinc-800 "
+                    onClick={openCreatePlaylistDialog}
+                    title={t("sidebar.createPlaylist")}
+                  >
+                    <Plus className="size-6" />
+                  </Button>
+                )}
               </div>
 
               <div className="flex items-center gap-2 mb-6">
@@ -365,8 +370,8 @@ const LibraryPage = () => {
           </div>
         </ScrollArea>
         <CreatePlaylistDialog
-          isOpen={isCreateDialogOpen}
-          onClose={() => setIsCreateDialogOpen(false)}
+          isOpen={isCreatePlaylistDialogOpen}
+          onClose={closeAllDialogs}
         />
       </div>
     </>

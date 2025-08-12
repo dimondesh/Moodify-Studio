@@ -21,8 +21,9 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
-import { Share2 } from "lucide-react";
+import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
+import { useUIStore } from "@/stores/useUIStore"; // <-- ИМПОРТ
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -35,6 +36,8 @@ const AlbumPage = () => {
   const { t } = useTranslation();
   const { albumId } = useParams();
   const navigate = useNavigate();
+  const { openShareDialog, closeAllDialogs, shareEntity } = useUIStore(); // <-- ДОБАВИТЬ
+
   const {
     fetchAlbumbyId,
     currentAlbum,
@@ -44,7 +47,6 @@ const AlbumPage = () => {
   const { albums, toggleAlbum, likedSongs, toggleSongLike } = useLibraryStore();
   const [inLibrary, setInLibrary] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const { extractColor } = useDominantColor();
 
@@ -247,7 +249,7 @@ const AlbumPage = () => {
                     disabled={isToggling}
                     variant="ghost"
                     size="icon"
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors ${
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full p-2 transition-colors ${
                       inLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
                     }`}
                     title={
@@ -257,9 +259,9 @@ const AlbumPage = () => {
                     }
                   >
                     {inLibrary ? (
-                      <CheckCircle2 className="size-6 sm:size-8 text-violet-400" />
+                      <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
                     ) : (
-                      <PlusCircle className="size-6 sm:size-8 text-white" />
+                      <PlusCircle className="size-5 sm:size-6 text-white" />
                     )}
                   </Button>
                 )}
@@ -271,11 +273,13 @@ const AlbumPage = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-md p-2 transition-colors"
                   title="Share"
-                  onClick={() => setIsShareDialogOpen(true)}
+                  onClick={() =>
+                    openShareDialog({ type: "album", id: currentAlbum._id })
+                  } // <-- ИЗМЕНИТЬ
                 >
-                  <Share2 className="size-5 sm:size-6 text-white" />
+                  <Share className="size-5 sm:size-6 text-white" />
                 </Button>
               </div>
 
@@ -413,8 +417,11 @@ const AlbumPage = () => {
           </div>
           {currentAlbum && (
             <ShareDialog
-              isOpen={isShareDialogOpen}
-              onClose={() => setIsShareDialogOpen(false)}
+              isOpen={
+                shareEntity?.type === "album" &&
+                shareEntity?.id === currentAlbum._id
+              }
+              onClose={closeAllDialogs}
               entityType="album"
               entityId={currentAlbum._id}
             />

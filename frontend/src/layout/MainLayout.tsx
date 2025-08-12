@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage";
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
+import { useUIStore } from "../stores/useUIStore"; // <-- ИМПОРТ
 
 const MainLayout = () => {
   const [isCompactView, setIsCompactView] = useState(false);
@@ -25,6 +26,41 @@ const MainLayout = () => {
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen,
   } = usePlayerStore();
+
+  const {
+    isCreatePlaylistDialogOpen,
+    editingPlaylist,
+    isSearchAndAddDialogOpen,
+    shareEntity,
+    isEditProfileDialogOpen,
+    playlistToDelete,
+    songToRemoveFromPlaylist,
+  } = useUIStore();
+
+  const isAnyDialogOpen =
+    isCreatePlaylistDialogOpen ||
+    !!editingPlaylist ||
+    isSearchAndAddDialogOpen ||
+    !!shareEntity ||
+    isEditProfileDialogOpen ||
+    !!playlistToDelete ||
+    !!songToRemoveFromPlaylist;
+
+  useEffect(() => {
+    const rootElement = document.getElementById("root");
+    if (rootElement) {
+      if (isAnyDialogOpen) {
+        rootElement.classList.add("dialog-open-blur");
+      } else {
+        rootElement.classList.remove("dialog-open-blur");
+      }
+    }
+    return () => {
+      if (rootElement) {
+        rootElement.classList.remove("dialog-open-blur");
+      }
+    };
+  }, [isAnyDialogOpen]);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -55,7 +91,7 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col">
+    <div className={`h-screen bg-black text-white flex flex-col `}>
       <DynamicTitleUpdater />
       <AudioPlayer />
       <Topbar />

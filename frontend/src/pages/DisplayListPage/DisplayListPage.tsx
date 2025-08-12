@@ -6,7 +6,7 @@ import { axiosInstance } from "@/lib/axios";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SectionGridSkeleton from "@/components/ui/skeletons/PlaylistSkeleton";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 interface ListItem {
   _id: string;
@@ -17,12 +17,12 @@ interface ListItem {
 }
 
 const DisplayListPage = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [items, setItems] = useState<ListItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const { title, apiEndpoint } = location.state || {
-    title: t("pages.displayList.title"), 
+    title: t("pages.displayList.title"),
     apiEndpoint: null,
   };
 
@@ -75,7 +75,7 @@ const DisplayListPage = () => {
                   <img
                     src={item.imageUrl || "/liked.png"}
                     alt={item.title || "Playlist"}
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                   />
                 ) : (
                   <Avatar className="w-full h-full">

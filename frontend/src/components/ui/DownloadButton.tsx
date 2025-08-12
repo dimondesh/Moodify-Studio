@@ -63,13 +63,13 @@ export const DownloadButton = ({
       title={getTooltipText()}
     >
       {status === "downloading" && (
-        <Loader2 className="animate-spin text-zinc-400 size-6" />
+        <Loader2 className="animate-spin text-white size-6" />
       )}
       {status === "downloaded" && (
-        <Check className="text-violet-500 w-9 h-9 sm:w-10 sm:h-10 " />
+        <Check className="text-violet-500 size-5 sm:size-6 " />
       )}
       {status === "idle" && (
-        <Download className="text-zinc-400 w-9 h-9 sm:w-10 sm:h-10 " />
+        <Download className="text-white size-5 sm:size-6 " />
       )}
     </Button>
   );

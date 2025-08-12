@@ -1,5 +1,4 @@
-// frontend/src/pages/PlaylistPage/PlaylistDetailsPage.tsx
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -25,7 +24,6 @@ import {
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
 import { useAuthStore } from "../../stores/useAuthStore";
-
 import {
   Dialog,
   DialogContent,
@@ -60,8 +58,9 @@ import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
-import { Share2 } from "lucide-react";
+import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
+import { useUIStore } from "../../stores/useUIStore";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -80,7 +79,19 @@ const PlaylistDetailsPage = () => {
     addSongToPlaylist,
     removeSongFromPlaylist,
   } = usePlaylistStore();
-
+  const {
+    editingPlaylist,
+    openEditPlaylistDialog,
+    isSearchAndAddDialogOpen,
+    openSearchAndAddDialog,
+    playlistToDelete,
+    openDeletePlaylistDialog,
+    songToRemoveFromPlaylist,
+    openRemoveSongFromPlaylistDialog,
+    shareEntity,
+    openShareDialog,
+    closeAllDialogs,
+  } = useUIStore();
   const navigate = useNavigate();
   const { user: authUser } = useAuthStore();
   const {
@@ -89,24 +100,15 @@ const PlaylistDetailsPage = () => {
     likedSongs,
     toggleSongLike,
   } = useLibraryStore();
-
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isAddSongDialogOpen, setIsAddSongDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [songToDeleteId, setSongToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-
   const { extractColor } = useDominantColor();
   const [isColorLoading, setIsColorLoading] = useState(true);
   const [localIsLoading, setLocalIsLoading] = useState(true);
-
   const backgroundKeyRef = useRef(0);
   const [backgrounds, setBackgrounds] = useState([
     { key: 0, color: "#18181b" },
   ]);
-
   const {
     songs: searchSongs,
     loading: searchLoading,
@@ -120,7 +122,6 @@ const PlaylistDetailsPage = () => {
     currentSong,
     queue,
   } = usePlayerStore();
-
   const isInLibrary = currentPlaylist
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
     : false;
@@ -208,36 +209,37 @@ const PlaylistDetailsPage = () => {
   const isOwner = authUser && currentPlaylist?.owner?._id === authUser.id;
 
   const handleDeletePlaylistConfirm = async () => {
-    if (!currentPlaylist || !isOwner) {
+    if (!playlistToDelete || !isOwner) {
       toast.error("You don't have permission to delete this playlist.");
       return;
     }
     try {
-      await deletePlaylist(currentPlaylist._id);
+      await deletePlaylist(playlistToDelete._id);
       toast.success("Playlist successfully deleted!");
       navigate("/library");
     } catch (e) {
       toast.error("Failed to delete playlist.");
-      console.error("Error deleting playlist:", e);
     } finally {
-      setIsDeleteDialogOpen(false);
+      closeAllDialogs();
     }
   };
 
   const handleDeleteSongConfirm = async () => {
-    if (!songToDeleteId || !currentPlaylist || !isOwner) {
+    if (!songToRemoveFromPlaylist || !currentPlaylist || !isOwner) {
       toast.error("Error deleting song.");
       return;
     }
     try {
-      await removeSongFromPlaylist(currentPlaylist._id, songToDeleteId);
+      await removeSongFromPlaylist(
+        songToRemoveFromPlaylist.playlistId,
+        songToRemoveFromPlaylist.songId
+      );
       toast.success("Song successfully removed from playlist!");
       await fetchPlaylistDetails(currentPlaylist._id);
     } catch (e) {
       toast.error("Failed to remove song.");
-      console.error("Error removing song:", e);
     } finally {
-      setSongToDeleteId(null);
+      closeAllDialogs();
     }
   };
 
@@ -249,18 +251,7 @@ const PlaylistDetailsPage = () => {
       await fetchPlaylistDetails(currentPlaylist._id);
     } catch (e) {
       toast.error("Failed to add song.");
-      console.error("Error adding song:", e);
     }
-  };
-
-  const handleRemoveSong = (songId: string) => {
-    if (!currentPlaylist || !isOwner) {
-      toast.error(
-        "You don't have permission to remove songs from this playlist."
-      );
-      return;
-    }
-    setSongToDeleteId(songId);
   };
 
   const handleTogglePlaylistInLibrary = async () => {
@@ -275,7 +266,6 @@ const PlaylistDetailsPage = () => {
       );
     } catch (e) {
       toast.error("Failed to change playlist status in library.");
-      console.error("Error adding/removing playlist from library:", e);
     } finally {
       setIsTogglingLibrary(false);
     }
@@ -458,15 +448,7 @@ const PlaylistDetailsPage = () => {
                     )}
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-md border border-transparent p-2 transition-colors flex-shrink-0"
-                  title="Share Playlist"
-                  onClick={() => setIsShareDialogOpen(true)}
-                >
-                  <Share2 className="w-9 h-9 sm:w-10 sm:h-10  text-white" />
-                </Button>
+
                 {!isOwner ? (
                   <>
                     <Button
@@ -474,7 +456,7 @@ const PlaylistDetailsPage = () => {
                       disabled={isTogglingLibrary}
                       variant="ghost"
                       size="icon"
-                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-transparent p-2 hover:border-white/20 transition-colors flex-shrink-0 ${
+                      className={`size-5 sm:size-6 rounded-full p-5 transition-colors flex-shrink-0 ${
                         isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
                       }`}
                       title={
@@ -494,51 +476,85 @@ const PlaylistDetailsPage = () => {
                       itemType="playlists"
                       itemTitle={currentPlaylist.title}
                     />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-5 sm:size-6 rounded-md p-5 transition-colors flex-shrink-0"
+                      title="Share Playlist"
+                      onClick={() =>
+                        openShareDialog({
+                          type: "playlist",
+                          id: currentPlaylist._id,
+                        })
+                      }
+                    >
+                      <Share className="size-5 sm:size-6  text-white" />
+                    </Button>
                   </>
                 ) : (
                   <>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
-                      onClick={() => setIsAddSongDialogOpen(true)}
+                      className="size-5 sm:size-6 p-5 hover:bg-zinc-800 text-white flex-shrink-0"
+                      onClick={openSearchAndAddDialog}
                       title={t("pages.playlist.actions.addSong")}
                     >
-                      <Plus className="size-4 sm:size-5" />
+                      <Plus className="size-5 sm:size-6" />
                     </Button>
                     <DownloadButton
                       itemId={currentPlaylist._id}
                       itemType="playlists"
                       itemTitle={currentPlaylist.title}
                     />
-
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-5 sm:size-6 rounded-md border border-transparent p-5 transition-colors flex-shrink-0"
+                      title="Share Playlist"
+                      onClick={() =>
+                        openShareDialog({
+                          type: "playlist",
+                          id: currentPlaylist._id,
+                        })
+                      }
+                    >
+                      <Share className="size-5 sm:size-6  text-white" />
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="w-9 h-9 sm:w-10 sm:h-10 hover:bg-zinc-800 text-white flex-shrink-0"
+                          className="size-5 sm:size-6 hover:bg-zinc-800 p-5 text-white flex-shrink-0"
                           title={t("pages.playlist.actions.moreActions")}
                         >
-                          <MoreHorizontal className="size-4 sm:size-5" />
+                          <MoreHorizontal className="size-5 sm:size-6" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-48 bg-zinc-800 text-white border-zinc-700">
                         <DropdownMenuItem
                           className="cursor-pointer hover:bg-zinc-700"
-                          onClick={() => setIsEditDialogOpen(true)}
+                          onClick={() =>
+                            openEditPlaylistDialog(currentPlaylist)
+                          }
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           {t("pages.playlist.actions.edit")}
                         </DropdownMenuItem>
                         <AlertDialog
-                          open={isDeleteDialogOpen}
-                          onOpenChange={setIsDeleteDialogOpen}
+                          open={playlistToDelete?._id === currentPlaylist._id}
+                          onOpenChange={(isOpen) =>
+                            !isOpen && closeAllDialogs()
+                          }
                         >
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem
                               className="cursor-pointer text-red-400 hover:bg-zinc-700 hover:text-red-300"
-                              onSelect={(e) => e.preventDefault()}
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                openDeletePlaylistDialog(currentPlaylist);
+                              }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               {t("pages.playlist.actions.delete")}
@@ -554,7 +570,10 @@ const PlaylistDetailsPage = () => {
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
+                              <AlertDialogCancel
+                                onClick={closeAllDialogs}
+                                className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
+                              >
                                 {t("pages.playlist.deleteDialog.cancel")}
                               </AlertDialogCancel>
                               <AlertDialogAction
@@ -696,18 +715,67 @@ const PlaylistDetailsPage = () => {
                               />
                             </Button>
                             {isOwner && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveSong(song._id);
-                                }}
-                                title={t("pages.playlist.actions.removeSong")}
+                              <AlertDialog
+                                open={
+                                  songToRemoveFromPlaylist?.songId === song._id
+                                }
+                                onOpenChange={(isOpen) =>
+                                  !isOpen && closeAllDialogs()
+                                }
                               >
-                                <X className="size-3 sm:size-4" />
-                              </Button>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onSelect={(e) => {
+                                      e.preventDefault();
+                                      openRemoveSongFromPlaylistDialog({
+                                        songId: song._id,
+                                        playlistId: currentPlaylist._id,
+                                      });
+                                    }}
+                                    title={t(
+                                      "pages.playlist.actions.removeSong"
+                                    )}
+                                  >
+                                    <X className="size-3 sm:size-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-white">
+                                      {t(
+                                        "pages.playlist.removeSongDialog.title"
+                                      )}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-zinc-400">
+                                      {t(
+                                        "pages.playlist.removeSongDialog.description"
+                                      )}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel
+                                      onClick={closeAllDialogs}
+                                      className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
+                                    >
+                                      {t(
+                                        "pages.playlist.removeSongDialog.cancel"
+                                      )}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-600 text-white hover:bg-red-700"
+                                      onClick={handleDeleteSongConfirm}
+                                    >
+                                      {t(
+                                        "pages.playlist.removeSongDialog.remove"
+                                      )}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                           </div>
                         </div>
@@ -722,15 +790,15 @@ const PlaylistDetailsPage = () => {
 
         {currentPlaylist && (
           <EditPlaylistDialog
-            isOpen={isEditDialogOpen}
-            onClose={() => setIsEditDialogOpen(false)}
-            playlist={currentPlaylist}
+            isOpen={!!editingPlaylist}
+            onClose={closeAllDialogs}
+            playlist={editingPlaylist}
             onSuccess={() => fetchPlaylistDetails(currentPlaylist._id)}
           />
         )}
         <Dialog
-          open={isAddSongDialogOpen}
-          onOpenChange={setIsAddSongDialogOpen}
+          open={isSearchAndAddDialogOpen}
+          onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
         >
           <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900 text-white border-zinc-700">
             <DialogHeader>
@@ -811,39 +879,13 @@ const PlaylistDetailsPage = () => {
             </div>
           </DialogContent>
         </Dialog>
-        <AlertDialog
-          open={!!songToDeleteId}
-          onOpenChange={(open) => {
-            if (!open) setSongToDeleteId(null);
-          }}
-        >
-          <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-white">
-                {t("pages.playlist.removeSongDialog.title")}
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-zinc-400">
-                {t("pages.playlist.removeSongDialog.description")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600 border-none">
-                {t("pages.playlist.removeSongDialog.cancel")}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={handleDeleteSongConfirm}
-              >
-                {t("pages.playlist.removeSongDialog.remove")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
         {currentPlaylist && (
           <ShareDialog
-            isOpen={isShareDialogOpen}
-            onClose={() => setIsShareDialogOpen(false)}
+            isOpen={
+              shareEntity?.type === "playlist" &&
+              shareEntity.id === currentPlaylist._id
+            }
+            onClose={closeAllDialogs}
             entityType="playlist"
             entityId={currentPlaylist._id}
           />

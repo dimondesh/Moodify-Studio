@@ -19,6 +19,7 @@ import { useDominantColor } from "../../hooks/useDominantColor";
 import PlaylistRow from "./PlaylistRow";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import { useUIStore } from "../../stores/useUIStore";
 
 interface ListItem {
   _id: string;
@@ -32,6 +33,9 @@ const ProfilePage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
+  const { isEditProfileDialogOpen, openEditProfileDialog, closeAllDialogs } =
+    useUIStore();
+
   const { extractColor } = useDominantColor();
   const [profileData, setProfileData] = useState<User | null>(null);
   const [followers, setFollowers] = useState<ListItem[]>([]);
@@ -46,7 +50,6 @@ const ProfilePage = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const fetchProfileData = useCallback(async () => {
     if (!userId) return;
@@ -243,7 +246,7 @@ const ProfilePage = () => {
             <div className="mt-6 flex items-center justify-center sm:justify-start gap-4">
               {isMyProfile ? (
                 <Button
-                  onClick={() => setIsEditDialogOpen(true)}
+                  onClick={openEditProfileDialog}
                   variant="outline"
                   className="rounded-full px-5"
                 >
@@ -345,8 +348,8 @@ const ProfilePage = () => {
         {profileData && isMyProfile && (
           <EditProfileDialog
             user={profileData}
-            isOpen={isEditDialogOpen}
-            onClose={() => setIsEditDialogOpen(false)}
+            isOpen={isEditProfileDialogOpen}
+            onClose={closeAllDialogs}
             onSuccess={fetchProfileData}
           />
         )}
