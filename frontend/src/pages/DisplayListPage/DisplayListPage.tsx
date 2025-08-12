@@ -78,8 +78,11 @@ const DisplayListPage = () => {
                     className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                   />
                 ) : (
-                  <Avatar className="w-full h-full">
-                    <AvatarImage src={item.imageUrl} />
+                  <Avatar className="w-auto h-auto object-cover">
+                    <AvatarImage
+                      src={item.imageUrl}
+                      className="w-auto h-auto object-cover"
+                    />
                     <AvatarFallback>
                       {(item.name || item.title)?.[0]}
                     </AvatarFallback>
