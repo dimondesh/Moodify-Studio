@@ -1,3 +1,5 @@
+//src/layout/PlaybackControls.tsx
+
 import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import { useLibraryStore } from "../stores/useLibraryStore";
@@ -106,7 +108,8 @@ const PlaybackControls = () => {
     seekToTime,
   } = usePlayerStore();
 
-  const { openShareDialog, closeAllDialogs, shareEntity } = useUIStore();
+  const { shareEntity, openShareDialog, closeAllDialogs } = useUIStore();
+  const isAnyDialogOpen = !!shareEntity;
 
   const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
     useAudioSettingsStore();
@@ -127,6 +130,7 @@ const PlaybackControls = () => {
 
   const lastImageUrlRef = useRef<string | null>(null);
 
+  // ... (все useEffect остаются без изменений)
   useEffect(() => {
     if ("mediaSession" in navigator) {
       if (!currentSong) {
@@ -356,7 +360,6 @@ const PlaybackControls = () => {
     );
   }
 
-  // ОБЕРНИТЕ ВЕСЬ RETURN В ОДИН ФРАГМЕНТ
   return (
     <>
       {isCompactView ? (
@@ -442,7 +445,9 @@ const PlaybackControls = () => {
             <DialogPortal>
               <DialogContent
                 aria-describedby={undefined}
-                className={`fixed w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0`}
+                className={`fixed w-auto h-screen max-w-none rounded-none bg-zinc-950 text-white flex flex-col p-4 sm:p-6 min-w-screen overflow-hidden z-[70] border-0 ${
+                  isAnyDialogOpen ? "dialog-open-blur" : ""
+                }`}
               >
                 <div
                   key={bgColors[1]}

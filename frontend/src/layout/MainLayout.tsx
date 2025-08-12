@@ -49,7 +49,7 @@ const MainLayout = () => {
   useEffect(() => {
     const rootElement = document.getElementById("root");
     if (rootElement) {
-      if (isAnyDialogOpen) {
+      if (isAnyDialogOpen && !isFullScreenPlayerOpen) {
         rootElement.classList.add("dialog-open-blur");
       } else {
         rootElement.classList.remove("dialog-open-blur");
@@ -60,7 +60,7 @@ const MainLayout = () => {
         rootElement.classList.remove("dialog-open-blur");
       }
     };
-  }, [isAnyDialogOpen]);
+  }, [isAnyDialogOpen, isFullScreenPlayerOpen]);
 
   useEffect(() => {
     const checkScreenSize = () => {
