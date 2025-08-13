@@ -16,7 +16,8 @@ import { useEffect, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage";
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
-import { useUIStore } from "../stores/useUIStore"; // <-- ИМПОРТ
+import { useUIStore } from "../stores/useUIStore";
+import { useMusicStore } from "../stores/useMusicStore"; // <-- 1. Импортируем useMusicStore
 
 const MainLayout = () => {
   const [isCompactView, setIsCompactView] = useState(false);
@@ -26,6 +27,7 @@ const MainLayout = () => {
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen,
   } = usePlayerStore();
+  const { fetchAlbums } = useMusicStore(); // <-- 2. Получаем функцию
 
   const {
     isCreatePlaylistDialogOpen,
@@ -45,7 +47,9 @@ const MainLayout = () => {
     isEditProfileDialogOpen ||
     !!playlistToDelete ||
     !!songToRemoveFromPlaylist;
-
+  useEffect(() => {
+    fetchAlbums();
+  }, [fetchAlbums]);
   useEffect(() => {
     const rootElement = document.getElementById("root");
     if (rootElement) {

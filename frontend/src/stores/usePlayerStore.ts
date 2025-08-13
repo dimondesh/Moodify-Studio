@@ -1,9 +1,13 @@
+// frontend/src/stores/usePlayerStore.ts
+// Изменение: Глобальное обогащение песни названием альбома при каждом переключении.
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
 import { silentAudioService } from "@/lib/silentAudioService";
+import { useMusicStore } from "./useMusicStore";
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -67,6 +71,20 @@ export const usePlayerStore = create<PlayerStore>()(
       duration: 0,
       isDesktopLyricsOpen: false,
       isMobileLyricsFullScreen: false,
+
+      enrichSongWithAlbumTitle: (song: Song): Song => {
+        if (song.albumTitle) {
+          return song;
+        }
+        if (song.albumId) {
+          const { albums } = useMusicStore.getState();
+          const foundAlbum = albums.find((album) => album._id === song.albumId);
+          if (foundAlbum) {
+            return { ...song, albumTitle: foundAlbum.title };
+          }
+        }
+        return song;
+      },
 
       initializeQueue: (songs: Song[]) => {
         set((state) => {
@@ -137,6 +155,9 @@ export const usePlayerStore = create<PlayerStore>()(
         silentAudioService.play();
 
         set((state) => {
+          const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
+            enrichSongWithAlbumTitle: (song: Song) => Song;
+          };
           const isShuffle = state.isShuffle;
           let songToPlay: Song;
           let targetIndexInQueue: number;
@@ -165,10 +186,12 @@ export const usePlayerStore = create<PlayerStore>()(
             newShufflePointer = -1;
           }
 
+          const enrichedSong = enrichSongWithAlbumTitle(songToPlay);
+
           const newState = {
             queue: songs,
             isPlaying: true,
-            currentSong: songToPlay,
+            currentSong: enrichedSong,
             currentIndex: targetIndexInQueue,
             shuffleHistory: newShuffleHistory,
             shufflePointer: newShufflePointer,
@@ -196,6 +219,9 @@ export const usePlayerStore = create<PlayerStore>()(
         silentAudioService.play();
 
         set((state) => {
+          const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
+            enrichSongWithAlbumTitle: (song: Song) => Song;
+          };
           const songIndex = state.queue.findIndex((s) => s._id === song._id);
           let newShufflePointer = state.shufflePointer;
           let newShuffleHistory = state.shuffleHistory;
@@ -220,8 +246,10 @@ export const usePlayerStore = create<PlayerStore>()(
             }
           }
 
+          const enrichedSong = enrichSongWithAlbumTitle(song);
+
           const newState = {
-            currentSong: song,
+            currentSong: enrichedSong,
             isPlaying: true,
             currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
             shuffleHistory: newShuffleHistory,
@@ -303,6 +331,9 @@ export const usePlayerStore = create<PlayerStore>()(
           shufflePointer,
           currentIndex,
         } = get();
+        const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
+          enrichSongWithAlbumTitle: (song: Song) => Song;
+        };
         const repeatMode = get().repeatMode;
 
         const { isOffline } = useOfflineStore.getState();
@@ -372,9 +403,12 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
+        const nextSong = queue[nextIndex];
+        const enrichedSong = enrichSongWithAlbumTitle(nextSong);
+
         silentAudioService.play();
         set({
-          currentSong: queue[nextIndex],
+          currentSong: enrichedSong,
           currentIndex: nextIndex,
           isPlaying: true,
           shuffleHistory: tempShuffleHistory,
@@ -401,6 +435,9 @@ export const usePlayerStore = create<PlayerStore>()(
           shuffleHistory,
           shufflePointer,
         } = get();
+        const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
+          enrichSongWithAlbumTitle: (song: Song) => Song;
+        };
         const repeatMode = get().repeatMode;
 
         const { isOffline } = useOfflineStore.getState();
@@ -458,9 +495,12 @@ export const usePlayerStore = create<PlayerStore>()(
           return;
         }
 
+        const prevSong = queue[prevIndex];
+        const enrichedSong = enrichSongWithAlbumTitle(prevSong);
+
         silentAudioService.play();
         set({
-          currentSong: queue[prevIndex],
+          currentSong: enrichedSong,
           currentIndex: prevIndex,
           isPlaying: true,
           shufflePointer: tempShufflePointer,

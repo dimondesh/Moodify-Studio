@@ -1,3 +1,5 @@
+// frontend/src/stores/useMusicStore.ts
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
@@ -123,15 +125,15 @@ export const useMusicStore = create<MusicStore>((set) => ({
         songs: state.songs
           .map((song) => ({
             ...song,
-            artist: song.artist.filter((artist) => artist._id !== id), 
+            artist: song.artist.filter((artist) => artist._id !== id),
           }))
-          .filter((song) => song.artist.length > 0), 
+          .filter((song) => song.artist.length > 0),
         albums: state.albums
           .map((album) => ({
             ...album,
-            artist: album.artist.filter((artist) => artist._id !== id), 
+            artist: album.artist.filter((artist) => artist._id !== id),
           }))
-          .filter((album) => album.artist.length > 0), 
+          .filter((album) => album.artist.length > 0),
       }));
       toast.success(
         "Artist and associated content relationships updated/deleted successfully"
@@ -163,7 +165,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       toast.success("Artist updated successfully!");
     } catch (error: any) {
       console.error("Error updating artist:", error);
-      throw error; 
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -194,7 +196,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbums: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -207,7 +209,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbumbyId: async (id: string) => {
-    set({ isLoading: true, error: null, currentAlbum: null }); 
+    set({ isLoading: true, error: null, currentAlbum: null });
 
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
@@ -241,7 +243,16 @@ export const useMusicStore = create<MusicStore>((set) => ({
 
     try {
       const response = await axiosInstance.get(`/albums/${id}`);
-      set({ currentAlbum: response.data.album, isLoading: false });
+      const albumData = response.data.album;
+
+      if (albumData && albumData.songs) {
+        albumData.songs = albumData.songs.map((song: Song) => ({
+          ...song,
+          albumTitle: albumData.title,
+        }));
+      }
+
+      set({ currentAlbum: albumData, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || "Failed to fetch album",
@@ -251,7 +262,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchFeaturedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -265,7 +276,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchMadeForYouSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -278,7 +289,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchRecentlyListenedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
     try {
       const response = await axiosInstance.get("/songs/history");
       set({ recentlyListenedSongs: response.data.songs || [] });
@@ -292,7 +303,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchTrendingSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -318,11 +329,11 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchArtists: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get("/artists"); 
+      const response = await axiosInstance.get("/artists");
       set({ artists: response.data });
     } catch (error: any) {
       set({ error: error.message });
