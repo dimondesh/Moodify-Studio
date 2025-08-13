@@ -48,6 +48,9 @@ const ChatPage = () => {
     onlineUsers,
     userActivities,
     typingUsers,
+    setIsChatPageActive,
+    markMessagesAsRead,
+    unreadMessages,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -83,6 +86,19 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    setIsChatPageActive(true);
+    return () => {
+      setIsChatPageActive(false);
+    };
+  }, [setIsChatPageActive]);
+
+  useEffect(() => {
+    if (selectedUser && unreadMessages.has(selectedUser._id)) {
+      markMessagesAsRead(selectedUser._id);
+    }
+  }, [selectedUser, messages, unreadMessages, markMessagesAsRead]);
 
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);

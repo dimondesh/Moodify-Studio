@@ -32,7 +32,7 @@ function App() {
   const { fetchUser, logout, user } = useAuthStore();
   const { isOffline } = useOfflineStore();
   const location = useLocation();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   useEffect(() => {
     const { init, checkOnlineStatus } = useOfflineStore.getState().actions;
@@ -131,6 +131,13 @@ function App() {
             },
           },
           error: {
+            style: {
+              background: "#27272a",
+              borderRadius: "20px",
+              color: "#BAC4C8",
+            },
+          },
+          loading: {
             style: {
               background: "#27272a",
               borderRadius: "20px",

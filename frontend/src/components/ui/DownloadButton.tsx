@@ -1,6 +1,6 @@
 // frontend/src/components/ui/DownloadButton.tsx
 
-import { Download, Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { Button } from "./button";
 import toast from "react-hot-toast";
@@ -66,10 +66,45 @@ export const DownloadButton = ({
         <Loader2 className="animate-spin text-white size-6" />
       )}
       {status === "downloaded" && (
-        <Check className="text-violet-500 size-5 sm:size-6 " />
+        <svg
+          className="size-6 sm:size-7"
+          xmlns="http://www.w3.org/2000/svg"
+          width="100"
+          height="100"
+          fill="none"
+          stroke="#000"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            fill="#805AD5"
+            stroke="#805AD5"
+          ></circle>
+          <path d="m16 12-4 4-4-4m4-4v7"></path>
+        </svg>
       )}
       {status === "idle" && (
-        <Download className="text-white size-5 sm:size-6 " />
+        <svg
+          className="size-5 sm:size-6"
+          xmlns="http://www.w3.org/2000/svg"
+          width="100"
+          height="100"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {" "}
+          <circle cx="12" cy="12" r="10" />
+          <path d="M16 12l-4 4-4-4M12 8v7" />
+        </svg>
       )}
     </Button>
   );

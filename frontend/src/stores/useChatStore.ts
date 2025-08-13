@@ -12,6 +12,7 @@ import { useOfflineStore } from "./useOfflineStore";
 interface ChatStore {
   users: User[];
   isLoading: boolean;
+  isChatPageActive: boolean;
 
   error: string | null;
   socket: Socket<DefaultEventsMap, DefaultEventsMap>;
@@ -38,6 +39,9 @@ interface ChatStore {
     }
   ) => void;
   fetchMessages: (userId: string) => Promise<void>;
+  fetchUnreadCounts: () => Promise<void>;
+  setIsChatPageActive: (isActive: boolean) => void;
+
   setSelectedUser: (user: User | null) => void;
   markChatAsRead: (chatId: string) => void;
   startTyping: (receiverId: string) => void;
@@ -68,20 +72,44 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   selectedUser: null,
   unreadMessages: new Map(),
   typingUsers: new Map(),
+  isChatPageActive: false,
 
   setSelectedUser: (user) => {
     set({ selectedUser: user });
     if (user) {
       get().markChatAsRead(user._id);
+      get().markMessagesAsRead(user._id);
     }
   },
 
+  setIsChatPageActive: (isActive) => set({ isChatPageActive: isActive }),
+
   markChatAsRead: (chatId: string) => {
     set((state) => {
+      if (!state.unreadMessages.has(chatId)) return state;
+
       const newUnread = new Map(state.unreadMessages);
       newUnread.delete(chatId);
       return { unreadMessages: newUnread };
     });
+  },
+
+  fetchUnreadCounts: async () => {
+    if (useOfflineStore.getState().isOffline) return;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+
+      const response = await axiosInstance.get("/users/unread-counts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const countsMap = new Map<string, number>(Object.entries(response.data));
+      set({ unreadMessages: countsMap });
+      console.log("Unread counts fetched:", countsMap);
+    } catch (error) {
+      console.error("Failed to fetch unread message counts:", error);
+    }
   },
 
   fetchUsers: async () => {
@@ -168,6 +196,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             "Socket.IO: 'connect' event - Socket connected. Emitting 'user_connected'."
           );
           socket.emit("user_connected", mongoDbUserId);
+          get().fetchUnreadCounts();
         });
 
         socket.on("connect_error", (err: any) => {
@@ -240,8 +269,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             "Socket.IO: 'receive_message' event - Received message:",
             message
           );
-          const { selectedUser } = get();
-          if (selectedUser && selectedUser._id === message.senderId) {
+          const { selectedUser, isChatPageActive } = get();
+
+          const isMessageReadNow =
+            isChatPageActive && selectedUser?._id === message.senderId;
+
+          if (isMessageReadNow) {
             set((state) => ({
               messages: [...state.messages, { ...message, isRead: true }],
             }));
@@ -407,5 +440,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   markMessagesAsRead: (chatPartnerId) => {
     get().socket.emit("mark_messages_as_read", { chatPartnerId });
+    get().markChatAsRead(chatPartnerId);
   },
 }));

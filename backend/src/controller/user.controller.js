@@ -1,7 +1,7 @@
 import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
-import { v2 as cloudinary } from "cloudinary"; 
-import { Library } from "../models/library.model.js"; 
+import { v2 as cloudinary } from "cloudinary";
+import { Library } from "../models/library.model.js";
 import { firebaseAdmin } from "../lib/firebase.js";
 
 export const getAllUsers = async (req, res, next) => {
@@ -47,7 +47,6 @@ export const getCurrentUser = (req, res) => {
   res.status(200).json(req.user);
 };
 
-
 export const getUserProfile = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -58,7 +57,7 @@ export const getUserProfile = async (req, res, next) => {
         populate: {
           path: "owner",
           model: "User",
-          select: "fullName", 
+          select: "fullName",
         },
         select: "title imageUrl isPublic owner",
       })
@@ -98,7 +97,7 @@ export const getFollowers = async (req, res, next) => {
 
     const followers = user.followers.map((f) => ({
       _id: f._id,
-      name: f.fullName, 
+      name: f.fullName,
       imageUrl: f.imageUrl,
       type: "user",
     }));
@@ -159,10 +158,10 @@ export const updateUserProfile = async (req, res, next) => {
   try {
     const { fullName } = req.body;
     const userId = req.user.id;
-    const firebaseUid = req.user.firebaseUid; 
+    const firebaseUid = req.user.firebaseUid;
 
-    const updateDataMongo = {}; 
-    const updateDataFirebase = {}; 
+    const updateDataMongo = {};
+    const updateDataFirebase = {};
 
     if (fullName) {
       updateDataMongo.fullName = fullName;
@@ -183,7 +182,7 @@ export const updateUserProfile = async (req, res, next) => {
       new: true,
     }).select(
       "-email -firebaseUid -followers -followingUsers -followingArtists"
-    ); 
+    );
 
     if (Object.keys(updateDataFirebase).length > 0) {
       await firebaseAdmin.auth().updateUser(firebaseUid, updateDataFirebase);
@@ -269,9 +268,9 @@ export const getFollowing = async (req, res, next) => {
 
     const followedArtists =
       library?.followedArtists
-        .filter((item) => item && item.artistId) 
+        .filter((item) => item && item.artistId)
         .map((a) => ({
-          _id: a.artistId._id, 
+          _id: a.artistId._id,
           name: a.artistId.name,
           imageUrl: a.artistId.imageUrl,
           type: "artist",
@@ -307,6 +306,46 @@ export const getPublicPlaylists = async (req, res, next) => {
     }));
 
     res.status(200).json({ items: playlists });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUnreadCounts = async (req, res, next) => {
+  try {
+    const currentUserId = req.user.id;
+    if (!currentUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          receiverId: currentUserId,
+          isRead: false,
+        },
+      },
+      {
+        $group: {
+          _id: "$senderId",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          senderId: "$_id",
+          count: "$count",
+        },
+      },
+    ]);
+
+    const countsMap = unreadCounts.reduce((acc, item) => {
+      acc[item.senderId] = item.count;
+      return acc;
+    }, {});
+
+    res.status(200).json(countsMap);
   } catch (error) {
     next(error);
   }
