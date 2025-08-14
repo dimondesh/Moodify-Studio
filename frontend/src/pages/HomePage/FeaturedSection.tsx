@@ -1,16 +1,27 @@
+// frontend/src/pages/HomePage/FeaturedSection.tsx
+
 import { useNavigate } from "react-router-dom";
 import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
 import PlayButton from "./PlayButton";
 import { JSX, useEffect } from "react";
-import React from "react"; 
+import React from "react";
+import { Song } from "@/types";
 
 interface Artist {
   _id: string;
   name: string;
 }
 
-const FeaturedSection = () => {
+interface FeaturedSectionProps {
+  onSongHover: (song: Song) => void;
+  onSongLeave: () => void;
+}
+
+const FeaturedSection = ({
+  onSongHover,
+  onSongLeave,
+}: FeaturedSectionProps) => {
   const { isLoading, featuredSongs, error, artists, fetchArtists } =
     useMusicStore();
   const navigate = useNavigate();
@@ -70,10 +81,10 @@ const FeaturedSection = () => {
   const songsArray = Array.isArray(featuredSongs) ? featuredSongs : [];
 
   const handleNavigateToAlbum = (
-    e: React.MouseEvent, 
+    e: React.MouseEvent,
     albumId: string | null | undefined
   ) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     if (albumId) {
       navigate(`/albums/${albumId}`);
     } else {
@@ -90,7 +101,10 @@ const FeaturedSection = () => {
   }
 
   return (
-    <div className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div
+      className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+      onMouseLeave={onSongLeave}
+    >
       {songsArray.map((song) => (
         <div
           key={song._id}
@@ -102,6 +116,7 @@ const FeaturedSection = () => {
               song.albumId
             );
           }}
+          onMouseEnter={() => onSongHover(song)}
         >
           <button
             onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
