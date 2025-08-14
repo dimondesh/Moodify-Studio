@@ -227,7 +227,7 @@ const AlbumPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex items-center gap-4 sm:gap-6 ">
+              <div className="px-4 sm:px-6 pb-4 flex items-center gap-4 sm:gap-4 ">
                 <Button
                   onClick={handlePlayAlbum}
                   size="icon"
@@ -259,9 +259,9 @@ const AlbumPage = () => {
                     }
                   >
                     {inLibrary ? (
-                      <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                      <CheckCircle2 className="size-6  text-violet-400" />
                     ) : (
-                      <PlusCircle className="size-5 sm:size-6 text-white" />
+                      <PlusCircle className="size-6  text-white" />
                     )}
                   </Button>
                 )}
@@ -277,7 +277,7 @@ const AlbumPage = () => {
                   title="Share"
                   onClick={() =>
                     openShareDialog({ type: "album", id: currentAlbum._id })
-                  } // <-- ИЗМЕНИТЬ
+                  }
                 >
                   <Share className="size-5 sm:size-6 text-white" />
                 </Button>

@@ -429,7 +429,7 @@ const PlaylistDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-6">
+              <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-4">
                 {currentPlaylist.songs.length > 0 && (
                   <Button
                     size="icon"
@@ -466,9 +466,9 @@ const PlaylistDetailsPage = () => {
                       }
                     >
                       {isInLibrary ? (
-                        <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                        <CheckCircle2 className="size-5 sm:size-7 text-violet-400" />
                       ) : (
-                        <PlusCircle className="size-5 sm:size-6 text-white" />
+                        <PlusCircle className="size-5 sm:size-7 text-white" />
                       )}
                     </Button>
                     <DownloadButton
@@ -500,7 +500,7 @@ const PlaylistDetailsPage = () => {
                       onClick={openSearchAndAddDialog}
                       title={t("pages.playlist.actions.addSong")}
                     >
-                      <Plus className="size-5 sm:size-6" />
+                      <Plus className="size-5 sm:size-7" />
                     </Button>
                     <DownloadButton
                       itemId={currentPlaylist._id}

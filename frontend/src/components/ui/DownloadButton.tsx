@@ -58,7 +58,7 @@ export const DownloadButton = ({
       onClick={handleClick}
       variant="ghost"
       size="icon"
-      className="w-9 h-9 sm:w-10 sm:h-10  rounded-md flex-shrink-0"
+      className="w-9 h-9 sm:w-10 sm:h-10  rounded-full flex-shrink-0"
       disabled={status === "downloading"}
       title={getTooltipText()}
     >
