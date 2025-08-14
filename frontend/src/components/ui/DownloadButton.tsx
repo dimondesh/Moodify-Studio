@@ -67,7 +67,7 @@ export const DownloadButton = ({
       )}
       {status === "downloaded" && (
         <svg
-          className="size-6 sm:size-7"
+          className="size-5 sm:size-6"
           xmlns="http://www.w3.org/2000/svg"
           width="100"
           height="100"
