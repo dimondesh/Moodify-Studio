@@ -13,8 +13,6 @@ import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
 import { useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
 import { useOfflineStore } from "./stores/useOfflineStore";
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
@@ -32,26 +30,10 @@ import { usePlaylistStore } from "./stores/usePlaylistStore";
 import { useMusicStore } from "./stores/useMusicStore";
 
 function App() {
-  const { user, fetchUser, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const isOffline = useOfflineStore((state) => state.isOffline);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        if (!user || user.firebaseUid !== firebaseUser.uid) {
-          fetchUser(firebaseUser.uid);
-        }
-      } else {
-        if (navigator.onLine && user) {
-          logout();
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, [fetchUser, logout, user]);
 
   useEffect(() => {
     const { init: initOffline, checkOnlineStatus } =
@@ -63,7 +45,6 @@ function App() {
     const handleNetworkChange = () => {
       const isNowOffline = !navigator.onLine;
       checkOnlineStatus();
-
       if (!isNowOffline && useAuthStore.getState().user) {
         console.log("App is back online. Refetching data...");
         fetchLibrary();
@@ -75,7 +56,7 @@ function App() {
     initOffline();
 
     if (user) {
-      console.log("User found in store, fetching library data...");
+      console.log("User detected in App.tsx, ensuring data is fetched.");
       fetchLibrary();
       fetchMyPlaylists();
       fetchArtists();

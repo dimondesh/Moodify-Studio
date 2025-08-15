@@ -29,6 +29,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       i18n.changeLanguage(user.language);
     }
   }, [user, i18n]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -37,27 +38,37 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firebaseUser.uid,
           firebaseUser.email
         );
-        try {
-          await fetchUser(firebaseUser.uid);
-          console.log("AuthProvider: MongoDB user synced.");
-        } catch (error) {
-          console.error(
-            "AuthProvider: Error syncing Firebase user with MongoDB:",
-            error
-          );
-          logout();
+        if (!user || user.firebaseUid !== firebaseUser.uid) {
+          try {
+            await fetchUser(firebaseUser.uid);
+            console.log("AuthProvider: MongoDB user synced.");
+          } catch (error) {
+            console.error(
+              "AuthProvider: Error syncing Firebase user with MongoDB:",
+              error
+            );
+            if (navigator.onLine) logout();
+          }
         }
       } else {
-        console.log("AuthProvider: No Firebase user is signed in.");
-        setUser(null);
-        socketInitializedRef.current = false;
-        disconnectSocket();
+        if (navigator.onLine) {
+          console.log(
+            "AuthProvider: No Firebase user is signed in (ONLINE). Clearing user state."
+          );
+          setUser(null);
+          socketInitializedRef.current = false;
+          disconnectSocket();
+        } else {
+          console.log(
+            "AuthProvider: No Firebase user detected (OFFLINE). Trusting persisted state."
+          );
+        }
       }
       setFirebaseChecked(true);
     });
 
     return () => unsubscribe();
-  }, [setUser, fetchUser, logout, disconnectSocket]);
+  }, [setUser, fetchUser, logout, disconnectSocket, user]);
 
   useEffect(() => {
     if (
