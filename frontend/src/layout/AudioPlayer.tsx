@@ -7,13 +7,13 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { useOfflineStore } from "@/stores/useOfflineStore";
+import { silentAudioService } from "@/lib/silentAudioService";
 
 const AudioPlayer = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const silentAudioRef = useRef<HTMLAudioElement>(null);
-  // ИЗМЕНЕНИЕ: Реф для источника из <audio> элемента
   const mediaElementSourceRef = useRef<MediaElementAudioSourceNode | null>(
     null
   );
@@ -56,28 +56,34 @@ const AudioPlayer = () => {
   isPlayingRef.current = isPlaying;
   const lastPlayerStoreCurrentTimeRef = useRef(0);
 
-  // ИЗМЕНЕНИЕ: Управляем тихим аудио напрямую в ответ на isPlaying
   useEffect(() => {
-    const silentAudio = silentAudioRef.current;
-    if (!silentAudio) return;
+    const audioEl = silentAudioRef.current;
+    if (!audioEl) return;
 
-    if (isPlaying && currentSong) {
-      // "Пробуждаем" AudioContext перед запуском
-      const audioContext = audioContextRef.current;
-      if (audioContext && audioContext.state === "suspended") {
-        audioContext.resume();
-      }
+    let objectUrl: string;
 
-      const playPromise = silentAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.warn("Silent audio play() failed:", error);
-        });
+    const setupSilentAudio = async () => {
+      try {
+        const response = await fetch("/silent.mp3");
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        audioEl.src = objectUrl;
+
+        silentAudioService.init(audioEl);
+        console.log("Silent audio initialized and ready.");
+      } catch (error) {
+        console.error("Failed to load silent audio:", error);
       }
-    } else {
-      silentAudio.pause();
-    }
-  }, [isPlaying, currentSong]);
+    };
+
+    setupSilentAudio();
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const AudioContextClass =
@@ -96,7 +102,17 @@ const AudioPlayer = () => {
       masterGainNodeRef.current &&
       audioContextRef.current.state !== "closed"
     ) {
-      // ... существующая логика переинициализации webAudioService
+      if (
+        webAudioService.getAudioContext() !== audioContextRef.current ||
+        webAudioService.getAnalyserNode() === null
+      ) {
+        webAudioService.init(
+          audioContextRef.current,
+          masterGainNodeRef.current,
+          audioContextRef.current.destination
+        );
+      }
+      setAudioContextState(audioContextRef.current.state);
       return;
     }
 
@@ -115,11 +131,9 @@ const AudioPlayer = () => {
         newAudioContext.destination
       );
 
-      // ИЗМЕНЕНИЕ: Создаем и подключаем источник из <audio>
       if (silentAudioRef.current && !mediaElementSourceRef.current) {
         mediaElementSourceRef.current =
           newAudioContext.createMediaElementSource(silentAudioRef.current);
-        // Подключаем его напрямую к выходу, чтобы он поддерживал AudioContext живым
         mediaElementSourceRef.current.connect(newAudioContext.destination);
         console.log(
           "Silent audio source connected to AudioContext destination."
@@ -181,10 +195,7 @@ const AudioPlayer = () => {
     };
   }, []);
 
-  // ИЗМЕНЕНИЕ: Этот эффект больше не нужен, его логика не требуется с новым подходом.
-  // useEffect(() => { ... visibilitychange logic ... }, [isAudioContextReady]);
-
-  // --- Эффект 2: Загрузка и декодирование аудио при смене песни (БЕЗ ИЗМЕНЕНИЙ) ---
+  // --- Эффект 2: Загрузка и декодирование аудио при смене песни ---
   useEffect(() => {
     if (!isAudioContextReady) {
       instrumentalBufferRef.current = null;
@@ -311,7 +322,7 @@ const AudioPlayer = () => {
     };
   }, [currentSong, isAudioContextReady, setDuration, setCurrentTime]);
 
-  // --- Эффект 3: Управление воспроизведением (старт/пауза/перемотка) (БЕЗ ИЗМЕНЕНИЙ) ---
+  // --- Эффект 3: Управление воспроизведением (старт/пауза/перемотка) ---
   useEffect(() => {
     if (
       !isAudioContextReady ||
