@@ -71,7 +71,6 @@ export default defineConfig({
         "silent.mp3",
         "Moodify.png",
         "Moodify.svg",
-        "Spotify.svg",
         "liked.png",
         "liked.svg",
         "default-album-cover.png",
