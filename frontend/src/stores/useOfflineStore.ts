@@ -17,6 +17,8 @@ import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useLibraryStore } from "./useLibraryStore";
 import { useAuthStore } from "./useAuthStore";
+import { usePlaylistStore } from "./usePlaylistStore";
+import { useMusicStore } from "./useMusicStore";
 
 type DownloadableItemData = Album | Playlist | Mix;
 type DownloadableItemWithValue = (Album | Playlist | Mix) & {
@@ -59,6 +61,10 @@ export const useOfflineStore = create<OfflineState>()(
       actions: {
         init: async () => {
           const userId = useAuthStore.getState().user?.id;
+
+          const isCurrentlyOffline = !navigator.onLine;
+          set({ isOffline: isCurrentlyOffline });
+
           if (!userId) {
             set({ downloadedItemIds: new Set(), downloadedSongIds: new Set() });
             return;
@@ -70,6 +76,7 @@ export const useOfflineStore = create<OfflineState>()(
             getAllUserMixes(userId),
             getAllUserSongs(userId),
           ]);
+
           const allItemKeys = [
             ...albums.map((i) => i._id),
             ...playlists.map((i) => i._id),
@@ -82,7 +89,13 @@ export const useOfflineStore = create<OfflineState>()(
             downloadedSongIds: new Set(allSongKeys),
           });
 
-          get().actions.checkOnlineStatus();
+          if (isCurrentlyOffline) {
+            console.log("[Offline Startup] Forcing data fetch from IndexedDB.");
+            useLibraryStore.getState().fetchLibrary();
+            usePlaylistStore.getState().fetchMyPlaylists();
+            useMusicStore.getState().fetchArtists();
+          }
+
           window.addEventListener("online", get().actions.checkOnlineStatus);
           window.addEventListener("offline", get().actions.checkOnlineStatus);
         },

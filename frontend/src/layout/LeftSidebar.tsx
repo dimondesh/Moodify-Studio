@@ -70,7 +70,6 @@ const LeftSidebar = () => {
   const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
-  
     if (user && !loadingUser) {
       fetchLibrary();
       fetchMyPlaylists();
