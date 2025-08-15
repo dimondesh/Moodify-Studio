@@ -12,7 +12,7 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
@@ -32,74 +32,67 @@ import { usePlaylistStore } from "./stores/usePlaylistStore";
 import { useMusicStore } from "./stores/useMusicStore";
 
 function App() {
-  const { fetchUser, logout, user, setAuthReady } = useAuthStore();
-  const { isOffline } = useOfflineStore();
+  const { user, fetchUser, logout } = useAuthStore();
+  const isOffline = useOfflineStore((state) => state.isOffline);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  const isAuthReady = useAuthStore((state) => state.isAuthReady);
-  const hasHydrated = useAuthStore((state) => state._hasHydrated);
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         if (!user || user.firebaseUid !== firebaseUser.uid) {
-          await fetchUser(firebaseUser.uid);
+          fetchUser(firebaseUser.uid);
         }
       } else {
         if (user) {
           logout();
         }
       }
-      setAuthReady(true);
     });
 
     return () => unsubscribe();
-  }, [fetchUser, logout, setAuthReady, user]);
+  }, [fetchUser, logout, user]);
 
   useEffect(() => {
-    if (!isAuthReady || !hasHydrated) {
-      return;
-    }
-
     const { init: initOffline, checkOnlineStatus } =
       useOfflineStore.getState().actions;
-    const { fetchLibrary, fetchLikedSongs } = useLibraryStore.getState();
+    const { fetchLibrary } = useLibraryStore.getState();
     const { fetchMyPlaylists } = usePlaylistStore.getState();
     const { fetchArtists } = useMusicStore.getState();
 
-    const handleOnline = () => {
+    const handleOnlineStatusChange = () => {
+      const isNowOffline = !navigator.onLine;
       checkOnlineStatus();
-      console.log("App is back online. Refetching library data...");
-      if (useAuthStore.getState().user) {
-        fetchLibrary();
-        fetchLikedSongs();
-        fetchMyPlaylists();
-        fetchArtists();
+      if (!isNowOffline) {
+        console.log("App is back online. Refetching data...");
+        if (useAuthStore.getState().user) {
+          fetchLibrary();
+          fetchMyPlaylists();
+          fetchArtists();
+        }
       }
     };
-    const handleOffline = () => checkOnlineStatus();
 
-    initOffline();
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    setIsInitialized(true);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [isAuthReady, hasHydrated]);
-
-  useEffect(() => {
-    if (!isInitialized) {
-      return;
+    if (user) {
+      console.log(
+        "User object is available, initializing offline store and fetching data..."
+      );
+      initOffline();
+      fetchLibrary();
+      fetchMyPlaylists();
+      fetchArtists();
     }
 
+    window.addEventListener("online", handleOnlineStatusChange);
+    window.addEventListener("offline", handleOnlineStatusChange);
+
+    return () => {
+      window.removeEventListener("online", handleOnlineStatusChange);
+      window.removeEventListener("offline", handleOnlineStatusChange);
+    };
+  }, [user]);
+
+  useEffect(() => {
     const exactSafePaths = [
       "/library",
       "/settings",
@@ -117,7 +110,7 @@ function App() {
     if (isOffline && !isSafe) {
       navigate("/offline", { replace: true });
     }
-  }, [isOffline, location.pathname, navigate, isInitialized]);
+  }, [isOffline, location.pathname, navigate]);
 
   return (
     <>
