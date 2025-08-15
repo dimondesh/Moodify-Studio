@@ -18,12 +18,16 @@ export const DownloadButton = ({
   itemType,
   itemTitle,
 }: DownloadButtonProps) => {
-  const { isDownloaded, isDownloading, downloadItem, deleteItem } =
-    useOfflineStore((s) => s.actions);
+  const downloadedItemIds = useOfflineStore((s) => s.downloadedItemIds);
+  const downloadingItemIds = useOfflineStore((s) => s.downloadingItemIds);
+  const { downloadItem, deleteItem } = useOfflineStore((s) => s.actions);
 
-  const status = isDownloaded(itemId)
+  const isDownloaded = downloadedItemIds.has(itemId);
+  const isDownloading = downloadingItemIds.has(itemId);
+
+  const status = isDownloaded
     ? "downloaded"
-    : isDownloading(itemId)
+    : isDownloading
     ? "downloading"
     : "idle";
 
