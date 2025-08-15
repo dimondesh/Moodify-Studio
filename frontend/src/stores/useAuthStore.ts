@@ -31,6 +31,11 @@ interface AuthStore {
   isAdmin: boolean;
   isLoading: boolean;
   error: string | null;
+  isAuthReady: boolean;
+  _hasHydrated: boolean;
+
+  setAuthReady: (isReady: boolean) => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 
   setUser: (user: AuthUser | null) => void;
   checkAdminStatus: () => Promise<void>;
@@ -60,7 +65,11 @@ export const useAuthStore = create<AuthStore>()(
       isAdmin: false,
       isLoading: false,
       error: null,
+      isAuthReady: false,
+      _hasHydrated: false,
 
+      setAuthReady: (isReady) => set({ isAuthReady: isReady }),
+      setHasHydrated: (hasHydrated) => set({ _hasHydrated: hasHydrated }),
       setUser: (user) => set({ user }),
 
       updateUserLanguage: async (language: string) => {
@@ -272,6 +281,11 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.setHasHydrated(true);
+        }
+      },
       partialize: (state) => ({
         user: state.user,
       }),

@@ -12,7 +12,7 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useAuthStore } from "./stores/useAuthStore";
@@ -32,44 +32,15 @@ import { usePlaylistStore } from "./stores/usePlaylistStore";
 import { useMusicStore } from "./stores/useMusicStore";
 
 function App() {
-  const { fetchUser, logout, user } = useAuthStore();
+  const { fetchUser, logout, user, setAuthReady } = useAuthStore();
   const { isOffline } = useOfflineStore();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Получаем функции для обновления данных один раз
-  const { fetchLibrary, fetchLikedSongs } = useLibraryStore.getState();
-  const { fetchMyPlaylists } = usePlaylistStore.getState();
-  const { fetchArtists } = useMusicStore.getState();
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    const { init, checkOnlineStatus } = useOfflineStore.getState().actions;
-
-    const handleOnline = () => {
-      checkOnlineStatus();
-      console.log("App is back online. Refetching library data...");
-      if (user) {
-        fetchLibrary();
-        fetchLikedSongs();
-        fetchMyPlaylists();
-        fetchArtists();
-      }
-    };
-
-    const handleOffline = () => {
-      checkOnlineStatus();
-    };
-
-    init();
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-    // Зависимости гарантируют, что мы используем актуальные функции
-  }, [user, fetchLibrary, fetchLikedSongs, fetchMyPlaylists, fetchArtists]);
+  const isAuthReady = useAuthStore((state) => state.isAuthReady);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -82,26 +53,71 @@ function App() {
           logout();
         }
       }
+      setAuthReady(true);
     });
 
     return () => unsubscribe();
-  }, [fetchUser, logout, user]);
+  }, [fetchUser, logout, setAuthReady, user]);
 
   useEffect(() => {
-    const exactSafePaths = ["/library", "/settings", "/offline"];
+    if (!isAuthReady || !hasHydrated) {
+      return;
+    }
+
+    const { init: initOffline, checkOnlineStatus } =
+      useOfflineStore.getState().actions;
+    const { fetchLibrary, fetchLikedSongs } = useLibraryStore.getState();
+    const { fetchMyPlaylists } = usePlaylistStore.getState();
+    const { fetchArtists } = useMusicStore.getState();
+
+    const handleOnline = () => {
+      checkOnlineStatus();
+      console.log("App is back online. Refetching library data...");
+      if (useAuthStore.getState().user) {
+        fetchLibrary();
+        fetchLikedSongs();
+        fetchMyPlaylists();
+        fetchArtists();
+      }
+    };
+    const handleOffline = () => checkOnlineStatus();
+
+    initOffline();
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    setIsInitialized(true);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [isAuthReady, hasHydrated]);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
+
+    const exactSafePaths = [
+      "/library",
+      "/settings",
+      "/liked-songs",
+      "/offline",
+    ];
     const prefixSafePaths = ["/albums/", "/playlists/", "/mixes/"];
 
     const isExactSafe = exactSafePaths.includes(location.pathname);
     const isPrefixSafe = prefixSafePaths.some((path) =>
       location.pathname.startsWith(path)
     );
-
     const isSafe = isExactSafe || isPrefixSafe;
 
     if (isOffline && !isSafe) {
       navigate("/offline", { replace: true });
     }
-  }, [isOffline, location.pathname, navigate]);
+  }, [isOffline, location.pathname, navigate, isInitialized]);
 
   return (
     <>
