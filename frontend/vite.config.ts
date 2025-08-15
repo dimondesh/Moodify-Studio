@@ -68,6 +68,7 @@ export default defineConfig({
         ],
       },
       includeAssets: [
+        "silent.mp3",
         "Moodify.png",
         "Moodify.svg",
         "liked.png",
