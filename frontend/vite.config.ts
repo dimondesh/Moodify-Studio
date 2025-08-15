@@ -15,7 +15,7 @@ export default defineConfig({
       },
 
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,wav}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
 
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 
@@ -71,10 +71,10 @@ export default defineConfig({
         "silent.mp3",
         "Moodify.png",
         "Moodify.svg",
+        "Spotify.svg",
         "liked.png",
         "liked.svg",
         "default-album-cover.png",
-        "default-song-cover.png",
         "robots.txt",
         "ir/small-room.wav",
         "ir/medium-room.wav",
