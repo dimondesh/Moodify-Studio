@@ -3,7 +3,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
-  getUserItem,
   saveUserItem,
   deleteUserItem,
   getDb,
@@ -11,6 +10,7 @@ import {
   getAllUserPlaylists,
   getAllUserMixes,
   getAllUserSongs,
+  getUserItem,
 } from "@/lib/offline-db";
 import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
@@ -161,6 +161,28 @@ export const useOfflineStore = create<OfflineState>()(
             }
 
             const songsData = itemData.songs as Song[];
+            const urlsToCache = new Set<string>();
+            if (itemData.imageUrl) urlsToCache.add(itemData.imageUrl);
+            songsData.forEach((song) => {
+              if (song.imageUrl) urlsToCache.add(song.imageUrl);
+              if (song.instrumentalUrl) urlsToCache.add(song.instrumentalUrl);
+              if (song.vocalsUrl) urlsToCache.add(song.vocalsUrl);
+            });
+
+            const allUrls = Array.from(urlsToCache).filter(Boolean);
+            const audioCache = await caches.open("moodify-audio-cache");
+            const imageCache = await caches.open("cloudinary-images-cache");
+
+            for (const url of allUrls) {
+              try {
+                const cache = url.includes("cloudinary")
+                  ? imageCache
+                  : audioCache;
+                await cache.add(url);
+              } catch (cacheError) {
+                console.warn(`Could not cache URL: ${url}`, cacheError);
+              }
+            }
 
             const itemToSave: DownloadableItemWithValue & { userId: string } = {
               ...itemData,
