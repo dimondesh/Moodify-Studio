@@ -3,14 +3,19 @@
 import { useCallback } from "react";
 import { FastAverageColor } from "fast-average-color";
 import { axiosInstance } from "@/lib/axios";
+import { useOfflineStore } from "@/stores/useOfflineStore";
 
 const fac = new FastAverageColor();
-
 
 export const useDominantColor = () => {
   const extractColor = useCallback(
     async (imageUrl: string | null | undefined): Promise<string> => {
       if (!imageUrl) {
+        return "#18181b";
+      }
+
+      if (useOfflineStore.getState().isOffline) {
+        console.log("[Offline] Skipping dominant color extraction.");
         return "#18181b";
       }
 
@@ -50,7 +55,7 @@ export const useDominantColor = () => {
       }
     },
     []
-  ); 
+  );
 
   return { extractColor };
 };

@@ -5,7 +5,8 @@ import toast from "react-hot-toast";
 import type { Mix } from "@/types";
 import { useLibraryStore } from "./useLibraryStore";
 import { useOfflineStore } from "./useOfflineStore";
-import { getItem } from "@/lib/offline-db";
+import { getUserItem } from "@/lib/offline-db";
+import { useAuthStore } from "./useAuthStore";
 
 interface MixesData {
   genreMixes: Mix[];
@@ -66,9 +67,11 @@ export const useMixesStore = create<MixesStore>((set) => ({
     set({ isLoading: true, error: null });
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
-    if (isDownloaded(id)) {
+    const userId = useAuthStore.getState().user?.id;
+
+    if (isDownloaded(id) && userId) {
       console.log(`[Offline] Загрузка микса ${id} из IndexedDB.`);
-      const localMix = await getItem("mixes", id);
+      const localMix = await getUserItem("mixes", id, userId);
       if (localMix) {
         set({ currentMix: localMix, isLoading: false });
         return;

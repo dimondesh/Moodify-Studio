@@ -178,5 +178,5 @@ export type LibraryItem =
   | FollowedArtistItem
   | MixItem;
 export interface LibraryPlaylist extends Playlist {
-  addedAt: string;
+  addedAt?: string;
 }

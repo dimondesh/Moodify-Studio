@@ -3,16 +3,20 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
-  getAllKeys,
-  getItem,
-  saveItem,
-  deleteItem,
+  getUserItem,
+  saveUserItem,
+  deleteUserItem,
   getDb,
+  getAllUserAlbums,
+  getAllUserPlaylists,
+  getAllUserMixes,
+  getAllUserSongs,
 } from "@/lib/offline-db";
 import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
-import { useLibraryStore } from "./useLibraryStore"; 
+import { useLibraryStore } from "./useLibraryStore";
+import { useAuthStore } from "./useAuthStore";
 
 type DownloadableItemData = Album | Playlist | Mix;
 type DownloadableItemWithValue = (Album | Playlist | Mix) & {
@@ -21,8 +25,8 @@ type DownloadableItemWithValue = (Album | Playlist | Mix) & {
 type ItemType = "albums" | "playlists" | "mixes";
 
 interface OfflineState {
-  downloadedItemIds: Set<string>; 
-  downloadedSongIds: Set<string>; 
+  downloadedItemIds: Set<string>;
+  downloadedSongIds: Set<string>;
   downloadingItemIds: Set<string>;
   isOffline: boolean;
   _hasHydrated: boolean;
@@ -30,7 +34,7 @@ interface OfflineState {
     init: () => Promise<void>;
     checkOnlineStatus: () => void;
     isDownloaded: (itemId: string) => boolean;
-    isSongDownloaded: (songId: string) => boolean; 
+    isSongDownloaded: (songId: string) => boolean;
     isDownloading: (itemId: string) => boolean;
     downloadItem: (itemId: string, itemType: ItemType) => Promise<void>;
     deleteItem: (
@@ -47,24 +51,31 @@ export const useOfflineStore = create<OfflineState>()(
   persist(
     (set, get) => ({
       downloadedItemIds: new Set(),
-      downloadedSongIds: new Set(), 
+      downloadedSongIds: new Set(),
       downloadingItemIds: new Set(),
       isOffline: !navigator.onLine,
       _hasHydrated: false,
 
       actions: {
         init: async () => {
-          const [albumKeys, playlistKeys, mixKeys, songKeys] =
-            await Promise.all([
-              getAllKeys("albums"),
-              getAllKeys("playlists"),
-              getAllKeys("mixes"),
-              getAllKeys("songs"),
-            ]);
-          const allItemKeys = [...albumKeys, ...playlistKeys, ...mixKeys].map(
-            String
-          );
-          const allSongKeys = songKeys.map(String);
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId) {
+            set({ downloadedItemIds: new Set(), downloadedSongIds: new Set() });
+            return;
+          }
+
+          const [albums, playlists, mixes, songs] = await Promise.all([
+            getAllUserAlbums(userId),
+            getAllUserPlaylists(userId),
+            getAllUserMixes(userId),
+            getAllUserSongs(userId),
+          ]);
+          const allItemKeys = [
+            ...albums.map((i) => i._id),
+            ...playlists.map((i) => i._id),
+            ...mixes.map((i) => i._id),
+          ];
+          const allSongKeys = songs.map((s) => s._id);
 
           set({
             downloadedItemIds: new Set(allItemKeys),
@@ -79,10 +90,16 @@ export const useOfflineStore = create<OfflineState>()(
           set({ isOffline: !navigator.onLine });
         },
         isDownloaded: (itemId) => get().downloadedItemIds.has(itemId),
-        isSongDownloaded: (songId) => get().downloadedSongIds.has(songId), 
+        isSongDownloaded: (songId) => get().downloadedSongIds.has(songId),
         isDownloading: (itemId) => get().downloadingItemIds.has(itemId),
 
         downloadItem: async (itemId, itemType) => {
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId) {
+            toast.error("You must be logged in to download content.");
+            return;
+          }
+
           if (
             get().downloadedItemIds.has(itemId) ||
             get().downloadingItemIds.has(itemId)
@@ -154,14 +171,15 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
-            const itemToSave: DownloadableItemWithValue = {
+            const itemToSave: DownloadableItemWithValue & { userId: string } = {
               ...itemData,
               songsData,
+              userId,
             };
-            await saveItem(itemType, itemToSave);
+            await saveUserItem(itemType, itemToSave);
 
             for (const song of songsData) {
-              await saveItem("songs", song);
+              await saveUserItem("songs", { ...song, userId });
             }
 
             set((state) => {
@@ -197,8 +215,10 @@ export const useOfflineStore = create<OfflineState>()(
         },
 
         deleteItem: async (itemId, itemType, itemTitle) => {
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId) return;
           try {
-            const itemToDelete = await getItem(itemType, itemId);
+            const itemToDelete = await getUserItem(itemType, itemId, userId);
             if (!itemToDelete) return;
 
             const urlsToDelete = new Set<string>();
@@ -223,10 +243,10 @@ export const useOfflineStore = create<OfflineState>()(
             }
 
             for (const song of songs) {
-              await deleteItem("songs", song._id);
+              await deleteUserItem("songs", song._id);
             }
 
-            await deleteItem(itemType, itemId);
+            await deleteUserItem(itemType, itemId);
 
             set((state) => {
               const newDownloaded = new Set(state.downloadedItemIds);
@@ -257,6 +277,12 @@ export const useOfflineStore = create<OfflineState>()(
           return { usage: 0, quota: 0 };
         },
         clearAllDownloads: async () => {
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId) {
+            toast.error("You need to be logged in to clear downloads.");
+            return;
+          }
+
           const downloadedIds = Array.from(get().downloadedItemIds);
           if (downloadedIds.length === 0) {
             toast.success("No downloads to clear.");
@@ -265,25 +291,58 @@ export const useOfflineStore = create<OfflineState>()(
 
           toast.loading("Clearing all downloads...");
           try {
+            const db = await getDb();
+            const tx = db.transaction(
+              ["albums", "playlists", "mixes", "songs"],
+              "readwrite"
+            );
+            const stores = {
+              albums: tx.objectStore("albums").index("by-user"),
+              playlists: tx.objectStore("playlists").index("by-user"),
+              mixes: tx.objectStore("mixes").index("by-user"),
+              songs: tx.objectStore("songs").index("by-user"),
+            };
+
+            await Promise.all([
+              stores.albums.openCursor(userId).then(async (cursor) => {
+                while (cursor) {
+                  cursor.delete();
+                  cursor = await cursor.continue();
+                }
+              }),
+              stores.playlists.openCursor(userId).then(async (cursor) => {
+                while (cursor) {
+                  cursor.delete();
+                  cursor = await cursor.continue();
+                }
+              }),
+              stores.mixes.openCursor(userId).then(async (cursor) => {
+                while (cursor) {
+                  cursor.delete();
+                  cursor = await cursor.continue();
+                }
+              }),
+              stores.songs.openCursor(userId).then(async (cursor) => {
+                while (cursor) {
+                  cursor.delete();
+                  cursor = await cursor.continue();
+                }
+              }),
+            ]);
+
+            await tx.done;
+
             await caches.delete("moodify-audio-cache");
             await caches.delete("cloudinary-images-cache");
-
-            const db = await getDb();
-            await Promise.all([
-              db.clear("albums"),
-              db.clear("playlists"),
-              db.clear("mixes"),
-              db.clear("songs"),
-            ]);
 
             set({
               downloadedItemIds: new Set(),
               downloadingItemIds: new Set(),
-              downloadedSongIds: new Set(), 
+              downloadedSongIds: new Set(),
             });
 
             toast.dismiss();
-            toast.success("All downloads have been cleared.");
+            toast.success("Your downloads have been cleared.");
           } catch (error) {
             console.error("Failed to clear all downloads:", error);
             toast.dismiss();

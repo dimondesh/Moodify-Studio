@@ -59,22 +59,24 @@ const LeftSidebar = () => {
   );
 
   const [user, loadingUser] = useAuthState(auth);
+  const { isOffline } = useOfflineStore();
   const { isDownloaded } = useOfflineStore((s) => s.actions);
   const {
     isCreatePlaylistDialogOpen,
     openCreatePlaylistDialog,
     closeAllDialogs,
-  } = useUIStore(); // <-- ДОБАВИТЬ
+  } = useUIStore();
 
   const { artists, fetchArtists } = useMusicStore();
 
   useEffect(() => {
+  
     if (user && !loadingUser) {
       fetchLibrary();
       fetchMyPlaylists();
+      fetchArtists();
     }
-    fetchArtists();
-  }, [fetchLibrary, fetchMyPlaylists, user, loadingUser, fetchArtists]);
+  }, [user, loadingUser, fetchLibrary, fetchMyPlaylists, fetchArtists]);
 
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (!artistsData || artistsData.length === 0)
@@ -95,7 +97,8 @@ const LeftSidebar = () => {
     return names.join(", ") || t("common.unknownArtist");
   };
 
-  const isLoading = isLoadingLibrary || isLoadingPlaylists || loadingUser;
+  const isLoading =
+    (isLoadingLibrary || isLoadingPlaylists || loadingUser) && !isOffline;
 
   const allPlaylistsMap = new Map<string, PlaylistItem>();
 

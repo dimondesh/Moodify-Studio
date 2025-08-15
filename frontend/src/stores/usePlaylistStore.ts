@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
-import { axiosInstance } from "@/lib/axios"; 
-import type { Playlist } from "@/types"; 
-import toast from "react-hot-toast"; 
-import { useOfflineStore } from "./useOfflineStore"; 
-import { getItem } from "@/lib/offline-db"; 
+import { axiosInstance } from "@/lib/axios";
+import type { Playlist } from "@/types";
+import toast from "react-hot-toast";
+import { useOfflineStore } from "./useOfflineStore";
+import { getUserItem, getAllUserPlaylists } from "@/lib/offline-db";
+import { useAuthStore } from "./useAuthStore";
 
 interface PlaylistStore {
   myPlaylists: Playlist[];
@@ -39,8 +40,8 @@ interface PlaylistStore {
   addPlaylistLike: (playlistId: string) => Promise<void>;
   removePlaylistLike: (playlistId: string) => Promise<void>;
 
-  resetCurrentPlaylist: () => void; 
-  fetchPlaylistDetails: (playlistId: string) => Promise<void>; 
+  resetCurrentPlaylist: () => void;
+  fetchPlaylistDetails: (playlistId: string) => Promise<void>;
 }
 
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
@@ -49,13 +50,39 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   currentPlaylist: null,
   isLoading: false,
   error: null,
-  dominantColor: null, 
-  setDominantColor: (color: string) => set({ dominantColor: color }), 
+  dominantColor: null,
+  setDominantColor: (color: string) => set({ dominantColor: color }),
 
   fetchMyPlaylists: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
-
+    const { isOffline } = useOfflineStore.getState();
     set({ isLoading: true, error: null });
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) {
+      set({ myPlaylists: [], isLoading: false });
+      return;
+    }
+
+    if (isOffline) {
+      console.log("[Offline] Fetching 'My Playlists' from IndexedDB.");
+      try {
+        const allPlaylists = await getAllUserPlaylists(currentUser.id);
+        const myOfflinePlaylists = allPlaylists.filter(
+          (pl: Playlist) => pl.owner?._id === currentUser.id
+        );
+        set({ myPlaylists: myOfflinePlaylists, isLoading: false });
+      } catch (err: any) {
+        console.error("Failed to fetch my offline playlists:", err);
+        set({
+          error:
+            err.response?.data?.message ||
+            "Failed to fetch my offline playlists",
+          isLoading: false,
+        });
+        toast.error("Failed to load your offline playlists.");
+      }
+      return;
+    }
+
     try {
       const response = await axiosInstance.get("/playlists/my");
       set({ myPlaylists: response.data, isLoading: false });
@@ -70,7 +97,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   fetchPublicPlaylists: async () => {
-    if (useOfflineStore.getState().isOffline) return; 
+    if (useOfflineStore.getState().isOffline) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -120,7 +147,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
           "Content-Type": "multipart/form-data",
         },
       });
-      get().fetchMyPlaylists(); 
+      get().fetchMyPlaylists();
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {
@@ -166,7 +193,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${id}`);
-      get().fetchMyPlaylists(); 
+      get().fetchMyPlaylists();
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to delete playlist:", err);
@@ -181,7 +208,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post(`/playlists/${playlistId}/songs`, { songId });
-      get().fetchPlaylistDetails(playlistId); 
+      get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to add song to playlist:", err);
@@ -196,7 +223,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/playlists/${playlistId}/songs/${songId}`);
-      get().fetchPlaylistDetails(playlistId); 
+      get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to remove song from playlist:", err);
@@ -208,7 +235,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
- 
   togglePlaylistInUserLibrary: async (playlistId: string) => {
     try {
       const response = await axiosInstance.post(
@@ -223,7 +249,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
             ? "Playlist added to library!"
             : "Playlist removed from library!")
       );
-  
+
       get().fetchMyPlaylists();
     } catch (err: any) {
       console.error("Failed to toggle playlist in library:", err);
@@ -235,14 +261,13 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
- 
   addPlaylistLike: async (playlistId: string) => {
     try {
       await axiosInstance.post(`/playlists/${playlistId}/like`);
       toast.success("Playlist liked!");
-   
-      get().fetchPlaylistDetails(playlistId); 
-      get().fetchPublicPlaylists(); 
+
+      get().fetchPlaylistDetails(playlistId);
+      get().fetchPublicPlaylists();
     } catch (err: any) {
       console.error("Failed to like playlist:", err);
       set({ error: err.response?.data?.message || "Failed to like playlist" });
@@ -252,10 +277,10 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
 
   removePlaylistLike: async (playlistId: string) => {
     try {
-      await axiosInstance.delete(`/playlists/${playlistId}/unlike`); 
+      await axiosInstance.delete(`/playlists/${playlistId}/unlike`);
       toast.success("Playlist unliked!");
       get().fetchPlaylistDetails(playlistId);
-      get().fetchPublicPlaylists(); 
+      get().fetchPublicPlaylists();
     } catch (err: any) {
       console.error("Failed to unlike playlist:", err);
       set({
@@ -265,16 +290,17 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     }
   },
 
-
   resetCurrentPlaylist: () => set({ currentPlaylist: null }),
 
   fetchPlaylistDetails: async (playlistId: string) => {
     set({ currentPlaylist: null, error: null, isLoading: true });
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
-    if (isDownloaded(playlistId)) {
+    const userId = useAuthStore.getState().user?.id;
+
+    if (isDownloaded(playlistId) && userId) {
       console.log(`[Offline] Загрузка плейлиста ${playlistId} из IndexedDB.`);
-      const localPlaylist = await getItem("playlists", playlistId);
+      const localPlaylist = await getUserItem("playlists", playlistId, userId);
       if (localPlaylist) {
         set({ currentPlaylist: localPlaylist, isLoading: false });
         return;

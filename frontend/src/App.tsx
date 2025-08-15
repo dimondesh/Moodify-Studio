@@ -1,6 +1,6 @@
 // frontend/src/App.tsx
 
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom"; // <-- ИЗМЕНЕНИЕ
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import HomePage from "./pages/HomePage/HomePage";
 import MainLayout from "./layout/MainLayout";
 import ChatPage from "./pages/ChatPage/ChatPage";
@@ -27,6 +27,9 @@ import MixDetailsPage from "./pages/MixDetailsPage/MixDetailsPage";
 import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
 import { Helmet } from "react-helmet-async";
+import { useLibraryStore } from "./stores/useLibraryStore";
+import { usePlaylistStore } from "./stores/usePlaylistStore";
+import { useMusicStore } from "./stores/useMusicStore";
 
 function App() {
   const { fetchUser, logout, user } = useAuthStore();
@@ -34,16 +37,39 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Получаем функции для обновления данных один раз
+  const { fetchLibrary, fetchLikedSongs } = useLibraryStore.getState();
+  const { fetchMyPlaylists } = usePlaylistStore.getState();
+  const { fetchArtists } = useMusicStore.getState();
+
   useEffect(() => {
     const { init, checkOnlineStatus } = useOfflineStore.getState().actions;
-    init();
-    window.addEventListener("online", checkOnlineStatus);
-    window.addEventListener("offline", checkOnlineStatus);
-    return () => {
-      window.removeEventListener("online", checkOnlineStatus);
-      window.removeEventListener("offline", checkOnlineStatus);
+
+    const handleOnline = () => {
+      checkOnlineStatus();
+      console.log("App is back online. Refetching library data...");
+      if (user) {
+        fetchLibrary();
+        fetchLikedSongs();
+        fetchMyPlaylists();
+        fetchArtists();
+      }
     };
-  }, []);
+
+    const handleOffline = () => {
+      checkOnlineStatus();
+    };
+
+    init();
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+    // Зависимости гарантируют, что мы используем актуальные функции
+  }, [user, fetchLibrary, fetchLikedSongs, fetchMyPlaylists, fetchArtists]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -62,18 +88,15 @@ function App() {
   }, [fetchUser, logout, user]);
 
   useEffect(() => {
-    const safeOfflinePaths = [
-      "/library",
-      "/settings",
-      "/albums/",
-      "/playlists/",
-      "/mixes/",
-      "/offline",
-    ];
+    const exactSafePaths = ["/library", "/settings", "/offline"];
+    const prefixSafePaths = ["/albums/", "/playlists/", "/mixes/"];
 
-    const isSafe = safeOfflinePaths.some((path) =>
+    const isExactSafe = exactSafePaths.includes(location.pathname);
+    const isPrefixSafe = prefixSafePaths.some((path) =>
       location.pathname.startsWith(path)
     );
+
+    const isSafe = isExactSafe || isPrefixSafe;
 
     if (isOffline && !isSafe) {
       navigate("/offline", { replace: true });

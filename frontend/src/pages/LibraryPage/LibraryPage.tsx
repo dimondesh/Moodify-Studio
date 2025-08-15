@@ -51,28 +51,28 @@ const LibraryPage = () => {
     isCreatePlaylistDialogOpen,
     openCreatePlaylistDialog,
     closeAllDialogs,
-  } = useUIStore(); // <-- ДОБАВИТЬ
+  } = useUIStore();
 
   const { artists, fetchArtists } = useMusicStore();
   const [user] = useAuthState(auth);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const { isOffline } = useOfflineStore.getState();
+  const { isOffline } = useOfflineStore(); 
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
   useEffect(() => {
     if (isOffline) {
       setActiveFilter("downloaded");
+    } else {
+      setActiveFilter("all"); 
     }
   }, [isOffline]);
 
   useEffect(() => {
-    if (!isOffline) {
-      fetchLibrary();
-      fetchLikedSongs();
-      fetchMyPlaylists();
-      fetchArtists();
-    }
+    fetchLibrary();
+    fetchLikedSongs();
+    fetchMyPlaylists();
+    fetchArtists();
   }, [
     isOffline,
     fetchLibrary,
@@ -135,7 +135,7 @@ const LibraryPage = () => {
         type: "playlist",
         title: playlist.title,
         imageUrl: playlist.imageUrl,
-        createdAt: new Date(playlist.addedAt),
+        createdAt: new Date(playlist.addedAt ?? new Date()),
         owner: playlist.owner,
       });
     }

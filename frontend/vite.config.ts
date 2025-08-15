@@ -50,7 +50,6 @@ export default defineConfig({
             },
           },
           {
-            
             urlPattern: ({ url }) =>
               url.origin === "https://moodify-yf1r.onrender.com/api",
             handler: "NetworkFirst",
@@ -74,6 +73,7 @@ export default defineConfig({
         "liked.png",
         "liked.svg",
         "default-album-cover.png",
+        "default-song-cover.png",
         "robots.txt",
         "ir/small-room.wav",
         "ir/medium-room.wav",
@@ -90,13 +90,13 @@ export default defineConfig({
             src: "Moodify.png",
             sizes: "192x192",
             type: "image/png",
-            purpose: "any maskable", 
+            purpose: "any maskable",
           },
           {
             src: "Moodify.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable", 
+            purpose: "any maskable",
           },
         ],
       },

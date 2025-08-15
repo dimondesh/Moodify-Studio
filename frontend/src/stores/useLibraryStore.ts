@@ -3,6 +3,13 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types";
 import { useOfflineStore } from "./useOfflineStore";
+import {
+  getAllUserAlbums,
+  getAllUserPlaylists,
+  getAllUserMixes,
+  getAllUserSongs,
+} from "../lib/offline-db";
+import { useAuthStore } from "./useAuthStore";
 
 interface LibraryStore {
   albums: Album[];
@@ -23,8 +30,8 @@ interface LibraryStore {
   togglePlaylist: (playlistId: string) => Promise<void>;
   toggleArtistFollow: (artistId: string) => Promise<void>;
   toggleMixInLibrary: (mixId: string) => Promise<void>;
-  isAlbumInLibrary: (albumId: string) => boolean; 
-  isPlaylistInLibrary: (playlistId: string) => boolean; 
+  isAlbumInLibrary: (albumId: string) => boolean;
+  isPlaylistInLibrary: (playlistId: string) => boolean;
 
   isSongLiked: (songId: string) => boolean;
   isArtistFollowed: (artistId: string) => boolean;
@@ -42,11 +49,49 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   error: null,
 
   fetchLibrary: async () => {
-    if (useOfflineStore.getState().isOffline) {
-      console.log("[Offline] Skipping fetchLibrary.");
+    const { isOffline } = useOfflineStore.getState();
+    const userId = useAuthStore.getState().user?.id;
+    set({ isLoading: true, error: null });
+
+    if (isOffline) {
+      console.log("[Offline] Fetching library from IndexedDB.");
+      if (!userId) {
+        set({
+          isLoading: false,
+          error: "User not available for offline library.",
+        });
+        return;
+      }
+      try {
+        const [albums, playlists, savedMixes] = await Promise.all([
+          getAllUserAlbums(userId),
+          getAllUserPlaylists(userId),
+          getAllUserMixes(userId),
+        ]);
+
+        set({
+          albums,
+          playlists: playlists as LibraryPlaylist[],
+          savedMixes,
+          likedSongs: [],
+          followedArtists: [],
+          isLoading: false,
+        });
+        console.log("[Offline] Library data loaded from IndexedDB.", {
+          albums,
+          playlists,
+          savedMixes,
+        });
+      } catch (err: any) {
+        console.error("Failed to fetch offline library data:", err);
+        set({
+          error: err.message || "Failed to fetch library from storage",
+          isLoading: false,
+        });
+      }
       return;
     }
-    set({ isLoading: true, error: null });
+
     try {
       console.log("useLibraryStore: Attempting to fetch all library data...");
 
@@ -82,9 +127,30 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   },
 
   fetchLikedSongs: async () => {
-    if (useOfflineStore.getState().isOffline) return;
-
+    const { isOffline } = useOfflineStore.getState();
+    const userId = useAuthStore.getState().user?.id;
     set({ isLoading: true, error: null });
+
+    if (isOffline) {
+      if (!userId) {
+        set({ isLoading: false, error: "User not available offline." });
+        return;
+      }
+      console.log(
+        "[Offline] Fetching liked songs (all downloaded songs) from IndexedDB."
+      );
+      try {
+        const allDownloadedSongs = await getAllUserSongs(userId);
+        set({ likedSongs: allDownloadedSongs, isLoading: false });
+      } catch (err: any) {
+        set({
+          error: err.message || "Failed to fetch offline songs",
+          isLoading: false,
+        });
+      }
+      return;
+    }
+
     try {
       const res = await axiosInstance.get("/library/liked-songs");
       set({ likedSongs: res.data.songs, isLoading: false });
@@ -96,7 +162,6 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
   },
 
-  // И эта тоже
   fetchFollowedArtists: async () => {
     if (useOfflineStore.getState().isOffline) return;
 
