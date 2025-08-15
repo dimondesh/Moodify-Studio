@@ -27,7 +27,7 @@ let dbPromise: Promise<IDBPDatabase<MoodifyDB>>;
 const initDB = () => {
   if (!dbPromise) {
     dbPromise = openDB<MoodifyDB>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion, tx) {
+      upgrade(db, oldVersion, _newVersion, tx) {
         if (oldVersion < 2) {
           const stores: StoreNames<MoodifyDB>[] = [
             "songs",
