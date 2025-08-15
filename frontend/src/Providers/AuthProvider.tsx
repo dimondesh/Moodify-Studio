@@ -1,3 +1,5 @@
+// src/Providers/AuthProvider.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -38,17 +40,16 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firebaseUser.uid,
           firebaseUser.email
         );
-        if (!user || user.firebaseUid !== firebaseUser.uid) {
-          try {
-            await fetchUser(firebaseUser.uid);
-            console.log("AuthProvider: MongoDB user synced.");
-          } catch (error) {
-            console.error(
-              "AuthProvider: Error syncing Firebase user with MongoDB:",
-              error
-            );
-            if (navigator.onLine) logout();
-          }
+
+        try {
+          await fetchUser(firebaseUser.uid);
+          console.log("AuthProvider: MongoDB user synced successfully.");
+        } catch (error) {
+          console.error(
+            "AuthProvider: Error syncing Firebase user with MongoDB:",
+            error
+          );
+          if (navigator.onLine) logout();
         }
       } else {
         if (navigator.onLine) {
@@ -68,7 +69,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [setUser, fetchUser, logout, disconnectSocket, user]);
+  }, [setUser, fetchUser, logout, disconnectSocket]);
 
   useEffect(() => {
     if (
