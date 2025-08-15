@@ -44,7 +44,7 @@ function App() {
           fetchUser(firebaseUser.uid);
         }
       } else {
-        if (user) {
+        if (navigator.onLine && user) {
           logout();
         }
       }
@@ -60,35 +60,33 @@ function App() {
     const { fetchMyPlaylists } = usePlaylistStore.getState();
     const { fetchArtists } = useMusicStore.getState();
 
-    const handleOnlineStatusChange = () => {
+    const handleNetworkChange = () => {
       const isNowOffline = !navigator.onLine;
       checkOnlineStatus();
-      if (!isNowOffline) {
+
+      if (!isNowOffline && useAuthStore.getState().user) {
         console.log("App is back online. Refetching data...");
-        if (useAuthStore.getState().user) {
-          fetchLibrary();
-          fetchMyPlaylists();
-          fetchArtists();
-        }
+        fetchLibrary();
+        fetchMyPlaylists();
+        fetchArtists();
       }
     };
 
+    initOffline();
+
     if (user) {
-      console.log(
-        "User object is available, initializing offline store and fetching data..."
-      );
-      initOffline();
+      console.log("User found in store, fetching library data...");
       fetchLibrary();
       fetchMyPlaylists();
       fetchArtists();
     }
 
-    window.addEventListener("online", handleOnlineStatusChange);
-    window.addEventListener("offline", handleOnlineStatusChange);
+    window.addEventListener("online", handleNetworkChange);
+    window.addEventListener("offline", handleNetworkChange);
 
     return () => {
-      window.removeEventListener("online", handleOnlineStatusChange);
-      window.removeEventListener("offline", handleOnlineStatusChange);
+      window.removeEventListener("online", handleNetworkChange);
+      window.removeEventListener("offline", handleNetworkChange);
     };
   }, [user]);
 
