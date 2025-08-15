@@ -161,39 +161,6 @@ export const useOfflineStore = create<OfflineState>()(
             }
 
             const songsData = itemData.songs as Song[];
-            const urlsToCache = new Set<string>();
-            if (itemData.imageUrl) urlsToCache.add(itemData.imageUrl);
-            songsData.forEach((song) => {
-              if (song.imageUrl) urlsToCache.add(song.imageUrl);
-              if (song.instrumentalUrl) urlsToCache.add(song.instrumentalUrl);
-              if (song.vocalsUrl) urlsToCache.add(song.vocalsUrl);
-            });
-
-            const allUrls = Array.from(urlsToCache).filter(Boolean);
-            const audioCache = await caches.open("moodify-audio-cache");
-            const imageCache = await caches.open("cloudinary-images-cache");
-
-            for (const originalUrl of allUrls) {
-              const cache = originalUrl.includes("cloudinary")
-                ? imageCache
-                : audioCache;
-              let request: Request;
-              if (originalUrl.includes("cloudinary")) {
-                const proxyUrl = `${
-                  import.meta.env.VITE_API_URL
-                }/songs/image-proxy?url=${encodeURIComponent(originalUrl)}`;
-                request = new Request(proxyUrl, { mode: "no-cors" });
-              } else {
-                request = new Request(originalUrl);
-              }
-
-              try {
-                const response = await fetch(request);
-                await cache.put(originalUrl, response);
-              } catch (cacheError) {
-                console.warn(`Could not cache URL: ${originalUrl}`, cacheError);
-              }
-            }
 
             const itemToSave: DownloadableItemWithValue & { userId: string } = {
               ...itemData,
