@@ -173,14 +173,25 @@ export const useOfflineStore = create<OfflineState>()(
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
 
-            for (const url of allUrls) {
+            for (const originalUrl of allUrls) {
+              const cache = originalUrl.includes("cloudinary")
+                ? imageCache
+                : audioCache;
+              let request: Request;
+              if (originalUrl.includes("cloudinary")) {
+                const proxyUrl = `${
+                  import.meta.env.VITE_API_URL
+                }/songs/image-proxy?url=${encodeURIComponent(originalUrl)}`;
+                request = new Request(proxyUrl, { mode: "no-cors" });
+              } else {
+                request = new Request(originalUrl);
+              }
+
               try {
-                const cache = url.includes("cloudinary")
-                  ? imageCache
-                  : audioCache;
-                await cache.add(url);
+                const response = await fetch(request);
+                await cache.put(originalUrl, response);
               } catch (cacheError) {
-                console.warn(`Could not cache URL: ${url}`, cacheError);
+                console.warn(`Could not cache URL: ${originalUrl}`, cacheError);
               }
             }
 
