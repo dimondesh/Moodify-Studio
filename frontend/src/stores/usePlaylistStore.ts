@@ -208,10 +208,24 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post(`/playlists/${playlistId}/songs`, { songId });
+
+      const { isDownloaded, downloadItem } = useOfflineStore.getState().actions;
+      if (isDownloaded(playlistId)) {
+        console.log(
+          `Playlist ${playlistId} is downloaded. Re-downloading to sync new song...`
+        );
+        toast.loading("Updating your downloaded playlist...", {
+          id: "playlist-sync",
+        });
+        await downloadItem(playlistId, "playlists");
+        toast.success("Downloaded playlist updated!", { id: "playlist-sync" });
+      }
+
       get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to add song to playlist:", err);
+      toast.dismiss("playlist-sync");
       set({
         error: err.response?.data?.message || "Failed to add song to playlist",
         isLoading: false,

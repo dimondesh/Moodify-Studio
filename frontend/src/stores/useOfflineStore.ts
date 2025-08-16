@@ -44,6 +44,7 @@ interface OfflineState {
       itemType: ItemType,
       itemTitle: string
     ) => Promise<void>;
+    syncLibrary: () => Promise<void>; 
     getStorageUsage: () => Promise<{ usage: number; quota: number }>;
     clearAllDownloads: () => Promise<void>;
   };
@@ -61,7 +62,6 @@ export const useOfflineStore = create<OfflineState>()(
       actions: {
         init: async () => {
           const userId = useAuthStore.getState().user?.id;
-
           const isCurrentlyOffline = !navigator.onLine;
           set({ isOffline: isCurrentlyOffline });
 
@@ -106,6 +106,75 @@ export const useOfflineStore = create<OfflineState>()(
         isSongDownloaded: (songId) => get().downloadedSongIds.has(songId),
         isDownloading: (itemId) => get().downloadingItemIds.has(itemId),
 
+        syncLibrary: async () => {
+          const { isOffline } = get();
+          const userId = useAuthStore.getState().user?.id;
+
+          if (isOffline || !userId) {
+            console.log("Cannot sync library while offline or not logged in.");
+            return;
+          }
+
+          toast.loading("Syncing your library...", { id: "sync-toast" });
+
+          try {
+            const [localPlaylists, localMixes] = await Promise.all([
+              getAllUserPlaylists(userId),
+              getAllUserMixes(userId),
+            ]);
+
+            // Синхронизация плейлистов
+            for (const localPlaylist of localPlaylists) {
+              try {
+                const serverResponse = await axiosInstance.get(
+                  `/playlists/${localPlaylist._id}`
+                );
+                const serverPlaylist = serverResponse.data;
+                if (
+                  new Date(serverPlaylist.updatedAt) >
+                  new Date(localPlaylist.updatedAt)
+                ) {
+                  console.log(
+                    `Playlist "${localPlaylist.title}" is outdated. Syncing...`
+                  );
+                  await get().actions.downloadItem(
+                    localPlaylist._id,
+                    "playlists"
+                  );
+                }
+              } catch (e) {
+                console.error(
+                  `Failed to sync playlist ${localPlaylist._id}`,
+                  e
+                );
+              }
+            }
+
+            for (const localMix of localMixes) {
+              try {
+                const serverResponse = await axiosInstance.get(
+                  `/mixes/${localMix._id}`
+                );
+                const serverMix = serverResponse.data;
+                if (
+                  new Date(serverMix.generatedOn) >
+                  new Date(localMix.generatedOn)
+                ) {
+                  console.log(`Mix "${localMix.name}" is outdated. Syncing...`);
+                  await get().actions.downloadItem(localMix._id, "mixes");
+                }
+              } catch (e) {
+                console.error(`Failed to sync mix ${localMix._id}`, e);
+              }
+            }
+
+            toast.success("Library synced successfully!", { id: "sync-toast" });
+          } catch (error) {
+            console.error("Library sync failed:", error);
+            toast.error("Could not sync your library.", { id: "sync-toast" });
+          }
+        },
+
         downloadItem: async (itemId, itemType) => {
           const userId = useAuthStore.getState().user?.id;
           if (!userId) {
@@ -113,10 +182,7 @@ export const useOfflineStore = create<OfflineState>()(
             return;
           }
 
-          if (
-            get().downloadedItemIds.has(itemId) ||
-            get().downloadingItemIds.has(itemId)
-          ) {
+          if (get().downloadingItemIds.has(itemId)) {
             return;
           }
 

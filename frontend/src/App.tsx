@@ -36,8 +36,11 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { init: initOffline, checkOnlineStatus } =
-      useOfflineStore.getState().actions;
+    const {
+      init: initOffline,
+      checkOnlineStatus,
+      syncLibrary,
+    } = useOfflineStore.getState().actions;
     const { fetchLibrary } = useLibraryStore.getState();
     const { fetchMyPlaylists } = usePlaylistStore.getState();
     const { fetchArtists } = useMusicStore.getState();
@@ -46,10 +49,11 @@ function App() {
       const isNowOffline = !navigator.onLine;
       checkOnlineStatus();
       if (!isNowOffline && useAuthStore.getState().user) {
-        console.log("App is back online. Refetching data...");
+        console.log("App is back online. Refetching and syncing data...");
         fetchLibrary();
         fetchMyPlaylists();
         fetchArtists();
+        syncLibrary(); 
       }
     };
 
@@ -60,6 +64,9 @@ function App() {
       fetchLibrary();
       fetchMyPlaylists();
       fetchArtists();
+      if (!useOfflineStore.getState().isOffline) {
+        syncLibrary();
+      }
     }
 
     window.addEventListener("online", handleNetworkChange);

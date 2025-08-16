@@ -715,67 +715,21 @@ const PlaylistDetailsPage = () => {
                               />
                             </Button>
                             {isOwner && (
-                              <AlertDialog
-                                open={
-                                  songToRemoveFromPlaylist?.songId === song._id
-                                }
-                                onOpenChange={(isOpen) =>
-                                  !isOpen && closeAllDialogs()
-                                }
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openRemoveSongFromPlaylistDialog({
+                                    songId: song._id,
+                                    playlistId: currentPlaylist._id,
+                                  });
+                                }}
+                                title={t("pages.playlist.actions.removeSong")}
                               >
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => e.stopPropagation()}
-                                    onSelect={(e) => {
-                                      e.preventDefault();
-                                      openRemoveSongFromPlaylistDialog({
-                                        songId: song._id,
-                                        playlistId: currentPlaylist._id,
-                                      });
-                                    }}
-                                    title={t(
-                                      "pages.playlist.actions.removeSong"
-                                    )}
-                                  >
-                                    <X className="size-3 sm:size-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-white">
-                                      {t(
-                                        "pages.playlist.removeSongDialog.title"
-                                      )}
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription className="text-zinc-400">
-                                      {t(
-                                        "pages.playlist.removeSongDialog.description"
-                                      )}
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel
-                                      onClick={closeAllDialogs}
-                                      className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
-                                    >
-                                      {t(
-                                        "pages.playlist.removeSongDialog.cancel"
-                                      )}
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-red-600 text-white hover:bg-red-700"
-                                      onClick={handleDeleteSongConfirm}
-                                    >
-                                      {t(
-                                        "pages.playlist.removeSongDialog.remove"
-                                      )}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                <X className="size-3 sm:size-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -796,6 +750,37 @@ const PlaylistDetailsPage = () => {
             onSuccess={() => fetchPlaylistDetails(currentPlaylist._id)}
           />
         )}
+
+        <AlertDialog
+          open={!!songToRemoveFromPlaylist}
+          onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
+        >
+          <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">
+                {t("pages.playlist.removeSongDialog.title")}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-zinc-400">
+                {t("pages.playlist.removeSongDialog.description")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={closeAllDialogs}
+                className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
+              >
+                {t("pages.playlist.removeSongDialog.cancel")}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={handleDeleteSongConfirm}
+              >
+                {t("pages.playlist.removeSongDialog.remove")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <Dialog
           open={isSearchAndAddDialogOpen}
           onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}

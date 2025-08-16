@@ -25,6 +25,7 @@ export interface Mix {
   createdAt: string;
   updatedAt: string;
   addedAt?: string;
+  generatedOn: string;
 }
 
 export interface Mood {
