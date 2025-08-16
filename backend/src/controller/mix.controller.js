@@ -30,6 +30,8 @@ export const getDailyMixes = async (req, res, next) => {
     const today = getTodayDate();
     let mixes = await Mix.find({ generatedOn: today }).lean();
 
+    let updatedMixIds = [];
+
     if (mixes.length === 0) {
       console.log("Generating or updating daily mixes...");
 
@@ -85,13 +87,12 @@ export const getDailyMixes = async (req, res, next) => {
 
       if (updatePromises.length > 0) {
         await Promise.all(updatePromises);
-      }
 
-      const updateResults = await Promise.all(updatePromises);
-      const upsertedMixes = await Mix.find({ generatedOn: today })
-        .select("_id")
-        .lean();
-      updatedMixIds = upsertedMixes.map((m) => m._id.toString());
+        const upsertedMixes = await Mix.find({ generatedOn: today })
+          .select("_id")
+          .lean();
+        updatedMixIds = upsertedMixes.map((m) => m._id.toString());
+      }
 
       mixes = await Mix.find().lean();
     }
@@ -108,10 +109,10 @@ export const getDailyMixes = async (req, res, next) => {
       if (validHistory.length > 0) {
         const preferenceCounts = {};
         validHistory.forEach((item) => {
-          item.song.genres.forEach((genreId) => {
+          (item.song.genres || []).forEach((genreId) => {
             preferenceCounts[genreId] = (preferenceCounts[genreId] || 0) + 1;
           });
-          item.song.moods.forEach((moodId) => {
+          (item.song.moods || []).forEach((moodId) => {
             preferenceCounts[moodId] = (preferenceCounts[moodId] || 0) + 1;
           });
         });
@@ -129,12 +130,14 @@ export const getDailyMixes = async (req, res, next) => {
       select: "title duration imageUrl artist albumId",
       populate: { path: "artist", select: "name" },
     });
+
     if (updatedMixIds.length > 0) {
       console.log(`Emitting updates for ${updatedMixIds.length} mixes.`);
       updatedMixIds.forEach((mixId) => {
         io.to(`mix-${mixId}`).emit("mix_updated", { mixId });
       });
     }
+
     res.status(200).json(groupMixes(populatedMixes));
   } catch (error) {
     console.error("Error in getDailyMixes:", error);
