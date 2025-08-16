@@ -4,11 +4,12 @@ import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
 import { Artist } from "../models/artist.model.js";
 import { firebaseAdmin } from "./firebase.js";
+export let io;
 
 export const initializeSocket = (server) => {
   const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
 
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: allowedOrigin,
       credentials: true,
@@ -150,7 +151,7 @@ export const initializeSocket = (server) => {
 
     socket.on("send_message", async (data) => {
       try {
-        const { receiverId, content, type, shareDetails } = data; 
+        const { receiverId, content, type, shareDetails } = data;
 
         const senderId = userId;
 
@@ -256,6 +257,26 @@ export const initializeSocket = (server) => {
       } catch (error) {
         console.error("Error marking messages as read:", error);
       }
+    });
+
+    socket.on("join_playlist_room", (playlistId) => {
+      socket.join(`playlist-${playlistId}`);
+      console.log(`User ${userId} joined room for playlist ${playlistId}`);
+    });
+
+    socket.on("leave_playlist_room", (playlistId) => {
+      socket.leave(`playlist-${playlistId}`);
+      console.log(`User ${userId} left room for playlist ${playlistId}`);
+    });
+
+    socket.on("join_mix_room", (mixId) => {
+      socket.join(`mix-${mixId}`);
+      console.log(`User ${userId} joined room for mix ${mixId}`);
+    });
+
+    socket.on("leave_mix_room", (mixId) => {
+      socket.leave(`mix-${mixId}`);
+      console.log(`User ${userId} left room for mix ${mixId}`);
     });
 
     socket.on("disconnect", (reason) => {

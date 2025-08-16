@@ -15,6 +15,7 @@ interface PlaylistStore {
   error: string | null;
   dominantColor: string | null;
   setDominantColor: (color: string) => void;
+  updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
 
   fetchMyPlaylists: () => Promise<void>;
   fetchPublicPlaylists: () => Promise<void>;
@@ -52,6 +53,15 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   error: null,
   dominantColor: null,
   setDominantColor: (color: string) => set({ dominantColor: color }),
+
+  updateCurrentPlaylistFromSocket: (playlist) => {
+    set((state) => {
+      if (state.currentPlaylist?._id === playlist._id) {
+        return { currentPlaylist: playlist };
+      }
+      return state;
+    });
+  },
 
   fetchMyPlaylists: async () => {
     const { isOffline } = useOfflineStore.getState();
@@ -234,21 +244,36 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   removeSongFromPlaylist: async (playlistId: string, songId: string) => {
-    set({ isLoading: true, error: null });
+    // --- DEBUGGING LOG ---
+    console.log(
+      `[STORE] ACTION: removeSongFromPlaylist called for playlist ${playlistId}, song ${songId}`
+    );
     try {
       await axiosInstance.delete(`/playlists/${playlistId}/songs/${songId}`);
-      get().fetchPlaylistDetails(playlistId);
-      set({ isLoading: false });
+
+      set((state) => {
+        if (state.currentPlaylist && state.currentPlaylist._id === playlistId) {
+          const updatedSongs = state.currentPlaylist.songs.filter(
+            (song) => song._id !== songId
+          );
+          console.log(
+            `[STORE] Locally updating UI. New song count: ${updatedSongs.length}`
+          );
+          return {
+            currentPlaylist: {
+              ...state.currentPlaylist,
+              songs: updatedSongs,
+            },
+          };
+        }
+        return state;
+      });
     } catch (err: any) {
       console.error("Failed to remove song from playlist:", err);
-      set({
-        error:
-          err.response?.data?.message || "Failed to remove song from playlist",
-        isLoading: false,
-      });
+      toast.error(err.response?.data?.message || "Failed to remove song.");
+      throw err;
     }
   },
-
   togglePlaylistInUserLibrary: async (playlistId: string) => {
     try {
       const response = await axiosInstance.post(

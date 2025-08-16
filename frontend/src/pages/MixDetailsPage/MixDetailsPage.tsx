@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 import { useDominantColor } from "@/hooks/useDominantColor";
+import { useChatStore } from "../../stores/useChatStore";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -32,6 +33,8 @@ const formatDuration = (seconds: number): string => {
 };
 
 const MixDetailsPage = () => {
+  const { socket } = useChatStore();
+
   const { t } = useTranslation();
   const { mixId } = useParams<{ mixId: string }>();
   const navigate = useNavigate();
@@ -80,6 +83,29 @@ const MixDetailsPage = () => {
       setIsColorLoading(false);
     }
   }, [currentMix, extractColor]);
+
+  useEffect(() => {
+    if (mixId && socket) {
+      socket.emit("join_mix_room", mixId);
+      console.log(`Joined room for mix ${mixId}`);
+
+      const handleMixUpdate = (data: { mixId: string }) => {
+        if (data.mixId === mixId) {
+          console.log(`Received update for mix ${mixId}. Refetching...`);
+          toast("Your daily mix has been updated!", { icon: "✨" });
+          fetchMixById(mixId);
+        }
+      };
+
+      socket.on("mix_updated", handleMixUpdate);
+
+      return () => {
+        console.log(`Leaving room for mix ${mixId}`);
+        socket.emit("leave_mix_room", mixId);
+        socket.off("mix_updated", handleMixUpdate);
+      };
+    }
+  }, [mixId, socket, fetchMixById]);
 
   const handlePlayMix = () => {
     if (!currentMix || currentMix.songs.length === 0) return;

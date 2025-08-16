@@ -3,6 +3,7 @@ import { Genre } from "../models/genre.model.js";
 import { Mood } from "../models/mood.model.js";
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
+import { io } from "../lib/socket.js";
 
 const getTodayDate = () => {
   const now = new Date();
@@ -86,6 +87,12 @@ export const getDailyMixes = async (req, res, next) => {
         await Promise.all(updatePromises);
       }
 
+      const updateResults = await Promise.all(updatePromises);
+      const upsertedMixes = await Mix.find({ generatedOn: today })
+        .select("_id")
+        .lean();
+      updatedMixIds = upsertedMixes.map((m) => m._id.toString());
+
       mixes = await Mix.find().lean();
     }
 
@@ -122,7 +129,12 @@ export const getDailyMixes = async (req, res, next) => {
       select: "title duration imageUrl artist albumId",
       populate: { path: "artist", select: "name" },
     });
-
+    if (updatedMixIds.length > 0) {
+      console.log(`Emitting updates for ${updatedMixIds.length} mixes.`);
+      updatedMixIds.forEach((mixId) => {
+        io.to(`mix-${mixId}`).emit("mix_updated", { mixId });
+      });
+    }
     res.status(200).json(groupMixes(populatedMixes));
   } catch (error) {
     console.error("Error in getDailyMixes:", error);

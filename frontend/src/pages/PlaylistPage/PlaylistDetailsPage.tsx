@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
+import { useChatStore } from "../../stores/useChatStore";
+
 import {
   Play,
   Pause,
@@ -69,6 +71,8 @@ const formatDuration = (seconds: number): string => {
 };
 
 const PlaylistDetailsPage = () => {
+  const { socket } = useChatStore();
+
   const { t } = useTranslation();
   const { playlistId } = useParams<{ playlistId: string }>();
   const {
@@ -78,6 +82,7 @@ const PlaylistDetailsPage = () => {
     deletePlaylist,
     addSongToPlaylist,
     removeSongFromPlaylist,
+    updateCurrentPlaylistFromSocket,
   } = usePlaylistStore();
   const {
     editingPlaylist,
@@ -136,6 +141,16 @@ const PlaylistDetailsPage = () => {
     };
     loadPlaylist();
   }, [playlistId, fetchPlaylistDetails]);
+
+  useEffect(() => {
+    if (playlistId && socket) {
+      socket.emit("join_playlist_room", playlistId);
+
+      return () => {
+        socket.emit("leave_playlist_room", playlistId);
+      };
+    }
+  }, [playlistId, socket, updateCurrentPlaylistFromSocket, navigate]);
 
   useEffect(() => {
     const updateBackgroundColor = (color: string) => {
@@ -225,19 +240,15 @@ const PlaylistDetailsPage = () => {
   };
 
   const handleDeleteSongConfirm = async () => {
-    if (!songToRemoveFromPlaylist || !currentPlaylist || !isOwner) {
-      toast.error("Error deleting song.");
-      return;
-    }
+    if (!songToRemoveFromPlaylist) return;
     try {
       await removeSongFromPlaylist(
         songToRemoveFromPlaylist.playlistId,
         songToRemoveFromPlaylist.songId
       );
       toast.success("Song successfully removed from playlist!");
-      await fetchPlaylistDetails(currentPlaylist._id);
     } catch (e) {
-      toast.error("Failed to remove song.");
+      console.error("Component caught error from removeSongFromPlaylist:", e);
     } finally {
       closeAllDialogs();
     }

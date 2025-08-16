@@ -13,9 +13,9 @@ import playlistRoutes from "./routes/playlist.route.js";
 import fileUpload from "express-fileupload";
 import path from "path";
 import cors from "cors";
-import { initializeSocket } from "./lib/socket.js";
 import cron from "node-cron";
 import fs from "fs";
+import { initializeSocket, io } from "./lib/socket.js";
 import libraryRoutes from "./routes/library.route.js";
 import { protectRoute } from "./middleware/auth.middleware.js";
 import { Playlist } from "./models/playlist.model.js";
@@ -66,6 +66,10 @@ cron.schedule("*/10 * * * *", () => {
       }
     });
   }
+});
+app.use((req, res, next) => {
+  req.io = io;
+  next();
 });
 
 const jsonParser = express.json();
