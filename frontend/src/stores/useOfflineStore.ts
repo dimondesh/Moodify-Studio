@@ -12,7 +12,7 @@ import {
   getAllUserSongs,
   getUserItem,
 } from "@/lib/offline-db";
-import type { Song, Album, Playlist, Mix } from "@/types";
+import type { Song } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useLibraryStore } from "./useLibraryStore";
@@ -20,10 +20,6 @@ import { useAuthStore } from "./useAuthStore";
 import { usePlaylistStore } from "./usePlaylistStore";
 import { useMusicStore } from "./useMusicStore";
 
-type DownloadableItemData = Album | Playlist | Mix;
-type DownloadableItemWithValue = (Album | Playlist | Mix) & {
-  songsData: Song[];
-};
 type ItemType = "albums" | "playlists" | "mixes";
 
 interface OfflineState {
@@ -44,7 +40,7 @@ interface OfflineState {
       itemType: ItemType,
       itemTitle: string
     ) => Promise<void>;
-    syncLibrary: () => Promise<void>; 
+    syncLibrary: () => Promise<void>;
     getStorageUsage: () => Promise<{ usage: number; quota: number }>;
     clearAllDownloads: () => Promise<void>;
   };
@@ -99,9 +95,11 @@ export const useOfflineStore = create<OfflineState>()(
           window.addEventListener("online", get().actions.checkOnlineStatus);
           window.addEventListener("offline", get().actions.checkOnlineStatus);
         },
+
         checkOnlineStatus: () => {
           set({ isOffline: !navigator.onLine });
         },
+
         isDownloaded: (itemId) => get().downloadedItemIds.has(itemId),
         isSongDownloaded: (songId) => get().downloadedSongIds.has(songId),
         isDownloading: (itemId) => get().downloadingItemIds.has(itemId),
@@ -109,11 +107,7 @@ export const useOfflineStore = create<OfflineState>()(
         syncLibrary: async () => {
           const { isOffline } = get();
           const userId = useAuthStore.getState().user?.id;
-
-          if (isOffline || !userId) {
-            console.log("Cannot sync library while offline or not logged in.");
-            return;
-          }
+          if (isOffline || !userId) return;
 
           toast.loading("Syncing your library...", { id: "sync-toast" });
 
@@ -123,7 +117,6 @@ export const useOfflineStore = create<OfflineState>()(
               getAllUserMixes(userId),
             ]);
 
-            // Синхронизация плейлистов
             for (const localPlaylist of localPlaylists) {
               try {
                 const serverResponse = await axiosInstance.get(
@@ -134,13 +127,14 @@ export const useOfflineStore = create<OfflineState>()(
                   new Date(serverPlaylist.updatedAt) >
                   new Date(localPlaylist.updatedAt)
                 ) {
-                  console.log(
-                    `Playlist "${localPlaylist.title}" is outdated. Syncing...`
-                  );
+                  toast.loading(`Updating "${localPlaylist.title}"...`, {
+                    id: "sync-item",
+                  });
                   await get().actions.downloadItem(
                     localPlaylist._id,
                     "playlists"
                   );
+                  toast.dismiss("sync-item");
                 }
               } catch (e) {
                 console.error(
@@ -160,8 +154,11 @@ export const useOfflineStore = create<OfflineState>()(
                   new Date(serverMix.generatedOn) >
                   new Date(localMix.generatedOn)
                 ) {
-                  console.log(`Mix "${localMix.name}" is outdated. Syncing...`);
+                  toast.loading(`Updating "${localMix.name}"...`, {
+                    id: "sync-item",
+                  });
                   await get().actions.downloadItem(localMix._id, "mixes");
+                  toast.dismiss("sync-item");
                 }
               } catch (e) {
                 console.error(`Failed to sync mix ${localMix._id}`, e);
@@ -182,29 +179,25 @@ export const useOfflineStore = create<OfflineState>()(
             return;
           }
 
-          if (get().downloadingItemIds.has(itemId)) {
-            return;
-          }
+          if (get().downloadingItemIds.has(itemId)) return;
 
           const library = useLibraryStore.getState();
-          let isInLibrary = false;
+          let isAlreadyInLibrary = false;
           switch (itemType) {
             case "albums":
-              isInLibrary = library.albums.some(
-                (album) => album._id === itemId
-              );
-              if (!isInLibrary) await library.toggleAlbum(itemId);
+              isAlreadyInLibrary = library.isAlbumInLibrary(itemId);
+              if (!isAlreadyInLibrary) await library.toggleAlbum(itemId);
               break;
             case "playlists":
-              isInLibrary = library.playlists.some((pl) => pl._id === itemId);
-              if (!isInLibrary) await library.togglePlaylist(itemId);
+              isAlreadyInLibrary = library.isPlaylistInLibrary(itemId);
+              if (!isAlreadyInLibrary) await library.togglePlaylist(itemId);
               break;
             case "mixes":
-              isInLibrary = library.isMixSaved(itemId);
-              if (!isInLibrary) await library.toggleMixInLibrary(itemId);
+              isAlreadyInLibrary = library.isMixSaved(itemId);
+              if (!isAlreadyInLibrary) await library.toggleMixInLibrary(itemId);
               break;
           }
-          if (!isInLibrary) {
+          if (!isAlreadyInLibrary) {
             toast.success("Added to your library for offline access.");
           }
 
@@ -212,23 +205,81 @@ export const useOfflineStore = create<OfflineState>()(
             downloadingItemIds: new Set(state.downloadingItemIds).add(itemId),
           }));
 
-          let itemData: DownloadableItemData | null = null;
+          let allOtherSongIds = new Set<string>();
+
           try {
             const endpoint =
               itemType === "albums"
                 ? `/albums/${itemId}`
                 : `/${itemType}/${itemId}`;
             const response = await axiosInstance.get(endpoint);
-            itemData =
+            const serverItemData =
               itemType === "albums" ? response.data.album : response.data;
 
-            if (!itemData || !itemData.songs) {
+            if (!serverItemData || !serverItemData.songs) {
               throw new Error("Invalid item data received from server.");
             }
 
-            const songsData = itemData.songs as Song[];
+            const oldItemData = await getUserItem(itemType, itemId, userId);
+            const newSongIds = new Set(
+              serverItemData.songs.map((s: Song) => s._id)
+            );
+            const removedSongs: Song[] = [];
+
+            if (oldItemData && (oldItemData as any).songsData) {
+              (oldItemData as any).songsData.forEach((oldSong: Song) => {
+                if (!newSongIds.has(oldSong._id)) {
+                  removedSongs.push(oldSong);
+                }
+              });
+            }
+
+            if (removedSongs.length > 0) {
+              console.log(
+                `Found ${removedSongs.length} songs to remove from offline storage.`
+              );
+              const [allAlbums, allPlaylists, allMixes] = await Promise.all([
+                getAllUserAlbums(userId),
+                getAllUserPlaylists(userId),
+                getAllUserMixes(userId),
+              ]);
+
+              allOtherSongIds = new Set<string>();
+              [...allAlbums, ...allPlaylists, ...allMixes].forEach((item) => {
+                if (item._id !== itemId) {
+                  (item.songsData || (item as any).songs || []).forEach(
+                    (song: Song) => allOtherSongIds.add(song._id)
+                  );
+                }
+              });
+
+              const urlsToDelete = new Set<string>();
+              for (const removedSong of removedSongs) {
+                if (
+                  !allOtherSongIds.has(removedSong._id) &&
+                  !newSongIds.has(removedSong._id)
+                ) {
+                  if (removedSong.imageUrl)
+                    urlsToDelete.add(removedSong.imageUrl);
+                  if (removedSong.instrumentalUrl)
+                    urlsToDelete.add(removedSong.instrumentalUrl);
+                  if (removedSong.vocalsUrl)
+                    urlsToDelete.add(removedSong.vocalsUrl);
+                  await deleteUserItem("songs", removedSong._id);
+                }
+              }
+              const audioCache = await caches.open("moodify-audio-cache");
+              const imageCache = await caches.open("cloudinary-images-cache");
+              for (const url of urlsToDelete) {
+                await audioCache.delete(url);
+                await imageCache.delete(url);
+              }
+            }
+
+            const songsData = serverItemData.songs as Song[];
             const urlsToCache = new Set<string>();
-            if (itemData.imageUrl) urlsToCache.add(itemData.imageUrl);
+            if (serverItemData.imageUrl)
+              urlsToCache.add(serverItemData.imageUrl);
             songsData.forEach((song) => {
               if (song.imageUrl) urlsToCache.add(song.imageUrl);
               if (song.instrumentalUrl) urlsToCache.add(song.instrumentalUrl);
@@ -239,23 +290,21 @@ export const useOfflineStore = create<OfflineState>()(
             const audioCache = await caches.open("moodify-audio-cache");
             const imageCache = await caches.open("cloudinary-images-cache");
 
-            for (const url of allUrls) {
-              try {
+            await Promise.all(
+              allUrls.map((url) => {
                 const cache = url.includes("cloudinary")
                   ? imageCache
                   : audioCache;
-                await cache.add(url);
-              } catch (cacheError) {
-                console.warn(`Could not cache URL: ${url}`, cacheError);
-              }
-            }
+                return cache
+                  .add(url)
+                  .catch((err) =>
+                    console.warn(`Could not cache URL: ${url}`, err)
+                  );
+              })
+            );
 
-            const itemToSave: DownloadableItemWithValue & { userId: string } = {
-              ...itemData,
-              songsData,
-              userId,
-            };
-            await saveUserItem(itemType, itemToSave);
+            const itemToSave = { ...serverItemData, songsData, userId };
+            await saveUserItem(itemType, itemToSave as any);
 
             for (const song of songsData) {
               await saveUserItem("songs", { ...song, userId });
@@ -269,6 +318,12 @@ export const useOfflineStore = create<OfflineState>()(
               newDownloading.delete(itemId);
               const newDownloadedSongs = new Set(state.downloadedSongIds);
               songsData.forEach((song) => newDownloadedSongs.add(song._id));
+
+              removedSongs.forEach((song) => {
+                if (![...allOtherSongIds, ...newSongIds].includes(song._id)) {
+                  newDownloadedSongs.delete(song._id);
+                }
+              });
               return {
                 downloadedItemIds: newDownloaded,
                 downloadingItemIds: newDownloading,
@@ -277,13 +332,6 @@ export const useOfflineStore = create<OfflineState>()(
             });
           } catch (error) {
             console.error(`Failed to download ${itemType} ${itemId}:`, error);
-            const title =
-              itemData && "title" in itemData
-                ? itemData.title
-                : itemData && "name" in itemData
-                ? itemData.name
-                : "item";
-            toast.error(`Could not download ${title}.`);
             set((state) => {
               const newDownloading = new Set(state.downloadingItemIds);
               newDownloading.delete(itemId);
@@ -303,26 +351,37 @@ export const useOfflineStore = create<OfflineState>()(
             const urlsToDelete = new Set<string>();
             if (itemToDelete.imageUrl) urlsToDelete.add(itemToDelete.imageUrl);
 
-            const songs = (itemToDelete.songsData ||
-              itemToDelete.songs) as Song[];
-            songs.forEach((song) => {
-              if (song.imageUrl) urlsToDelete.add(song.imageUrl);
-              if (song.instrumentalUrl) urlsToDelete.add(song.instrumentalUrl);
-              if (song.vocalsUrl) urlsToDelete.add(song.vocalsUrl);
+            const songs = ((itemToDelete as any).songsData ||
+              (itemToDelete as any).songs) as Song[];
+
+            const allAlbums = await getAllUserAlbums(userId);
+            const allPlaylists = await getAllUserPlaylists(userId);
+            const allMixes = await getAllUserMixes(userId);
+
+            const allOtherSongIds = new Set<string>();
+            [...allAlbums, ...allPlaylists, ...allMixes].forEach((item) => {
+              if (item._id !== itemId) {
+                (item.songsData || (item as any).songs || []).forEach(
+                  (song: Song) => allOtherSongIds.add(song._id)
+                );
+              }
             });
 
-            const audioCache = await caches.open("moodify-audio-cache");
-            const imageCache = await caches.open("cloudinary-images-cache");
-
-            for (const url of urlsToDelete) {
-              if (url) {
-                await audioCache.delete(url);
-                await imageCache.delete(url);
+            for (const song of songs) {
+              if (!allOtherSongIds.has(song._id)) {
+                if (song.imageUrl) urlsToDelete.add(song.imageUrl);
+                if (song.instrumentalUrl)
+                  urlsToDelete.add(song.instrumentalUrl);
+                if (song.vocalsUrl) urlsToDelete.add(song.vocalsUrl);
+                await deleteUserItem("songs", song._id);
               }
             }
 
-            for (const song of songs) {
-              await deleteUserItem("songs", song._id);
+            const audioCache = await caches.open("moodify-audio-cache");
+            const imageCache = await caches.open("cloudinary-images-cache");
+            for (const url of urlsToDelete) {
+              await audioCache.delete(url);
+              await imageCache.delete(url);
             }
 
             await deleteUserItem(itemType, itemId);
@@ -330,10 +389,11 @@ export const useOfflineStore = create<OfflineState>()(
             set((state) => {
               const newDownloaded = new Set(state.downloadedItemIds);
               newDownloaded.delete(itemId);
-
               const newDownloadedSongs = new Set(state.downloadedSongIds);
-              songs.forEach((song) => newDownloadedSongs.delete(song._id));
-
+              songs.forEach((song) => {
+                if (!allOtherSongIds.has(song._id))
+                  newDownloadedSongs.delete(song._id);
+              });
               return {
                 downloadedItemIds: newDownloaded,
                 downloadedSongIds: newDownloadedSongs,
@@ -362,8 +422,7 @@ export const useOfflineStore = create<OfflineState>()(
             return;
           }
 
-          const downloadedIds = Array.from(get().downloadedItemIds);
-          if (downloadedIds.length === 0) {
+          if (get().downloadedItemIds.size === 0) {
             toast.success("No downloads to clear.");
             return;
           }
@@ -371,46 +430,12 @@ export const useOfflineStore = create<OfflineState>()(
           toast.loading("Clearing all downloads...");
           try {
             const db = await getDb();
-            const tx = db.transaction(
-              ["albums", "playlists", "mixes", "songs"],
-              "readwrite"
-            );
-            const stores = {
-              albums: tx.objectStore("albums").index("by-user"),
-              playlists: tx.objectStore("playlists").index("by-user"),
-              mixes: tx.objectStore("mixes").index("by-user"),
-              songs: tx.objectStore("songs").index("by-user"),
-            };
-
             await Promise.all([
-              stores.albums.openCursor(userId).then(async (cursor) => {
-                while (cursor) {
-                  cursor.delete();
-                  cursor = await cursor.continue();
-                }
-              }),
-              stores.playlists.openCursor(userId).then(async (cursor) => {
-                while (cursor) {
-                  cursor.delete();
-                  cursor = await cursor.continue();
-                }
-              }),
-              stores.mixes.openCursor(userId).then(async (cursor) => {
-                while (cursor) {
-                  cursor.delete();
-                  cursor = await cursor.continue();
-                }
-              }),
-              stores.songs.openCursor(userId).then(async (cursor) => {
-                while (cursor) {
-                  cursor.delete();
-                  cursor = await cursor.continue();
-                }
-              }),
+              db.clear("albums"),
+              db.clear("playlists"),
+              db.clear("mixes"),
+              db.clear("songs"),
             ]);
-
-            await tx.done;
-
             await caches.delete("moodify-audio-cache");
             await caches.delete("cloudinary-images-cache");
 
