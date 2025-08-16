@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { usePlaylistStore } from "../../stores/usePlaylistStore";
