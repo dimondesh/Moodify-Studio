@@ -32,7 +32,6 @@ router.get("/:userId/followers", protectRoute, getFollowers);
 router.get("/:userId/following", protectRoute, getFollowing);
 router.get("/:userId/playlists", protectRoute, getPublicPlaylists);
 
-// --- ОСТАЛЬНЫЕ МАРШРУТЫ ---
 router.put("/me", protectRoute, updateUserProfile);
 router.get("/", protectRoute, getAllUsers);
 router.put("/language", protectRoute, updateUserLanguage);

@@ -7,6 +7,7 @@ import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetai
 import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
 import { useChatStore } from "../../stores/useChatStore";
+import { useOfflineStore } from "../../stores/useOfflineStore";
 
 import {
   Play,
@@ -131,6 +132,8 @@ const PlaylistDetailsPage = () => {
     ? libraryPlaylists.some((p: Playlist) => p._id === currentPlaylist._id)
     : false;
 
+  const { isDownloaded, downloadItem } = useOfflineStore((s) => s.actions);
+
   useEffect(() => {
     const loadPlaylist = async () => {
       setLocalIsLoading(true);
@@ -144,13 +147,69 @@ const PlaylistDetailsPage = () => {
 
   useEffect(() => {
     if (playlistId && socket) {
+      console.log(
+        `[SOCKET] Attempting to join room for playlist: ${playlistId}`
+      );
+
       socket.emit("join_playlist_room", playlistId);
+      console.log(`Joined room for playlist ${playlistId}`);
+
+      const handlePlaylistUpdate = (data: { playlist: Playlist }) => {
+        console.log("[SOCKET RECEIVE] Got 'playlist_updated' event!", data);
+
+        if (data.playlist._id === playlistId) {
+          console.log(
+            `Received update for playlist ${playlistId}. Refetching...`
+          );
+
+          updateCurrentPlaylistFromSocket(data.playlist);
+          toast.success("This playlist has been updated by the owner.");
+
+          const isPlaylistDownloaded = isDownloaded(playlistId);
+
+          if (isDownloaded(playlistId)) {
+            console.log(
+              `[SYNC] Is this playlist downloaded? -> ${isPlaylistDownloaded}`
+            );
+
+            console.log(
+              `Downloaded playlist ${playlistId} was updated. Starting sync...`
+            );
+            toast.loading("Updating your downloaded playlist...", {
+              id: "playlist-sync",
+            });
+
+            downloadItem(playlistId, "playlists")
+              .then(() => {
+                toast.success("Downloaded playlist updated!", {
+                  id: "playlist-sync",
+                });
+              })
+              .catch((err) => {
+                console.error("Failed to sync downloaded playlist:", err);
+                toast.error("Could not update downloaded playlist.", {
+                  id: "playlist-sync",
+                });
+              });
+          }
+        }
+      };
+
+      socket.on("playlist_updated", handlePlaylistUpdate);
 
       return () => {
+        console.log(`Leaving room for playlist ${playlistId}`);
         socket.emit("leave_playlist_room", playlistId);
+        socket.off("playlist_updated", handlePlaylistUpdate);
       };
     }
-  }, [playlistId, socket, updateCurrentPlaylistFromSocket, navigate]);
+  }, [
+    playlistId,
+    socket,
+    updateCurrentPlaylistFromSocket,
+    isDownloaded,
+    downloadItem,
+  ]);
 
   useEffect(() => {
     const updateBackgroundColor = (color: string) => {

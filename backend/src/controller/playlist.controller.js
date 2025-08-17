@@ -181,9 +181,18 @@ export const updatePlaylist = async (req, res, next) => {
     }
 
     await playlist.save();
+    console.log(
+      `[SOCKET EMIT] Sending 'playlist_updated' to room 'playlist-${playlistId}' after updating details.`
+    );
+
     req.io
       .to(`playlist-${playlistId}`)
       .emit("playlist_updated", { playlistId });
+
+    const updatedPlaylist = await Playlist.findById(playlistId).lean();
+    req.io
+      .to(`playlist-${playlistId}`)
+      .emit("playlist_updated", { playlist: updatedPlaylist });
 
     res.status(200).json(playlist);
   } catch (error) {
@@ -257,6 +266,9 @@ export const addSongToPlaylist = async (req, res, next) => {
         populate: { path: "artist", model: "Artist", select: "name imageUrl" },
       })
       .lean();
+    console.log(
+      `[SOCKET EMIT] Sending 'playlist_updated' to room 'playlist-${playlistId}' after adding a song.`
+    );
     req.io
       .to(`playlist-${playlistId}`)
       .emit("playlist_updated", { playlist: updatedPlaylist });
@@ -303,6 +315,9 @@ export const removeSongFromPlaylist = async (req, res, next) => {
       .lean();
     console.log(
       `[BACKEND] Emitting 'playlist_updated' to room 'playlist-${playlistId}' after removing a song. New song count: ${updatedPlaylist.songs.length}`
+    );
+    console.log(
+      `[SOCKET EMIT] Sending 'playlist_updated' to room 'playlist-${playlistId}' after removing a song.`
     );
     req.io
       .to(`playlist-${playlistId}`)
