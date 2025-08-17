@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // frontend/src/layout/FriendsActivity.tsx
 
 import { HeadphonesIcon, Music, Users } from "lucide-react";
