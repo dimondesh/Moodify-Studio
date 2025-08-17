@@ -255,6 +255,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
         <Sheet open={isAdded && isOpen} onOpenChange={handleOpenChange}>
           <SheetTrigger asChild>{TriggerButton}</SheetTrigger>
           <SheetContent
+            aria-describedby={undefined}
             side="bottom"
             className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-full z-100 px-4"
           >
