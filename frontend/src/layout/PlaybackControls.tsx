@@ -41,7 +41,6 @@ import { useChatStore } from "../stores/useChatStore";
 
 import { getArtistNames } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
-import { cn } from "@/lib/utils"; // <-- 2. УБЕДИТЕСЬ, ЧТО ЭТОТ ИМПОРТ ЕСТЬ
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -417,7 +416,7 @@ const PlaybackControls = () => {
               <Drawer.Overlay className="fixed bg-black/40 z-[70] max-w-none " />
               <Drawer.Content
                 className={`bg-zinc-950 flex flex-col rounded-t-[10px]  w-auto max-w-none h-full max-h-[100%] mt-24 min-w-screen overflow-hidden  fixed bottom-0 left-0 right-0 z-[70]  ${
-                  isAnyDialogOpen ? "dialog-open-blur" : ""
+                  isAnyDialogOpen ? "player-dialog-blur" : ""
                 }`}
               >
                 <div
