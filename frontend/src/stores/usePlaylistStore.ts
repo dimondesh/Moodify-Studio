@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
@@ -9,6 +10,8 @@ import { useAuthStore } from "./useAuthStore";
 
 interface PlaylistStore {
   myPlaylists: Playlist[];
+  ownedPlaylists: Playlist[];
+
   publicPlaylists: Playlist[];
   currentPlaylist: Playlist | null;
   isLoading: boolean;
@@ -18,6 +21,8 @@ interface PlaylistStore {
   updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
 
   fetchMyPlaylists: () => Promise<void>;
+  fetchOwnedPlaylists: () => Promise<void>;
+
   fetchPublicPlaylists: () => Promise<void>;
   fetchPlaylistById: (id: string) => Promise<void>;
   createPlaylist: (
@@ -47,6 +52,8 @@ interface PlaylistStore {
 
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   myPlaylists: [],
+  ownedPlaylists: [],
+
   publicPlaylists: [],
   currentPlaylist: null,
   isLoading: false,
@@ -103,6 +110,42 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         isLoading: false,
       });
       toast.error("Failed to load your playlists.");
+    }
+  },
+
+  fetchOwnedPlaylists: async () => {
+    set({ isLoading: true, error: null });
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) {
+      set({ ownedPlaylists: [], isLoading: false });
+      return;
+    }
+    if (useOfflineStore.getState().isOffline) {
+      try {
+        const allPlaylists = await getAllUserPlaylists(currentUser.id);
+        const ownedOffline = allPlaylists.filter(
+          (p) => p.owner?._id === currentUser.id
+        );
+        set({ ownedPlaylists: ownedOffline, isLoading: false });
+      } catch (err: any) {
+        set({
+          error: "Failed to load owned playlists offline",
+          isLoading: false,
+        });
+      }
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get("/library/playlists/owned");
+      set({ ownedPlaylists: response.data, isLoading: false });
+    } catch (err: any) {
+      console.error("Failed to fetch owned playlists:", err);
+      set({
+        error: err.response?.data?.message || "Failed to fetch owned playlists",
+        isLoading: false,
+      });
+      toast.error("Could not load your playlists.");
     }
   },
 
@@ -244,7 +287,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   removeSongFromPlaylist: async (playlistId: string, songId: string) => {
-    // --- DEBUGGING LOG ---
     console.log(
       `[STORE] ACTION: removeSongFromPlaylist called for playlist ${playlistId}, song ${songId}`
     );

@@ -10,9 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
+import { AddToPlaylistControl } from "./AddToPlaylistControl";
 
 import {
-  Heart,
   Pause,
   Play,
   Repeat,
@@ -114,7 +114,7 @@ const PlaybackControls = () => {
   const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
     useAudioSettingsStore();
 
-  const { isSongLiked, toggleSongLike, fetchLikedSongs } = useLibraryStore();
+  const { fetchLikedSongs } = useLibraryStore();
 
   const [previousMasterVolume, setPreviousMasterVolume] =
     useState(masterVolume);
@@ -130,7 +130,6 @@ const PlaybackControls = () => {
 
   const lastImageUrlRef = useRef<string | null>(null);
 
-  // ... (все useEffect остаются без изменений)
   useEffect(() => {
     if ("mediaSession" in navigator) {
       if (!currentSong) {
@@ -310,12 +309,6 @@ const PlaybackControls = () => {
     setPlayerCurrentTime(value[0]);
   };
 
-  const handleToggleLike = () => {
-    if (currentSong) {
-      toggleSongLike(currentSong._id);
-    }
-  };
-
   const handleArtistClick = (artistId: string) => {
     navigate(`/artists/${artistId}`);
     if (isCompactView && isFullScreenPlayerOpen) {
@@ -400,26 +393,11 @@ const PlaybackControls = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className={`hover:text-white ${
-                    isSongLiked(currentSong._id)
-                      ? "text-violet-500"
-                      : "text-zinc-400"
-                  } w-8 h-8`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleLike();
-                  }}
-                  title={
-                    isSongLiked(currentSong._id)
-                      ? t("player.unlike")
-                      : t("player.like")
-                  }
-                >
-                  <Heart className="h-5 w-5 fill-current" />
-                </Button>
+                <AddToPlaylistControl
+                  song={currentSong}
+                  className="w-8 h-8"
+                  iconClassName="h-5 w-5"
+                />
                 <Button
                   size="icon"
                   className="bg-white hover:bg-white/90 text-black rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center"
@@ -548,23 +526,10 @@ const PlaybackControls = () => {
                         </p>
                       </div>
                       {currentSong && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className={`hover:text-white ${
-                            isSongLiked(currentSong._id)
-                              ? "text-violet-500"
-                              : "text-zinc-400"
-                          }`}
-                          onClick={handleToggleLike}
-                          title={
-                            isSongLiked(currentSong._id)
-                              ? t("player.unlike")
-                              : t("player.like")
-                          }
-                        >
-                          <Heart className="h-7 w-7 fill-current" />
-                        </Button>
+                        <AddToPlaylistControl
+                          song={currentSong}
+                          iconClassName="h-7 w-7"
+                        />
                       )}
                     </div>
 
@@ -863,23 +828,7 @@ const PlaybackControls = () => {
                       ))}
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className={`hover:text-white ${
-                      isSongLiked(currentSong._id)
-                        ? "text-violet-500"
-                        : "text-zinc-400"
-                    }`}
-                    onClick={handleToggleLike}
-                    title={
-                      isSongLiked(currentSong._id)
-                        ? t("player.unlike")
-                        : t("player.like")
-                    }
-                  >
-                    <Heart className="h-4 w-4 fill-current" />
-                  </Button>
+                  <AddToPlaylistControl song={currentSong} />
                 </>
               )}
             </div>

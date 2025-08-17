@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Playlist} from "../types";
+import type { Playlist } from "../types";
 
 // Интерфейс для данных, передаваемых в диалог "Поделиться"
 interface ShareEntity {

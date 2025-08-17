@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 import { Library } from "../models/library.model.js";
 import { Playlist } from "../models/playlist.model.js";
 import { Song } from "../models/song.model.js";
-import { Artist } from "../models/artist.model.js"; 
+import { Artist } from "../models/artist.model.js";
 import { Mix } from "../models/mix.model.js";
+import { User } from "../models/user.model.js";
 
 export const getLibraryAlbums = async (req, res, next) => {
   try {
@@ -294,7 +295,6 @@ export const togglePlaylistInLibrary = async (req, res, next) => {
   }
 };
 
-
 export const toggleArtistInLibrary = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -346,7 +346,6 @@ export const toggleArtistInLibrary = async (req, res, next) => {
   }
 };
 
-
 export const getFollowedArtists = async (req, res, next) => {
   try {
     const userId = req.user?.id;
@@ -358,7 +357,7 @@ export const getFollowedArtists = async (req, res, next) => {
       .populate({
         path: "followedArtists.artistId",
         model: "Artist",
-        select: "name imageUrl createdAt", 
+        select: "name imageUrl createdAt",
       })
       .lean();
 
@@ -400,8 +399,8 @@ export const getFollowedArtists = async (req, res, next) => {
           _id: item.artistId._id,
           name: item.artistId.name,
           imageUrl: item.artistId.imageUrl,
-          createdAt: item.artistId.createdAt || new Date().toISOString(), 
-          addedAt: item.addedAt, 
+          createdAt: item.artistId.createdAt || new Date().toISOString(),
+          addedAt: item.addedAt,
         };
       });
 
@@ -481,5 +480,31 @@ export const getSavedMixes = async (req, res, next) => {
   } catch (err) {
     console.error("❌ Error in getSavedMixes:", err);
     next(err);
+  }
+};
+
+export const getOwnedPlaylists = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    const userWithPlaylists = await User.findById(userId).populate({
+      path: "playlists",
+      populate: {
+        path: "songs",
+        model: "Song",
+      },
+    });
+
+    if (!userWithPlaylists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(userWithPlaylists.playlists || []);
+  } catch (error) {
+    console.error("Error fetching owned playlists:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
