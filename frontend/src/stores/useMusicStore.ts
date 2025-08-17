@@ -8,7 +8,7 @@ import type { Song, Album, Stats, Artist, Genre, Mood } from "../types/index";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
 import {
-  getUserItem, 
+  getUserItem,
   getAllUserAlbums,
   getAllUserSongs,
 } from "../lib/offline-db";
@@ -29,6 +29,19 @@ interface MusicStore {
   madeForYouSongs: Song[];
   trendingSongs: Song[];
   stats: Stats;
+
+  paginatedSongs: Song[];
+  songsPage: number;
+  songsTotalPages: number;
+
+  paginatedAlbums: Album[];
+  albumsPage: number;
+  albumsTotalPages: number;
+
+  paginatedArtists: Artist[];
+  artistsPage: number;
+  artistsTotalPages: number;
+
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
   fetchFeaturedSongs: () => Promise<void>;
@@ -46,6 +59,9 @@ interface MusicStore {
   deleteArtist: (id: string) => Promise<void>;
   updateArtist: (artistId: string, formData: FormData) => Promise<void>;
   updateSong: (songId: string, formData: FormData) => Promise<void>;
+  fetchPaginatedSongs: (page: number, limit: number) => Promise<void>;
+  fetchPaginatedAlbums: (page: number, limit: number) => Promise<void>;
+  fetchPaginatedArtists: (page: number, limit: number) => Promise<void>;
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
@@ -63,11 +79,72 @@ export const useMusicStore = create<MusicStore>((set) => ({
   trendingSongs: [],
   recentlyListenedSongs: [],
 
+  paginatedSongs: [],
+  songsPage: 1,
+  songsTotalPages: 1,
+  paginatedAlbums: [],
+  albumsPage: 1,
+  albumsTotalPages: 1,
+  paginatedArtists: [],
+  artistsPage: 1,
+  artistsTotalPages: 1,
+
   stats: {
     totalSongs: 0,
     totalAlbums: 0,
     totalUsers: 0,
     totalArtists: 0,
+  },
+
+  fetchPaginatedSongs: async (page = 1, limit = 50) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get("/admin/songs/paginated", {
+        params: { page, limit },
+      });
+      set({
+        paginatedSongs: response.data.songs,
+        songsPage: response.data.currentPage,
+        songsTotalPages: response.data.totalPages,
+        isLoading: false,
+      });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  fetchPaginatedAlbums: async (page = 1, limit = 50) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get("/admin/albums/paginated", {
+        params: { page, limit },
+      });
+      set({
+        paginatedAlbums: response.data.albums,
+        albumsPage: response.data.currentPage,
+        albumsTotalPages: response.data.totalPages,
+        isLoading: false,
+      });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  fetchPaginatedArtists: async (page = 1, limit = 50) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get("/admin/artists/paginated", {
+        params: { page, limit },
+      });
+      set({
+        paginatedArtists: response.data.artists,
+        artistsPage: response.data.currentPage,
+        artistsTotalPages: response.data.totalPages,
+        isLoading: false,
+      });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
   },
 
   fetchGenres: async () => {

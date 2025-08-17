@@ -15,16 +15,30 @@ import { useMusicStore } from "../../stores/useMusicStore";
 import { Artist } from "../../types";
 import EditArtistDialog from "./EditArtistDialog";
 import { useTranslation } from "react-i18next";
+import PaginationControls from "./PaginationControls";
 
 const ArtistsTable = () => {
-  const { t } = useTranslation(); 
-  const { artists, fetchArtists, deleteArtist } = useMusicStore();
+  const { t } = useTranslation();
+  const {
+    paginatedArtists,
+    fetchPaginatedArtists,
+    deleteArtist,
+    artistsPage,
+    artistsTotalPages,
+  } = useMusicStore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    fetchArtists();
-  }, [fetchArtists]);
+    fetchPaginatedArtists(currentPage, 50);
+  }, [fetchPaginatedArtists, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= artistsTotalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   const handleEditArtist = (artist: Artist) => {
     setSelectedArtist(artist);
@@ -50,7 +64,7 @@ const ArtistsTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {artists.map((artist) => (
+          {paginatedArtists.map((artist) => (
             <TableRow
               key={artist._id}
               className="hover:bg-zinc-800/50 border-zinc-700/50"
@@ -94,6 +108,12 @@ const ArtistsTable = () => {
           ))}
         </TableBody>
       </Table>
+
+      <PaginationControls
+        currentPage={artistsPage}
+        totalPages={artistsTotalPages}
+        onPageChange={handlePageChange}
+      />
 
       <EditArtistDialog
         artist={selectedArtist}

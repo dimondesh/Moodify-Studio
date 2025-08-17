@@ -8,28 +8,27 @@ import {
   deleteFromCloudinary,
 } from "../lib/deleteFromCloudinary.js";
 import * as mm from "music-metadata";
-import { getTagsFromAI } from "../lib/ai.service.js"; 
+import { getTagsFromAI } from "../lib/ai.service.js";
 
 import {
   getAlbumDataFromSpotify,
   getArtistDataFromSpotify,
 } from "../lib/spotifyService.js";
-import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js"; 
+import { getLrcLyricsFromLrclib } from "../lib/lyricsService.js";
 import {
   extractZip,
   parseTrackFileName,
   cleanUpTempDir,
-} from "../lib/zipHandler.js"; 
+} from "../lib/zipHandler.js";
 
 import path from "path";
-import fs from "fs/promises"; 
-import { getGenresAndMoodsForTrack } from "../lib/lastfm.service.js"; 
-import { Genre } from "../models/genre.model.js"; 
-import { Mood } from "../models/mood.model.js"; 
+import fs from "fs/promises";
+import { getGenresAndMoodsForTrack } from "../lib/lastfm.service.js";
+import { Genre } from "../models/genre.model.js";
+import { Mood } from "../models/mood.model.js";
 
 const uploadToCloudinary = async (fileSource, folder) => {
   try {
-   
     const source =
       typeof fileSource === "string" ? fileSource : fileSource.tempFilePath;
 
@@ -56,14 +55,13 @@ const updateArtistsContent = async (artistIds, contentId, contentType) => {
   const updateField = contentType === "songs" ? "songs" : "albums";
 
   await Artist.updateMany(
-    { _id: { $in: artistIds } }, 
-    { $addToSet: { [updateField]: contentId } } 
+    { _id: { $in: artistIds } },
+    { $addToSet: { [updateField]: contentId } }
   );
   console.log(
     `[updateArtistsContent] Successfully updated ${contentType} for artists: ${artistIds}`
   );
 };
-
 
 const removeContentFromArtists = async (artistIds, contentId, contentType) => {
   if (!artistIds || artistIds.length === 0) return;
@@ -71,8 +69,8 @@ const removeContentFromArtists = async (artistIds, contentId, contentType) => {
   const updateField = contentType === "songs" ? "songs" : "albums";
 
   await Artist.updateMany(
-    { _id: { $in: artistIds } }, 
-    { $pull: { [updateField]: contentId } } 
+    { _id: { $in: artistIds } },
+    { $pull: { [updateField]: contentId } }
   );
   console.log(
     `[removeContentFromArtists] Successfully removed ${contentType} for artists: ${artistIds}`
@@ -153,7 +151,7 @@ export const createSong = async (req, res, next) => {
           "songs/images"
         );
       } else {
-        imageUpload.url = existingAlbum.imageUrl; 
+        imageUpload.url = existingAlbum.imageUrl;
       }
     }
 
@@ -171,7 +169,7 @@ export const createSong = async (req, res, next) => {
       vocalsUrl: vocalsUpload.url,
       vocalsPublicId: vocalsUpload.publicId,
       imageUrl: imageUpload.url,
-      imagePublicId: imageUpload.publicId, 
+      imagePublicId: imageUpload.publicId,
       duration,
       lyrics: lyrics || null,
       genres: genreIdsJson ? JSON.parse(genreIdsJson) : [],
@@ -302,7 +300,6 @@ export const updateSong = async (req, res, next) => {
       song.albumId === "none" ||
       song.albumId === ""
     ) {
-      
       if (!song.imageUrl) {
         // Если нет ни нового, ни старого изображения для сингла
         return res.status(400).json({
@@ -466,7 +463,7 @@ export const updateAlbum = async (req, res, next) => {
       artistIds: artistIdsJsonString,
       releaseYear,
       type,
-    } = req.body; 
+    } = req.body;
     const imageFile = req.files ? req.files.imageFile : null;
 
     const album = await Album.findById(id);
@@ -474,7 +471,7 @@ export const updateAlbum = async (req, res, next) => {
       return res.status(404).json({ message: "Album not found." });
     }
 
-    let newArtistIds; 
+    let newArtistIds;
     try {
       newArtistIds = artistIdsJsonString ? JSON.parse(artistIdsJsonString) : [];
       if (!Array.isArray(newArtistIds)) {
@@ -505,7 +502,7 @@ export const updateAlbum = async (req, res, next) => {
       );
       await updateArtistsContent(artistsToAdd, album._id, "albums");
 
-      album.artist = newArtistIds; 
+      album.artist = newArtistIds;
     } else {
       return res
         .status(400)
@@ -616,7 +613,7 @@ export const updateArtist = async (req, res, next) => {
       return res.status(403).json({ message: "Access denied." });
 
     const { id } = req.params;
-    const { name, bio, bannerUrl } = req.body; 
+    const { name, bio, bannerUrl } = req.body;
     const imageFile = req.files?.imageFile;
     const bannerFile = req.files?.bannerFile;
 
@@ -708,7 +705,6 @@ export const deleteArtist = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // --- АВТОМАТИЧЕСКАЯ ЗАГРУЗКА АЛЬБОМА ---
 
@@ -805,7 +801,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
           );
           imageUploadResult = {
             url: DEFAULT_ARTIST_IMAGE_URL,
-            publicId: "default_artist_placeholder", 
+            publicId: "default_artist_placeholder",
           };
         } else {
           imageUploadResult = await uploadToCloudinary(
@@ -836,7 +832,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     const albumImageUrl =
       spotifyAlbumData.images && spotifyAlbumData.images.length > 0
         ? spotifyAlbumData.images[0].url
-        : DEFAULT_ALBUM_IMAGE_URL; 
+        : DEFAULT_ALBUM_IMAGE_URL;
 
     const albumImageUpload = await uploadToCloudinary(albumImageUrl, "albums");
 
@@ -920,10 +916,10 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       const primaryArtistName = (await Artist.findById(songArtistIds[0])).name;
       const { genreIds, moodIds } = await getTagsFromAI(
         primaryArtistName,
-        songName 
+        songName
       );
 
-      const normalizedSpotifySongName = songName 
+      const normalizedSpotifySongName = songName
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]/gu, "");
       const filesForTrack = trackFilesMap[normalizedSpotifySongName];
@@ -963,14 +959,14 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       if (!lrcText) {
         lrcText = await getLrcLyricsFromLrclib({
           artistName: primaryArtistName,
-          songName: songName, 
+          songName: songName,
           albumName: album.title,
           songDuration: durationMs,
         });
       }
 
       const song = new Song({
-        title: songName, 
+        title: songName,
         artist: songArtistIds,
         albumId: album._id,
         vocalsUrl: vocalsUpload.url,
@@ -1021,6 +1017,109 @@ export const getMoods = async (req, res, next) => {
     const moods = await Mood.find().sort({ name: 1 });
     res.status(200).json(moods);
   } catch (error) {
+    next(error);
+  }
+};
+
+// ------ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ НА АДМИНКЕ ----
+
+export const getPaginatedSongs = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const songsQuery = Song.find()
+      .populate("artist", "name imageUrl")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalSongsQuery = Song.countDocuments();
+
+    const [songs, totalSongs] = await Promise.all([
+      songsQuery.exec(),
+      totalSongsQuery.exec(),
+    ]);
+
+    res.status(200).json({
+      songs,
+      totalPages: Math.ceil(totalSongs / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("Error in getPaginatedSongs:", error);
+    next(error);
+  }
+};
+
+export const getPaginatedAlbums = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const albumsQuery = Album.find()
+      .populate("artist", "name imageUrl")
+      .populate("songs")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalAlbumsQuery = Album.countDocuments();
+
+    const [albums, totalAlbums] = await Promise.all([
+      albumsQuery.exec(),
+      totalAlbumsQuery.exec(),
+    ]);
+
+    res.status(200).json({
+      albums,
+      totalPages: Math.ceil(totalAlbums / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("Error in getPaginatedAlbums:", error);
+    next(error);
+  }
+};
+
+export const getPaginatedArtists = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const artistsQuery = Artist.find()
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalArtistsQuery = Artist.countDocuments();
+
+    const [artists, totalArtists] = await Promise.all([
+      artistsQuery.exec(),
+      totalArtistsQuery.exec(),
+    ]);
+
+    res.status(200).json({
+      artists,
+      totalPages: Math.ceil(totalArtists / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error("Error in getPaginatedArtists:", error);
     next(error);
   }
 };

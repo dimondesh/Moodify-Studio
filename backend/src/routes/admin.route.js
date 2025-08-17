@@ -12,6 +12,9 @@ import {
   uploadFullAlbumAuto,
   getGenres,
   getMoods,
+  getPaginatedSongs,
+  getPaginatedAlbums,
+  getPaginatedArtists,
 } from "../controller/admin.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -34,5 +37,9 @@ router.delete("/artists/:id", deleteArtist);
 
 router.get("/genres", getGenres);
 router.get("/moods", getMoods);
+
+router.get("/songs/paginated", getPaginatedSongs);
+router.get("/albums/paginated", getPaginatedAlbums);
+router.get("/artists/paginated", getPaginatedArtists);
 
 export default router;

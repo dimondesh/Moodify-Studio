@@ -17,19 +17,16 @@ import { useEffect } from "react";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next"; // <-- ИМПОРТ
+import { useTranslation } from "react-i18next";
 
 const AdminPage = () => {
-  const { t } = useTranslation(); // <-- ИСПОЛЬЗОВАНИЕ ХУКА
+  const { t } = useTranslation();
   const { isAdmin, isLoading } = useAuthStore();
-  const { fetchAlbums, fetchSongs, fetchStats, fetchArtists } = useMusicStore();
+  const { fetchStats } = useMusicStore();
 
   useEffect(() => {
-    fetchAlbums();
-    fetchSongs();
     fetchStats();
-    fetchArtists();
-  }, [fetchAlbums, fetchSongs, fetchStats, fetchArtists]);
+  }, [fetchStats]);
 
   const navigate = useNavigate();
   if (!isAdmin && !isLoading)
