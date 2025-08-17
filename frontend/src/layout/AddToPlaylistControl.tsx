@@ -192,7 +192,7 @@ interface AddToPlaylistControlProps {
 export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
   song,
   className,
-  iconClassName = "h-5 w-5",
+  iconClassName = "size-5",
 }) => {
   const { t } = useTranslation();
   const { isSongLiked, toggleSongLike } = useLibraryStore();
