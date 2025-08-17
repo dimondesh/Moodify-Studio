@@ -32,7 +32,7 @@
     "logout": "Log Out",
     "login": "Continue with Google"
   },
-  "player": {
+   "player": {
     "noSong": "No song playing",
     "like": "Like song",
     "unlike": "Unlike song",
@@ -45,7 +45,17 @@
     "toggleRepeat": "Toggle Repeat Mode",
     "lyrics": "Lyrics",
     "close": "Close",
-    "noLyrics": "No lyrics available for this song."
+    "noLyrics": "No lyrics available for this song.",
+    "addedToLiked": "Added to Liked Songs",
+    "removedFromLiked": "Removed from Liked Songs",
+    "addedToPlaylist": "Added to playlist",
+    "removedFromPlaylist": "Removed from playlist",
+    "playlistUpdateError": "Could not update playlist.",
+    "findPlaylist": "Find a playlist",
+    "newPlaylist": "New playlist",
+    "addToPlaylist": "Add to playlist",
+    "saveToLibrary": "Save to Your Library",
+    "done": "Done"
   },
   "friendsActivity": {
     "title": "What they're listening to",

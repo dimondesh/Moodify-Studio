@@ -44,7 +44,17 @@
     "toggleRepeat": "Режим повтору",
     "lyrics": "Текст",
     "close": "Закрити",
-    "noLyrics": "Для цього треку немає тексту."
+    "noLyrics": "Для цього треку немає тексту.",
+    "addedToLiked": "Додано до Улюблених треків",
+    "removedFromLiked": "Видалено з Улюблених треків",
+    "addedToPlaylist": "Додано до плейлиста",
+    "removedFromPlaylist": "Видалено з плейлиста",
+    "playlistUpdateError": "Не вдалося оновити плейлист.",
+    "findPlaylist": "Знайти плейлист",
+    "newPlaylist": "Новий плейлист",
+    "addToPlaylist": "Додати до плейлиста",
+    "saveToLibrary": "Зберегти до Медіатеки",
+    "done": "Готово"
   },
   "friendsActivity": {
     "title": "Активність друзів",

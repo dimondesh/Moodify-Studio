@@ -44,7 +44,17 @@
     "toggleRepeat": "Режим повтора",
     "lyrics": "Текст",
     "close": "Закрыть",
-    "noLyrics": "Для этого трека нет текста."
+    "noLyrics": "Для этого трека нет текста.",
+    "addedToLiked": "Добавлено в Любимые треки",
+    "removedFromLiked": "Удалено из Любимых треков",
+    "addedToPlaylist": "Добавлено в плейлист",
+    "removedFromPlaylist": "Удалено из плейлиста",
+    "playlistUpdateError": "Не удалось обновить плейлист.",
+    "findPlaylist": "Найти плейлист",
+    "newPlaylist": "Новый плейлист",
+    "addToPlaylist": "Добавить в плейлист",
+    "saveToLibrary": "Сохранить в Медиатеку",
+    "done": "Готово"
   },
   "friendsActivity": {
     "title": "Активность друзей",

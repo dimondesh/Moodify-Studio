@@ -114,7 +114,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   fetchOwnedPlaylists: async () => {
-    set({ isLoading: true, error: null });
     const currentUser = useAuthStore.getState().user;
     if (!currentUser) {
       set({ ownedPlaylists: [], isLoading: false });
@@ -128,10 +127,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         );
         set({ ownedPlaylists: ownedOffline, isLoading: false });
       } catch (err: any) {
-        set({
-          error: "Failed to load owned playlists offline",
-          isLoading: false,
-        });
+        console.error("Failed to fetch owned playlists:", err);
+        toast.error("Could not refresh your playlists.");
       }
       return;
     }
