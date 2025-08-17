@@ -65,7 +65,7 @@ const AllMixesPage = () => {
               />
               <div className="absolute inset-0 flex items-start justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
                 <h3 className="text-white text-lg sm:text-xl font-bold drop-shadow-lg break-words">
-                  {mix.name}
+                  {t(mix.name)}
                 </h3>
               </div>
             </div>

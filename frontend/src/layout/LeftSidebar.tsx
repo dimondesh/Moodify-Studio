@@ -149,7 +149,7 @@ const LeftSidebar = () => {
     ...(savedMixes || []).map((mix) => ({
       _id: mix._id,
       type: "mix" as const,
-      title: mix.name,
+      title: t(mix.name),
       imageUrl: mix.imageUrl,
       createdAt: new Date(mix.addedAt ?? new Date()),
       sourceName: mix.sourceName,

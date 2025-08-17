@@ -1,7 +1,8 @@
+// src/stores/useSearchStore.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import { Playlist, Song, Album, Artist, User } from "../types";
+import { Playlist, Song, Album, Artist, User, Mix } from "../types";
 
 interface SearchState {
   query: string;
@@ -9,7 +10,7 @@ interface SearchState {
   albums: Album[];
   playlists: Playlist[];
   users: User[];
-
+  mixes: Mix[];
   artists: Artist[];
   loading: boolean;
   error: string | null;
@@ -24,6 +25,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   playlists: [],
   artists: [],
   users: [],
+  mixes: [],
 
   loading: false,
   error: null,
@@ -38,7 +40,7 @@ export const useSearchStore = create<SearchState>((set) => ({
         playlists: [],
         artists: [],
         users: [],
-
+        mixes: [],
         loading: false,
         error: null,
         query: "",
@@ -56,7 +58,7 @@ export const useSearchStore = create<SearchState>((set) => ({
         playlists: res.data.playlists || [],
         artists: res.data.artists || [],
         users: res.data.users || [],
-
+        mixes: res.data.mixes || [],
         loading: false,
       });
     } catch (e: any) {

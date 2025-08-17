@@ -1,4 +1,4 @@
-// frontend/src/pages/SearchPage/SearchPage.tsx
+// src/pages/SearchPage/SearchPage.tsx
 
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -10,6 +10,7 @@ import PlaylistGrid from "./PlaylistGrid";
 import ArtistGrid from "./ArtistGrid";
 import useDebounce from "../../hooks/useDebounce";
 import UserGrid from "./UserGrid";
+import MixGrid from "./MixGrid";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 
@@ -27,6 +28,7 @@ const SearchPage = () => {
     playlists,
     artists,
     users,
+    mixes,
     loading,
     error,
     search,
@@ -40,8 +42,8 @@ const SearchPage = () => {
 
   const title = queryParam ? `Results for "${queryParam}"` : "Search Music";
   const description = queryParam
-    ? `Find artists, songs, albums, and playlists for "${queryParam}" on Moodify.`
-    : "Search for your favorite songs, artists, albums, playlists, and users on Moodify.";
+    ? `Find artists, songs, albums, mixes, and playlists for "${queryParam}" on Moodify.`
+    : "Search for your favorite songs, artists, albums, mixes, playlists, and users on Moodify.";
 
   return (
     <>
@@ -72,7 +74,8 @@ const SearchPage = () => {
               albums.length === 0 &&
               playlists.length === 0 &&
               artists.length === 0 &&
-              users.length === 0 && (
+              users.length === 0 &&
+              mixes.length === 0 && (
                 <p className="text-zinc-400">{t("searchpage.noResults")}</p>
               )}
             {!loading &&
@@ -81,7 +84,8 @@ const SearchPage = () => {
                 albums.length > 0 ||
                 playlists.length > 0 ||
                 artists.length > 0 ||
-                users.length > 0) && (
+                users.length > 0 ||
+                mixes.length > 0) && (
                 <>
                   {artists.length > 0 && (
                     <ArtistGrid
@@ -110,6 +114,9 @@ const SearchPage = () => {
                       playlists={playlists}
                       isLoading={loading}
                     />
+                  )}
+                  {mixes.length > 0 && (
+                    <MixGrid title="Mixes" mixes={mixes} isLoading={loading} />
                   )}
                   {users.length > 0 && (
                     <UserGrid

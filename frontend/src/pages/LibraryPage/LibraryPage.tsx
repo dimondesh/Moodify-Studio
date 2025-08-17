@@ -56,7 +56,7 @@ const LibraryPage = () => {
   const { artists, fetchArtists } = useMusicStore();
   const [user] = useAuthState(auth);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const { isOffline } = useOfflineStore(); 
+  const { isOffline } = useOfflineStore();
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
 
@@ -64,7 +64,7 @@ const LibraryPage = () => {
     if (isOffline) {
       setActiveFilter("downloaded");
     } else {
-      setActiveFilter("all"); 
+      setActiveFilter("all");
     }
   }, [isOffline]);
 
@@ -160,7 +160,7 @@ const LibraryPage = () => {
       (mix) =>
         ({
           _id: mix._id,
-          title: mix.name,
+          title: t(mix.name),
           imageUrl: mix.imageUrl,
           createdAt: new Date(mix.addedAt || 0),
           type: "mix",

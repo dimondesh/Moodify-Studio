@@ -7,16 +7,17 @@ import {
 } from "../../components/ui/avatar";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import UsersListSkeleton from "../../components/ui/skeletons/UsersListSkeleton";
-import { useChatStore } from "../../stores/useChatStore";
+import { useChatStore, UserActivity } from "../../stores/useChatStore";
 import { useAuthStore } from "../../stores/useAuthStore";
 import type { User } from "../../types";
 import { useTranslation } from "react-i18next";
+import { Music } from "lucide-react";
 
 interface UsersListProps {
   onUserSelect: (user: User) => void;
   selectedUser: User | null;
   onlineUsers: Set<string>;
-  userActivities: Map<string, string>;
+  userActivities: Map<string, UserActivity | "Idle">; // Тип уже исправлен
 }
 
 const UsersList = ({
@@ -69,18 +70,20 @@ const UsersList = ({
                 useChatStore.getState().unreadMessages.get(user._id) || 0;
 
               const isPlaying =
-                activity &&
-                activity !== "Idle" &&
-                activity.startsWith("playing:");
+                typeof activity === "object" && activity !== null;
 
               let statusText = isOnline
                 ? t("pages.chat.online")
                 : t("pages.chat.offline");
               if (isPlaying) {
-                const parts = activity.substring(9).split(" - ");
-                statusText = `${t("pages.chat.playing")} ${parts[0]}`;
-              } else if (activity && activity !== "Idle") {
-                statusText = activity;
+                const artistNames = activity.artists
+                  .map((artist) => artist.artistName)
+                  .join(", ");
+                statusText = ` ${activity.songTitle} | ${artistNames}`;
+              } else if (activity === "Idle") {
+                statusText = isOnline
+                  ? t("pages.chat.online")
+                  : t("pages.chat.offline");
               }
 
               return (
@@ -114,7 +117,12 @@ const UsersList = ({
                     <span className="font-medium truncate text-white text-sm">
                       {user.fullName}
                     </span>
-                    <p className="text-xs text-zinc-400 truncate">
+                    <p className="text-xs text-zinc-400 truncate flex">
+                      {isPlaying ? (
+                        <Music className="size-3.5 text-violet-400 shrink-0 mr-1" />
+                      ) : (
+                        ""
+                      )}
                       {statusText}
                     </p>
                   </div>

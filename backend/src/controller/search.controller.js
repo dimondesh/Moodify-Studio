@@ -5,6 +5,7 @@ import { Album } from "../models/album.model.js";
 import { Playlist } from "../models/playlist.model.js";
 import { Artist } from "../models/artist.model.js";
 import { User } from "../models/user.model.js";
+import { Mix } from "../models/mix.model.js";
 
 export const searchSongs = async (req, res, next) => {
   try {
@@ -17,6 +18,7 @@ export const searchSongs = async (req, res, next) => {
         playlists: [],
         artists: [],
         users: [],
+        mixes: [],
       });
     }
 
@@ -25,37 +27,38 @@ export const searchSongs = async (req, res, next) => {
     const matchingArtists = await Artist.find({ name: regex }).limit(50).lean();
     const matchingArtistIds = matchingArtists.map((artist) => artist._id);
 
-    const [songsRaw, albumsRaw, playlistsRaw, usersRaw] = await Promise.all([
-      Song.find({
-        $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
-      })
-        .populate("artist", "name imageUrl")
-        .populate("albumId", "title imageUrl")
-        .limit(50)
-        .lean(),
+    const [songsRaw, albumsRaw, playlistsRaw, usersRaw, mixesRaw] =
+      await Promise.all([
+        Song.find({
+          $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
+        })
+          .populate("artist", "name imageUrl")
+          .populate("albumId", "title imageUrl")
+          .limit(50)
+          .lean(),
 
-      Album.find({
-        $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
-      })
-        .populate("artist", "name imageUrl")
-        .limit(50)
-        .lean(),
+        Album.find({
+          $or: [{ title: regex }, { artist: { $in: matchingArtistIds } }],
+        })
+          .populate("artist", "name imageUrl")
+          .limit(50)
+          .lean(),
 
-      Playlist.find({
-        isPublic: true,
-        $or: [{ title: regex }, { description: regex }],
-      })
-        .populate("owner", "fullName")
-        .limit(50)
-        .lean(),
+        Playlist.find({
+          isPublic: true,
+          $or: [{ title: regex }, { description: regex }],
+        })
+          .populate("owner", "fullName")
+          .limit(50)
+          .lean(),
 
-      User.find({ fullName: regex })
-        .limit(50)
-        .select("fullName imageUrl")
-        .lean(),
-    ]);
+        User.find({ fullName: regex })
+          .limit(50)
+          .select("fullName imageUrl")
+          .lean(),
 
-
+        Mix.find({ searchableNames: regex }).limit(50).lean(),
+      ]);
     const songs = songsRaw.map((song) => ({
       ...song,
       albumId: song.albumId ? song.albumId._id.toString() : null,
@@ -81,7 +84,6 @@ export const searchSongs = async (req, res, next) => {
       songs: playlist.songs ? playlist.songs.map((s) => s.toString()) : [],
     }));
 
-
     const artists = matchingArtists.map((artist) => ({
       ...artist,
       _id: artist._id.toString(),
@@ -94,7 +96,12 @@ export const searchSongs = async (req, res, next) => {
       type: "user",
     }));
 
-    return res.json({ songs, albums, playlists, artists, users });
+    const mixes = mixesRaw.map((mix) => ({
+      ...mix,
+      _id: mix._id.toString(),
+    }));
+
+    return res.json({ songs, albums, playlists, artists, users, mixes });
   } catch (error) {
     console.error("Search controller error:", error);
     next(error);

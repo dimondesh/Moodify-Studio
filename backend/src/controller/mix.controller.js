@@ -1,9 +1,12 @@
+// backend/src/controller/mix.controller.js
+
 import { Mix } from "../models/mix.model.js";
 import { Genre } from "../models/genre.model.js";
 import { Mood } from "../models/mood.model.js";
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
 import { io } from "../lib/socket.js";
+import { getTranslationsForKey } from "../lib/translations.js";
 
 const getTodayDate = () => {
   const now = new Date();
@@ -68,13 +71,18 @@ export const getDailyMixes = async (req, res, next) => {
         if (randomSongs.length === 0 || !randomSongs[0].artistDetails?.[0])
           continue;
 
+        const mixKey = `mixes.${source.type.toLowerCase()}.${source.name
+          .toLowerCase()
+          .replace(/\s+/g, "_")}`;
+
+        const searchableNames = getTranslationsForKey(mixKey);
+
         const updatePromise = Mix.updateOne(
           { sourceId: source._id },
           {
             $set: {
-              name: `mixes.${source.type.toLowerCase()}.${source.name
-                .toLowerCase()
-                .replace(/\s+/g, "_")}`,
+              name: mixKey,
+              searchableNames: searchableNames,
               type: source.type,
               sourceName: source.name,
               songs: randomSongs.map((s) => s._id),

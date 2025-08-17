@@ -11,11 +11,15 @@ const mixSchema = new mongoose.Schema(
       enum: ["Genre", "Mood"],
       required: true,
     },
+    searchableNames: {
+      type: [String],
+      index: true,
+    },
     sourceName: {
       type: String,
       required: true,
     },
-    sourceId: { type: mongoose.Schema.Types.ObjectId, required: true }, 
+    sourceId: { type: mongoose.Schema.Types.ObjectId, required: true },
 
     songs: [
       {

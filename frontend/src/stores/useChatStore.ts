@@ -13,7 +13,7 @@ interface ArtistInfo {
   artistName: string;
 }
 
-interface UserActivity {
+export interface UserActivity {
   songId: string;
   songTitle: string;
   artists: ArtistInfo[];

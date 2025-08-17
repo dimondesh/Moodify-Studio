@@ -26,6 +26,7 @@ export interface Mix {
   updatedAt: string;
   addedAt?: string;
   generatedOn: string;
+  searchableNames?: string[];
 }
 
 export interface Mood {
@@ -113,6 +114,8 @@ export interface SearchState {
   albums: Album[];
   playlists: Playlist[];
   artists: Artist[];
+  mixes: Mix[];
+
   users: User[];
 
   loading: boolean;
