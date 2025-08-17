@@ -404,16 +404,17 @@ const PlaybackControls = () => {
               >
                 <div
                   key={bgColors[1]}
-                  className="absolute inset-0 -z-10"
+                  className="absolute
+ inset-0 -z-10"
                   style={{
-                    background: `linear-gradient(to bottom, ${bgColors[1]} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
+                    background: `linear-gradient(to bottom, ${bgColors[1]} 0%, rgba(20, 20, 20, 1) 75%, #18181b 100%)`,
                   }}
                 />
                 <div
                   key={bgColors[0]}
                   className="absolute inset-0 -z-10 animate-fade-in"
                   style={{
-                    background: `linear-gradient(to bottom, ${bgColors[0]} 0%, rgba(20, 20, 20, 1) 50%, #18181b 100%)`,
+                    background: `linear-gradient(to bottom, ${bgColors[0]} 0%, rgba(20, 20, 20, 1) 75%, #18181b 100%)`,
                   }}
                 />
 
