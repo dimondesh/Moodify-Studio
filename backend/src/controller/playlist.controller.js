@@ -28,7 +28,7 @@ export const createPlaylist = async (req, res, next) => {
     }
 
     let imageUrl =
-      "https://res.cloudinary.com/dy9lhvzsl/image/upload/v1752489603/default-album-cover_am249u.png";
+      "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1755425854/default-album-cover_qhwd4c.png";
     if (req.files && req.files.image) {
       imageUrl = await uploadImageToCloudinary(req.files.image);
     }

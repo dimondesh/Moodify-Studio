@@ -256,7 +256,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
           <SheetTrigger asChild>{TriggerButton}</SheetTrigger>
           <SheetContent
             side="bottom"
-            className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-[85vh]"
+            className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-[85vh] z-100"
           >
             <SheetHeader className="text-center mb-4">
               <SheetTitle>Add to playlist</SheetTitle>

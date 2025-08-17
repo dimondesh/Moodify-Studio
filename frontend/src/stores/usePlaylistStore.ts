@@ -201,6 +201,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         },
       });
       get().fetchMyPlaylists();
+      get().fetchOwnedPlaylists();
+
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {
@@ -230,6 +232,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         },
       });
       get().fetchMyPlaylists();
+      get().fetchOwnedPlaylists();
+
       set({ isLoading: false });
       return response.data;
     } catch (err: any) {
@@ -247,6 +251,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     try {
       await axiosInstance.delete(`/playlists/${id}`);
       get().fetchMyPlaylists();
+      get().fetchOwnedPlaylists();
+
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to delete playlist:", err);
@@ -273,6 +279,8 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         await downloadItem(playlistId, "playlists");
         toast.success("Downloaded playlist updated!", { id: "playlist-sync" });
       }
+      await get().fetchOwnedPlaylists();
+      await get().fetchMyPlaylists();
 
       get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
@@ -310,6 +318,9 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         }
         return state;
       });
+
+      await get().fetchOwnedPlaylists();
+      await get().fetchMyPlaylists();
     } catch (err: any) {
       console.error("Failed to remove song from playlist:", err);
       toast.error(err.response?.data?.message || "Failed to remove song.");
