@@ -41,6 +41,7 @@ import { useChatStore } from "../stores/useChatStore";
 
 import { getArtistNames } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
+import { cn } from "@/lib/utils"; // <-- 2. УБЕДИТЕСЬ, ЧТО ЭТОТ ИМПОРТ ЕСТЬ
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -104,12 +105,29 @@ const PlaybackControls = () => {
   } = usePlayerStore();
 
   const { shareEntity, openShareDialog, closeAllDialogs } = useUIStore();
-  const isAnyDialogOpen = !!shareEntity;
 
   const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
     useAudioSettingsStore();
 
   const { fetchLikedSongs } = useLibraryStore();
+
+  const {
+    isCreatePlaylistDialogOpen,
+    editingPlaylist,
+    isSearchAndAddDialogOpen,
+    isEditProfileDialogOpen,
+    playlistToDelete,
+    songToRemoveFromPlaylist,
+  } = useUIStore();
+
+  const isAnyDialogOpen =
+    isCreatePlaylistDialogOpen ||
+    !!editingPlaylist ||
+    isSearchAndAddDialogOpen ||
+    !!shareEntity ||
+    isEditProfileDialogOpen ||
+    !!playlistToDelete ||
+    !!songToRemoveFromPlaylist;
 
   const [previousMasterVolume, setPreviousMasterVolume] =
     useState(masterVolume);

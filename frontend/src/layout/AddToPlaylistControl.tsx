@@ -93,16 +93,6 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
         className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-700 cursor-pointer"
         onClick={() => onCheckedChange(!checked)}
       >
-        <div
-          className={cn(
-            "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-            checked
-              ? "bg-violet-500 border-violet-500"
-              : "border-zinc-500 group-hover:border-white"
-          )}
-        >
-          {checked && <Check className="w-4 h-4 text-white" />}
-        </div>
         {imageUrl && (
           <img
             src={imageUrl}
@@ -114,11 +104,33 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
           <p className="font-semibold truncate">{title}</p>
           {subtitle && <p className="text-xs text-zinc-400">{subtitle}</p>}
         </div>
+        <div
+          className={cn(
+            "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+            checked
+              ? "bg-violet-500 border-violet-500"
+              : "border-zinc-500 group-hover:border-white"
+          )}
+        >
+          {checked && <Check className="w-4 h-4 text-white" />}
+        </div>
       </div>
     );
 
     return (
       <div className="flex flex-col gap-4">
+        <Button
+          variant="secondary"
+          className="w-[200px] justify-center rounded-md bg-violet-700 hover:bg-violet-500 mx-auto mb-4"
+          onClick={() => {
+            onClose();
+            setTimeout(() => {
+              openCreatePlaylistDialog();
+            }, 0);
+          }}
+        >
+          <Plus className="mr-2 h-5 w-5" /> {t("player.newPlaylist")}
+        </Button>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <Input
@@ -153,18 +165,6 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
             ))}
           </div>
         </ScrollArea>
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => {
-            onClose();
-            setTimeout(() => {
-              openCreatePlaylistDialog();
-            }, 0);
-          }}
-        >
-          <Plus className="mr-2 h-5 w-5" /> {t("player.newPlaylist")}
-        </Button>
       </div>
     );
   }
@@ -197,7 +197,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
   const { t } = useTranslation();
   const { isSongLiked, toggleSongLike } = useLibraryStore();
   const { ownedPlaylists, fetchOwnedPlaylists } = usePlaylistStore();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useMediaQuery("(max-width: 1024px)");
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -256,9 +256,9 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
           <SheetTrigger asChild>{TriggerButton}</SheetTrigger>
           <SheetContent
             side="bottom"
-            className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-[85vh] z-100"
+            className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-full z-100 px-4"
           >
-            <SheetHeader className="text-center mb-4">
+            <SheetHeader className="text-center">
               <SheetTitle>{t("player.addToPlaylist")}</SheetTitle>
             </SheetHeader>
             <PlaylistMenuContent
@@ -270,7 +270,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
             />
             <Button
               onClick={() => setIsOpen(false)}
-              className="w-full mt-4 bg-zinc-700 hover:bg-zinc-600"
+              className="w-[80px] mt-4 bg-violet-700 hover:bg-violet-600 mx-auto absolute inset-0 top-[90%]"
             >
               {t("player.done")}
             </Button>

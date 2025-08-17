@@ -118,7 +118,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700 z-100">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700 z-120">
         <DialogHeader className="z-100">
           <DialogTitle className="text-white">{dialogTitle}</DialogTitle>
           <DialogDescription className="text-zinc-400">

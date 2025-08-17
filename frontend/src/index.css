@@ -171,3 +171,8 @@
   pointer-events: none; /* Блокирует клики и другие события на фоне */
   
 }
+
+.player-dialog-blur {
+  filter: blur(5px);
+  transition: filter 0.3s ease-in-out;
+}
