@@ -72,7 +72,9 @@ export const getDailyMixes = async (req, res, next) => {
           { sourceId: source._id },
           {
             $set: {
-              name: `${source.name} Mix`,
+              name: `mixes.${source.type.toLowerCase()}.${source.name
+                .toLowerCase()
+                .replace(/\s+/g, "_")}`,
               type: source.type,
               sourceName: source.name,
               songs: randomSongs.map((s) => s._id),

@@ -8,6 +8,17 @@ import type { DefaultEventsMap } from "@socket.io/component-emitter";
 import { auth } from "../lib/firebase";
 import { useAuthStore } from "./useAuthStore";
 import { useOfflineStore } from "./useOfflineStore";
+interface ArtistInfo {
+  artistId: string;
+  artistName: string;
+}
+
+interface UserActivity {
+  songId: string;
+  songTitle: string;
+  artists: ArtistInfo[];
+  albumId: string;
+}
 
 interface ChatStore {
   users: User[];
@@ -18,7 +29,7 @@ interface ChatStore {
   socket: Socket<DefaultEventsMap, DefaultEventsMap>;
   isConnected: boolean;
   onlineUsers: Set<string>;
-  userActivities: Map<string, string>;
+  userActivities: Map<string, UserActivity | "Idle">;
   messages: Message[];
   selectedUser: User | null;
   unreadMessages: Map<string, number>;
@@ -234,13 +245,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           set({ onlineUsers: new Set(users) });
         });
 
-        socket.on("activities", (activities: [string, string][]) => {
-          console.log(
-            "Socket.IO: 'activities' event - Received activities:",
-            activities
-          );
-          set({ userActivities: new Map(activities) });
-        });
+        socket.on(
+          "activities",
+          (activities: [string, UserActivity | "Idle"][]) => {
+            console.log(
+              "Socket.IO: 'activities' event - Received activities:",
+              activities
+            );
+            set({ userActivities: new Map(activities) });
+          }
+        );
 
         socket.on("user_connected", (userId: string) => {
           console.log(

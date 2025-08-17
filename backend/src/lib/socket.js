@@ -75,77 +75,60 @@ export const initializeSocket = (server) => {
     }
 
     userSockets.set(userId, socket.id);
-    userActivities.set(userId, "Idle"); // Изначально пользователь неактивен
+    userActivities.set(userId, "Idle");
 
     io.emit("user_connected", userId);
 
     io.emit("users_online", Array.from(userSockets.keys()));
-    // При новом подключении отправляем все текущие активности
     io.emit("activities", Array.from(userActivities.entries()));
 
     console.log(`User ${userId} (MongoDB _id) connected via Socket.IO`);
 
     socket.on("update_activity", async ({ songId }) => {
+      const userId = socket.userId;
       console.log(
         `[Socket] Received update_activity for userId: ${userId}, songId: ${songId}`
       );
-      let activityString = "Idle"; // По умолчанию "Idle"
+      let activityData = "Idle";
 
       if (songId) {
         try {
-          // Находим песню и заполняем информацию об артисте
           const song = await Song.findById(songId).populate({
             path: "artist",
             model: "Artist",
-            select: "name",
+            select: "name _id",
           });
 
-          console.log(
-            `[Socket] Song found: ${song ? song.title : "None"}, Artist data:`,
-            song ? song.artist : "None"
-          );
+          if (song) {
+            const artistsData = Array.isArray(song.artist)
+              ? song.artist.map((a) => ({
+                  artistId: a._id,
+                  artistName: a.name,
+                }))
+              : [];
 
-          if (song && song.artist) {
-            let artistNames;
-            if (Array.isArray(song.artist)) {
-              artistNames = song.artist.map((a) => a.name).join(", ");
-            } else if (
-              song.artist &&
-              typeof song.artist === "object" &&
-              "name" in song.artist
-            ) {
-              artistNames = song.artist.name;
-            } else {
-              console.warn(
-                `[Socket] Unexpected artist format for song ${song.title}:`,
-                song.artist
-              );
-              artistNames = "Unknown Artist";
-            }
-            activityString = `${song.title}   ${artistNames}`;
-            console.log(`[Socket] Formatted activity: ${activityString}`);
-          } else if (song) {
-            activityString = `${song.title}   Unknown Artist`; // Если артист не найден, но песня есть
-            console.log(
-              `[Socket] Formatted activity (no artist): ${activityString}`
-            );
+            activityData = {
+              songId: song._id,
+              songTitle: song.title,
+              artists: artistsData,
+              albumId: song.albumId,
+            };
+            console.log(`[Socket] Formatted activity object:`, activityData);
           }
         } catch (error) {
           console.error(
             "Ошибка при получении данных песни для активности:",
             error
           );
-          activityString = "Unknown Activity (Error)";
+          activityData = "Idle";
         }
-      } else {
-        // Если songId не пришел (пользователь поставил на паузу, перестал слушать и т.д.)
-        activityString = "Idle";
       }
 
-      userActivities.set(userId, activityString);
-      io.emit("activity_updated", { userId, activity: activityString });
+      userActivities.set(userId, activityData);
+      io.emit("activity_updated", { userId, activity: activityData });
       console.log(
-        `[Socket] Emitting activity_updated: ${userId}, ${activityString}`
+        `[Socket] Emitting activity_updated: ${userId}`,
+        activityData
       );
     });
 

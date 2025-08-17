@@ -210,7 +210,7 @@ const MixDetailsPage = () => {
   return (
     <>
       <Helmet>
-        <title>{`${currentMix.name}`}</title>
+        <title>{`${t(currentMix.name)}`}</title>{" "}
         <meta
           name="description"
           content={`Listen to ${currentMix.name}. A daily mix of songs based on your listening habits for '${currentMix.sourceName}'.`}
@@ -246,7 +246,7 @@ const MixDetailsPage = () => {
                     {t("sidebar.subtitle.dailyMix")}
                   </p>
                   <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
-                    {currentMix.name}
+                    {t(currentMix.name)}
                   </h1>
                   <p className="text-zinc-400 text-base mt-2">{`A daily mix based on ${currentMix.type.toLowerCase()} '${
                     currentMix.sourceName

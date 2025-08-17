@@ -7,34 +7,12 @@ import { useEffect } from "react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { useAuthStore } from "../stores/useAuthStore";
-import type { Artist } from "../types/index";
-import { useTranslation } from "react-i18next"; 
-
-const getArtistNames = (
-  artistData: (Artist | string) | (Artist | string)[] | undefined
-): string => {
-  if (!artistData) {
-    return "Unknown Artist";
-  }
-
-  const artistsArray = Array.isArray(artistData) ? artistData : [artistData];
-
-  if (artistsArray.length === 0) {
-    return "Unknown Artist";
-  }
-
-  return artistsArray
-    .map((item) => {
-      if (typeof item === "object" && item !== null && "name" in item) {
-        return item.name;
-      }
-      return String(item);
-    })
-    .join(", ");
-};
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 
 const FriendsActivity = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { users, fetchUsers, onlineUsers, userActivities } = useChatStore();
   const { user: authUser, isLoading: loadingAuthUser } = useAuthStore();
 
@@ -43,6 +21,18 @@ const FriendsActivity = () => {
       fetchUsers();
     }
   }, [fetchUsers, authUser, loadingAuthUser]);
+
+  const handleSongClick = (e: React.MouseEvent, albumId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/albums/${albumId}`);
+  };
+
+  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/artists/${artistId}`);
+  };
 
   if (loadingAuthUser) {
     return (
@@ -87,21 +77,14 @@ const FriendsActivity = () => {
             activeUsers.map((userObj) => {
               const isOnline = onlineUsers.has(userObj._id);
               const activity = userActivities.get(userObj._id);
-              const isPlaying = activity && activity !== "Idle";
-
-              let songTitle = "";
-              let artistName = "";
-
-              if (isPlaying) {
-                const parts = activity.split("   ");
-                songTitle = parts[0] || "";
-                artistName = parts[1] || "";
-              }
+              const isPlaying =
+                typeof activity === "object" && activity !== null;
 
               return (
-                <div
+                <Link
                   key={userObj._id}
-                  className="cursor-pointer hover:bg-zinc-800/50 p-3 rounded-md transition-colors group"
+                  to={`/users/${userObj._id}`}
+                  className="block hover:bg-zinc-800/50 p-3 rounded-md transition-colors group"
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative flex-shrink-0">
@@ -131,13 +114,31 @@ const FriendsActivity = () => {
                           <Music className="size-3.5 text-violet-400 shrink-0" />
                         )}
                       </div>
+
                       {isPlaying ? (
-                        <div className="">
-                          <div className="text-sm text-white font-medium truncate">
-                            {songTitle}
-                          </div>
+                        <div>
+                          <button
+                            className="text-sm text-white font-medium truncate w-full text-left hover:underline"
+                            onClick={(e) =>
+                              handleSongClick(e, activity.albumId)
+                            }
+                          >
+                            {activity.songTitle}
+                          </button>
                           <div className="text-xs text-zinc-400 truncate">
-                            {getArtistNames(artistName as any)}
+                            {activity.artists.map((artist, index) => (
+                              <span key={artist.artistId}>
+                                <button
+                                  onClick={(e) =>
+                                    handleArtistClick(e, artist.artistId)
+                                  }
+                                  className="hover:underline"
+                                >
+                                  {artist.artistName}
+                                </button>
+                                {index < activity.artists.length - 1 && ", "}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       ) : (
@@ -147,7 +148,7 @@ const FriendsActivity = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
