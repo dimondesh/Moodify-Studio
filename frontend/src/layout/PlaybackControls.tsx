@@ -41,6 +41,7 @@ import { useChatStore } from "../stores/useChatStore";
 
 import { getArtistNames } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
+import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog"; // <-- ДОБАВЬТЕ ЭТО
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -1036,6 +1037,10 @@ const PlaybackControls = () => {
           entityId={currentSong._id}
         />
       )}
+      <CreatePlaylistDialog
+        isOpen={isCreatePlaylistDialogOpen}
+        onClose={closeAllDialogs}
+      />
     </>
   );
 };

@@ -12,6 +12,7 @@ import {
   unlikePlaylist,
   getMyPlaylists,
   getPublicPlaylists,
+  createPlaylistFromSong,
 } from "../controller/playlist.controller.js";
 
 const router = express.Router();
@@ -28,5 +29,6 @@ router.delete("/:id", deletePlaylist);
 
 router.post("/:id/songs", addSongToPlaylist);
 router.delete("/:playlistId/songs/:songId", removeSongFromPlaylist);
+router.post("/from-song", createPlaylistFromSong);
 
 export default router;

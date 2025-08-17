@@ -20,14 +20,13 @@ import { useLibraryStore } from "../stores/useLibraryStore";
 import { usePlaylistStore } from "../stores/usePlaylistStore";
 import { Playlist, Song } from "../types";
 import toast from "react-hot-toast";
-import { useUIStore } from "../stores/useUIStore";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Input } from "../components/ui/input";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/utils";
 
 interface PlaylistMenuContentProps {
-  songId: string;
+  song: Song;
   isLikedInitial: boolean;
   playlistsWithSongInitial: string[];
   allOwnedPlaylists: Playlist[];
@@ -36,7 +35,7 @@ interface PlaylistMenuContentProps {
 
 const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
   ({
-    songId,
+    song,
     isLikedInitial,
     playlistsWithSongInitial,
     allOwnedPlaylists,
@@ -44,8 +43,11 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
   }) => {
     const { t } = useTranslation();
     const { toggleSongLike } = useLibraryStore();
-    const { addSongToPlaylist, removeSongFromPlaylist } = usePlaylistStore();
-    const { openCreatePlaylistDialog } = useUIStore();
+    const {
+      addSongToPlaylist,
+      removeSongFromPlaylist,
+      createPlaylistFromSong,
+    } = usePlaylistStore();
 
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -63,17 +65,22 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
     ) => {
       try {
         if (shouldBeInPlaylist) {
-          await addSongToPlaylist(playlistId, songId);
+          await addSongToPlaylist(playlistId, song._id);
         } else {
-          await removeSongFromPlaylist(playlistId, songId);
+          await removeSongFromPlaylist(playlistId, song._id);
         }
       } catch (e) {
         toast.error(t("player.playlistUpdateError"));
       }
     };
 
+    const handleCreateAndAdd = async () => {
+      onClose();
+      await createPlaylistFromSong(song);
+    };
+
     const handleLikeToggle = async (_shouldBeLiked: boolean) => {
-      await toggleSongLike(songId);
+      await toggleSongLike(song._id);
     };
 
     const CheckboxItem = ({
@@ -122,12 +129,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
         <Button
           variant="secondary"
           className="w-[200px] justify-center rounded-md bg-violet-700 hover:bg-violet-500 mx-auto mb-4"
-          onClick={() => {
-            onClose();
-            setTimeout(() => {
-              openCreatePlaylistDialog();
-            }, 0);
-          }}
+          onClick={handleCreateAndAdd}
         >
           <Plus className="mr-2 h-5 w-5" /> {t("player.newPlaylist")}
         </Button>
@@ -263,7 +265,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
               <SheetTitle>{t("player.addToPlaylist")}</SheetTitle>
             </SheetHeader>
             <PlaylistMenuContent
-              songId={song._id}
+              song={song}
               isLikedInitial={isLiked}
               playlistsWithSongInitial={playlistsWithSong}
               allOwnedPlaylists={ownedPlaylists}
@@ -287,7 +289,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <PlaylistMenuContent
-              songId={song._id}
+              song={song}
               isLikedInitial={isLiked}
               playlistsWithSongInitial={playlistsWithSong}
               allOwnedPlaylists={ownedPlaylists}

@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
-import type { Playlist } from "@/types";
+import type { Playlist, Song } from "@/types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
 import { getUserItem, getAllUserPlaylists } from "@/lib/offline-db";
@@ -13,11 +12,13 @@ interface PlaylistStore {
   ownedPlaylists: Playlist[];
 
   publicPlaylists: Playlist[];
+
   currentPlaylist: Playlist | null;
   isLoading: boolean;
   error: string | null;
   dominantColor: string | null;
   setDominantColor: (color: string) => void;
+  createPlaylistFromSong: (song: Song) => Promise<void>;
   updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
 
   fetchMyPlaylists: () => Promise<void>;
@@ -49,7 +50,6 @@ interface PlaylistStore {
   resetCurrentPlaylist: () => void;
   fetchPlaylistDetails: (playlistId: string) => Promise<void>;
 }
-
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   myPlaylists: [],
   ownedPlaylists: [],
@@ -70,6 +70,29 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     });
   },
 
+  createPlaylistFromSong: async (song: Song) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.post("/playlists/from-song", {
+        title: song.title,
+        imageUrl: song.imageUrl,
+        initialSongId: song._id,
+      });
+
+      toast.success(`Плейлист "${song.title}" создан!`);
+
+      get().fetchMyPlaylists();
+      get().fetchOwnedPlaylists();
+
+      return response.data;
+    } catch (err: any) {
+      console.error("Failed to create playlist from song:", err);
+      toast.error(err.response?.data?.message || "Не удалось создать плейлист");
+      return undefined;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
   fetchMyPlaylists: async () => {
     const { isOffline } = useOfflineStore.getState();
     set({ isLoading: true, error: null });

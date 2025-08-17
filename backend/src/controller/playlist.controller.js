@@ -406,3 +406,38 @@ export const getPublicPlaylists = async (req, res, next) => {
     next(error);
   }
 };
+
+export const createPlaylistFromSong = async (req, res, next) => {
+  try {
+    const { title, imageUrl, initialSongId } = req.body;
+    const ownerId = req.user.id;
+
+    if (!title || !initialSongId) {
+      return res
+        .status(400)
+        .json({ message: "Title and initial song ID are required." });
+    }
+
+    const newPlaylist = new Playlist({
+      title,
+      description: ``,
+      isPublic: true,
+      owner: ownerId,
+      imageUrl:
+        imageUrl ||
+        "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1755425854/default-album-cover_qhwd4c.png",
+      songs: [initialSongId],
+    });
+
+    await newPlaylist.save();
+
+    await User.findByIdAndUpdate(ownerId, {
+      $push: { playlists: newPlaylist._id },
+    });
+
+    res.status(201).json(newPlaylist);
+  } catch (error) {
+    console.error("Error creating playlist from song:", error);
+    next(error);
+  }
+};
