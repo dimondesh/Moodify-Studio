@@ -72,7 +72,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
       }
     };
 
-    const handleLikeToggle = async (shouldBeLiked: boolean) => {
+    const handleLikeToggle = async (_shouldBeLiked: boolean) => {
       await toggleSongLike(songId);
     };
 
@@ -195,7 +195,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
   iconClassName = "h-5 w-5",
 }) => {
   const { t } = useTranslation();
-  const { isSongLiked, toggleSongLike, likedSongs } = useLibraryStore();
+  const { isSongLiked, toggleSongLike } = useLibraryStore();
   const { ownedPlaylists, fetchOwnedPlaylists } = usePlaylistStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [isOpen, setIsOpen] = useState(false);
