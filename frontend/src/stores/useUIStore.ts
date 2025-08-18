@@ -1,21 +1,17 @@
 import { create } from "zustand";
 import type { Playlist } from "../types";
 
-// Интерфейс для данных, передаваемых в диалог "Поделиться"
 interface ShareEntity {
   type: "song" | "album" | "playlist";
   id: string;
 }
 
-// Интерфейс для данных, передаваемых в диалог удаления песни из плейлиста
 interface SongRemovalInfo {
   songId: string;
   playlistId: string;
 }
 
-// Главный интерфейс хранилища UI
 interface UIStore {
-  // Состояния для отслеживания открытых диалогов
   isCreatePlaylistDialogOpen: boolean;
   editingPlaylist: Playlist | null;
   isSearchAndAddDialogOpen: boolean;
@@ -23,8 +19,8 @@ interface UIStore {
   isEditProfileDialogOpen: boolean;
   playlistToDelete: Playlist | null;
   songToRemoveFromPlaylist: SongRemovalInfo | null;
+  isUserSheetOpen: boolean;
 
-  // Методы для открытия диалогов
   openCreatePlaylistDialog: () => void;
   openEditPlaylistDialog: (playlist: Playlist) => void;
   openSearchAndAddDialog: () => void;
@@ -32,13 +28,12 @@ interface UIStore {
   openEditProfileDialog: () => void;
   openDeletePlaylistDialog: (playlist: Playlist) => void;
   openRemoveSongFromPlaylistDialog: (info: SongRemovalInfo) => void;
+  setUserSheetOpen: (isOpen: boolean) => void;
 
-  // Метод для закрытия всех диалогов
   closeAllDialogs: () => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  // --- Начальные состояния ---
   isCreatePlaylistDialogOpen: false,
   editingPlaylist: null,
   isSearchAndAddDialogOpen: false,
@@ -46,8 +41,8 @@ export const useUIStore = create<UIStore>((set) => ({
   isEditProfileDialogOpen: false,
   playlistToDelete: null,
   songToRemoveFromPlaylist: null,
+  isUserSheetOpen: false,
 
-  // --- Методы для открытия диалогов ---
   openCreatePlaylistDialog: () => set({ isCreatePlaylistDialogOpen: true }),
   openEditPlaylistDialog: (playlist) => set({ editingPlaylist: playlist }),
   openSearchAndAddDialog: () => set({ isSearchAndAddDialogOpen: true }),
@@ -56,8 +51,8 @@ export const useUIStore = create<UIStore>((set) => ({
   openDeletePlaylistDialog: (playlist) => set({ playlistToDelete: playlist }),
   openRemoveSongFromPlaylistDialog: (info) =>
     set({ songToRemoveFromPlaylist: info }),
+  setUserSheetOpen: (isOpen) => set({ isUserSheetOpen: isOpen }),
 
-  // --- Метод для закрытия всех диалогов ---
   closeAllDialogs: () =>
     set({
       isCreatePlaylistDialogOpen: false,

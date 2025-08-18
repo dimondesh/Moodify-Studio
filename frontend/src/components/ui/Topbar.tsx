@@ -34,6 +34,7 @@ import WaveAnalyzer from "./WaveAnalyzer";
 import { useTranslation } from "react-i18next";
 import MoodifyLogo from "../MoodifyLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar"; // NEW: Импорт Avatar
+import { useUIStore } from "@/stores/useUIStore";
 
 const Topbar = () => {
   const { t } = useTranslation();
@@ -42,7 +43,9 @@ const Topbar = () => {
   const [query, setQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isAdmin, user: authUser } = useAuthStore();
-  const isMobile = useMediaQuery("(max-width: 768px)"); // NEW: Хук для определения мобильного устройства
+  const { isUserSheetOpen, setUserSheetOpen } = useUIStore();
+
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
@@ -206,7 +209,8 @@ const Topbar = () => {
 
         {user ? (
           isMobile ? (
-            <Sheet>
+            // NEW: Мобильная версия с Sheet, управляемая из Zustand
+            <Sheet open={isUserSheetOpen} onOpenChange={setUserSheetOpen}>
               <SheetTrigger asChild>
                 <Button
                   variant="ghost"
@@ -243,7 +247,6 @@ const Topbar = () => {
               </SheetContent>
             </Sheet>
           ) : (
-            // ORIGINAL: Десктопная версия с DropdownMenu
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

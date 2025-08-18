@@ -17,9 +17,13 @@ import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage";
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
 import { useUIStore } from "../stores/useUIStore";
-import { useMusicStore } from "../stores/useMusicStore"; // <-- 1. Импортируем useMusicStore
+import { useMusicStore } from "../stores/useMusicStore";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { cn } from "../lib/utils";
 
 const MainLayout = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   const [isCompactView, setIsCompactView] = useState(false);
   const {
     currentSong,
@@ -27,7 +31,7 @@ const MainLayout = () => {
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen,
   } = usePlayerStore();
-  const { fetchAlbums } = useMusicStore(); // <-- 2. Получаем функцию
+  const { fetchAlbums } = useMusicStore();
 
   const {
     isCreatePlaylistDialogOpen,
@@ -37,6 +41,7 @@ const MainLayout = () => {
     isEditProfileDialogOpen,
     playlistToDelete,
     songToRemoveFromPlaylist,
+    isUserSheetOpen,
   } = useUIStore();
 
   const isAnyDialogOpen =
@@ -53,7 +58,7 @@ const MainLayout = () => {
   useEffect(() => {
     const rootElement = document.getElementById("root");
     if (rootElement) {
-      if (isAnyDialogOpen && !isFullScreenPlayerOpen) {
+      if (isAnyDialogOpen && !isFullScreenPlayerOpen && !isUserSheetOpen) {
         rootElement.classList.add("dialog-open-blur");
       } else {
         rootElement.classList.remove("dialog-open-blur");
@@ -64,7 +69,7 @@ const MainLayout = () => {
         rootElement.classList.remove("dialog-open-blur");
       }
     };
-  }, [isAnyDialogOpen, isFullScreenPlayerOpen]);
+  }, [isAnyDialogOpen, isFullScreenPlayerOpen, isUserSheetOpen]);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -78,7 +83,7 @@ const MainLayout = () => {
   }, []);
 
   let contentPaddingBottom = "pb-0";
-  if (isCompactView) {
+  if (isMobile) {
     if (isFullScreenPlayerOpen || isMobileLyricsFullScreen) {
       contentPaddingBottom = "pb-0";
     } else if (currentSong) {
@@ -93,9 +98,28 @@ const MainLayout = () => {
       contentPaddingBottom = "pb-0";
     }
   }
+  useEffect(() => {
+    if (isUserSheetOpen && isMobile) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isUserSheetOpen, isMobile]);
 
   return (
-    <div className={`h-screen bg-black text-white flex flex-col `}>
+    <div
+      className={cn(
+        "h-screen bg-black text-white flex flex-col transition-transform ease-in-out",
+        // --- ОСНОВНЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ ---
+        isUserSheetOpen && isMobile
+          ? "duration-500 -translate-x-[250px] rounded-none overflow-hidden" // Анимация ОТКРЫТИЯ
+          : "duration-300 translate-x-0 rounded-none" // Анимация ЗАКРЫТИЯ
+      )}
+    >
+      {" "}
       <DynamicTitleUpdater />
       <AudioPlayer />
       <Topbar />
@@ -103,7 +127,7 @@ const MainLayout = () => {
         direction="horizontal"
         className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`}
       >
-        {!isCompactView && (
+        {!isMobile && (
           <>
             <ResizablePanel
               defaultSize={20}
@@ -129,7 +153,7 @@ const MainLayout = () => {
           )}
         </ResizablePanel>
 
-        {!isCompactView && (
+        {!isMobile && (
           <>
             <ResizableHandle className="w-2 bg-black rounded-lg transition-colors" />
             <ResizablePanel

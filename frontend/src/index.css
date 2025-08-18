@@ -176,3 +176,27 @@
   filter: blur(5px);
   transition: filter 0.3s ease-in-out;
 }
+
+ .main-layout-sheet-open {
+    transform: translateX(-250px); 
+    border-radius: 10px; 
+    overflow: hidden; 
+  }
+
+
+@layer base {
+  .main-layout-wrapper {
+    @apply transition-transform duration-300 ease-in-out;
+  }
+  
+  /* 
+    Это правило — магия! 
+    Оно сработает, только когда vaul/sheet добавит атрибут к body.
+    И будет действовать до тех пор, пока vaul его не уберет (после завершения анимации закрытия).
+  */
+  body[vaul-drawer-visible="true"] .main-layout-wrapper {
+    transform: translateX(-250px);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+}
