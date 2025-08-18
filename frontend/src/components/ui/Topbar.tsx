@@ -226,7 +226,10 @@ const Topbar = () => {
                   />
                 </Button>
               </DrawerTrigger>
-              <DrawerContent className="bg-zinc-900 border-l-zinc-800 text-white w-[250px] p-0 h-full">
+              <DrawerContent
+                className="bg-zinc-900 border-l-zinc-800 text-white w-[250px] p-0 h-full"
+                aria-describedby={undefined}
+              >
                 <DrawerHeader className="p-4 border-b border-zinc-800">
                   <DrawerTitle className="sr-only">User Menu</DrawerTitle>
                   <div className="flex items-center gap-3">
