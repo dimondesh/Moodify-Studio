@@ -97,7 +97,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
       subtitle?: string;
     }) => (
       <div
-        className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-700 cursor-pointer"
+        className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-700 cursor-pointer "
         onClick={() => onCheckedChange(!checked)}
       >
         {imageUrl && (
@@ -125,7 +125,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
     );
 
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4]">
         <Button
           variant="secondary"
           className="w-[200px] justify-center rounded-md bg-violet-700 hover:bg-violet-500 mx-auto mb-4"
@@ -133,7 +133,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
         >
           <Plus className="mr-2 h-5 w-5" /> {t("player.newPlaylist")}
         </Button>
-        <div className="relative">
+        <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <Input
             placeholder={t("player.findPlaylist")}
@@ -143,7 +143,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
             onClick={(e) => e.stopPropagation()}
           />
         </div>
-        <ScrollArea className="max-h-[300px] pr-3">
+        <ScrollArea className="h-[70vh] max-h-[70vh] pr-3 lg:max-h-[30vh] lg:min-h-[20vh] overflow-hidden">
           <div className="space-y-1">
             <CheckboxItem
               checked={isLikedInitial}
