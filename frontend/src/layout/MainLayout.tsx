@@ -113,10 +113,9 @@ const MainLayout = () => {
     <div
       className={cn(
         "h-screen bg-black text-white flex flex-col transition-transform ease-in-out",
-        // --- ОСНОВНЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ ---
         isUserSheetOpen && isMobile
-          ? "duration-300 -translate-x-[290px] rounded-none overflow-hidden" // Анимация ОТКРЫТИЯ
-          : "duration-300 translate-x-0 rounded-none" // Анимация ЗАКРЫТИЯ
+          ? "duration-300 -translate-x-[290px] rounded-none overflow-hidden"
+          : "duration-300 translate-x-0 rounded-none"
       )}
     >
       {" "}
