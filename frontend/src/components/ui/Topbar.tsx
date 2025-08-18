@@ -21,22 +21,34 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "../ui/sheet"; // NEW: Импорт компонентов Sheet
+import { useMediaQuery } from "../../hooks/useMediaQuery"; // NEW: Импорт хука
 import WaveAnalyzer from "./WaveAnalyzer";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 import MoodifyLogo from "../MoodifyLogo";
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar"; // NEW: Импорт Avatar
 
 const Topbar = () => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isAdmin, user: authUser } = useAuthStore();
+  const isMobile = useMediaQuery("(max-width: 768px)"); // NEW: Хук для определения мобильного устройства
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
     photoURL: string | null;
   }>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -54,7 +66,6 @@ const Topbar = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
-
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(() => {
       if (val.trim() !== "") {
@@ -66,6 +77,7 @@ const Topbar = () => {
       }
     }, 300);
   };
+
   const handleBlur = () => {
     setQuery("");
     setIsSearchVisible(false);
@@ -74,6 +86,49 @@ const Topbar = () => {
   const handleLogout = async () => {
     await signOut(auth);
   };
+
+  // NEW: Создаем переиспользуемый компонент для пунктов меню
+  const UserMenuItems = () => (
+    <>
+      <SheetClose asChild>
+        <Link
+          to={`/users/${authUser?.id}`}
+          className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
+        >
+          <UserIcon className="w-4 h-4 mr-2" />
+          {t("topbar.profile")}
+        </Link>
+      </SheetClose>
+      <SheetClose asChild>
+        <Link
+          to="/settings"
+          className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          {t("topbar.settings")}
+        </Link>
+      </SheetClose>
+      {isAdmin && (
+        <SheetClose asChild>
+          <Link
+            to="/admin"
+            className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
+          >
+            <LayoutDashboardIcon className="w-4 h-4 mr-2" />
+            {t("topbar.adminDashboard")}
+          </Link>
+        </SheetClose>
+      )}
+      <div className="w-full h-px bg-zinc-700 my-1" />
+      <div
+        onClick={handleLogout}
+        className="flex items-center text-red-400 p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        {t("topbar.logout")}
+      </div>
+    </>
+  );
 
   return (
     <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md sm:px-6">
@@ -85,7 +140,6 @@ const Topbar = () => {
         <Link to="/">
           <MoodifyLogo />
         </Link>
-
         <WaveAnalyzer width={120} height={30} />
       </div>
 
@@ -151,68 +205,109 @@ const Topbar = () => {
         )}
 
         {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-8 w-8 rounded-full"
-              >
-                <img
-                  src={user.photoURL || "/Moodify.png"}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-48 bg-zinc-800 border-zinc-700 text-white p-1"
-              align="end"
-            >
-              {user.displayName && (
-                <DropdownMenuItem className="text-sm font-semibold cursor-default text-zinc-200 p-2 opacity-100 hover:bg-zinc-700">
-                  {user.displayName}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator className="bg-zinc-700" />
-              <DropdownMenuItem
-                asChild
-                className="p-2 cursor-pointer hover:bg-zinc-700"
-              >
-                <Link to={`/users/${authUser?.id}`}>
-                  <UserIcon className="w-4 h-4 mr-2" />
-                  {t("topbar.profile")}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                asChild
-                className="p-2 cursor-pointer hover:bg-zinc-700"
-              >
-                <Link to="/settings">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t("topbar.settings")}
-                </Link>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem
-                  asChild
-                  className="p-2 cursor-pointer hover:bg-zinc-700"
+          isMobile ? (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 rounded-full"
                 >
-                  <Link to="/admin">
-                    <LayoutDashboardIcon className="w-4 h-4 mr-2" />
-                    {t("topbar.adminDashboard")}
+                  <img
+                    src={user.photoURL || "/Moodify.png"}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="bg-zinc-900 border-l-zinc-800 text-white w-[250px] p-0"
+              >
+                <SheetHeader className="p-4 border-b border-zinc-800">
+                  <SheetTitle className="sr-only">User Menu</SheetTitle>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage
+                        src={user.photoURL || "/Moodify.png"}
+                        alt="avatar"
+                      />
+                      <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold">{user.displayName}</p>
+                  </div>
+                </SheetHeader>
+                <div className="p-4 flex flex-col gap-2">
+                  <UserMenuItems />
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            // ORIGINAL: Десктопная версия с DropdownMenu
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 rounded-full"
+                >
+                  <img
+                    src={user.photoURL || "/Moodify.png"}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-48 bg-zinc-800 border-zinc-700 text-white p-1"
+                align="end"
+              >
+                {user.displayName && (
+                  <DropdownMenuItem className="text-sm font-semibold cursor-default text-zinc-200 p-2 opacity-100 hover:bg-zinc-700">
+                    {user.displayName}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator className="bg-zinc-700" />
+                {/* Используем обертки для DropdownMenuItem */}
+                <DropdownMenuItem asChild className="p-0">
+                  <Link
+                    to={`/users/${authUser?.id}`}
+                    className="flex items-center w-full p-2 cursor-pointer hover:bg-zinc-700 rounded-sm"
+                  >
+                    <UserIcon className="w-4 h-4 mr-2" />
+                    {t("topbar.profile")}
                   </Link>
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                {t("topbar.logout")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem asChild className="p-0">
+                  <Link
+                    to="/settings"
+                    className="flex items-center w-full p-2 cursor-pointer hover:bg-zinc-700 rounded-sm"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    {t("topbar.settings")}
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild className="p-0">
+                    <Link
+                      to="/admin"
+                      className="flex items-center w-full p-2 cursor-pointer hover:bg-zinc-700 rounded-sm"
+                    >
+                      <LayoutDashboardIcon className="w-4 h-4 mr-2" />
+                      {t("topbar.adminDashboard")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-400 p-2 cursor-pointer hover:bg-zinc-700"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {t("topbar.logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
         ) : (
           <SignInOAuthButton />
         )}
