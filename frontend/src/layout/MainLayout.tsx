@@ -115,7 +115,7 @@ const MainLayout = () => {
         "h-screen bg-black text-white flex flex-col transition-transform ease-in-out",
         // --- ОСНОВНЫЕ ИЗМЕНЕНИЯ ЗДЕСЬ ---
         isUserSheetOpen && isMobile
-          ? "duration-500 -translate-x-[250px] rounded-none overflow-hidden" // Анимация ОТКРЫТИЯ
+          ? "duration-300 -translate-x-[290px] rounded-none overflow-hidden" // Анимация ОТКРЫТИЯ
           : "duration-300 translate-x-0 rounded-none" // Анимация ЗАКРЫТИЯ
       )}
     >

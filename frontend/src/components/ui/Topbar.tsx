@@ -22,19 +22,19 @@ import {
   DropdownMenuSeparator,
 } from "../ui/dropdown-menu";
 import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose,
-} from "../ui/sheet"; // NEW: Импорт компонентов Sheet
-import { useMediaQuery } from "../../hooks/useMediaQuery"; // NEW: Импорт хука
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "../ui/drawer";
+import { useUIStore } from "../../stores/useUIStore";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import WaveAnalyzer from "./WaveAnalyzer";
 import { useTranslation } from "react-i18next";
 import MoodifyLogo from "../MoodifyLogo";
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar"; // NEW: Импорт Avatar
-import { useUIStore } from "@/stores/useUIStore";
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 
 const Topbar = () => {
   const { t } = useTranslation();
@@ -43,9 +43,8 @@ const Topbar = () => {
   const [query, setQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isAdmin, user: authUser } = useAuthStore();
-  const { isUserSheetOpen, setUserSheetOpen } = useUIStore();
-
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { isUserSheetOpen, setUserSheetOpen } = useUIStore();
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
@@ -90,10 +89,9 @@ const Topbar = () => {
     await signOut(auth);
   };
 
-  // NEW: Создаем переиспользуемый компонент для пунктов меню
   const UserMenuItems = () => (
     <>
-      <SheetClose asChild>
+      <DrawerClose asChild>
         <Link
           to={`/users/${authUser?.id}`}
           className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
@@ -101,8 +99,8 @@ const Topbar = () => {
           <UserIcon className="w-4 h-4 mr-2" />
           {t("topbar.profile")}
         </Link>
-      </SheetClose>
-      <SheetClose asChild>
+      </DrawerClose>
+      <DrawerClose asChild>
         <Link
           to="/settings"
           className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
@@ -110,9 +108,9 @@ const Topbar = () => {
           <Settings className="w-4 h-4 mr-2" />
           {t("topbar.settings")}
         </Link>
-      </SheetClose>
+      </DrawerClose>
       {isAdmin && (
-        <SheetClose asChild>
+        <DrawerClose asChild>
           <Link
             to="/admin"
             className="flex items-center p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
@@ -120,16 +118,18 @@ const Topbar = () => {
             <LayoutDashboardIcon className="w-4 h-4 mr-2" />
             {t("topbar.adminDashboard")}
           </Link>
-        </SheetClose>
+        </DrawerClose>
       )}
       <div className="w-full h-px bg-zinc-700 my-1" />
-      <div
-        onClick={handleLogout}
-        className="flex items-center text-red-400 p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        {t("topbar.logout")}
-      </div>
+      <DrawerClose asChild>
+        <div
+          onClick={handleLogout}
+          className="flex items-center text-red-400 p-2 cursor-pointer hover:bg-zinc-700 rounded-md"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          {t("topbar.logout")}
+        </div>
+      </DrawerClose>
     </>
   );
 
@@ -145,7 +145,6 @@ const Topbar = () => {
         </Link>
         <WaveAnalyzer width={120} height={30} />
       </div>
-
       <div
         className={`relative flex-1 max-w-lg ${
           isSearchVisible ? "block" : "hidden md:block"
@@ -209,9 +208,12 @@ const Topbar = () => {
 
         {user ? (
           isMobile ? (
-            // NEW: Мобильная версия с Sheet, управляемая из Zustand
-            <Sheet open={isUserSheetOpen} onOpenChange={setUserSheetOpen}>
-              <SheetTrigger asChild>
+            <Drawer
+              direction="right"
+              open={isUserSheetOpen}
+              onOpenChange={setUserSheetOpen}
+            >
+              <DrawerTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -223,13 +225,10 @@ const Topbar = () => {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="bg-zinc-900 border-l-zinc-800 text-white w-[250px] p-0"
-              >
-                <SheetHeader className="p-4 border-b border-zinc-800">
-                  <SheetTitle className="sr-only">User Menu</SheetTitle>
+              </DrawerTrigger>
+              <DrawerContent className="bg-zinc-900 border-l-zinc-800 text-white w-[250px] p-0 h-full">
+                <DrawerHeader className="p-4 border-b border-zinc-800">
+                  <DrawerTitle className="sr-only">User Menu</DrawerTitle>
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
                       <AvatarImage
@@ -240,12 +239,12 @@ const Topbar = () => {
                     </Avatar>
                     <p className="font-semibold">{user.displayName}</p>
                   </div>
-                </SheetHeader>
+                </DrawerHeader>
                 <div className="p-4 flex flex-col gap-2">
                   <UserMenuItems />
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -271,7 +270,6 @@ const Topbar = () => {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator className="bg-zinc-700" />
-                {/* Используем обертки для DropdownMenuItem */}
                 <DropdownMenuItem asChild className="p-0">
                   <Link
                     to={`/users/${authUser?.id}`}
