@@ -13,6 +13,7 @@ import UserGrid from "./UserGrid";
 import MixGrid from "./MixGrid";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
+import BrowseMixes from "./BrowseMixes";
 
 const SearchPage = () => {
   const { t } = useTranslation();
@@ -52,16 +53,19 @@ const SearchPage = () => {
         <meta name="description" content={description} />
       </Helmet>
       <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <ScrollArea className="h-full w-full pb-20 md:pb-0">
+        <ScrollArea className="h-[90vh] w-full pb-20 md:pb-20 lg:pb-10">
           <div className="py-10 px-4 sm:px-6">
             {queryParam ? (
               <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
                 {t("searchpage.resultsFor")} "{queryParam}"
               </h1>
             ) : (
-              <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
-                {t("searchpage.findYourFavorites")}
-              </h1>
+              <>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-left text-white">
+                  {t("searchpage.findYourFavorites")}
+                </h1>
+                <BrowseMixes />
+              </>
             )}
 
             {loading && (

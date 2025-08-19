@@ -44,10 +44,8 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
       case "Mix":
         path = `/mixes/${item._id}`;
         break;
-      // ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ =====
       case "Song":
         if (item.albumId) {
-          // Если есть альбом, идем на страницу альбома
           path = `/albums/${item.albumId}`;
         } else console.warn("No albumId for this song:", item);
 
@@ -97,7 +95,7 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
   if (recentSearches.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-zinc-500">
-        No recent searches.
+        <p>{t("searchPage.noRecentSearches")}</p>{" "}
       </div>
     );
   }
@@ -105,13 +103,15 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
   return (
     <div className="p-2 sm:p-0">
       <div className="flex justify-between items-center mb-2 mt-2 px-2">
-        <h2 className="font-bold text-white text-lg">Recent searches</h2>
+        <h2 className="font-bold text-white text-lg">
+          {t("searchpage.recentSearches")}
+        </h2>
         <Button
           variant="link"
           onClick={clearRecentSearches}
           className="text-sm text-zinc-400 hover:text-white px-2 h-auto"
         >
-          Clear
+          {t("searchpage.clear")}
         </Button>
       </div>
       <div className="flex flex-col gap-1 pr-1">

@@ -363,7 +363,13 @@
     "playlists": "Playlists",
     "users": "Users",
     "showAll": "Show all",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "browseAllMixes": "Browse all mixes",
+    "recentSearches": "Recent Searches",
+    "noRecentSearches": "No recent searches found.",
+    "clearRecentSearches": "Clear Recent Searches",
+    "clearRecentSearchesDesc": "This will remove all recent searches from your history.",
+    "clear": "Clear"
   },
   "settings": {
     "title": "Settings",

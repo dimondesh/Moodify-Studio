@@ -361,7 +361,14 @@
     "playlists": "Плейлисти",
     "users": "Користувачі",
     "showAll": "Показати всі",
-    "showLess": "Приховати"
+    "showLess": "Приховати",
+    "clear": "Очистити"
+    ,
+    "browseAllMixes": "Переглянути всі мікси",
+    "recentSearches": "Нещодавні пошуки",
+    "noRecentSearches": "Немає нещодавніх пошуків",
+    "clearRecentSearches": "Очистити нещодавні пошуки",
+    "clearRecentSearchesDesc": "Це видалить всі нещодавні пошукові запити з вашого облікового запису."
   },
   "settings": {
     "title": "Налаштування",
