@@ -56,7 +56,7 @@ export interface Song {
 export interface RecentSearchItem {
   _id: string;
   searchId: string;
-  itemType: "Artist" | "Album" | "Playlist" | "User" | "Mix";
+  itemType: "Artist" | "Album" | "Playlist" | "User" | "Mix" | "Song";
 
   name?: string;
   title?: string;
@@ -64,6 +64,8 @@ export interface RecentSearchItem {
 
   artist?: Artist[];
   owner?: User;
+
+  albumId?: string | null;
 }
 
 export interface Album {

@@ -3,12 +3,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchStore } from "../../stores/useSearchStore";
-import { RecentSearchItem, Artist } from "../../types";
+import { Artist } from "../../types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Убедитесь, что импорт на месте
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RecentSearchesListProps {
   onItemClick?: () => void;
@@ -26,7 +26,7 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
     clearRecentSearches,
   } = useSearchStore();
 
-  const handleItemClick = (item: RecentSearchItem) => {
+  const handleItemClick = (item: any) => {
     let path = "";
     switch (item.itemType) {
       case "Artist":
@@ -44,25 +44,37 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
       case "Mix":
         path = `/mixes/${item._id}`;
         break;
+      // ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ =====
+      case "Song":
+        if (item.albumId) {
+          // Если есть альбом, идем на страницу альбома
+          path = `/albums/${item.albumId}`;
+        } else console.warn("No albumId for this song:", item);
+
+        break;
     }
-    if (path) navigate(path);
-    if (onItemClick) onItemClick();
+
+    if (path) {
+      navigate(path);
+      if (onItemClick) onItemClick();
+    } else {
+      console.warn("Could not determine navigation path for item:", item);
+    }
   };
 
   const getDisplayData = (item: any) => {
     const title = String(
       item.isTranslatable ? t(item.title, item.title) : item.title
     );
-
     const subtitleKey =
       item.itemType === "Mix"
         ? "sidebar.subtitle.dailyMix"
         : `sidebar.subtitle.${item.itemType.toLowerCase()}`;
-
     let subtitle = String(t(subtitleKey, item.itemType));
 
+    // Добавляем артистов и для треков тоже
     if (
-      item.itemType === "Album" &&
+      (item.itemType === "Album" || item.itemType === "Song") &&
       Array.isArray(item.artist) &&
       item.artist.length > 0
     ) {
@@ -91,8 +103,8 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
   }
 
   return (
-    <div className="p-2 sm:p-0 ">
-      <div className="flex justify-between items-center mb-2 mt-2 px-2 ">
+    <div className="p-2 sm:p-0">
+      <div className="flex justify-between items-center mb-2 mt-2 px-2">
         <h2 className="font-bold text-white text-lg">Recent searches</h2>
         <Button
           variant="link"
@@ -102,13 +114,9 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
           Clear
         </Button>
       </div>
-      {/* ===== ИЗМЕНЕНИЯ ЗДЕСЬ ===== */}{" "}
-      {/* Задаем фиксированную максимальную высоту */}
       <div className="flex flex-col gap-1 pr-1">
-        {" "}
-        {/* Небольшой отступ для скроллбара */}
         <ScrollArea className="max-h-80 overflow-auto hide-scrollbar">
-          {recentSearches.map((item: any) => {
+          {(recentSearches as any[]).map((item) => {
             const { title, subtitle } = getDisplayData(item);
             return (
               <div
@@ -121,7 +129,9 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
                 >
                   <Avatar
                     className={`w-12 h-12 flex-shrink-0 ${
-                      item.itemType === "Artist" || item.itemType === "User"
+                      item.itemType === "Artist" ||
+                      item.itemType === "User" ||
+                      item.itemType === "Song"
                         ? "rounded-full"
                         : "rounded-md"
                     }`}

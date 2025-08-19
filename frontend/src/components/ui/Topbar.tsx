@@ -76,6 +76,9 @@ const Topbar = () => {
   useEffect(() => {
     if (!location.pathname.startsWith("/search")) {
       setQuery("");
+      if (isSearchVisible) {
+        setIsSearchVisible(false);
+      }
     }
   }, [location.pathname]);
 
@@ -110,6 +113,7 @@ const Topbar = () => {
   const handleItemClickInPopover = () => {
     setIsPopoverOpen(false);
     setQuery("");
+    setIsSearchVisible(false);
   };
 
   const handleLogout = async () => {

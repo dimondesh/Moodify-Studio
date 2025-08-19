@@ -361,22 +361,13 @@ export const getRecentSearches = async (req, res, next) => {
       .limit(10)
       .lean();
 
-    const itemsByType = searches.reduce((acc, search) => {
-      if (!acc[search.itemType]) {
-        acc[search.itemType] = [];
-      }
-      acc[search.itemType].push(search.item);
-      return acc;
-    }, {});
+    const promises = searches.map(async (search) => {
+      if (!search.itemType || !search.item) return null;
 
-    const populatedItems = {};
+      const model = mongoose.model(search.itemType);
+      let query = model.findById(search.item);
 
-    for (const type in itemsByType) {
-      const ids = itemsByType[type];
-      const model = mongoose.model(type);
-      let query = model.find({ _id: { $in: ids } });
-
-      switch (type) {
+      switch (search.itemType) {
         case "Playlist":
           query = query
             .select("title imageUrl owner")
@@ -394,41 +385,28 @@ export const getRecentSearches = async (req, res, next) => {
           query = query.select("fullName imageUrl");
           break;
         case "Mix":
-          query = query.select("name imageUrl"); 
+          query = query.select("name imageUrl");
           break;
         case "Song":
           query = query
-            .select("title imageUrl artist")
+            .select("title imageUrl artist albumId")
             .populate("artist", "name");
           break;
       }
 
-      const results = await query.lean();
+      const result = await query.lean();
+      if (!result) return null;
 
-      results.forEach((result) => {
-        const originalSearch = searches.find((s) => s.item.equals(result._id));
-        if (originalSearch) {
-          const itemData = {
-            _id: result._id,
-            searchId: originalSearch._id,
-            itemType: type,
-            imageUrl: result.imageUrl,
+      return {
+        ...result,
+        searchId: search._id,
+        itemType: search.itemType,
+        title: result.title || result.name || result.fullName,
+        isTranslatable: search.itemType === "Mix",
+      };
+    });
 
-           
-            title: result.title || result.name || result.fullName, 
-            isTranslatable: type === "Mix", 
-
-            artist: result.artist,
-            owner: result.owner,
-          };
-          populatedItems[result._id.toString()] = itemData;
-        }
-      });
-    }
-
-    const finalResults = searches
-      .map((search) => populatedItems[search.item.toString()])
-      .filter(Boolean);
+    const finalResults = (await Promise.all(promises)).filter(Boolean);
 
     res.status(200).json(finalResults);
   } catch (error) {
