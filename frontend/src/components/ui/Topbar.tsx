@@ -1,5 +1,6 @@
 // src/components/ui/Topbar.tsx
-import { useNavigate, Link } from "react-router-dom";
+
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import {
   LayoutDashboardIcon,
@@ -42,14 +43,16 @@ import RecentSearchesList from "@/pages/SearchPage/RecentSearchesList";
 const Topbar = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [query, setQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const { isAdmin, user: authUser } = useAuthStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isUserSheetOpen, setUserSheetOpen } = useUIStore();
-  const [isFocused, setIsFocused] = useState(false);
-  const { recentSearches, fetchRecentSearches } = useSearchStore();
+
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const { fetchRecentSearches } = useSearchStore();
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
@@ -70,39 +73,46 @@ const Topbar = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!location.pathname.startsWith("/search")) {
+      setQuery("");
+    }
+  }, [location.pathname]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
+
+    if (val.trim() !== "") {
+      setIsPopoverOpen(false);
+    } else if (authUser) {
+      setIsPopoverOpen(true);
+      fetchRecentSearches(); // Подгружаем на случай, если пользователь стер текст
+    }
+
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(() => {
       if (val.trim() !== "") {
         navigate(`/search?q=${encodeURIComponent(val)}`);
-      } else {
-        if (location.pathname.startsWith("/search")) {
-          navigate(`/`);
-        }
+      } else if (location.pathname.startsWith("/search")) {
+        navigate(`/`);
       }
     }, 300);
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    if (authUser) {
+  // ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ 1: Используем onClick вместо onFocus =====
+  const handleTriggerClick = () => {
+    if (authUser && !query) {
       fetchRecentSearches();
+      setIsPopoverOpen(true);
     }
   };
 
-  const handleBlur = () => {
-    setTimeout(() => {
-      setIsFocused(false);
-    }, 150);
-  };
   const handleItemClickInPopover = () => {
-    setIsFocused(false);
+    setIsPopoverOpen(false);
     setQuery("");
   };
-  const showRecentSearches =
-    isFocused && !query && !!authUser && recentSearches.length > 0 && !isMobile;
+
   const handleLogout = async () => {
     await signOut(auth);
   };
@@ -168,22 +178,17 @@ const Topbar = () => {
           isSearchVisible ? "block" : "hidden md:block"
         }`}
       >
-        <Popover open={showRecentSearches} onOpenChange={setIsFocused}>
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
           <PopoverTrigger asChild>
-            <div>
+            {/* ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ 2: onClick на обертке ===== */}
+            <div onClick={handleTriggerClick}>
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
               <input
                 type="text"
                 placeholder={t("topbar.searchPlaceholder")}
                 value={query}
                 onChange={handleChange}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                className="
-            w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm
-            text-zinc-200 placeholder:text-zinc-500 focus:outline-none
-            focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out
-          "
+                className="w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out cursor-pointer"
                 spellCheck={false}
                 autoComplete="off"
               />
@@ -202,13 +207,18 @@ const Topbar = () => {
             variant="ghost"
             size="sm"
             className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white md:hidden"
-            onClick={() => setIsSearchVisible(false)}
+            onClick={() => {
+              setIsSearchVisible(false);
+              setQuery("");
+              if (location.pathname.startsWith("/search")) {
+                navigate(-1);
+              }
+            }}
           >
             {t("topbar.cancel")}
           </Button>
         )}
       </div>
-
       <div
         className={`flex items-center gap-4 ${
           isSearchVisible ? "hidden" : "flex"
@@ -236,7 +246,6 @@ const Topbar = () => {
             <span className="hidden md:inline">{t("topbar.admin")}</span>
           </Link>
         )}
-
         {user ? (
           isMobile ? (
             <Drawer

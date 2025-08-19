@@ -49,7 +49,10 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
   };
 
   const getSubtitle = (item: RecentSearchItem) => {
-    let subtitle = t(`sidebar.subtitle.${item.itemType.toLowerCase()}` as any);
+    let subtitle = t(
+      `sidebar.subtitle.${item.itemType.toLowerCase()}` as any,
+      item.itemType
+    );
     if (
       item.itemType === "Album" &&
       Array.isArray(item.artist) &&
@@ -62,18 +65,25 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
     return subtitle;
   };
 
+  // 1. Показываем загрузчик, пока идет запрос
   if (isRecentLoading) {
     return (
-      <div className="flex justify-center p-4">
-        <Loader2 className="animate-spin" />
+      <div className="flex justify-center items-center p-4 h-24">
+        <Loader2 className="animate-spin text-zinc-400" />
       </div>
     );
   }
 
+  // 2. Показываем сообщение, если запрос завершился и данных нет
   if (recentSearches.length === 0) {
-    return null;
+    return (
+      <div className="p-4 text-center text-sm text-zinc-500">
+        No recent searches.
+      </div>
+    );
   }
 
+  // 3. Показываем список, если данные есть
   return (
     <div className="p-2 sm:p-0">
       <div className="flex justify-between items-center mb-2 px-2">
@@ -110,7 +120,6 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-white truncate">
-                  {/* ИСПРАВЛЕНИЕ: Используем t() для миксов */}
                   {item.itemType === "Mix"
                     ? t(item.name as any)
                     : item.title || item.name}

@@ -358,7 +358,7 @@ export const getRecentSearches = async (req, res, next) => {
     const userId = req.user.id;
     const searches = await RecentSearch.find({ user: userId })
       .sort("-updatedAt")
-      .limit(10) // Ограничиваем количество недавних поисков
+      .limit(10)
       .lean();
 
     const itemsByType = searches.reduce((acc, search) => {
@@ -376,7 +376,6 @@ export const getRecentSearches = async (req, res, next) => {
       const model = mongoose.model(type);
       let query = model.find({ _id: { $in: ids } });
 
-      // Применяем populate и select в зависимости от типа модели
       switch (type) {
         case "Playlist":
           query = query
@@ -407,24 +406,26 @@ export const getRecentSearches = async (req, res, next) => {
       const results = await query.lean();
 
       results.forEach((result) => {
-        // Добавляем к результату тип, чтобы фронтенд знал, что отображать
         const originalSearch = searches.find((s) => s.item.equals(result._id));
         if (originalSearch) {
-          populatedItems[result._id.toString()] = {
+          const itemData = {
             ...result,
-            searchId: originalSearch._id, // ID для удаления
+            searchId: originalSearch._id,
             itemType: type,
-            // Переименовываем fullName в name для унификации на фронте
             ...(result.fullName && { name: result.fullName }),
           };
+
+          if (type === "Mix") {
+          }
+
+          populatedItems[result._id.toString()] = itemData;
         }
       });
     }
 
-    // Восстанавливаем исходный порядок, отсортированный по дате
     const finalResults = searches
       .map((search) => populatedItems[search.item.toString()])
-      .filter(Boolean); // Убираем null/undefined если что-то не нашлось
+      .filter(Boolean);
 
     res.status(200).json(finalResults);
   } catch (error) {
