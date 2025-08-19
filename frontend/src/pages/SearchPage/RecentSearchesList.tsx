@@ -95,7 +95,7 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
   if (recentSearches.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-zinc-500">
-        <p>{t("searchPage.noRecentSearches")}</p>{" "}
+        <p>{t("searchpage.noRecentSearches")}</p>{" "}
       </div>
     );
   }
