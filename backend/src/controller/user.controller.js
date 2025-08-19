@@ -394,7 +394,7 @@ export const getRecentSearches = async (req, res, next) => {
           query = query.select("fullName imageUrl");
           break;
         case "Mix":
-          query = query.select("name imageUrl");
+          query = query.select("name imageUrl"); 
           break;
         case "Song":
           query = query
@@ -409,15 +409,18 @@ export const getRecentSearches = async (req, res, next) => {
         const originalSearch = searches.find((s) => s.item.equals(result._id));
         if (originalSearch) {
           const itemData = {
-            ...result,
+            _id: result._id,
             searchId: originalSearch._id,
             itemType: type,
-            ...(result.fullName && { name: result.fullName }),
+            imageUrl: result.imageUrl,
+
+           
+            title: result.title || result.name || result.fullName, 
+            isTranslatable: type === "Mix", 
+
+            artist: result.artist,
+            owner: result.owner,
           };
-
-          if (type === "Mix") {
-          }
-
           populatedItems[result._id.toString()] = itemData;
         }
       });

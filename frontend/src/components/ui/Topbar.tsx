@@ -87,7 +87,7 @@ const Topbar = () => {
       setIsPopoverOpen(false);
     } else if (authUser) {
       setIsPopoverOpen(true);
-      fetchRecentSearches(); // Подгружаем на случай, если пользователь стер текст
+      fetchRecentSearches();
     }
 
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
@@ -100,7 +100,6 @@ const Topbar = () => {
     }, 300);
   };
 
-  // ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ 1: Используем onClick вместо onFocus =====
   const handleTriggerClick = () => {
     if (authUser && !query) {
       fetchRecentSearches();
@@ -180,7 +179,6 @@ const Topbar = () => {
       >
         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
           <PopoverTrigger asChild>
-            {/* ===== КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ 2: onClick на обертке ===== */}
             <div onClick={handleTriggerClick}>
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
               <input
@@ -195,7 +193,7 @@ const Topbar = () => {
             </div>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[var(--radix-popover-trigger-width)] mt-2 p-0 bg-zinc-900 border-zinc-800"
+            className="w-[var(--radix-popover-trigger-width)] mt-2 p-0 bg-zinc-900/90 backdrop-blur-md  border-zinc-800"
             align="start"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >

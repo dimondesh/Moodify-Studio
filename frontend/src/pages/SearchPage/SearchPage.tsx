@@ -35,7 +35,6 @@ const SearchPage = () => {
   } = useSearchStore();
 
   useEffect(() => {
-    // Поиск будет запускаться только если есть поисковый запрос
     if (debouncedInputSearchTerm.trim() !== query) {
       search(debouncedInputSearchTerm.trim());
     }
@@ -55,7 +54,6 @@ const SearchPage = () => {
       <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
         <ScrollArea className="h-full w-full pb-20 md:pb-0">
           <div className="py-10 px-4 sm:px-6">
-            {/* Убрали логику показа RecentSearchesList отсюда */}
             {queryParam ? (
               <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
                 {t("searchpage.resultsFor")} "{queryParam}"
