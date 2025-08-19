@@ -1,8 +1,9 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import type { Artist } from "../../types"; 
+import type { Artist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+import { useSearchStore } from "../../stores/useSearchStore";
 
 type ArtistGridProps = {
   title: string;
@@ -17,6 +18,12 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
 }) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { addRecentSearch } = useSearchStore();
+
+  const handleArtistClick = (artist: Artist) => {
+    addRecentSearch(artist._id, "Artist");
+    navigate(`/artists/${artist._id}`);
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -42,13 +49,13 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
           <div
             key={artist._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
-            onClick={() => navigate(`/artists/${artist._id}`)} 
+            onClick={() => handleArtistClick(artist)}
           >
             <div className="relative mb-4">
               <div className="aspect-square rounded-full shadow-lg overflow-hidden">
                 {" "}
                 <img
-                  src={artist.imageUrl || "/default_artist_cover.png"} 
+                  src={artist.imageUrl || "/default_artist_cover.png"}
                   alt={artist.name}
                   className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {

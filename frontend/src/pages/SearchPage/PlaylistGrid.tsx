@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Playlist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+import { useSearchStore } from "@/stores/useSearchStore";
 
 type PlaylistGridProps = {
   title: string;
@@ -14,6 +15,12 @@ type PlaylistGridProps = {
 const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { addRecentSearch } = useSearchStore();
+
+  const handlePlaylistClick = (playlist: Playlist) => {
+    addRecentSearch(playlist._id, "Playlist");
+    navigate(`/playlists/${playlist._id}`);
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -39,7 +46,7 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
           <div
             key={playlist._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
-            onClick={() => navigate(`/playlists/${playlist._id}`)}
+            onClick={() => handlePlaylistClick(playlist)}
           >
             <div className="relative mb-4">
               <div className=" aspect-square rounded-md shadow-lg overflow-hidden">

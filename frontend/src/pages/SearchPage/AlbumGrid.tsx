@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Album, Artist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
+import { useSearchStore } from "@/stores/useSearchStore";
 
 type AlbumGridProps = {
   title: string;
@@ -14,6 +15,12 @@ type AlbumGridProps = {
 const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { addRecentSearch } = useSearchStore();
+
+  const handleAlbumClick = (album: Album) => {
+    addRecentSearch(album._id, "Album");
+    navigate(`/albums/${album._id}`);
+  };
 
   const getArtistNames = (artistsInput: Artist[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0) {
@@ -56,7 +63,7 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
           <div
             key={album._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer group"
-            onClick={() => navigate(`/albums/${album._id}`)}
+            onClick={() => handleAlbumClick(album)}
           >
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">

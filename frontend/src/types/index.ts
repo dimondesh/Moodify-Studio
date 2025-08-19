@@ -53,6 +53,19 @@ export interface Song {
   lyrics?: string;
 }
 
+export interface RecentSearchItem {
+  _id: string;
+  searchId: string;
+  itemType: "Artist" | "Album" | "Playlist" | "User" | "Mix";
+
+  name?: string;
+  title?: string;
+  imageUrl: string;
+
+  artist?: Artist[];
+  owner?: User;
+}
+
 export interface Album {
   _id: string;
   title: string;

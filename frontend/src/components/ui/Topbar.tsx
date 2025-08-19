@@ -35,6 +35,9 @@ import WaveAnalyzer from "./WaveAnalyzer";
 import { useTranslation } from "react-i18next";
 import MoodifyLogo from "../MoodifyLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { useSearchStore } from "../../stores/useSearchStore";
+import RecentSearchesList from "@/pages/SearchPage/RecentSearchesList";
 
 const Topbar = () => {
   const { t } = useTranslation();
@@ -45,6 +48,8 @@ const Topbar = () => {
   const { isAdmin, user: authUser } = useAuthStore();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isUserSheetOpen, setUserSheetOpen } = useUIStore();
+  const [isFocused, setIsFocused] = useState(false);
+  const { recentSearches, fetchRecentSearches } = useSearchStore();
 
   const [user, setUser] = useState<null | {
     displayName: string | null;
@@ -80,11 +85,24 @@ const Topbar = () => {
     }, 300);
   };
 
-  const handleBlur = () => {
-    setQuery("");
-    setIsSearchVisible(false);
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (authUser) {
+      fetchRecentSearches();
+    }
   };
 
+  const handleBlur = () => {
+    setTimeout(() => {
+      setIsFocused(false);
+    }, 150);
+  };
+  const handleItemClickInPopover = () => {
+    setIsFocused(false);
+    setQuery("");
+  };
+  const showRecentSearches =
+    isFocused && !query && !!authUser && recentSearches.length > 0 && !isMobile;
   const handleLogout = async () => {
     await signOut(auth);
   };
@@ -150,22 +168,35 @@ const Topbar = () => {
           isSearchVisible ? "block" : "hidden md:block"
         }`}
       >
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
-        <input
-          type="text"
-          placeholder={t("topbar.searchPlaceholder")}
-          value={query}
-          onChange={handleChange}
-          autoFocus={isSearchVisible}
-          onBlur={handleBlur}
-          className="
+        <Popover open={showRecentSearches} onOpenChange={setIsFocused}>
+          <PopoverTrigger asChild>
+            <div>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder={t("topbar.searchPlaceholder")}
+                value={query}
+                onChange={handleChange}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className="
             w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm
             text-zinc-200 placeholder:text-zinc-500 focus:outline-none
             focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out
           "
-          spellCheck={false}
-          autoComplete="off"
-        />
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] mt-2 p-0 bg-zinc-900 border-zinc-800"
+            align="start"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <RecentSearchesList onItemClick={handleItemClickInPopover} />
+          </PopoverContent>
+        </Popover>
         {isSearchVisible && (
           <Button
             variant="ghost"

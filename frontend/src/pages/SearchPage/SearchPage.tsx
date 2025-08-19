@@ -35,6 +35,7 @@ const SearchPage = () => {
   } = useSearchStore();
 
   useEffect(() => {
+    // Поиск будет запускаться только если есть поисковый запрос
     if (debouncedInputSearchTerm.trim() !== query) {
       search(debouncedInputSearchTerm.trim());
     }
@@ -47,14 +48,14 @@ const SearchPage = () => {
 
   return (
     <>
-      {" "}
       <Helmet>
         <title>{`${title}`}</title>
         <meta name="description" content={description} />
       </Helmet>
       <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <ScrollArea className="h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-160px)] lg:h-[calc(100vh-120px)] w-full pb-20 md:pb-0">
+        <ScrollArea className="h-full w-full pb-20 md:pb-0">
           <div className="py-10 px-4 sm:px-6">
+            {/* Убрали логику показа RecentSearchesList отсюда */}
             {queryParam ? (
               <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
                 {t("searchpage.resultsFor")} "{queryParam}"
@@ -64,69 +65,68 @@ const SearchPage = () => {
                 {t("searchpage.findYourFavorites")}
               </h1>
             )}
+
             {loading && (
               <p className="text-zinc-400">{t("searchpage.loading")}</p>
             )}
             {error && <p className="text-red-500">{error}</p>}
+
             {!loading &&
               !error &&
+              queryParam &&
               songs.length === 0 &&
               albums.length === 0 &&
               playlists.length === 0 &&
               artists.length === 0 &&
               users.length === 0 &&
               mixes.length === 0 && (
-                <p className="text-zinc-400">{t("searchpage.noResults")}</p>
+                <p className="text-zinc-400 text-center">
+                  {t("searchpage.noResults")}
+                </p>
               )}
-            {!loading &&
-              !error &&
-              (songs.length > 0 ||
-                albums.length > 0 ||
-                playlists.length > 0 ||
-                artists.length > 0 ||
-                users.length > 0 ||
-                mixes.length > 0) && (
-                <>
-                  {artists.length > 0 && (
-                    <ArtistGrid
-                      title={t("searchpage.artists")}
-                      artists={artists}
-                      isLoading={loading}
-                    />
-                  )}
-                  {songs.length > 0 && (
-                    <SongGrid
-                      title={t("searchpage.songs")}
-                      songs={songs}
-                      isLoading={loading}
-                    />
-                  )}
-                  {albums.length > 0 && (
-                    <AlbumGrid
-                      title={t("searchpage.albums")}
-                      albums={albums}
-                      isLoading={loading}
-                    />
-                  )}
-                  {playlists.length > 0 && (
-                    <PlaylistGrid
-                      title={t("searchpage.playlists")}
-                      playlists={playlists}
-                      isLoading={loading}
-                    />
-                  )}
-                  {mixes.length > 0 && (
-                    <MixGrid title="Mixes" mixes={mixes} isLoading={loading} />
-                  )}
-                  {users.length > 0 && (
-                    <UserGrid
-                      title={t("searchpage.users")}
-                      users={users}
-                      isLoading={loading}
-                    />
-                  )}
-                </>
-              )}
+
+            {!loading && !error && queryParam && (
+              <>
+                {artists.length > 0 && (
+                  <ArtistGrid
+                    title={t("searchpage.artists")}
+                    artists={artists}
+                    isLoading={loading}
+                  />
+                )}
+                {songs.length > 0 && (
+                  <SongGrid
+                    title={t("searchpage.songs")}
+                    songs={songs}
+                    isLoading={loading}
+                  />
+                )}
+                {albums.length > 0 && (
+                  <AlbumGrid
+                    title={t("searchpage.albums")}
+                    albums={albums}
+                    isLoading={loading}
+                  />
+                )}
+                {playlists.length > 0 && (
+                  <PlaylistGrid
+                    title={t("searchpage.playlists")}
+                    playlists={playlists}
+                    isLoading={loading}
+                  />
+                )}
+                {mixes.length > 0 && (
+                  <MixGrid title="Mixes" mixes={mixes} isLoading={loading} />
+                )}
+                {users.length > 0 && (
+                  <UserGrid
+                    title={t("searchpage.users")}
+                    users={users}
+                    isLoading={loading}
+                  />
+                )}
+              </>
+            )}
           </div>
         </ScrollArea>
       </main>

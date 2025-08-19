@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import type { Mix } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useTranslation } from "react-i18next";
+import { useSearchStore } from "@/stores/useSearchStore";
 
 type MixGridProps = {
   title: string;
@@ -16,6 +17,12 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { t } = useTranslation();
+  const { addRecentSearch } = useSearchStore();
+
+  const handleMixClick = (mix: Mix) => {
+    addRecentSearch(mix._id, "Mix");
+    navigate(`/mixes/${mix._id}`);
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -41,7 +48,7 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
           <div
             key={mix._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer group"
-            onClick={() => navigate(`/mixes/${mix._id}`)}
+            onClick={() => handleMixClick(mix)}
           >
             <div className="relative mb-4">
               <div className=" aspect-square rounded-md shadow-lg overflow-hidden">

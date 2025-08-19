@@ -15,6 +15,10 @@ import {
   getPublicPlaylists,
   updateUserLanguage,
   getUnreadCounts,
+  getRecentSearches,
+  addRecentSearch,
+  removeRecentSearch,
+  clearRecentSearches,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -23,6 +27,14 @@ const router = Router();
 router.get("/me", protectRoute, getCurrentUser);
 router.get("/mutuals", protectRoute, getMutualFollowers);
 router.get("/unread-counts", protectRoute, getUnreadCounts);
+router.get("/me/recent-searches", protectRoute, getRecentSearches);
+router.post("/me/recent-searches", protectRoute, addRecentSearch);
+router.delete("/me/recent-searches/all", protectRoute, clearRecentSearches);
+router.delete(
+  "/me/recent-searches/:searchId",
+  protectRoute,
+  removeRecentSearch
+);
 
 // --- ДИНАМИЧЕСКИЕ МАРШРУТЫ ---
 router.get("/messages/:userId", protectRoute, getMessages);

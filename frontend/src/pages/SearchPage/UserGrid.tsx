@@ -7,6 +7,7 @@ import type { User } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
+import { useSearchStore } from "@/stores/useSearchStore";
 
 type UserGridProps = {
   title: string;
@@ -18,6 +19,12 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { addRecentSearch } = useSearchStore();
+
+  const handleUserClick = (user: User) => {
+    addRecentSearch(user._id, "User");
+    navigate(`/users/${user._id}`);
+  };
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -43,7 +50,7 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
           <div
             key={user._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
-            onClick={() => navigate(`/users/${user._id}`)}
+            onClick={() => handleUserClick(user)}
           >
             <div className="relative mb-4">
               <Avatar className="w-auto h-auto object-cover shadow-lg">

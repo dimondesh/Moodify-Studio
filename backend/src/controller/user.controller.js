@@ -3,6 +3,8 @@ import { User } from "../models/user.model.js";
 import { v2 as cloudinary } from "cloudinary";
 import { Library } from "../models/library.model.js";
 import { firebaseAdmin } from "../lib/firebase.js";
+import { RecentSearch } from "../models/recentSearch.model.js";
+import mongoose from "mongoose";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -346,6 +348,149 @@ export const getUnreadCounts = async (req, res, next) => {
     }, {});
 
     res.status(200).json(countsMap);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRecentSearches = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const searches = await RecentSearch.find({ user: userId })
+      .sort("-updatedAt")
+      .limit(10) // Ограничиваем количество недавних поисков
+      .lean();
+
+    const itemsByType = searches.reduce((acc, search) => {
+      if (!acc[search.itemType]) {
+        acc[search.itemType] = [];
+      }
+      acc[search.itemType].push(search.item);
+      return acc;
+    }, {});
+
+    const populatedItems = {};
+
+    for (const type in itemsByType) {
+      const ids = itemsByType[type];
+      const model = mongoose.model(type);
+      let query = model.find({ _id: { $in: ids } });
+
+      // Применяем populate и select в зависимости от типа модели
+      switch (type) {
+        case "Playlist":
+          query = query
+            .select("title imageUrl owner")
+            .populate("owner", "fullName");
+          break;
+        case "Album":
+          query = query
+            .select("title imageUrl artist")
+            .populate("artist", "name");
+          break;
+        case "Artist":
+          query = query.select("name imageUrl");
+          break;
+        case "User":
+          query = query.select("fullName imageUrl");
+          break;
+        case "Mix":
+          query = query.select("name imageUrl");
+          break;
+        case "Song":
+          query = query
+            .select("title imageUrl artist")
+            .populate("artist", "name");
+          break;
+      }
+
+      const results = await query.lean();
+
+      results.forEach((result) => {
+        // Добавляем к результату тип, чтобы фронтенд знал, что отображать
+        const originalSearch = searches.find((s) => s.item.equals(result._id));
+        if (originalSearch) {
+          populatedItems[result._id.toString()] = {
+            ...result,
+            searchId: originalSearch._id, // ID для удаления
+            itemType: type,
+            // Переименовываем fullName в name для унификации на фронте
+            ...(result.fullName && { name: result.fullName }),
+          };
+        }
+      });
+    }
+
+    // Восстанавливаем исходный порядок, отсортированный по дате
+    const finalResults = searches
+      .map((search) => populatedItems[search.item.toString()])
+      .filter(Boolean); // Убираем null/undefined если что-то не нашлось
+
+    res.status(200).json(finalResults);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addRecentSearch = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { itemId, itemType } = req.body;
+
+    if (!itemId || !itemType) {
+      return res
+        .status(400)
+        .json({ message: "itemId and itemType are required" });
+    }
+
+    await RecentSearch.findOneAndUpdate(
+      { user: userId, item: itemId, itemType: itemType },
+      { updatedAt: new Date() },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const searches = await RecentSearch.find({ user: userId })
+      .sort("-updatedAt")
+      .skip(10)
+      .select("_id")
+      .lean();
+
+    if (searches.length > 0) {
+      const idsToDelete = searches.map((s) => s._id);
+      await RecentSearch.deleteMany({ _id: { $in: idsToDelete } });
+    }
+
+    res.status(201).json({ message: "Recent search added" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeRecentSearch = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { searchId } = req.params;
+
+    const result = await RecentSearch.findOneAndDelete({
+      _id: searchId,
+      user: userId,
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: "Search item not found" });
+    }
+
+    res.status(200).json({ message: "Recent search removed" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearRecentSearches = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    await RecentSearch.deleteMany({ user: userId });
+    res.status(200).json({ message: "All recent searches cleared" });
   } catch (error) {
     next(error);
   }

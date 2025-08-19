@@ -6,7 +6,8 @@ import type { Song } from "../../types";
 import PlayButton from "../HomePage/PlayButton";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { getArtistNames } from "../../lib/utils"; 
+import { getArtistNames } from "../../lib/utils";
+import { useSearchStore } from "@/stores/useSearchStore";
 
 type SectionGridProps = {
   title: string;
@@ -18,11 +19,20 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { artists, fetchArtists } = useMusicStore();
+  const { addRecentSearch } = useSearchStore();
+
+  const handleSongClick = (song: Song) => {
+    addRecentSearch(song._id, "Song");
+    if (typeof song.albumId === "string" && song.albumId.length > 0) {
+      navigate(`/albums/${song.albumId}`);
+    } else {
+      console.warn("albumId отсутствует или не строка:", song.albumId);
+    }
+  };
 
   useEffect(() => {
     fetchArtists();
   }, [fetchArtists]);
-
 
   if (isLoading) return <SectionGridSkeleton />;
 
@@ -48,16 +58,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
           <div
             key={song._id}
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
-            onClick={() => {
-              if (typeof song.albumId === "string" && song.albumId.length > 0) {
-                navigate(`/albums/${song.albumId}`);
-              } else {
-                console.warn(
-                  "albumId отсутствует или не строка:",
-                  song.albumId
-                );
-              }
-            }}
+            onClick={() => handleSongClick(song)}
           >
             <div className="relative mb-4">
               <div className="aspect-square rounded-md shadow-lg overflow-hidden">
@@ -77,7 +78,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             <p className="text-sm text-zinc-400 truncate">
               {getArtistNames(
                 song.artist.map((artist) => artist._id),
-                artists 
+                artists
               )}
             </p>
           </div>
