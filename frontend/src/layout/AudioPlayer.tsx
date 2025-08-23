@@ -47,9 +47,11 @@ const AudioPlayer = () => {
     setDuration,
     currentTime,
     duration,
+    originalDuration,
   } = usePlayerStore();
 
   const { playbackRateEnabled, playbackRate } = useAudioSettingsStore();
+  const playbackRateRef = useRef(1.0); // Используем ref для доступа в requestAnimationFrame
 
   const { isOffline } = useOfflineStore();
   const { user } = useAuthStore();
@@ -299,7 +301,14 @@ const AudioPlayer = () => {
         instrumentalBufferRef.current = instrumentalBuffer;
         vocalsBufferRef.current = vocalsBuffer;
 
-        setDuration(Math.floor(instrumentalBuffer.duration));
+        // --- ИЗМЕНЕНИЕ: Устанавливаем и оригинальную, и отображаемую длительность ---
+        const originalDur = Math.floor(instrumentalBuffer.duration);
+        const currentRate = useAudioSettingsStore.getState().playbackRateEnabled
+          ? useAudioSettingsStore.getState().playbackRate
+          : 1.0;
+        const displayDuration = Math.floor(originalDur / currentRate);
+
+        setDuration(displayDuration, originalDur);
         setCurrentTime(0);
         offsetTimeRef.current = 0;
         startTimeRef.current = 0;
@@ -377,6 +386,10 @@ const AudioPlayer = () => {
 
           const newInstrumentalSource = audioContext.createBufferSource();
           newInstrumentalSource.buffer = instrumentalBufferRef.current;
+
+          const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+          newInstrumentalSource.playbackRate.value = currentRate;
+
           newInstrumentalSource.connect(instrumentalGainNodeRef.current!);
           instrumentalSourceRef.current = newInstrumentalSource;
 
@@ -387,6 +400,9 @@ const AudioPlayer = () => {
           ) {
             const newVocalsSource = audioContext.createBufferSource();
             newVocalsSource.buffer = vocalsBufferRef.current;
+
+            newVocalsSource.playbackRate.value = currentRate;
+
             newVocalsSource.connect(vocalsGainNodeRef.current);
             vocalsSourceRef.current = newVocalsSource;
           } else if (vocalsGainNodeRef.current) {
@@ -462,6 +478,8 @@ const AudioPlayer = () => {
     repeatMode,
     setCurrentTime,
     duration,
+    playbackRate, // <-- Добавляем зависимости
+    playbackRateEnabled, // <-- Добавляем зависимости
   ]);
 
   // --- Эффект 4: Обновление громкости (БЕЗ ИЗМЕНЕНИЙ) ---
@@ -480,42 +498,36 @@ const AudioPlayer = () => {
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
+  // --- НОВЫЙ ЭФФЕКТ: Реакция на изменение скорости и пересчет времени/длительности ---
   useEffect(() => {
-    if (!isAudioContextReady || !audioContextRef.current) return;
-    const audioContext = audioContextRef.current;
+    const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+    playbackRateRef.current = currentRate; // Обновляем ref для rAF
+
+    if (originalDuration > 0) {
+      const newDisplayDuration = Math.floor(originalDuration / currentRate);
+      setDuration(newDisplayDuration, originalDuration);
+    }
 
     const instrumentalSource = instrumentalSourceRef.current;
     const vocalsSource = vocalsSourceRef.current;
+    const audioContext = audioContextRef.current;
 
-    if (!instrumentalSource) return;
-
-    const targetRate = playbackRateEnabled ? playbackRate : 1.0;
-    const transitionTime = 0.5; // Плавный переход за 0.5 секунды
-
-    // Плавно изменяем скорость для инструментала
-    instrumentalSource.playbackRate.linearRampToValueAtTime(
-      targetRate,
-      audioContext.currentTime + transitionTime
-    );
-
-    // То же самое для вокала, если он есть
-    if (vocalsSource) {
-      vocalsSource.playbackRate.linearRampToValueAtTime(
-        targetRate,
-        audioContext.currentTime + transitionTime
+    if (instrumentalSource && audioContext) {
+      // Плавный переход только при изменении "на лету"
+      instrumentalSource.playbackRate.linearRampToValueAtTime(
+        currentRate,
+        audioContext.currentTime + 0.5
       );
+      if (vocalsSource) {
+        vocalsSource.playbackRate.linearRampToValueAtTime(
+          currentRate,
+          audioContext.currentTime + 0.5
+        );
+      }
     }
-  }, [
-    playbackRateEnabled,
-    playbackRate,
-    isAudioContextReady,
-    // Добавляем зависимости от currentSong, чтобы при смене трека скорость применялась заново
-    currentSong,
-    instrumentalSourceRef.current,
-    vocalsSourceRef.current,
-  ]);
+  }, [playbackRate, playbackRateEnabled, originalDuration, setDuration]);
 
-  // --- Эффект 5: Обновление текущего времени в сторе (БЕЗ ИЗМЕНЕНИЙ) ---
+  // --- Эффект 5: Обновление текущего времени в сторе   ---
   useEffect(() => {
     if (!isAudioContextReady) return;
 
@@ -530,8 +542,10 @@ const AudioPlayer = () => {
         instrumentalSourceRef.current &&
         audioContext.state === "running"
       ) {
-        const elapsed = audioContext.currentTime - startTimeRef.current;
-        const newTime = Math.floor(offsetTimeRef.current + elapsed);
+        const elapsedRealTime = audioContext.currentTime - startTimeRef.current;
+        // --- ИСПРАВЛЕНИЕ 2: Учитываем скорость при расчете времени ---
+        const elapsedSongTime = elapsedRealTime * playbackRateRef.current;
+        const newTime = Math.floor(offsetTimeRef.current + elapsedSongTime);
 
         if (duration && newTime > duration) {
           if (usePlayerStore.getState().currentTime !== duration) {

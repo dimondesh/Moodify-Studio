@@ -25,6 +25,7 @@ interface PlayerStore {
   duration: number;
   isDesktopLyricsOpen: boolean;
   isMobileLyricsFullScreen: boolean;
+  originalDuration: number;
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -38,7 +39,7 @@ interface PlayerStore {
   setVocalsVolume: (volume: number) => void;
   setMasterVolume: (volume: number) => void;
   setCurrentTime: (time: number) => void;
-  setDuration: (duration: number) => void;
+  setDuration: (duration: number, originalDuration?: number) => void;
   setIsDesktopLyricsOpen: (isOpen: boolean) => void;
   setIsMobileLyricsFullScreen: (isOpen: boolean) => void;
   seekToTime: (time: number) => void;
@@ -69,6 +70,8 @@ export const usePlayerStore = create<PlayerStore>()(
       masterVolume: 75,
       currentTime: 0,
       duration: 0,
+      originalDuration: 0,
+
       isDesktopLyricsOpen: false,
       isMobileLyricsFullScreen: false,
 
@@ -514,7 +517,14 @@ export const usePlayerStore = create<PlayerStore>()(
       setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
       setMasterVolume: (volume) => set({ masterVolume: volume }),
       setCurrentTime: (time) => set({ currentTime: time }),
-      setDuration: (duration) => set({ duration: duration }),
+      setDuration: (duration, originalDuration) => {
+        set({
+          duration: duration,
+          // Если originalDuration не передан, используем просто duration
+          originalDuration:
+            originalDuration !== undefined ? originalDuration : duration,
+        });
+      },
       setIsDesktopLyricsOpen: (isOpen: boolean) =>
         set({ isDesktopLyricsOpen: isOpen }),
       setIsMobileLyricsFullScreen: (isOpen: boolean) => {
