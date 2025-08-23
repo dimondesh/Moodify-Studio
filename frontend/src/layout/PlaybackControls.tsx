@@ -234,10 +234,12 @@ const PlaybackControls = () => {
       "setPositionState" in navigator.mediaSession
     ) {
       if (currentSong && duration > 0) {
+        const safePosition = Math.min(currentTime, duration);
+
         navigator.mediaSession.setPositionState({
           duration: duration,
           playbackRate: 1,
-          position: currentTime,
+          position: safePosition,
         });
         navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
       }

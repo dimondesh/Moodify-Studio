@@ -26,6 +26,7 @@ interface PlayerStore {
   isDesktopLyricsOpen: boolean;
   isMobileLyricsFullScreen: boolean;
   originalDuration: number;
+  seekVersion: number;
 
   setRepeatMode: (mode: "off" | "all" | "one") => void;
   toggleShuffle: () => void;
@@ -38,7 +39,7 @@ interface PlayerStore {
   setIsFullScreenPlayerOpen: (isOpen: boolean) => void;
   setVocalsVolume: (volume: number) => void;
   setMasterVolume: (volume: number) => void;
-  setCurrentTime: (time: number) => void;
+  setCurrentTime: (time: number, isPlayerUpdate?: boolean) => void;
   setDuration: (duration: number, originalDuration?: number) => void;
   setIsDesktopLyricsOpen: (isOpen: boolean) => void;
   setIsMobileLyricsFullScreen: (isOpen: boolean) => void;
@@ -71,6 +72,7 @@ export const usePlayerStore = create<PlayerStore>()(
       currentTime: 0,
       duration: 0,
       originalDuration: 0,
+      seekVersion: 0,
 
       isDesktopLyricsOpen: false,
       isMobileLyricsFullScreen: false,
@@ -516,11 +518,18 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ isFullScreenPlayerOpen: isOpen }),
       setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
       setMasterVolume: (volume) => set({ masterVolume: volume }),
-      setCurrentTime: (time) => set({ currentTime: time }),
+
+      setCurrentTime: (time, isPlayerUpdate = false) => {
+        set((state) => ({
+          currentTime: time,
+          seekVersion: isPlayerUpdate
+            ? state.seekVersion
+            : state.seekVersion + 1,
+        }));
+      },
       setDuration: (duration, originalDuration) => {
         set({
           duration: duration,
-          // Если originalDuration не передан, используем просто duration
           originalDuration:
             originalDuration !== undefined ? originalDuration : duration,
         });
@@ -531,11 +540,8 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ isMobileLyricsFullScreen: isOpen });
       },
       seekToTime: (time: number) => {
-        silentAudioService.play();
-        set((state) => {
-          const newTime = Math.max(0, Math.min(time, state.duration));
-          return { currentTime: newTime, isPlaying: true };
-        });
+        get().setCurrentTime(time, false);
+        set({ isPlaying: true });
       },
     }),
 
