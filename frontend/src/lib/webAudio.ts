@@ -205,6 +205,8 @@ interface AudioSettings {
   reverbEnabled: boolean;
   reverbMix: number; // 0.0 (dry) to 1.0 (wet)
   reverbRoomSize: ReverbRoomSize;
+  playbackRateEnabled: boolean;
+  playbackRate: number;
 }
 
 // Интерфейс для экшенов Zustand-хранилища
@@ -213,12 +215,14 @@ interface AudioStore extends AudioSettings {
   setEqualizerGain: (frequency: string, gain: number) => void;
   setNormalizationMode: (mode: NormalizationMode) => void;
   setWaveAnalyzerEnabled: (enabled: boolean) => void;
-  applyPreset: (preset: EqualizerPreset) => void; 
+  applyPreset: (preset: EqualizerPreset) => void;
   resetAudioSettings: () => void;
   updateCustomPreset: () => void; // Метод для установки "Custom" при ручной настройке
   setReverbEnabled: (enabled: boolean) => void;
   setReverbMix: (mix: number) => void;
   setReverbRoomSize: (size: ReverbRoomSize) => Promise<void>;
+  setPlaybackRateEnabled: (enabled: boolean) => void;
+  setPlaybackRate: (rate: number) => void;
 }
 
 // Zustand store для настроек аудио с сохранением в localStorage
@@ -234,6 +238,8 @@ export const useAudioSettingsStore = create<AudioStore>()(
       reverbEnabled: false,
       reverbMix: 0.5, // По умолчанию 50% Dry / 50% Wet
       reverbRoomSize: "medium", // По умолчанию средняя комната
+      playbackRateEnabled: false,
+      playbackRate: 0.85, // (дефолтное значение для slowed)
 
       setEqualizerEnabled: (enabled) => {
         set({ equalizerEnabled: enabled });
@@ -293,19 +299,25 @@ export const useAudioSettingsStore = create<AudioStore>()(
         await webAudioService.loadIRFile(size);
         // webAudioService.applySettingsToGraph() вызывается внутри loadIRFile
       },
+      setPlaybackRateEnabled: (enabled) => {
+        set({ playbackRateEnabled: enabled });
+      },
+      setPlaybackRate: (rate) => {
+        set({ playbackRate: rate });
+      },
     }),
     {
       name: "audio-settings-storage",
-      version: 2, 
+      version: 3,
       migrate: (persistedState: any, version) => {
-        if (version === 0 && persistedState) {
-          persistedState.activePresetName = "Flat";
-          persistedState.equalizerGains = { ...equalizerPresets[0].gains };
-        }
         if (version < 2 && persistedState) {
           persistedState.reverbEnabled = false;
           persistedState.reverbMix = 0.5;
           persistedState.reverbRoomSize = "medium";
+        }
+        if (version < 3 && persistedState) {
+          persistedState.playbackRateEnabled = false;
+          persistedState.playbackRate = 0.85;
         }
         return persistedState as AudioStore;
       },
@@ -481,7 +493,6 @@ class WebAudioService {
     }
 
     try {
-
       // 2. Определяем имя кэша и пытаемся получить доступ к нему
       const cacheName = "moodify-ir-files-cache"; // Специальный кэш для IR-файлов
       const cache = await caches.open(cacheName);
@@ -506,7 +517,6 @@ class WebAudioService {
       } else {
         console.log(`[Cache] IR file for ${url} loaded from Cache Storage.`);
       }
-
 
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
@@ -767,7 +777,6 @@ useAudioSettingsStore.subscribe((state, prevState) => {
       (key) => state.equalizerGains[key] !== prevState.equalizerGains[key]
     );
 
-   
     if (
       state.equalizerEnabled !== prevState.equalizerEnabled ||
       state.normalizationMode !== prevState.normalizationMode ||

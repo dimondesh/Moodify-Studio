@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
-import { webAudioService } from "../lib/webAudio";
+import { webAudioService, useAudioSettingsStore } from "../lib/webAudio";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
 import { useMusicStore } from "@/stores/useMusicStore";
@@ -48,6 +48,8 @@ const AudioPlayer = () => {
     currentTime,
     duration,
   } = usePlayerStore();
+
+  const { playbackRateEnabled, playbackRate } = useAudioSettingsStore();
 
   const { isOffline } = useOfflineStore();
   const { user } = useAuthStore();
@@ -477,6 +479,41 @@ const AudioPlayer = () => {
       }
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
+
+  useEffect(() => {
+    if (!isAudioContextReady || !audioContextRef.current) return;
+    const audioContext = audioContextRef.current;
+
+    const instrumentalSource = instrumentalSourceRef.current;
+    const vocalsSource = vocalsSourceRef.current;
+
+    if (!instrumentalSource) return;
+
+    const targetRate = playbackRateEnabled ? playbackRate : 1.0;
+    const transitionTime = 0.5; // Плавный переход за 0.5 секунды
+
+    // Плавно изменяем скорость для инструментала
+    instrumentalSource.playbackRate.linearRampToValueAtTime(
+      targetRate,
+      audioContext.currentTime + transitionTime
+    );
+
+    // То же самое для вокала, если он есть
+    if (vocalsSource) {
+      vocalsSource.playbackRate.linearRampToValueAtTime(
+        targetRate,
+        audioContext.currentTime + transitionTime
+      );
+    }
+  }, [
+    playbackRateEnabled,
+    playbackRate,
+    isAudioContextReady,
+    // Добавляем зависимости от currentSong, чтобы при смене трека скорость применялась заново
+    currentSong,
+    instrumentalSourceRef.current,
+    vocalsSourceRef.current,
+  ]);
 
   // --- Эффект 5: Обновление текущего времени в сторе (БЕЗ ИЗМЕНЕНИЙ) ---
   useEffect(() => {

@@ -38,6 +38,8 @@ const SettingsPage: React.FC = () => {
     reverbEnabled,
     reverbMix,
     reverbRoomSize,
+    playbackRateEnabled,
+    playbackRate,
     setEqualizerEnabled,
     setEqualizerGain,
     setNormalizationMode,
@@ -47,6 +49,8 @@ const SettingsPage: React.FC = () => {
     setReverbEnabled,
     setReverbMix,
     setReverbRoomSize,
+    setPlaybackRateEnabled,
+    setPlaybackRate,
   } = useAudioSettingsStore();
 
   const { t, i18n } = useTranslation();
@@ -306,6 +310,40 @@ const SettingsPage: React.FC = () => {
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* --- Playback Speed --- */}
+              <div className="border-b border-zinc-700 pb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-xl font-semibold">
+                    {t("settings.playbackSpeed")}
+                  </Label>
+                  <Switch
+                    id="playback-rate-enabled"
+                    checked={playbackRateEnabled}
+                    onCheckedChange={setPlaybackRateEnabled}
+                    className="data-[state=checked]:bg-violet-600"
+                  />
+                </div>
+                <p className="text-zinc-400 text-sm mt-2 mb-4">
+                  {t("settings.playbackSpeedDesc")}
+                </p>
+
+                <div className="flex items-center gap-4">
+                  <Slider
+                    id="playback-rate-slider"
+                    min={0.5}
+                    max={1.5}
+                    step={0.05}
+                    value={[playbackRate]}
+                    onValueChange={(value) => setPlaybackRate(value[0])}
+                    className="flex-1"
+                    disabled={!playbackRateEnabled}
+                  />
+                  <span className="text-sm text-zinc-300 w-16 text-center">
+                    {playbackRate.toFixed(2)}x
+                  </span>
+                </div>
               </div>
 
               {/* Normalization Section */}
