@@ -8,6 +8,12 @@ import { Button } from "../../components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
+import { useAudioSettingsStore } from "@/lib/webAudio"; 
+
+interface LyricLine {
+  time: number;
+  text: string;
+}
 
 const parseLrc = (lrcContent: string): LyricLine[] => {
   const lines = lrcContent.split("\n");
@@ -27,11 +33,6 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
   return parsedLyrics;
 };
 
-interface LyricLine {
-  time: number;
-  text: string;
-}
-
 interface LyricsPageProps {
   isMobileFullScreen?: boolean;
 }
@@ -48,6 +49,8 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
     setIsFullScreenPlayerOpen,
     seekToTime,
   } = usePlayerStore();
+
+  const { playbackRateEnabled, playbackRate } = useAudioSettingsStore();
 
   const lyricsScrollAreaRef = useRef<HTMLDivElement>(null);
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
@@ -96,10 +99,14 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
 
   useEffect(() => {
     if (lyricsScrollAreaRef.current && lyrics.length > 0 && !isUserScrolling) {
+      const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+      const realCurrentTime = currentTime * currentRate;
+
       const activeLineIndex = lyrics.findIndex(
         (line, index) =>
-          currentTime >= line.time &&
-          (index === lyrics.length - 1 || currentTime < lyrics[index + 1].time)
+          realCurrentTime >= line.time &&
+          (index === lyrics.length - 1 ||
+            realCurrentTime < lyrics[index + 1].time)
       );
       if (activeLineIndex !== -1) {
         const activeLineElement = lyricsScrollAreaRef.current.querySelector(
@@ -115,7 +122,7 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
         }
       }
     }
-  }, [currentTime, lyrics, isUserScrolling]);
+  }, [currentTime, lyrics, isUserScrolling, playbackRate, playbackRateEnabled]);
 
   const handleScroll = useCallback(() => {
     if (!isUserScrolling) setIsUserScrolling(true);
@@ -164,7 +171,9 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
 
   const handleLyricLineClick = (time: number) => {
     setIsUserScrolling(false);
-    seekToTime(time);
+    const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+    const uiSeekTime = time / currentRate;
+    seekToTime(uiSeekTime);
   };
 
   if (!currentSong || !lyrics.length) {
@@ -183,6 +192,9 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
       </div>
     );
   }
+
+  const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+  const realCurrentTime = currentTime * currentRate;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -234,9 +246,9 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
             <p
               key={index}
               className={`py-1 text-2xl px-2 sm:text-3xl font-semibold transition-all duration-200 lyric-line-${index} cursor-pointer hover:text-white ${
-                currentTime >= line.time &&
+                realCurrentTime >= line.time &&
                 (index === lyrics.length - 1 ||
-                  currentTime < lyrics[index + 1].time)
+                  realCurrentTime < lyrics[index + 1].time)
                   ? "text-violet-400 scale-105"
                   : "text-zinc-400"
               }`}

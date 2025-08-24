@@ -41,7 +41,7 @@ import { useChatStore } from "../stores/useChatStore";
 
 import { getArtistNames } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
-import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog"; // <-- ДОБАВЬТЕ ЭТО
+import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -106,8 +106,14 @@ const PlaybackControls = () => {
 
   const { shareEntity, openShareDialog, closeAllDialogs } = useUIStore();
 
-  const { reverbEnabled, reverbMix, setReverbEnabled, setReverbMix } =
-    useAudioSettingsStore();
+  const {
+    reverbEnabled,
+    reverbMix,
+    setReverbEnabled,
+    setReverbMix,
+    playbackRateEnabled,
+    playbackRate,
+  } = useAudioSettingsStore();
 
   const { fetchLikedSongs } = useLibraryStore();
 
@@ -730,21 +736,28 @@ const PlaybackControls = () => {
                           {t("player.lyricsPreview")}
                         </h3>
                         <div className="w-full text-center relative cursor-pointer">
-                          {lyrics.slice(0, 5).map((line, index) => (
-                            <p
-                              key={index}
-                              className={`py-0.5 text-base font-bold transition-colors duration-100
-                              ${
-                                currentTime >= line.time &&
-                                (index === lyrics.length - 1 ||
-                                  currentTime < lyrics[index + 1].time)
-                                  ? "text-violet-400"
-                                  : "text-zinc-400"
-                              }`}
-                            >
-                              {line.text}
-                            </p>
-                          ))}
+                          {(() => {
+                            const currentRate = playbackRateEnabled
+                              ? playbackRate
+                              : 1.0;
+                            const realCurrentTime = currentTime * currentRate;
+
+                            return lyrics.slice(0, 5).map((line, index) => (
+                              <p
+                                key={index}
+                                className={`py-0.5 text-base font-bold transition-colors duration-100
+                                ${
+                                  realCurrentTime >= line.time &&
+                                  (index === lyrics.length - 1 ||
+                                    realCurrentTime < lyrics[index + 1].time)
+                                    ? "text-violet-400"
+                                    : "text-zinc-400"
+                                }`}
+                              >
+                                {line.text}
+                              </p>
+                            ));
+                          })()}
                           {lyrics.length > 5 && (
                             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950 to-transparent flex items-end justify-center pb-2">
                               <Button
