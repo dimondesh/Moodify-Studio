@@ -18,9 +18,7 @@ const {
 
 const bunnyAxios = axios.create({
   baseURL: `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE_NAME}/`,
-  headers: {
-    AccessKey: BUNNY_STORAGE_ACCESS_KEY,
-  },
+  headers: { AccessKey: BUNNY_STORAGE_ACCESS_KEY },
 });
 
 const putFileToBunny = async (localFilePath, remoteFullPath, mimeType) => {
@@ -45,7 +43,7 @@ export const uploadToBunny = async (source, remoteFolder) => {
         const response = await axios.get(source, { responseType: "stream" });
         const urlPath = new URL(source).pathname;
         const extension = path.extname(urlPath) || ".jpg";
-        originalFileName = `${uuidv4()}${extension}`; // Используем для определения MIME
+        originalFileName = `${uuidv4()}${extension}`;
         localFilePath = path.join(os.tmpdir(), originalFileName);
         isTempDownload = true;
         const writer = fsSync.createWriteStream(localFilePath);
@@ -69,7 +67,6 @@ export const uploadToBunny = async (source, remoteFolder) => {
       source.mimetype ||
       mime.lookup(originalFileName) ||
       "application/octet-stream";
-    // -----------------------------------------
 
     const remoteFileName = `${uuidv4()}${path.extname(originalFileName)}`;
     const fullRemotePath = path
@@ -83,17 +80,21 @@ export const uploadToBunny = async (source, remoteFolder) => {
       `[Bunny] File uploaded successfully with Content-Type: ${mimeType}. URL: ${fileUrl}`
     );
 
-    return {
-      url: fileUrl,
-      path: fullRemotePath,
-    };
+    return { url: fileUrl, path: fullRemotePath };
   } catch (error) {
-    console.error(
-      `[Bunny] Smart uploader failed for source:`,
-      source,
-      error.message
-    );
-    throw new Error("Failed to upload file to Bunny.net");
+    // --- УЛУЧШЕННОЕ ЛОГИРОВАНИЕ ---
+    console.error(`[Bunny] Smart uploader failed! Source:`, source);
+    // Показываем настоящую ошибку от axios или fs
+    if (error.isAxiosError) {
+      console.error(
+        "[Bunny] Axios Error:",
+        error.response?.data || error.message
+      );
+    } else {
+      console.error("[Bunny] Filesystem or other error:", error);
+    }
+    // ------------------------------------
+    throw new Error("Failed to upload file to Bunny.net"); // Кидаем нашу общую ошибку дальше
   } finally {
     if (isTempDownload && localFilePath) {
       try {

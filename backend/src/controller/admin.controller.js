@@ -690,9 +690,8 @@ export const deleteArtist = async (req, res, next) => {
 export const uploadFullAlbumAuto = async (req, res, next) => {
   console.log("🚀 Reached /admin/albums/upload-full-album route - AUTO UPLOAD");
 
-  // !!! ЗАМЕНИТЕ ЭТИ URL НА ВАШИ URL-ЗАГЛУШКИ В BUNNY.NET !!!
-  const DEFAULT_ARTIST_IMAGE_URL = `https://${process.env.BUNNY_PULL_ZONE_HOSTNAME}/defaults/default-artist-image.jpg`;
-  const DEFAULT_ALBUM_IMAGE_URL = `https://${process.env.BUNNY_PULL_ZONE_HOSTNAME}/defaults/default-album-cover.png`;
+  const DEFAULT_ARTIST_IMAGE_URL = `https://moodify.b-cdn.net/artist.jpeg`;
+  const DEFAULT_ALBUM_IMAGE_URL = `https://moodify.b-cdn.net/default-album-cover.png`;
 
   if (!req.user || !req.user.isAdmin) {
     return res
@@ -716,12 +715,10 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     Date.now().toString()
   );
 
-  // --- Переменные для отката в случае ошибки ---
   const uploadedFilePaths = [];
   const newlyCreatedArtistIds = [];
   const createdSongIds = [];
   let album = null;
-  // ------------------------------------------
 
   try {
     const spotifyAlbumData = await getAlbumDataFromSpotify(spotifyAlbumUrl);
@@ -746,7 +743,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       }
     }
 
-    // --- УМНОЕ СОПОСТАВЛЕНИЕ И ПРЕДВАРИТЕЛЬНАЯ ПРОВЕРКА ---
     const tracksToProcess =
       spotifyAlbumData.tracks.items || spotifyAlbumData.tracks;
 
@@ -754,13 +750,14 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       const normalizedSpotifyName = spotifyTrackName
         .toLowerCase()
         .replace(/[^\p{L}\p{N}]/gu, "");
+
       if (trackFilesMap[normalizedSpotifyName]) {
         return trackFilesMap[normalizedSpotifyName];
       }
       for (const fileKey in trackFilesMap) {
         if (normalizedSpotifyName.includes(fileKey)) {
           console.log(
-            `[AdminController] Fuzzy match found: Spotify track "${spotifyTrackName}" matched to file key "${fileKey}"`
+            `[AdminController] Fuzzy match: Spotify track "${spotifyTrackName}" matched to file key "${fileKey}"`
           );
           return trackFilesMap[fileKey];
         }
@@ -782,15 +779,11 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     console.log(
       "[AdminController] Pre-flight check successful. All instrumentals matched."
     );
-    // --- КОНЕЦ ПРОВЕРКИ ---
 
     const albumArtistIds = [];
     for (const spotifyArtist of spotifyAlbumData.artists || []) {
       let artist = await Artist.findOne({ name: spotifyArtist.name });
       if (!artist) {
-        console.log(
-          `[AdminController] Creating new artist: ${spotifyArtist.name}`
-        );
         const artistDetails = await getArtistDataFromSpotify(spotifyArtist.id);
         const artistImageUrl =
           artistDetails?.images?.[0]?.url || DEFAULT_ARTIST_IMAGE_URL;
@@ -822,22 +815,16 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         : "Album";
 
     const albumImageUrl =
-      spotifyAlbumData.images && spotifyAlbumData.images.length > 0
-        ? spotifyAlbumData.images[0].url
-        : DEFAULT_ALBUM_IMAGE_URL;
-
+      spotifyAlbumData.images?.[0]?.url || DEFAULT_ALBUM_IMAGE_URL;
     const albumImageUpload = await uploadToBunny(albumImageUrl, "albums");
     uploadedFilePaths.push(albumImageUpload.path);
 
     album = new Album({
-      // Присваиваем album здесь для отката
       title: spotifyAlbumData.name,
       artist: albumArtistIds,
       imageUrl: albumImageUpload.url,
       imagePublicId: albumImageUpload.path,
-      releaseYear: spotifyAlbumData.release_date
-        ? parseInt(spotifyAlbumData.release_date.split("-")[0])
-        : null,
+      releaseYear: parseInt(spotifyAlbumData.release_date.split("-")[0]),
       type: albumType,
       songs: [],
     });
@@ -855,9 +842,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       for (const spotifyTrackArtist of spotifyTrack.artists || []) {
         let artist = await Artist.findOne({ name: spotifyTrackArtist.name });
         if (!artist) {
-          console.log(
-            `[AdminController] Creating new featured artist: ${spotifyTrackArtist.name}`
-          );
           const artistDetails = await getArtistDataFromSpotify(
             spotifyTrackArtist.id
           );
@@ -886,7 +870,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
         primaryArtistName,
         songName
       );
-
       const filesForTrack = findTrackFiles(songName);
 
       let vocalsUpload = { url: null, publicId: null };
@@ -945,7 +928,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
       await song.save();
       createdSongIds.push(song._id);
-      createdSongs.push(song); // Для ответа
+      createdSongs.push(song);
 
       await Album.findByIdAndUpdate(album._id, { $push: { songs: song._id } });
       await updateArtistsContent(songArtistIds, song._id, "songs");
@@ -963,7 +946,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
       songs: createdSongs.map((s) => ({ title: s.title, id: s._id })),
     });
   } catch (error) {
-    // --- БЛОК ОТКАТА ИЗМЕНЕНИЙ ---
     console.error(
       "[AdminController] Critical error occurred. Starting rollback procedure...",
       error
@@ -985,9 +967,7 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
 
     if (album) {
       console.log(`[Rollback] Deleting album "${album.title}" from DB...`);
-      // Сначала удаляем альбом из списков артистов
       await removeContentFromArtists(album.artist, album._id, "albums");
-      // Затем удаляем сам альбом
       await Album.findByIdAndDelete(album._id);
     }
 
@@ -1001,7 +981,6 @@ export const uploadFullAlbumAuto = async (req, res, next) => {
     console.log(`[Rollback] Cleaning up temp directory: ${tempUnzipDir}`);
     await cleanUpTempDir(tempUnzipDir);
 
-    // Передаем ошибку дальше, чтобы клиент получил ответ 500
     next(error);
   }
 };
