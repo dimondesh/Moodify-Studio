@@ -405,7 +405,7 @@
     "clearAllDownloads": "Clear All Downloads",
     "clearLabel": "This will remove all downloaded songs, albums, and playlists from this device.",
     "playbackSpeed": "Playback Speed", 
-    "playbackSpeedDesc": "Enable to create a slowed + reverb effect. Adjust the speed with the slider."
+    "playbackSpeedDesc": "Control the playback speed of your music."
   
   },
   "admin": {
