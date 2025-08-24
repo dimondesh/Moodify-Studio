@@ -563,7 +563,9 @@
       "plays": "прослушиваний",
       "about": "Об исполнителе",
       "albums": "Альбомы",
-      "singlesAndEps": "Синглы и EP"
+      "singlesAndEps": "Синглы и EP",
+      "appearsOn": "Ещё с этим исполнителем"
+
     },
     "likedSongs": {
       "title": "Любимые треки",

@@ -15,6 +15,7 @@ import { axiosInstance } from "@/lib/axios";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
+import { useMusicStore } from "../../stores/useMusicStore";
 
 const ArtistPage = () => {
   const { t } = useTranslation();
@@ -34,6 +35,9 @@ const ArtistPage = () => {
     fetchFollowedArtists,
   } = useLibraryStore();
 
+  const { artistAppearsOn, isAppearsOnLoading, fetchArtistAppearsOn } =
+    useMusicStore();
+
   useEffect(() => {
     const fetchArtistData = async () => {
       if (useOfflineStore.getState().isOffline) return;
@@ -45,7 +49,10 @@ const ArtistPage = () => {
       }
       try {
         setLoading(true);
-        const artistRes = await axiosInstance.get<Artist>(`/artists/${id}`);
+        const [artistRes] = await Promise.all([
+          axiosInstance.get<Artist>(`/artists/${id}`),
+          fetchArtistAppearsOn(id),
+        ]);
         setArtist(artistRes.data);
         setError(null);
       } catch (err: unknown) {
@@ -65,7 +72,7 @@ const ArtistPage = () => {
     fetchArtistData();
     fetchLikedSongs();
     fetchFollowedArtists();
-  }, [id, fetchLikedSongs, fetchFollowedArtists, t]);
+  }, [id, fetchLikedSongs, fetchFollowedArtists, t, fetchArtistAppearsOn]);
 
   if (loading) {
     return (
@@ -347,6 +354,14 @@ const ArtistPage = () => {
                 title={t("pages.artist.singlesAndEps")}
                 albums={singlesAndEps}
                 isLoading={loading}
+              />
+            )}
+
+            {artistAppearsOn.length > 0 && (
+              <AlbumGrid
+                title={t("pages.artist.appearsOn")}
+                albums={artistAppearsOn}
+                isLoading={isAppearsOnLoading}
               />
             )}
           </div>

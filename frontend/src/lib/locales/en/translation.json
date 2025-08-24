@@ -566,7 +566,9 @@
       "plays": "plays",
       "about": "About",
       "albums": "Albums",
-      "singlesAndEps": "Singles and EPs"
+      "singlesAndEps": "Singles and EPs",
+      "appearsOn": "Appears On" 
+
     },
     "likedSongs": {
       "title": "Liked Songs",

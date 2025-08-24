@@ -566,7 +566,9 @@
       "plays": "прослуховувань",
       "about": "Про виконавця",
       "albums": "Альбоми",
-      "singlesAndEps": "Сингли та EP"
+      "singlesAndEps": "Сингли та EP",
+      "appearsOn": "Ще з цим виконавцем"
+
     },
     "likedSongs": {
       "title": "Улюблені треки",

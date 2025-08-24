@@ -41,6 +41,8 @@ interface MusicStore {
   paginatedArtists: Artist[];
   artistsPage: number;
   artistsTotalPages: number;
+  artistAppearsOn: Album[];
+  isAppearsOnLoading: boolean;
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
@@ -62,6 +64,7 @@ interface MusicStore {
   fetchPaginatedSongs: (page: number, limit: number) => Promise<void>;
   fetchPaginatedAlbums: (page: number, limit: number) => Promise<void>;
   fetchPaginatedArtists: (page: number, limit: number) => Promise<void>;
+  fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
@@ -88,12 +91,32 @@ export const useMusicStore = create<MusicStore>((set) => ({
   paginatedArtists: [],
   artistsPage: 1,
   artistsTotalPages: 1,
+  artistAppearsOn: [],
+  isAppearsOnLoading: false,
 
   stats: {
     totalSongs: 0,
     totalAlbums: 0,
     totalUsers: 0,
     totalArtists: 0,
+  },
+
+  fetchArtistAppearsOn: async (artistId: string) => {
+    set({ isAppearsOnLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get(
+        `/artists/${artistId}/appears-on`
+      );
+      set({ artistAppearsOn: response.data, isAppearsOnLoading: false });
+    } catch (error: any) {
+      console.error("Failed to fetch 'Appears On' albums:", error);
+      set({
+        error:
+          error.response?.data?.message ||
+          "Failed to fetch 'Appears On' section",
+        isAppearsOnLoading: false,
+      });
+    }
   },
 
   fetchPaginatedSongs: async (page = 1, limit = 50) => {
