@@ -45,6 +45,7 @@ const AudioPlayer = () => {
     repeatMode,
     vocalsVolume,
     masterVolume,
+
     setCurrentTime,
     setDuration,
     currentTime,
@@ -376,13 +377,23 @@ const AudioPlayer = () => {
       if (isPlaying) {
         if (audioContext.state === "suspended") await audioContext.resume();
 
-        const startTime = usePlayerStore.getState().currentTime;
-        offsetTimeRef.current = startTime;
-        startTimeRef.current = audioContext.currentTime;
-
-        lastUpdatedSecondRef.current = -1;
-
+        const uiCurrentTime = usePlayerStore.getState().currentTime;
         const currentRate = playbackRateEnabled ? playbackRate : 1.0;
+        const realOffsetTime = uiCurrentTime * currentRate;
+
+        if (
+          instrumentalBufferRef.current &&
+          realOffsetTime >= instrumentalBufferRef.current.duration
+        ) {
+          console.warn(
+            "Seek time is beyond the original duration. Playing next song."
+          );
+          playNext();
+          return;
+        }
+
+        offsetTimeRef.current = uiCurrentTime;
+        startTimeRef.current = audioContext.currentTime;
 
         const newInstrumentalSource = audioContext.createBufferSource();
         newInstrumentalSource.buffer = instrumentalBufferRef.current;
@@ -402,14 +413,11 @@ const AudioPlayer = () => {
           vocalsSourceRef.current = newVocalsSource;
         }
 
-        newInstrumentalSource.start(
-          audioContext.currentTime,
-          offsetTimeRef.current
-        );
+        newInstrumentalSource.start(audioContext.currentTime, realOffsetTime);
         if (vocalsSourceRef.current) {
           vocalsSourceRef.current.start(
             audioContext.currentTime,
-            offsetTimeRef.current
+            realOffsetTime
           );
         }
 
@@ -442,12 +450,7 @@ const AudioPlayer = () => {
     };
 
     managePlayback();
-  }, [
-    isPlaying,
-    currentSong,
-    isAudioContextReady,
-    seekVersion, 
-  ]);
+  }, [isPlaying, currentSong, isAudioContextReady, seekVersion]);
 
   // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
@@ -465,14 +468,23 @@ const AudioPlayer = () => {
     }
   }, [vocalsVolume, masterVolume, currentSong, isAudioContextReady]);
 
-  // --- Реакция на изменение скорости и пересчет времени/длительности ---
+  // --- Реакция на изменение скорости и корректировка времени/длительности ---
   useEffect(() => {
     const currentRate = playbackRateEnabled ? playbackRate : 1.0;
-    playbackRateRef.current = currentRate; 
+    playbackRateRef.current = currentRate;
 
     if (originalDuration > 0) {
       const newDisplayDuration = Math.floor(originalDuration / currentRate);
+
+      const currentTrackTime = usePlayerStore.getState().currentTime;
+      const oldDisplayDuration = usePlayerStore.getState().duration;
+
+      const progressPercent =
+        oldDisplayDuration > 0 ? currentTrackTime / oldDisplayDuration : 0;
+      const newCurrentTime = newDisplayDuration * progressPercent;
+
       setDuration(newDisplayDuration, originalDuration);
+      setCurrentTime(newCurrentTime, true);
     }
 
     const instrumentalSource = instrumentalSourceRef.current;
@@ -480,7 +492,6 @@ const AudioPlayer = () => {
     const audioContext = audioContextRef.current;
 
     if (instrumentalSource && audioContext) {
-      // Плавный переход только при изменении "на лету"
       instrumentalSource.playbackRate.linearRampToValueAtTime(
         currentRate,
         audioContext.currentTime + 0.5
@@ -492,7 +503,13 @@ const AudioPlayer = () => {
         );
       }
     }
-  }, [playbackRate, playbackRateEnabled, originalDuration, setDuration]);
+  }, [
+    playbackRate,
+    playbackRateEnabled,
+    originalDuration,
+    setDuration,
+    setCurrentTime,
+  ]);
 
   // --- Эффект 5: Обновление текущего времени в сторе ---
   useEffect(() => {
@@ -510,8 +527,7 @@ const AudioPlayer = () => {
         audioContext.state === "running"
       ) {
         const elapsedRealTime = audioContext.currentTime - startTimeRef.current;
-        const elapsedSongTime = elapsedRealTime * playbackRateRef.current;
-        const newTime = offsetTimeRef.current + elapsedSongTime;
+        const newTime = offsetTimeRef.current + elapsedRealTime;
 
         const newFlooredTime = Math.floor(newTime);
 
@@ -529,7 +545,7 @@ const AudioPlayer = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isAudioContextReady, setCurrentTime]); 
+  }, [isAudioContextReady, setCurrentTime]);
 
   useEffect(() => {
     listenRecordedRef.current = false;
