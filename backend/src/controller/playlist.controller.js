@@ -4,7 +4,7 @@ import { Song } from "../models/song.model.js";
 import { Library } from "../models/library.model.js";
 import { uploadToBunny } from "../lib/bunny.service.js";
 import { v4 as uuidv4 } from "uuid";
-
+import path from "path";
 import cloudinary from "../lib/cloudinary.js";
 
 const uploadImageToBunny = async (file) => {
