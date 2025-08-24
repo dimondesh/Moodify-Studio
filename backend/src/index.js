@@ -23,6 +23,7 @@ import artistRoutes from "./routes/artist.route.js";
 import mixRoutes from "./routes/mix.route.js";
 import cronRoutes from "./routes/cron.route.js";
 import shareRoutes from "./routes/share.route.js";
+import { updateDailyMixes } from "./controller/mix.controller.js";
 
 dotenv.config();
 
@@ -67,6 +68,18 @@ cron.schedule("*/10 * * * *", () => {
     });
   }
 });
+
+cron.schedule(
+  "0 1 * * *",
+  () => {
+    updateDailyMixes();
+  },
+  {
+    scheduled: true,
+    timezone: "Europe/Kyiv",
+  }
+);
+
 app.use((req, res, next) => {
   req.io = io;
   next();

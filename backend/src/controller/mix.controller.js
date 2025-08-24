@@ -28,83 +28,101 @@ const groupMixes = (mixes) => {
   );
 };
 
+export const updateDailyMixes = async () => {
+  try {
+    console.log("CRON JOB: Starting daily mixes update...");
+    const today = getTodayDate();
+
+    const genres = await Genre.find().lean();
+    const moods = await Mood.find().lean();
+    const sources = [
+      ...genres.map((g) => ({ ...g, type: "Genre" })),
+      ...moods.map((m) => ({ ...m, type: "Mood" })),
+    ];
+
+    const updatePromises = [];
+
+    for (const source of sources) {
+      const queryField = source.type === "Genre" ? "genres" : "moods";
+      const songCount = await Song.countDocuments({
+        [queryField]: source._id,
+      });
+
+      if (songCount < 5) continue;
+
+      const randomSongs = await Song.aggregate([
+        { $match: { [queryField]: source._id } },
+        { $sample: { size: 30 } },
+        {
+          $lookup: {
+            from: "artists",
+            localField: "artist",
+            foreignField: "_id",
+            as: "artistDetails",
+          },
+        },
+      ]);
+
+      if (randomSongs.length === 0 || !randomSongs[0].artistDetails?.[0])
+        continue;
+
+      const mixKey = `mixes.${source.type.toLowerCase()}.${source.name
+        .toLowerCase()
+        .replace(/\s+/g, "_")}`;
+
+      const searchableNames = getTranslationsForKey(mixKey);
+
+      const updatePromise = Mix.updateOne(
+        { sourceId: source._id },
+        {
+          $set: {
+            name: mixKey,
+            searchableNames: searchableNames,
+            type: source.type,
+            sourceName: source.name,
+            songs: randomSongs.map((s) => s._id),
+            imageUrl: randomSongs[0].artistDetails[0].imageUrl,
+            generatedOn: today,
+          },
+        },
+        { upsert: true }
+      );
+      updatePromises.push(updatePromise);
+    }
+
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+
+      const upsertedMixes = await Mix.find({ generatedOn: today })
+        .select("_id")
+        .lean();
+      const updatedMixIds = upsertedMixes.map((m) => m._id.toString());
+
+      console.log(
+        `CRON JOB: Successfully updated ${updatedMixIds.length} mixes.`
+      );
+
+      updatedMixIds.forEach((mixId) => {
+        io.to(`mix-${mixId}`).emit("mix_updated", { mixId });
+      });
+    } else {
+      console.log("CRON JOB: No mixes needed an update.");
+    }
+  } catch (error) {
+    console.error("CRON JOB: Error updating daily mixes:", error);
+  }
+};
+
 export const getDailyMixes = async (req, res, next) => {
   try {
     const today = getTodayDate();
     let mixes = await Mix.find({ generatedOn: today }).lean();
 
-    let updatedMixIds = [];
-
     if (mixes.length === 0) {
-      console.log("Generating or updating daily mixes...");
-
-      const genres = await Genre.find().lean();
-      const moods = await Mood.find().lean();
-      const sources = [
-        ...genres.map((g) => ({ ...g, type: "Genre" })),
-        ...moods.map((m) => ({ ...m, type: "Mood" })),
-      ];
-
-      const updatePromises = [];
-
-      for (const source of sources) {
-        const queryField = source.type === "Genre" ? "genres" : "moods";
-        const songCount = await Song.countDocuments({
-          [queryField]: source._id,
-        });
-
-        if (songCount < 5) continue;
-
-        const randomSongs = await Song.aggregate([
-          { $match: { [queryField]: source._id } },
-          { $sample: { size: 30 } },
-          {
-            $lookup: {
-              from: "artists",
-              localField: "artist",
-              foreignField: "_id",
-              as: "artistDetails",
-            },
-          },
-        ]);
-
-        if (randomSongs.length === 0 || !randomSongs[0].artistDetails?.[0])
-          continue;
-
-        const mixKey = `mixes.${source.type.toLowerCase()}.${source.name
-          .toLowerCase()
-          .replace(/\s+/g, "_")}`;
-
-        const searchableNames = getTranslationsForKey(mixKey);
-
-        const updatePromise = Mix.updateOne(
-          { sourceId: source._id },
-          {
-            $set: {
-              name: mixKey,
-              searchableNames: searchableNames,
-              type: source.type,
-              sourceName: source.name,
-              songs: randomSongs.map((s) => s._id),
-              imageUrl: randomSongs[0].artistDetails[0].imageUrl,
-              generatedOn: today,
-            },
-          },
-          { upsert: true }
-        );
-        updatePromises.push(updatePromise);
-      }
-
-      if (updatePromises.length > 0) {
-        await Promise.all(updatePromises);
-
-        const upsertedMixes = await Mix.find({ generatedOn: today })
-          .select("_id")
-          .lean();
-        updatedMixIds = upsertedMixes.map((m) => m._id.toString());
-      }
-
-      mixes = await Mix.find().lean();
+      console.log(
+        "No mixes found for today. The cron job may not have run yet."
+      );
+      return res.status(200).json({ genreMixes: [], moodMixes: [] });
     }
 
     if (req.user && req.user.id) {
@@ -140,13 +158,6 @@ export const getDailyMixes = async (req, res, next) => {
       select: "title duration imageUrl artist albumId",
       populate: { path: "artist", select: "name" },
     });
-
-    if (updatedMixIds.length > 0) {
-      console.log(`Emitting updates for ${updatedMixIds.length} mixes.`);
-      updatedMixIds.forEach((mixId) => {
-        io.to(`mix-${mixId}`).emit("mix_updated", { mixId });
-      });
-    }
 
     res.status(200).json(groupMixes(populatedMixes));
   } catch (error) {
