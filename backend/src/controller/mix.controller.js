@@ -116,7 +116,7 @@ export const updateDailyMixes = async () => {
 export const getDailyMixes = async (req, res, next) => {
   try {
     const today = getTodayDate();
-    let mixes = await Mix.find({ generatedOn: today }).lean();
+    let mixes = await Mix.find({ generatedOn: { $gte: today } }).lean();
 
     if (mixes.length === 0) {
       console.log(
