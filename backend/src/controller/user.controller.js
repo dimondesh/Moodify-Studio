@@ -5,6 +5,11 @@ import { Library } from "../models/library.model.js";
 import { firebaseAdmin } from "../lib/firebase.js";
 import { RecentSearch } from "../models/recentSearch.model.js";
 import mongoose from "mongoose";
+import {
+  uploadToBunny,
+  deleteFromBunny,
+  getPathFromUrl,
+} from "../lib/bunny.service.js";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -161,6 +166,7 @@ export const updateUserProfile = async (req, res, next) => {
     const { fullName } = req.body;
     const userId = req.user.id;
     const firebaseUid = req.user.firebaseUid;
+    const currentUser = await User.findById(userId);
 
     const updateDataMongo = {};
     const updateDataFirebase = {};
@@ -171,13 +177,23 @@ export const updateUserProfile = async (req, res, next) => {
     }
 
     if (req.files && req.files.imageUrl) {
+      // Удаляем старое изображение, если оно есть
+      if (currentUser.imageUrl) {
+        const oldImagePath = getPathFromUrl(currentUser.imageUrl);
+        if (oldImagePath) {
+          await deleteFromBunny(oldImagePath);
+        }
+      }
+
       const file = req.files.imageUrl;
-      const result = await cloudinary.uploader.upload(file.tempFilePath, {
-        folder: "profile_pictures",
-        public_id: `${userId}_${Date.now()}`,
-      });
-      updateDataMongo.imageUrl = result.secure_url;
-      updateDataFirebase.photoURL = result.secure_url;
+      const fileName = `${userId}_${Date.now()}${path.extname(file.name)}`;
+      const result = await uploadToBunny(
+        file.tempFilePath,
+        "profile_pictures",
+        fileName
+      );
+      updateDataMongo.imageUrl = result.url;
+      updateDataFirebase.photoURL = result.url;
     }
 
     const updatedUser = await User.findByIdAndUpdate(userId, updateDataMongo, {

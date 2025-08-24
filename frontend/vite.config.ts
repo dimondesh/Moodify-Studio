@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
+// Замените 'your-pull-zone-hostname.b-cdn.net' на ваш хостнейм
+const BUNNY_CDN_HOSTNAME = "https://moodify.b-cdn.net";
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -16,18 +19,17 @@ export default defineConfig({
 
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
-
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
+            // Обновленное правило для кэширования с Bunny.net
+            urlPattern: new RegExp(`^https://${BUNNY_CDN_HOSTNAME}/.*`, "i"),
             handler: "CacheFirst",
             options: {
-              cacheName: "cloudinary-images-cache",
+              cacheName: "bunny-cdn-cache",
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 дней
               },
               cacheableResponse: {
                 statuses: [0, 200],

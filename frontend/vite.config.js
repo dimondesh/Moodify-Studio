@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+// Замените 'your-pull-zone-hostname.b-cdn.net' на ваш хостнейм
+var BUNNY_CDN_HOSTNAME = "https://moodify.b-cdn.net";
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
@@ -13,17 +15,18 @@ export default defineConfig({
                 enabled: true,
             },
             workbox: {
-                globPatterns: ["**/*.{js,css,html,ico,png,svg,wav}"],
+                globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
                 maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
                 runtimeCaching: [
                     {
-                        urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
+                        // Обновленное правило для кэширования с Bunny.net
+                        urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
                         handler: "CacheFirst",
                         options: {
-                            cacheName: "cloudinary-images-cache",
+                            cacheName: "bunny-cdn-cache",
                             expiration: {
                                 maxEntries: 200,
-                                maxAgeSeconds: 60 * 60 * 24 * 30,
+                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 дней
                             },
                             cacheableResponse: {
                                 statuses: [0, 200],
@@ -46,7 +49,6 @@ export default defineConfig({
                         },
                     },
                     {
-                       
                         urlPattern: function (_a) {
                             var url = _a.url;
                             return url.origin === "https://moodify-yf1r.onrender.com/api";
@@ -67,8 +69,10 @@ export default defineConfig({
                 ],
             },
             includeAssets: [
+                "silent.mp3",
                 "Moodify.png",
                 "Moodify.svg",
+                "Spotify.svg",
                 "liked.png",
                 "liked.svg",
                 "default-album-cover.png",
@@ -94,7 +98,7 @@ export default defineConfig({
                         src: "Moodify.png",
                         sizes: "512x512",
                         type: "image/png",
-                        purpose: "any maskable", 
+                        purpose: "any maskable",
                     },
                 ],
             },

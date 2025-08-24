@@ -82,14 +82,14 @@ define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.vr3vgkomjt"
+    "revision": "0.069n7pql7uo"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/res\.cloudinary\.com\/.*/i, new workbox.CacheFirst({
-    "cacheName": "cloudinary-images-cache",
+  workbox.registerRoute(/^https:\/\/https:\/\/moodify.b-cdn.net\/.*/i, new workbox.CacheFirst({
+    "cacheName": "bunny-cdn-cache",
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 200,
       maxAgeSeconds: 2592000

@@ -2,19 +2,23 @@ import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
 import { Library } from "../models/library.model.js";
+import { uploadToBunny } from "../lib/bunny.service.js";
+import { v4 as uuidv4 } from "uuid";
 
 import cloudinary from "../lib/cloudinary.js";
 
-const uploadImageToCloudinary = async (file) => {
+const uploadImageToBunny = async (file) => {
   try {
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      resource_type: "image",
-      folder: "playlist_covers",
-    });
-    return result.secure_url;
+    const fileName = `${uuidv4()}${path.extname(file.name)}`;
+    const result = await uploadToBunny(
+      file.tempFilePath,
+      "playlist_covers",
+      fileName
+    );
+    return result.url;
   } catch (error) {
-    console.error("Error uploading image to Cloudinary:", error);
-    throw new Error("Failed to upload image file to Cloudinary");
+    console.error("Error uploading image to Bunny.net:", error);
+    throw new Error("Failed to upload image file to Bunny.net");
   }
 };
 
@@ -27,10 +31,9 @@ export const createPlaylist = async (req, res, next) => {
       return res.status(400).json({ message: "Playlist title is required" });
     }
 
-    let imageUrl =
-      "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1755425854/default-album-cover_qhwd4c.png";
+    let imageUrl = "https://moodify.b-cdn.net/default-album-cover.png";
     if (req.files && req.files.image) {
-      imageUrl = await uploadImageToCloudinary(req.files.image);
+      imageUrl = await uploadImageToBunny(req.files.image);
     }
 
     const playlist = new Playlist({
@@ -177,7 +180,7 @@ export const updatePlaylist = async (req, res, next) => {
     if (isPublic !== undefined) playlist.isPublic = isPublic === "true";
 
     if (req.files && req.files.image) {
-      playlist.imageUrl = await uploadImageToCloudinary(req.files.image);
+      playlist.imageUrl = await uploadImageToBunny(req.files.image);
     }
 
     await playlist.save();
