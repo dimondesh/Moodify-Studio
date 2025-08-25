@@ -3,8 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
-// Замените 'your-pull-zone-hostname.b-cdn.net' на ваш хостнейм
-var BUNNY_CDN_HOSTNAME = "https://moodify.b-cdn.net";
+var BUNNY_CDN_HOSTNAME = "moodify.b-cdn.net";
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
@@ -16,16 +15,15 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
-                maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
                 runtimeCaching: [
                     {
-                        // Обновленное правило для кэширования с Bunny.net
-                        urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
+                        urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*\\.(png|jpg|jpeg|svg|gif|webp)$"), "i"),
                         handler: "CacheFirst",
                         options: {
-                            cacheName: "bunny-cdn-cache",
+                            cacheName: "bunny-images-cache",
                             expiration: {
-                                maxEntries: 200,
+                                maxEntries: 250,
                                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 дней
                             },
                             cacheableResponse: {
@@ -85,7 +83,7 @@ export default defineConfig({
                 name: "Moodify",
                 short_name: "Moodify",
                 description: "Your ultimate guide in the world of music.",
-                theme_color: "#7B39EC",
+                theme_color: "#7B3EC",
                 background_color: "#18181b",
                 icons: [
                     {
