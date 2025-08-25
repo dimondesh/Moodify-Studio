@@ -123,8 +123,9 @@ const ChatPage = () => {
             message.senderId === mongoUser?.id ? "flex-row-reverse" : ""
           }`}
         >
-          <Avatar className="size-8 flex-shrink-0">
+          <Avatar className="size-8 flex-shrink-0 object-cover">
             <AvatarImage
+              className="object-cover"
               src={
                 message.senderId === mongoUser?.id
                   ? mongoUser?.imageUrl || "/default-avatar.png"

@@ -275,10 +275,11 @@ const Topbar = () => {
                 <DrawerHeader className="p-4 border-b border-zinc-800">
                   <DrawerTitle className="sr-only">User Menu</DrawerTitle>
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-10 h-10 object-cover">
                       <AvatarImage
                         src={user.photoURL || "/Moodify.png"}
                         alt="avatar"
+                        className="object-cover"
                       />
                       <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
                     </Avatar>

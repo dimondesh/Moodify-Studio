@@ -38,8 +38,11 @@ const ChatHeader = ({ showBackButton = false, onBack }: ChatHeaderProps) => {
         to={`/users/${selectedUser._id}`}
         className="flex items-center gap-3 group"
       >
-        <Avatar>
-          <AvatarImage src={selectedUser.imageUrl || "/default-avatar.png"} />
+        <Avatar className="object-cover">
+          <AvatarImage
+            className="object-cover"
+            src={selectedUser.imageUrl || "/default-avatar.png"}
+          />
           <AvatarFallback>{selectedUser.fullName?.[0] || "U"}</AvatarFallback>
         </Avatar>
         <div>
