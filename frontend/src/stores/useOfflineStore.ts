@@ -197,6 +197,8 @@ export const useOfflineStore = create<OfflineState>()(
               throw new Error("Invalid item data received from server.");
             }
 
+            // --- ИЗМЕНЕНИЕ НАЧАЛО ---
+
             const oldItemData = await getUserItem(itemType, itemId, userId);
             const newSongIds = new Set(
               serverItemData.songs.map((s: Song) => s._id)
@@ -242,11 +244,10 @@ export const useOfflineStore = create<OfflineState>()(
                   await deleteUserItem("songs", removedSong._id);
                 }
               }
-              const audioCache = await caches.open("moodify-audio-cache");
-              const imageCache = await caches.open("cloudinary-images-cache");
+              // Используем новое имя кэша из vite.config.ts
+              const assetsCache = await caches.open("bunny-assets-cache");
               for (const url of urlsToDelete) {
-                await audioCache.delete(url).catch((e) => console.warn(e));
-                await imageCache.delete(url).catch((e) => console.warn(e));
+                await assetsCache.delete(url).catch((e) => console.warn(e));
               }
             }
 
@@ -261,21 +262,20 @@ export const useOfflineStore = create<OfflineState>()(
             });
 
             const allUrls = Array.from(urlsToCache).filter(Boolean);
-            const audioCache = await caches.open("moodify-audio-cache");
-            const imageCache = await caches.open("cloudinary-images-cache");
+            // Используем единый кэш для всех ассетов
+            const assetsCache = await caches.open("bunny-assets-cache");
 
             await Promise.all(
               allUrls.map((url) => {
-                const cache = url.includes("cloudinary")
-                  ? imageCache
-                  : audioCache;
-                return cache
+                return assetsCache
                   .add(url)
                   .catch((err) =>
                     console.warn(`Could not cache URL: ${url}`, err)
                   );
               })
             );
+
+            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
             const itemToSave = { ...serverItemData, songsData, userId };
             await saveUserItem(itemType, itemToSave as any);
@@ -318,6 +318,7 @@ export const useOfflineStore = create<OfflineState>()(
           }
         },
 
+        // Также обновим функцию deleteItem, чтобы она использовала правильное имя кэша
         deleteItem: async (itemId, itemType, itemTitle) => {
           const userId = useAuthStore.getState().user?.id;
           if (!userId) return;
@@ -361,12 +362,12 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
-            const audioCache = await caches.open("moodify-audio-cache");
-            const imageCache = await caches.open("cloudinary-images-cache");
+            // --- ИЗМЕНЕНИЕ НАЧАЛО ---
+            const assetsCache = await caches.open("bunny-assets-cache");
             for (const url of urlsToDelete) {
-              await audioCache.delete(url).catch((e) => console.warn(e));
-              await imageCache.delete(url).catch((e) => console.warn(e));
+              await assetsCache.delete(url).catch((e) => console.warn(e));
             }
+            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
             await deleteUserItem(itemType, itemId);
 

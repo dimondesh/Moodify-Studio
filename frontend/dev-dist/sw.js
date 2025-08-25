@@ -82,16 +82,16 @@ define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.4sqkc0u96gg"
+    "revision": "0.la8red12h08"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/https:\/\/moodify.b-cdn.net\/.*/i, new workbox.CacheFirst({
-    "cacheName": "bunny-cdn-cache",
+  workbox.registerRoute(/^https:\/\/moodify.b-cdn.net\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i, new workbox.CacheFirst({
+    "cacheName": "bunny-images-cache",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 200,
+      maxEntries: 250,
       maxAgeSeconds: 2592000
     }), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
