@@ -334,7 +334,7 @@ const LibraryPage = () => {
                         >
                           <div className="relative mb-4">
                             <div
-                              className={`aspect-square shadow-lg overflow-hidden ${imageClass}`}
+                              className={`aspect-square flex object-cover shadow-lg overflow-hidden ${imageClass}`}
                             >
                               <img
                                 src={
