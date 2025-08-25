@@ -10,6 +10,7 @@ import {
   deleteFromBunny,
   getPathFromUrl,
 } from "../lib/bunny.service.js";
+import path from "path";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -177,7 +178,6 @@ export const updateUserProfile = async (req, res, next) => {
     }
 
     if (req.files && req.files.imageUrl) {
-      // Удаляем старое изображение, если оно есть
       if (currentUser.imageUrl) {
         const oldImagePath = getPathFromUrl(currentUser.imageUrl);
         if (oldImagePath) {
