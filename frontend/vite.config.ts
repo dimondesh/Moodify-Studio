@@ -5,7 +5,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 // Замените 'your-pull-zone-hostname.b-cdn.net' на ваш хостнейм
-const BUNNY_CDN_HOSTNAME = "https://moodify.b-cdn.net";
+const BUNNY_CDN_HOSTNAME = "moodify.b-cdn.net";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -22,13 +22,12 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Обновленное правило для кэширования с Bunny.net
             urlPattern: new RegExp(`^https://${BUNNY_CDN_HOSTNAME}/.*`, "i"),
             handler: "CacheFirst",
             options: {
-              cacheName: "bunny-cdn-cache",
+              cacheName: "bunny-cdn-images-cache",
               expiration: {
-                maxEntries: 200,
+                maxEntries: 250,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 дней
               },
               cacheableResponse: {
