@@ -17,30 +17,18 @@ export default defineConfig({
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
                 maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
                 runtimeCaching: [
+                    // --- ИЗМЕНЕНИЕ НАЧАЛО ---
+                    // Единое правило для всех ассетов с Bunny.net (изображения и аудио)
                     {
-                        urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*\\.(png|jpg|jpeg|svg|gif|webp)$"), "i"),
+                        urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
                         handler: "CacheFirst",
                         options: {
-                            cacheName: "bunny-images-cache",
+                            cacheName: "bunny-assets-cache", // Новое общее имя кэша
                             expiration: {
-                                maxEntries: 250,
-                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 дней
+                                maxEntries: 750, // Увеличим лимит для песен и изображений
+                                maxAgeSeconds: 60 * 60 * 24 * 60, // 60 дней
                             },
-                            cacheableResponse: {
-                                statuses: [0, 200],
-                            },
-                        },
-                    },
-                    {
-                        urlPattern: /.*\.(mp3|wav|ogg)$/i,
-                        handler: "CacheFirst",
-                        options: {
-                            cacheName: "moodify-audio-cache",
-                            expiration: {
-                                maxEntries: 500,
-                                maxAgeSeconds: 60 * 60 * 24 * 90,
-                            },
-                            rangeRequests: true,
+                            rangeRequests: true, // Важно для стриминга аудио
                             cacheableResponse: {
                                 statuses: [0, 200],
                             },
@@ -83,7 +71,7 @@ export default defineConfig({
                 name: "Moodify",
                 short_name: "Moodify",
                 description: "Your ultimate guide in the world of music.",
-                theme_color: "#7B3EC",
+                theme_color: "#7B39EC",
                 background_color: "#18181b",
                 icons: [
                     {
