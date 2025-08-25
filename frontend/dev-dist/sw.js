@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
+define(['./workbox-7356b21a'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -82,26 +82,17 @@ define(['./workbox-4a151efd'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.vkmvd30v7dg"
+    "revision": "0.u52sg6dcp7"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/moodify.b-cdn.net\/.*\.(png|jpg|jpeg|svg|gif|webp)$/i, new workbox.CacheFirst({
-    "cacheName": "bunny-images-cache",
+  workbox.registerRoute(/^https:\/\/moodify.b-cdn.net\/.*/i, new workbox.CacheFirst({
+    "cacheName": "bunny-assets-cache",
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 250,
-      maxAgeSeconds: 2592000
-    }), new workbox.CacheableResponsePlugin({
-      statuses: [0, 200]
-    })]
-  }), 'GET');
-  workbox.registerRoute(/.*\.(mp3|wav|ogg)$/i, new workbox.CacheFirst({
-    "cacheName": "moodify-audio-cache",
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 500,
-      maxAgeSeconds: 7776000
+      maxEntries: 750,
+      maxAgeSeconds: 5184000
     }), new workbox.RangeRequestsPlugin(), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
     })]
