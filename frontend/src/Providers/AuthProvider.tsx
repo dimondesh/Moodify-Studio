@@ -41,8 +41,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firebaseUser.email
         );
 
-        if (navigator.onLine) {
-          console.log("AuthProvider: Online. Syncing user with backend...");
+        if (!useAuthStore.getState().user && navigator.onLine) {
+          console.log(
+            "AuthProvider: Online and no user in state. Syncing user with backend..."
+          );
           try {
             await fetchUser(firebaseUser.uid);
             console.log("AuthProvider: MongoDB user synced successfully.");
@@ -51,22 +53,25 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               "AuthProvider: Error syncing Firebase user with MongoDB:",
               error
             );
+
             logout();
           }
+        } else if (useAuthStore.getState().user) {
+          console.log("AuthProvider: User already in state. No sync needed.");
         } else {
           console.log("AuthProvider: Offline. Trusting persisted user state.");
         }
       } else {
-        if (navigator.onLine) {
+        if (useAuthStore.getState().user) {
           console.log(
-            "AuthProvider: No Firebase user is signed in (ONLINE). Clearing user state."
+            "AuthProvider: No Firebase user, but user was in state. Clearing user state."
           );
           setUser(null);
           socketInitializedRef.current = false;
           disconnectSocket();
         } else {
           console.log(
-            "AuthProvider: No Firebase user detected (OFFLINE). Trusting persisted state."
+            "AuthProvider: No Firebase user and no user in state. Nothing to do."
           );
         }
       }
