@@ -673,17 +673,7 @@ const PlaylistDetailsPage = () => {
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="grid grid-cols-[35px_1fr_2fr_min-content] md:grid-cols-[16px_6fr_1.2fr_4fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
-                  <div>#</div>
-                  <div>{t("pages.playlist.headers.title")}</div>
-                  <div className="hidden md:block">
-                    {t("pages.playlist.headers.dateAdded")}
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div className="hidden md:block"></div>
-                </div>
+                <div className="border-b border-white/5 mx-4 sm:mx-6 md:mx-10" />
                 <div className="px-4 sm:px-6">
                   <div className="space-y-2 py-4">
                     {currentPlaylist.songs.map((song, index) => {
@@ -698,25 +688,11 @@ const PlaylistDetailsPage = () => {
                             if (!(e.target as HTMLElement).closest("button"))
                               handlePlaySong(song, index);
                           }}
-                          className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          className={`flex items-center justify-between gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
                             isCurrentSong ? "bg-white/10" : ""
                           }`}
                         >
-                          <div className="flex items-center justify-center">
-                            {isCurrentSong && isPlaying ? (
-                              <div className="z-10">
-                                <Equalizer />
-                              </div>
-                            ) : (
-                              <span className="group-hover:hidden text-xs sm:text-sm">
-                                {index + 1}
-                              </span>
-                            )}
-                            {!isCurrentSong && (
-                              <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -727,30 +703,39 @@ const PlaylistDetailsPage = () => {
                               <img
                                 src={song.imageUrl || "/default-song-cover.png"}
                                 alt={song.title}
-                                className="size-10 object-cover rounded-md flex-shrink-0"
+                                className="size-10 object-cover rounded-md"
                               />
                             </button>
                             <div className="flex flex-col min-w-0">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSongTitleClick(song.albumId);
-                                }}
-                                className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
-                                  isCurrentSong
-                                    ? "text-violet-400"
-                                    : "text-white"
-                                }`}
-                              >
-                                <p className="truncate">{song.title}</p>
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {isCurrentSong && isPlaying && (
+                                  <div className="flex-shrink-0">
+                                    <Equalizer />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSongTitleClick(song.albumId);
+                                  }}
+                                  className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
+                                    isCurrentSong
+                                      ? "text-violet-400"
+                                      : "text-white"
+                                  }`}
+                                >
+                                  <p className="truncate">{song.title}</p>
+                                </button>
+                              </div>
+
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
                                     <button
-                                      onClick={() =>
-                                        handleArtistNameClick(artist._id)
-                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleArtistNameClick(artist._id);
+                                      }}
                                       className="hover:underline focus:outline-none focus:underline"
                                     >
                                       {artist.name}
@@ -762,15 +747,8 @@ const PlaylistDetailsPage = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="items-center hidden md:flex text-xs">
-                            {song.createdAt
-                              ? format(new Date(song.createdAt), "MMM dd, yyyy")
-                              : "N/A"}
-                          </div>
-                          <div className="flex items-center text-xs sm:text-sm flex-shrink-0">
-                            {formatDuration(song.duration)}
-                          </div>
-                          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
+
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                             <Button
                               size="icon"
                               variant="ghost"
