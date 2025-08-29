@@ -25,6 +25,7 @@ import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { useChatStore } from "../../stores/useChatStore";
+import EqualizerTitle from "@/components/ui/equalizer-title";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -313,17 +314,6 @@ const MixDetailsPage = () => {
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="grid grid-cols-[35px_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 sm:px-6 py-2 text-sm text-zinc-400 border-b border-white/5">
-                  <div className="flex items-center justify-center">#</div>
-                  <div>{t("pages.playlist.headers.title")}</div>
-                  <div className="hidden md:block">
-                    {t("pages.playlist.headers.dateAdded")}
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div className="hidden md:block"></div>
-                </div>
                 <div className="px-4 sm:px-6">
                   <div className="space-y-2 py-4">
                     {currentMix.songs.map((song, index) => {
@@ -339,11 +329,11 @@ const MixDetailsPage = () => {
                               return;
                             handlePlaySong(song, index);
                           }}
-                          className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
                             isCurrentlyPlaying ? "bg-white/10" : ""
                           }`}
                         >
-                          <div className="flex items-center justify-center">
+                          <div className="hidden sm:flex items-center justify-center">
                             {isCurrentlyPlaying && isPlaying ? (
                               <div className="z-10">
                                 <Equalizer />
@@ -372,19 +362,26 @@ const MixDetailsPage = () => {
                               />
                             </button>
                             <div className="flex flex-col min-w-0">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSongTitleClick(song.albumId);
-                                }}
-                                className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
-                                  isCurrentlyPlaying
-                                    ? "text-violet-400"
-                                    : "text-white"
-                                }`}
-                              >
-                                <p className="truncate">{song.title}</p>
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {isCurrentlyPlaying && isPlaying && (
+                                  <div className="block sm:hidden flex-shrink-0">
+                                    <EqualizerTitle />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSongTitleClick(song.albumId);
+                                  }}
+                                  className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
+                                    isCurrentlyPlaying
+                                      ? "text-violet-400"
+                                      : "text-white"
+                                  }`}
+                                >
+                                  <p className="truncate">{song.title}</p>
+                                </button>
+                              </div>
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>

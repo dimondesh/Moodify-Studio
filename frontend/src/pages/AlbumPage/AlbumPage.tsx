@@ -24,6 +24,7 @@ import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetai
 import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
 import { useUIStore } from "@/stores/useUIStore";
+import EqualizerTitle from "@/components/ui/equalizer-title";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -285,7 +286,7 @@ const AlbumPage = () => {
 
               <div className="bg-black/20 backdrop-blur-sm">
                 <div
-                  className="grid grid-cols-[4fr_min-content] sm:grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
+                  className="ml-3 sm:ml-0 grid grid-cols-[2.5fr_1fr_min-content] sm:grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
                 >
                   <div className="hidden sm:block">#</div>
@@ -344,7 +345,7 @@ const AlbumPage = () => {
                               <div className="flex items-center gap-2">
                                 {isCurrentSong && isPlaying && (
                                   <div className="block sm:hidden">
-                                    <Equalizer />
+                                    <EqualizerTitle />
                                   </div>
                                 )}
                                 <button
