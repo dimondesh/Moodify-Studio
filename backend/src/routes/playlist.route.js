@@ -13,6 +13,7 @@ import {
   getMyPlaylists,
   getPublicPlaylists,
   createPlaylistFromSong,
+  getPlaylistRecommendations,
 } from "../controller/playlist.controller.js";
 
 const router = express.Router();
@@ -23,6 +24,8 @@ router.use(protectRoute);
 
 router.post("/", createPlaylist);
 router.get("/my", getMyPlaylists);
+router.get("/:id/recommendations", getPlaylistRecommendations);
+
 router.get("/:id", getPlaylistById);
 router.put("/:id", updatePlaylist);
 router.delete("/:id", deletePlaylist);

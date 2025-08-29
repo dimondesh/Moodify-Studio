@@ -13,6 +13,9 @@ interface PlaylistStore {
 
   publicPlaylists: Playlist[];
 
+  recommendations: Song[];
+  isRecommendationsLoading: boolean;
+
   currentPlaylist: Playlist | null;
   isLoading: boolean;
   error: string | null;
@@ -23,6 +26,8 @@ interface PlaylistStore {
 
   fetchMyPlaylists: () => Promise<void>;
   fetchOwnedPlaylists: () => Promise<void>;
+
+  fetchRecommendations: (playlistId: string) => Promise<void>;
 
   fetchPublicPlaylists: () => Promise<void>;
   fetchPlaylistById: (id: string) => Promise<void>;
@@ -53,6 +58,9 @@ interface PlaylistStore {
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   myPlaylists: [],
   ownedPlaylists: [],
+
+  recommendations: [],
+  isRecommendationsLoading: false,
 
   publicPlaylists: [],
   currentPlaylist: null,
@@ -201,6 +209,25 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         isLoading: false,
       });
       toast.error(`Failed to load playlist.`);
+    }
+  },
+
+  fetchRecommendations: async (playlistId: string) => {
+    if (useOfflineStore.getState().isOffline) return;
+
+    set({ isRecommendationsLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get(
+        `/playlists/${playlistId}/recommendations`
+      );
+      set({ recommendations: response.data, isRecommendationsLoading: false });
+    } catch (err: any) {
+      console.error("Failed to fetch recommendations:", err);
+      set({
+        error: err.response?.data?.message || "Failed to fetch recommendations",
+        isRecommendationsLoading: false,
+      });
+      toast.error("Could not load recommendations.");
     }
   },
 

@@ -23,6 +23,7 @@ import {
   Heart,
   Lock,
   Unlock,
+  Loader2,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
@@ -84,6 +85,9 @@ const PlaylistDetailsPage = () => {
     addSongToPlaylist,
     removeSongFromPlaylist,
     updateCurrentPlaylistFromSocket,
+    recommendations,
+    isRecommendationsLoading,
+    fetchRecommendations,
   } = usePlaylistStore();
   const {
     editingPlaylist,
@@ -228,6 +232,13 @@ const PlaylistDetailsPage = () => {
       setIsColorLoading(false);
     }
   }, [currentPlaylist, extractColor]);
+
+  useEffect(() => {
+    // Этот хук будет загружать рекомендации, когда открывается диалог
+    if (isSearchAndAddDialogOpen && playlistId) {
+      fetchRecommendations(playlistId);
+    }
+  }, [isSearchAndAddDialogOpen, playlistId, fetchRecommendations]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -873,64 +884,129 @@ const PlaylistDetailsPage = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="mb-4 bg-zinc-800 text-white border-zinc-700 focus:ring-green-500 w-[80vw] sm:w-[55vw] md:w-[38vw] lg:w-[19.5vw] 2xl:w-[18vw]"
               />
-              {searchLoading ? (
-                <p className="text-zinc-400">
-                  {t("pages.playlist.addSongDialog.searching")}
-                </p>
-              ) : searchSongs.length === 0 && searchTerm.length > 0 ? (
-                <p className="text-zinc-400">
-                  {t("pages.playlist.addSongDialog.noSongsFound")}
-                </p>
-              ) : (
-                <ScrollArea className="h-[300px] pr-4">
-                  <div className="space-y-2">
-                    {searchSongs.map((song) => (
-                      <div
-                        key={song._id}
-                        className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
-                      >
-                        <div className="flex flex-col truncate">
-                          <button
-                            onClick={() => handleSongTitleClick(song.albumId)}
-                            className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-2">
+                  {searchTerm.trim() !== "" ? (
+                    <>
+                      {searchLoading ? (
+                        <p className="text-zinc-400">
+                          {t("pages.playlist.addSongDialog.searching")}
+                        </p>
+                      ) : searchSongs.length === 0 ? (
+                        <p className="text-zinc-400">
+                          {t("pages.playlist.addSongDialog.noSongsFound")}
+                        </p>
+                      ) : (
+                        searchSongs.map((song) => (
+                          <div
+                            key={song._id}
+                            className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
                           >
-                            {song.title}
-                          </button>
-                          <span className="text-sm text-zinc-400 truncate">
-                            {song.artist.map((artist, artistIndex) => (
-                              <span key={artist._id}>
-                                <button
-                                  onClick={() =>
-                                    handleArtistNameClick(artist._id)
-                                  }
-                                  className="hover:underline focus:outline-none focus:underline"
-                                >
-                                  {artist.name}
-                                </button>
-                                {artistIndex < song.artist.length - 1 && ", "}
+                            <div className="flex flex-col truncate">
+                              <button
+                                onClick={() =>
+                                  handleSongTitleClick(song.albumId)
+                                }
+                                className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
+                              >
+                                {song.title}
+                              </button>
+                              <span className="text-sm text-zinc-400 truncate">
+                                {song.artist.map((artist, artistIndex) => (
+                                  <span key={artist._id}>
+                                    <button
+                                      onClick={() =>
+                                        handleArtistNameClick(artist._id)
+                                      }
+                                      className="hover:underline focus:outline-none focus:underline"
+                                    >
+                                      {artist.name}
+                                    </button>
+                                    {artistIndex < song.artist.length - 1 &&
+                                      ", "}
+                                  </span>
+                                ))}
                               </span>
-                            ))}
-                          </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddSongToPlaylist(song._id)}
+                              className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
+                              disabled={currentPlaylist?.songs.some(
+                                (s) => s._id === song._id
+                              )}
+                            >
+                              {currentPlaylist?.songs.some(
+                                (s) => s._id === song._id
+                              )
+                                ? t("pages.playlist.addSongDialog.added")
+                                : t("pages.playlist.addSongDialog.add")}
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {isRecommendationsLoading ? (
+                        <div className="flex justify-center items-center h-full">
+                          <Loader2 className="animate-spin text-violet-500 size-8" />
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddSongToPlaylist(song._id)}
-                          className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
-                          disabled={currentPlaylist?.songs.some(
-                            (s) => s._id === song._id
-                          )}
-                        >
-                          {currentPlaylist?.songs.some(
-                            (s) => s._id === song._id
-                          )
-                            ? t("pages.playlist.addSongDialog.added")
-                            : t("pages.playlist.addSongDialog.add")}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
+                      ) : recommendations.length === 0 ? (
+                        <p className="text-zinc-400 px-2">Нет рекомендаций.</p>
+                      ) : (
+                        recommendations.map((song) => (
+                          <div
+                            key={song._id}
+                            className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
+                          >
+                            <div className="flex flex-col truncate">
+                              <button
+                                onClick={() =>
+                                  handleSongTitleClick(song.albumId)
+                                }
+                                className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
+                              >
+                                {song.title}
+                              </button>
+                              <span className="text-sm text-zinc-400 truncate">
+                                {song.artist.map((artist, artistIndex) => (
+                                  <span key={artist._id}>
+                                    <button
+                                      onClick={() =>
+                                        handleArtistNameClick(artist._id)
+                                      }
+                                      className="hover:underline focus:outline-none focus:underline"
+                                    >
+                                      {artist.name}
+                                    </button>
+                                    {artistIndex < song.artist.length - 1 &&
+                                      ", "}
+                                  </span>
+                                ))}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddSongToPlaylist(song._id)}
+                              className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
+                              disabled={currentPlaylist?.songs.some(
+                                (s) => s._id === song._id
+                              )}
+                            >
+                              {currentPlaylist?.songs.some(
+                                (s) => s._id === song._id
+                              )
+                                ? t("pages.playlist.addSongDialog.added")
+                                : t("pages.playlist.addSongDialog.add")}
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </DialogContent>
         </Dialog>

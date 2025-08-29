@@ -6,6 +6,7 @@ import { uploadToBunny } from "../lib/bunny.service.js";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import cloudinary from "../lib/cloudinary.js";
+import { getMadeForYouSongs, getTrendingSongs } from "./song.controller.js";
 
 const uploadImageToBunny = async (file) => {
   try {
@@ -441,6 +442,96 @@ export const createPlaylistFromSong = async (req, res, next) => {
     res.status(201).json(newPlaylist);
   } catch (error) {
     console.error("Error creating playlist from song:", error);
+    next(error);
+  }
+};
+
+export const getPlaylistRecommendations = async (req, res, next) => {
+  try {
+    const { id: playlistId } = req.params;
+    const userId = req.user.id;
+
+    const playlist = await Playlist.findById(playlistId).select("songs").lean();
+
+    if (!playlist) {
+      return res.status(404).json({ message: "Playlist not found" });
+    }
+
+    let recommendations = [];
+
+    // --- РЕКОМЕНДАЦИИ НА ОСНОВЕ ТРЕКОВ В ПЛЕЙЛИСТЕ ---
+    if (playlist.songs && playlist.songs.length > 0) {
+      const songDetails = await Song.find({ _id: { $in: playlist.songs } })
+        .select("genres moods artist")
+        .lean();
+
+      const genreIds = [...new Set(songDetails.flatMap((s) => s.genres))];
+      const moodIds = [...new Set(songDetails.flatMap((s) => s.moods))];
+      const artistIds = [...new Set(songDetails.flatMap((s) => s.artist))];
+
+      recommendations = await Song.aggregate([
+        // Исключаем треки, которые уже есть в плейлисте
+        { $match: { _id: { $nin: playlist.songs } } },
+        // Ищем похожие треки
+        {
+          $match: {
+            $or: [
+              { genres: { $in: genreIds } },
+              { moods: { $in: moodIds } },
+              { artist: { $in: artistIds } },
+            ],
+          },
+        },
+        // Добавляем "очки" за совпадения
+        {
+          $addFields: {
+            score: {
+              $add: [
+                { $size: { $setIntersection: ["$genres", genreIds] } },
+                { $size: { $setIntersection: ["$moods", moodIds] } },
+                {
+                  $multiply: [
+                    { $size: { $setIntersection: ["$artist", artistIds] } },
+                    2,
+                  ],
+                }, // Увеличиваем вес совпадения по артисту
+              ],
+            },
+          },
+        },
+        // Сортируем по очкам
+        { $sort: { score: -1, playCount: -1 } },
+        { $limit: 20 },
+        // Популируем артистов
+        {
+          $lookup: {
+            from: "artists",
+            localField: "artist",
+            foreignField: "_id",
+            as: "artist",
+          },
+        },
+      ]);
+    }
+
+    // --- РЕКОМЕНДАЦИИ "MADE FOR YOU" ---
+    if (recommendations.length === 0) {
+      // Имитируем req/res для вызова контроллера
+      const mockReq = { user: { id: userId } };
+      const mockRes = { json: (data) => (recommendations = data) };
+      await getMadeForYouSongs(mockReq, mockRes, next);
+    }
+
+    // --- Fallback ТРЕНДОВЫЕ/ПОПУЛЯРНЫЕ ТРЕКИ ---
+    if (recommendations.length === 0) {
+      const mockReq = {};
+      const mockRes = { json: (data) => (recommendations = data) };
+      await getTrendingSongs(mockReq, mockRes, next);
+    }
+
+    res.status(200).json(recommendations);
+  } catch (error) {
+    console.error("Error getting playlist recommendations:", error);
     next(error);
   }
 };
