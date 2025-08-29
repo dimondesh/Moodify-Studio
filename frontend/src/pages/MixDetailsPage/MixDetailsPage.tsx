@@ -6,14 +6,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
-import {
-  Play,
-  Pause,
-  PlusCircle,
-  CheckCircle2,
-  Clock,
-  Heart,
-} from "lucide-react";
+import { Play, Pause, PlusCircle, CheckCircle2, Heart } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song } from "../../types";
 import toast from "react-hot-toast";
