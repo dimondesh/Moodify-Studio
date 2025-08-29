@@ -23,7 +23,7 @@ import { DownloadButton } from "@/components/ui/DownloadButton";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
-import { useUIStore } from "@/stores/useUIStore"; // <-- ИМПОРТ
+import { useUIStore } from "@/stores/useUIStore";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -36,7 +36,7 @@ const AlbumPage = () => {
   const { t } = useTranslation();
   const { albumId } = useParams();
   const navigate = useNavigate();
-  const { openShareDialog, closeAllDialogs, shareEntity } = useUIStore(); // <-- ДОБАВИТЬ
+  const { openShareDialog, closeAllDialogs, shareEntity } = useUIStore();
 
   const {
     fetchAlbumbyId,
@@ -285,7 +285,7 @@ const AlbumPage = () => {
 
               <div className="bg-black/20 backdrop-blur-sm">
                 <div
-                  className="ml-3 sm:ml-0 grid grid-cols-[2.5fr_1fr_min-content] sm:grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
+                  className="grid grid-cols-[4fr_min-content] sm:grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
                 >
                   <div className="hidden sm:block">#</div>
@@ -331,7 +331,6 @@ const AlbumPage = () => {
                           </div>
 
                           <div className="flex items-center gap-3">
-                            {/* ИЗМЕНЕНИЕ: Скрываем обложку на мобильных */}
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
                               alt={song.title}
@@ -342,19 +341,27 @@ const AlbumPage = () => {
                               }}
                             />
                             <div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAlbumTitleClick(song.albumId);
-                                }}
-                                className={`font-medium text-left hover:underline focus:outline-none focus:underline ${
-                                  isCurrentSong
-                                    ? "text-violet-400"
-                                    : "text-white"
-                                }`}
-                              >
-                                {song.title}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {isCurrentSong && isPlaying && (
+                                  <div className="block sm:hidden">
+                                    <Equalizer />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAlbumTitleClick(song.albumId);
+                                  }}
+                                  className={`font-medium text-left hover:underline focus:outline-none focus:underline ${
+                                    isCurrentSong
+                                      ? "text-violet-400"
+                                      : "text-white"
+                                  }`}
+                                >
+                                  {song.title}
+                                </button>
+                              </div>
+
                               <div className="text-zinc-400">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
