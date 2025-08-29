@@ -7,8 +7,8 @@ export const getAllSongs = async (req, res, next) => {
   try {
     const songs = await Song.find()
       .populate("artist", "name imageUrl")
-      .populate("genres") 
-      .populate("moods") 
+      .populate("genres")
+      .populate("moods")
       .sort({ createdAt: -1 });
     res.status(200).json({ songs });
   } catch (error) {
@@ -75,7 +75,6 @@ export const getTrendingSongs = async (req, res, next) => {
       _id: { $in: orderedSongIds },
     }).populate("artist", "name imageUrl");
 
-    
     const songMap = new Map(
       unorderedSongs.map((song) => [song._id.toString(), song])
     );
@@ -158,7 +157,7 @@ export const getMadeForYouSongs = async (req, res, next) => {
       () => 0.5 - Math.random()
     );
 
-    res.json(shuffledRecommendations.slice(0, 8));
+    res.json(shuffledRecommendations.slice(0, 18));
   } catch (error) {
     console.error("Error fetching 'Made For You' songs:", error);
     next(error);
@@ -169,7 +168,6 @@ export const recordListen = async (req, res, next) => {
   try {
     const { id: songId } = req.params;
 
-    
     const userId = req.user.id;
 
     if (!songId || !userId) {
@@ -217,7 +215,7 @@ export const getListenHistory = async (req, res, next) => {
           select: "name imageUrl",
         },
       })
-      .lean(); 
+      .lean();
 
     if (!fullHistory || fullHistory.length === 0) {
       return res.json({ songs: [] });

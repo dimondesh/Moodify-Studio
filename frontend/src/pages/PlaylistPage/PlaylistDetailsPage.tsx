@@ -673,7 +673,18 @@ const PlaylistDetailsPage = () => {
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="border-b border-white/5 mx-4 sm:mx-6 md:mx-10" />
+                <div className="hidden sm:grid grid-cols-[1fr] sm:grid-cols-[16px_4fr_6fr] md:grid-cols-[16px_4fr_min-content_3fr] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
+                  <div className="hidden sm:block">#</div>
+                  <div className="hidden sm:block">
+                    {t("pages.playlist.headers.title")}
+                  </div>
+                  <div className="hidden md:block white-space-nowrap ">
+                    {t("pages.playlist.headers.dateAdded")}
+                  </div>
+                  <div className="hidden sm:flex items-center justify-center">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                </div>
                 <div className="px-4 sm:px-6">
                   <div className="space-y-2 py-4">
                     {currentPlaylist.songs.map((song, index) => {
@@ -688,11 +699,29 @@ const PlaylistDetailsPage = () => {
                             if (!(e.target as HTMLElement).closest("button"))
                               handlePlaySong(song, index);
                           }}
-                          className={`flex items-center justify-between gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          // --- НАЧАЛО ИЗМЕНЕНИЙ: Обновлена сетка для строк треков ---
+                          className={`grid grid-cols-[1fr_auto] sm:grid-cols-[16px_4fr_1fr_auto] md:grid-cols-[16px_4fr_2fr_1fr_auto] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
                             isCurrentSong ? "bg-white/10" : ""
                           }`}
+                          // --- КОНЕЦ ИЗМЕНЕНИЙ ---
                         >
-                          <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                          {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Скрыт номер трека на мобильных --- */}
+                          <div className="hidden sm:flex items-center justify-center">
+                            {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
+                            {isCurrentSong && isPlaying ? (
+                              <div className="z-10">
+                                <Equalizer />
+                              </div>
+                            ) : (
+                              <span className="group-hover:hidden text-xs sm:text-sm">
+                                {index + 1}
+                              </span>
+                            )}
+                            {!isCurrentSong && (
+                              <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 overflow-hidden">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -703,13 +732,14 @@ const PlaylistDetailsPage = () => {
                               <img
                                 src={song.imageUrl || "/default-song-cover.png"}
                                 alt={song.title}
-                                className="size-10 object-cover rounded-md"
+                                className="size-10 object-cover rounded-md flex-shrink-0"
                               />
                             </button>
                             <div className="flex flex-col min-w-0">
+                              {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Добавлен эквалайзер для мобильных --- */}
                               <div className="flex items-center gap-2">
                                 {isCurrentSong && isPlaying && (
-                                  <div className="flex-shrink-0">
+                                  <div className="block sm:hidden flex-shrink-0">
                                     <Equalizer />
                                   </div>
                                 )}
@@ -727,15 +757,14 @@ const PlaylistDetailsPage = () => {
                                   <p className="truncate">{song.title}</p>
                                 </button>
                               </div>
-
+                              {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
                                     <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleArtistNameClick(artist._id);
-                                      }}
+                                      onClick={() =>
+                                        handleArtistNameClick(artist._id)
+                                      }
                                       className="hover:underline focus:outline-none focus:underline"
                                     >
                                       {artist.name}
@@ -747,15 +776,24 @@ const PlaylistDetailsPage = () => {
                               </div>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Скрыта дата и длительность на мобильных --- */}
+                          <div className="items-center hidden md:flex text-xs">
+                            {song.createdAt
+                              ? format(new Date(song.createdAt), "MMM dd, yyyy")
+                              : "N/A"}
+                          </div>
+                          <div className="hidden sm:flex items-center text-xs sm:text-sm flex-shrink-0">
+                            {formatDuration(song.duration)}
+                          </div>
+                          {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
+                          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
                             <Button
                               size="icon"
                               variant="ghost"
                               className={`rounded-full size-6 sm:size-7 ${
                                 songIsLiked
                                   ? "text-violet-500 hover:text-violet-400"
-                                  : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                  : "text-zinc-400 hover:text-white opacity-100 md:group-hover:opacity-100 transition-opacity"
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -777,7 +815,7 @@ const PlaylistDetailsPage = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openRemoveSongFromPlaylistDialog({

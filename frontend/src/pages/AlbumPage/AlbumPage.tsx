@@ -353,7 +353,7 @@ const AlbumPage = () => {
                                     e.stopPropagation();
                                     handleAlbumTitleClick(song.albumId);
                                   }}
-                                  className={`font-medium text-left hover:underline focus:outline-none focus:underline ${
+                                  className={`font-medium text-left hover:underline focus:outline-none focus:underline min-w-0 truncate max-w-50 xl:max-w-100 ${
                                     isCurrentSong
                                       ? "text-violet-400"
                                       : "text-white"
