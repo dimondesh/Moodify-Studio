@@ -285,10 +285,10 @@ const AlbumPage = () => {
 
               <div className="bg-black/20 backdrop-blur-sm">
                 <div
-                  className="grid grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
+                  className="ml-3 sm:ml-0 grid grid-cols-[2.5fr_1fr_min-content] sm:grid-cols-[16px_4fr_1.5fr_min-content] md:grid-cols-[16px_3.6fr_1.85fr_1.15fr_min-content] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm
             text-zinc-400 border-b border-white/5"
                 >
-                  <div>#</div>
+                  <div className="hidden sm:block">#</div>
                   <div>{t("pages.album.headers.title")}</div>
                   <div className="hidden md:flex justify-between">
                     {t("pages.album.headers.releaseDate")}
@@ -311,11 +311,11 @@ const AlbumPage = () => {
                         <div
                           key={song._id}
                           onClick={() => handlePlaySong(index)}
-                          className={`grid grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
+                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
                       text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
                       ${isCurrentSong ? "bg-white/10" : ""}`}
                         >
-                          <div className="flex items-center justify-center">
+                          <div className="hidden sm:flex items-center justify-center">
                             {isCurrentSong && isPlaying ? (
                               <div className="z-10">
                                 <Equalizer />
@@ -331,10 +331,11 @@ const AlbumPage = () => {
                           </div>
 
                           <div className="flex items-center gap-3">
+                            {/* ИЗМЕНЕНИЕ: Скрываем обложку на мобильных */}
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
                               alt={song.title}
-                              className="size-10 object-cover rounded-md"
+                              className="hidden sm:block size-10 object-cover rounded-md"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
                                   "/default-song-cover.png";
