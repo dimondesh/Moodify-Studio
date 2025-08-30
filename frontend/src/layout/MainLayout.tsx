@@ -112,7 +112,7 @@ const MainLayout = () => {
   return (
     <div
       className={cn(
-        "h-screen bg-black text-white flex flex-col transition-transform ease-in-out",
+        "h-screen bg-zinc-950 text-white flex flex-col transition-transform ease-in-out",
         isUserSheetOpen && isMobile
           ? "duration-300 -translate-x-[290px] rounded-none overflow-hidden"
           : "duration-300 translate-x-0 rounded-none"
