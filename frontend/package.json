@@ -31,6 +31,7 @@
     "date-fns": "^4.1.0",
     "fast-average-color": "^9.5.0",
     "firebase": "^11.10.0",
+    "framer-motion": "^12.23.12",
     "i18next": "^25.3.2",
     "idb": "^8.0.3",
     "lodash": "^4.17.21",
