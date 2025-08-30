@@ -1,3 +1,5 @@
+// frontend/src/lib/firebase.ts
+
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -6,8 +8,11 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   type User,
 } from "firebase/auth";
 
@@ -31,9 +36,12 @@ export {
   auth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   signInWithPopup,
   signOut,
   googleProvider,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
 };

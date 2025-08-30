@@ -24,6 +24,7 @@ interface FirebaseUserDataForSync {
   email: string;
   displayName?: string | null;
   photoURL?: string | null;
+  fullName?: string;
 }
 
 interface AuthStore {
@@ -133,7 +134,7 @@ export const useAuthStore = create<AuthStore>()(
           const payload = {
             firebaseUid: userData.uid,
             email: userData.email,
-            fullName: userData.displayName,
+            fullName: userData.fullName || userData.displayName,
             imageUrl: userData.photoURL,
           };
 
@@ -229,7 +230,7 @@ export const useAuthStore = create<AuthStore>()(
 
           set((state) => ({
             user: {
-              ...state.user,
+              ...state.user!,
               ...currentUserData,
             },
             isAdmin: currentUserData.isAdmin || false,

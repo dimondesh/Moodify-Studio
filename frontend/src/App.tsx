@@ -10,7 +10,7 @@ import { Toaster } from "react-hot-toast";
 import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
-import LoginPage from "./pages/LoginPage/LoginPage";
+import AuthPage from "./pages/AuthPage/AuthPage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
 import { useEffect } from "react";
 import { useAuthStore } from "./stores/useAuthStore";
@@ -53,7 +53,7 @@ function App() {
         fetchLibrary();
         fetchMyPlaylists();
         fetchArtists();
-        syncLibrary(); 
+        syncLibrary();
       }
     };
 
@@ -111,8 +111,7 @@ function App() {
       </Helmet>
       <Routes>
         <Route path="admin" element={<AdminPage />} />
-        <Route path="login" element={<LoginPage />} />
-
+        м <Route path="login" element={<AuthPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-songs/:category?" element={<AllSongsPage />} />

@@ -19,6 +19,7 @@ export const syncUserWithDb = async (req, res) => {
       return res.status(400).json({ error: "Token is missing UID or email" });
     }
 
+    const { fullName: fullNameFromRequest } = req.body;
 
     let user = await User.findOne({ firebaseUid: uid });
 
@@ -27,8 +28,8 @@ export const syncUserWithDb = async (req, res) => {
       user = new User({
         firebaseUid: uid,
         email: email,
-        fullName: name || email.split("@")[0],
-        imageUrl: picture || null, 
+        fullName: fullNameFromRequest || name || email.split("@")[0],
+        imageUrl: picture || null,
         language: "en",
       });
       await user.save();

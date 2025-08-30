@@ -9,6 +9,7 @@ import { useChatStore } from "../stores/useChatStore";
 import { Card, CardContent } from "../components/ui/card";
 import { Loader } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -40,6 +41,20 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           firebaseUser.uid,
           firebaseUser.email
         );
+
+        // --- ИЗМЕНЕНИЕ НАЧАЛО: Проверка верификации email ---
+        const isEmailPasswordProvider = firebaseUser.providerData.some(
+          (p) => p.providerId === "password"
+        );
+        if (isEmailPasswordProvider && !firebaseUser.emailVerified) {
+          toast.error("Please verify your email before logging in.", {
+            duration: 5000,
+          });
+          logout();
+          setFirebaseChecked(true);
+          return; // Прерываем дальнейшую обработку
+        }
+        // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
         if (!useAuthStore.getState().user && navigator.onLine) {
           console.log(

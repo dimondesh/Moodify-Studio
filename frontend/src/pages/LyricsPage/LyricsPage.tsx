@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { useTranslation } from "react-i18next";
-import { useAudioSettingsStore } from "@/lib/webAudio"; 
+import { useAudioSettingsStore } from "@/lib/webAudio";
 
 interface LyricLine {
   time: number;
@@ -213,7 +213,7 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
                 index === 1 ? "animate-fade-in" : ""
               }`}
               style={{
-                background: `linear-gradient(to bottom, ${bg.color} 0%, rgba(20, 20, 20, 0.8) 50%, #18181b 100%)`,
+                background: `linear-gradient(to bottom, ${bg.color} 0%, rgba(20, 20, 20, 0.8) 100%, #18181b 100%)`,
               }}
             />
           ))}

@@ -12,7 +12,6 @@ import {
 import { useAuthStore } from "../../stores/useAuthStore";
 import { cn } from "../../lib/utils";
 import { Button, buttonVariants } from "./button";
-import SignInOAuthButton from "./SignInOAuthButton";
 import { auth } from "../../lib/firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import {
@@ -362,7 +361,20 @@ const Topbar = () => {
             </DropdownMenu>
           )
         ) : (
-          <SignInOAuthButton />
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              className="text-zinc-300 hover:text-white"
+            >
+              <Link to="/login" state={{ mode: "signup" }}>
+                Sign Up
+              </Link>
+            </Button>
+            <Button asChild className="bg-white text-black hover:bg-zinc-200">
+              <Link to="/login">Log In</Link>
+            </Button>
+          </div>
         )}
       </div>
     </div>
