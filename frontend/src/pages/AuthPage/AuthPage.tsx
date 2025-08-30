@@ -8,7 +8,7 @@ import {
   sendEmailVerification,
   updateProfile,
   AuthError,
-  signOut, // --- ИЗМЕНЕНИЕ: Импортируем signOut ---
+  signOut,
 } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useAuthStore } from "../../stores/useAuthStore";
@@ -16,7 +16,7 @@ import toast from "react-hot-toast";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Loader2, MailCheck } from "lucide-react"; // --- ИЗМЕНЕНИЕ: Добавляем иконку
+import { Loader2, MailCheck } from "lucide-react";
 import MoodifyLogo from "../../components/MoodifyLogo";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
@@ -38,9 +38,7 @@ const AuthPage: React.FC = () => {
   });
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
-  // --- ИЗМЕНЕНИЕ НАЧАЛО ---
   const [verificationSent, setVerificationSent] = useState(false);
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   useEffect(() => {
     if (user) {
@@ -49,16 +47,16 @@ const AuthPage: React.FC = () => {
   }, [user, navigate]);
 
   const validateEmail = (email: string) => {
-    if (!email) return "Email is required.";
-    if (email.length > 30) return "Email must be 30 characters or less.";
-    if (!/\S+@\S+\.\S+/.test(email)) return "Invalid email address.";
+    if (!email) return t("auth.emailRequired");
+    if (email.length > 30) return t("auth.emailMaxLength");
+    if (!/\S+@\S+\.\S+/.test(email)) return t("auth.emailInvalid");
     return "";
   };
 
   const validatePassword = (password: string) => {
-    if (!password) return "Password is required.";
-    if (password.length < 6) return "Password must be at least 6 characters.";
-    if (password.length > 20) return "Password must be 20 characters or less.";
+    if (!password) return t("auth.passwordRequired");
+    if (password.length < 6) return t("auth.passwordMinLength");
+    if (password.length > 20) return t("auth.passwordMaxLength");
     return "";
   };
 
@@ -75,7 +73,7 @@ const AuthPage: React.FC = () => {
       await signInWithPopup(auth, provider);
       navigate("/");
     } catch (error) {
-      toast.error("Google sign-in failed. Please try again.");
+      toast.error(t("auth.googleSignInFailed"));
       console.error("Google sign-in error:", error);
     } finally {
       setIsLoading(false);
@@ -101,10 +99,9 @@ const AuthPage: React.FC = () => {
           formData.email,
           formData.password
         );
-        toast.success("Logged in successfully!");
+        toast.success(t("auth.loginSuccess"));
         navigate("/");
       } else {
-        // --- ИЗМЕНЕНИЕ НАЧАЛО: Логика регистрации ---
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           formData.email,
@@ -114,13 +111,10 @@ const AuthPage: React.FC = () => {
           displayName: formData.fullName,
         });
         await sendEmailVerification(userCredential.user);
-
-        // Сразу вылогиниваем, чтобы заставить пользователя подтвердить почту
         await signOut(auth);
 
-        toast.success("Account created! Please check your email to verify.");
-        setVerificationSent(true); // Показываем сообщение о верификации
-        // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+        toast.success(t("auth.signupSuccess"));
+        setVerificationSent(true);
       }
     } catch (error) {
       const authError = error as AuthError;
@@ -129,16 +123,16 @@ const AuthPage: React.FC = () => {
         case "auth/user-not-found":
         case "auth/wrong-password":
         case "auth/invalid-credential":
-          errorMessage = "Invalid email or password.";
+          errorMessage = t("auth.errorInvalidCredentials");
           break;
         case "auth/email-already-in-use":
-          errorMessage = "This email is already registered.";
+          errorMessage = t("auth.errorEmailInUse");
           break;
         case "auth/invalid-email":
-          errorMessage = "The email address is not valid.";
+          errorMessage = t("auth.errorInvalidEmail");
           break;
         default:
-          errorMessage = "Authentication failed. Please try again.";
+          errorMessage = t("auth.errorAuthFailed");
       }
       toast.error(errorMessage);
       console.error("Firebase auth error:", authError);
@@ -147,19 +141,19 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  // --- ИЗМЕНЕНИЕ НАЧАЛО: Компонент для сообщения о верификации ---
   if (verificationSent) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-md text-center">
           <main className="bg-zinc-900 rounded-lg p-8 shadow-lg">
             <MailCheck className="w-16 h-16 text-violet-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-4">Verify your email</h1>
+            <h1 className="text-2xl font-bold mb-4">
+              {t("auth.verifyEmailTitle")}
+            </h1>
             <p className="text-zinc-400 mb-6">
-              We've sent a verification link to{" "}
-              <span className="font-bold text-white">{formData.email}</span>.
-              Please check your inbox and follow the link to activate your
-              account.
+              {t("auth.verifyEmailMessage1")}{" "}
+              <span className="font-bold text-white">{formData.email}</span>.{" "}
+              {t("auth.verifyEmailMessage2")}
             </p>
             <Button
               onClick={() => {
@@ -168,19 +162,20 @@ const AuthPage: React.FC = () => {
               }}
               className="w-full h-12 bg-violet-600 hover:bg-violet-700"
             >
-              Back to Login
+              {t("auth.backToLogin")}
             </Button>
           </main>
         </div>
       </div>
     );
   }
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   return (
     <>
       <Helmet>
-        <title>{isLoginView ? "Log In" : "Sign Up"} to Moodify</title>
+        <title>
+          {isLoginView ? t("auth.loginTitle") : t("auth.signupTitle")}
+        </title>
       </Helmet>
       <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-md">
@@ -193,7 +188,7 @@ const AuthPage: React.FC = () => {
               </div>
             </Link>
             <h1 className="text-2xl font-bold text-center mb-6">
-              {isLoginView ? "Log in to Moodify" : "Sign up to Moodify"}
+              {isLoginView ? t("auth.loginTitle") : t("auth.signupTitle")}
             </h1>
 
             <Button
@@ -203,40 +198,40 @@ const AuthPage: React.FC = () => {
               disabled={isLoading}
             >
               <img src="/google.svg" alt="Google" className="w-5 h-5 mr-3" />
-              Continue with Google
+              {t("auth.continueWithGoogle")}
             </Button>
 
             <div className="flex items-center my-6">
               <div className="flex-grow border-t border-zinc-700"></div>
-              <span className="mx-4 text-zinc-500 text-sm">OR</span>
+              <span className="mx-4 text-zinc-500 text-sm">{t("auth.or")}</span>
               <div className="flex-grow border-t border-zinc-700"></div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLoginView && (
                 <div>
-                  <Label htmlFor="fullName">What should we call you?</Label>
+                  <Label htmlFor="fullName">{t("auth.fullNameLabel")}</Label>
                   <Input
                     id="fullName"
                     name="fullName"
                     type="text"
                     value={formData.fullName}
                     onChange={handleChange}
-                    placeholder="Your name"
+                    placeholder={t("auth.fullNamePlaceholder")}
                     required
                     className="mt-1"
                   />
                 </div>
               )}
               <div>
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">{t("auth.emailLabel")}</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="name@company.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   required
                   maxLength={30}
                   className="mt-1"
@@ -246,14 +241,14 @@ const AuthPage: React.FC = () => {
                 )}
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="••••••••"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   minLength={6}
                   maxLength={20}
@@ -269,29 +264,29 @@ const AuthPage: React.FC = () => {
                 disabled={isLoading}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLoginView ? "Log In" : "Sign Up"}
+                {isLoginView ? t("auth.loginButton") : t("auth.signupButton")}
               </Button>
             </form>
 
             <div className="text-center mt-6 text-sm text-zinc-400">
               {isLoginView ? (
                 <span>
-                  Don&apos;t have an account?{" "}
+                  {t("auth.promptSignup")}{" "}
                   <button
                     onClick={() => setIsLoginView(false)}
                     className="text-violet-400 hover:underline"
                   >
-                    Sign up
+                    {t("auth.signupLink")}
                   </button>
                 </span>
               ) : (
                 <span>
-                  Already have an account?{" "}
+                  {t("auth.promptLogin")}{" "}
                   <button
                     onClick={() => setIsLoginView(true)}
                     className="text-violet-400 hover:underline"
                   >
-                    Log in
+                    {t("auth.loginLink")}
                   </button>
                 </span>
               )}

@@ -1,4 +1,6 @@
 {
+
+  
   "sidebar": {
     "home": "Главная",
     "search": "Поиск",
@@ -684,7 +686,40 @@
   },
   "auth": {
     "loggingIn": "Входим в аккаунт",
-    "redirecting": "Перенаправление..."
+    "redirecting": "Перенаправление...",
+     "emailRequired": "Требуется адрес электронной почты.",
+    "emailMaxLength": "Адрес почты должен быть не длиннее 30 символов.",
+    "emailInvalid": "Неверный адрес электронной почты.",
+    "passwordRequired": "Требуется пароль.",
+    "passwordMinLength": "Пароль должен содержать не менее 6 символов.",
+    "passwordMaxLength": "Пароль должен быть не длиннее 20 символов.",
+    "googleSignInFailed": "Ошибка входа через Google. Пожалуйста, попробуйте еще раз.",
+    "loginSuccess": "Вы успешно вошли!",
+    "signupSuccess": "Аккаунт создан! Пожалуйста, проверьте свою почту для верификации.",
+    "errorInvalidCredentials": "Неверный email или пароль.",
+    "errorEmailInUse": "Этот email уже зарегистрирован.",
+    "errorInvalidEmail": "Недопустимый адрес электронной почты.",
+    "errorAuthFailed": "Ошибка аутентификации. Пожалуйста, попробуйте еще раз.",
+    "verifyEmailTitle": "Подтвердите вашу почту",
+    "verifyEmailMessage1": "Мы отправили ссылку для подтверждения на",
+    "verifyEmailMessage2": "Пожалуйста, проверьте ваш почтовый ящик и перейдите по ссылке, чтобы активировать аккаунт.",
+    "backToLogin": "Вернуться ко входу",
+    "loginTitle": "Войти в Moodify",
+    "signupTitle": "Зарегистрироваться в Moodify",
+    "continueWithGoogle": "Продолжить с Google",
+    "or": "ИЛИ",
+    "fullNameLabel": "Как к вам обращаться?",
+    "fullNamePlaceholder": "Ваше имя",
+    "emailLabel": "Адрес электронной почты",
+    "emailPlaceholder": "name@company.com",
+    "passwordLabel": "Пароль",
+    "passwordPlaceholder": "••••••••",
+    "loginButton": "Войти",
+    "signupButton": "Регистрация",
+    "promptSignup": "У вас нет аккаунта?",
+    "signupLink": "Зарегистрируйтесь",
+    "promptLogin": "Уже есть аккаунт?",
+    "loginLink": "Войти"
   },
   "common": {
     "unknownArtist": "Неизвестный исполнитель",

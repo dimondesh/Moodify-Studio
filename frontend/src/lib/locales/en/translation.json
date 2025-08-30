@@ -1,4 +1,6 @@
 {
+
+  
   "sidebar": {
     "home": "Home",
     "search": "Search",
@@ -687,7 +689,40 @@
   },
   "auth": {
     "loggingIn": "Logging you in",
-    "redirecting": "Redirecting..."
+    "redirecting": "Redirecting...",
+    "emailRequired": "Email is required.",
+    "emailMaxLength": "Email must be 30 characters or less.",
+    "emailInvalid": "Invalid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordMinLength": "Password must be at least 6 characters.",
+    "passwordMaxLength": "Password must be 20 characters or less.",
+    "googleSignInFailed": "Google sign-in failed. Please try again.",
+    "loginSuccess": "Logged in successfully!",
+    "signupSuccess": "Account created! Please check your email to verify.",
+    "errorInvalidCredentials": "Invalid email or password.",
+    "errorEmailInUse": "This email is already registered.",
+    "errorInvalidEmail": "The email address is not valid.",
+    "errorAuthFailed": "Authentication failed. Please try again.",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailMessage1": "We've sent a verification link to",
+    "verifyEmailMessage2": "Please check your inbox and follow the link to activate your account.",
+    "backToLogin": "Back to Login",
+    "loginTitle": "Log In to Moodify",
+    "signupTitle": "Sign Up to Moodify",
+    "continueWithGoogle": "Continue with Google",
+    "or": "OR",
+    "fullNameLabel": "What should we call you?",
+    "fullNamePlaceholder": "Your name",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@company.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "loginButton": "Log In",
+    "signupButton": "Sign Up",
+    "promptSignup": "Don't have an account?",
+    "signupLink": "Sign up",
+    "promptLogin": "Already have an account?",
+    "loginLink": "Log in"
   },
   "common": {
     "unknownArtist": "Unknown Artist",
