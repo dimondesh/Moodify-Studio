@@ -261,11 +261,14 @@ const Topbar = () => {
                   size="icon"
                   className="relative h-8 w-8 rounded-full"
                 >
-                  <img
-                    src={user.photoURL || "/Moodify.png"}
-                    alt="avatar"
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
+                  <Avatar className="w-8 h-8 object-cover">
+                    <AvatarImage
+                      src={user.photoURL || undefined}
+                      alt="avatar"
+                      className="object-cover"
+                    />
+                    <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+                  </Avatar>
                 </Button>
               </DrawerTrigger>
               <DrawerContent
@@ -299,11 +302,14 @@ const Topbar = () => {
                   size="icon"
                   className="relative h-8 w-8 rounded-full"
                 >
-                  <img
-                    src={user.photoURL || "/Moodify.png"}
-                    alt="avatar"
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
+                  <Avatar className="w-8 h-8 object-cover">
+                    <AvatarImage
+                      src={user.photoURL || undefined}
+                      alt="avatar"
+                      className="object-cover"
+                    />
+                    <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
