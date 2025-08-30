@@ -279,7 +279,7 @@ const Topbar = () => {
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10 object-cover">
                       <AvatarImage
-                        src={user.photoURL || "/Moodify.png"}
+                        src={user.photoURL || undefined}
                         alt="avatar"
                         className="object-cover"
                       />
