@@ -68,6 +68,17 @@ export interface RecentSearchItem {
   albumId?: string | null;
 }
 
+export interface GeneratedPlaylist {
+  _id: string;
+  user: string;
+  type: "ON_REPEAT";
+  songs: Song[];
+  nameKey: string;
+  descriptionKey: string;
+  imageUrl: string;
+  generatedOn: string;
+}
+
 export interface Album {
   _id: string;
   title: string;

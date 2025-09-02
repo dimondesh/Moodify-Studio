@@ -724,5 +724,12 @@
   "common": {
     "unknownArtist": "Неизвестный исполнитель",
     "songsNotFound": "Нет песен в этой категории."
+  },
+  "generatedPlaylists": {
+    "onRepeat": {
+      "title": "На повторе",
+      "description": "Треки, которые вы слушали чаще всего в последнее время."
+    }
   }
+  
 }

@@ -725,5 +725,11 @@
   "common": {
     "unknownArtist": "Невідомий виконавець",
     "songsNotFound": "Немає пісень у цій категорії."
+  },
+   "generatedPlaylists": {
+    "onRepeat": {
+      "title": "На репіті",
+      "description": "Треки, які ви слухали найчастіше останнім часом."
+    }
   }
 }

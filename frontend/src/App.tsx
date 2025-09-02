@@ -28,6 +28,7 @@ import { Helmet } from "react-helmet-async";
 import { useLibraryStore } from "./stores/useLibraryStore";
 import { usePlaylistStore } from "./stores/usePlaylistStore";
 import { useMusicStore } from "./stores/useMusicStore";
+import GeneratedPlaylistPage from "./pages/GeneratedPlaylistPage/GeneratedPlaylistPage";
 
 function App() {
   const { user } = useAuthStore();
@@ -132,6 +133,10 @@ function App() {
           <Route path="/mixes/:mixId" element={<MixDetailsPage />} />
           <Route path="/all-mixes/:category" element={<AllMixesPage />} />
           <Route path="/offline" element={<OfflinePage />} />
+          <Route
+            path="/generated-playlists/:id"
+            element={<GeneratedPlaylistPage />}
+          />
         </Route>
       </Routes>
       <Toaster

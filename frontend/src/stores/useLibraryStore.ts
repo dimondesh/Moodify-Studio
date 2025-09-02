@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
-import type { Album, Song, LibraryPlaylist, Artist, Mix } from "../types";
+import type {
+  Album,
+  Song,
+  LibraryPlaylist,
+  Artist,
+  Mix,
+  GeneratedPlaylist,
+} from "../types";
 import { useOfflineStore } from "./useOfflineStore";
 import {
   getAllUserAlbums,
@@ -17,6 +24,7 @@ interface LibraryStore {
   playlists: LibraryPlaylist[];
   followedArtists: Artist[];
   savedMixes: Mix[];
+  generatedPlaylists: GeneratedPlaylist[]; 
 
   isLoading: boolean;
   error: string | null;
@@ -24,6 +32,7 @@ interface LibraryStore {
   fetchLibrary: () => Promise<void>;
   fetchLikedSongs: () => Promise<void>;
   fetchFollowedArtists: () => Promise<void>;
+  fetchGeneratedPlaylists: () => Promise<void>; 
 
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
@@ -44,6 +53,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   playlists: [],
   followedArtists: [],
   savedMixes: [],
+  generatedPlaylists: [], 
 
   isLoading: false,
   error: null,
@@ -115,14 +125,30 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         playlists: playlistsRes.data.playlists || [],
         followedArtists: followedArtistsRes.data.artists || [],
         savedMixes: savedMixesRes.data.mixes || [],
-        isLoading: false,
       });
+
+      await get().fetchGeneratedPlaylists();
+
       console.log("useLibraryStore: All library data fetched successfully.");
     } catch (err: any) {
       set({
         error: err.message || "Failed to fetch library",
-        isLoading: false,
       });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchGeneratedPlaylists: async () => {
+    if (useOfflineStore.getState().isOffline) return;
+    try {
+      const response = await axiosInstance.get("/generated-playlists/me");
+      set({ generatedPlaylists: response.data || [] });
+    } catch (err: any) {
+      if (err.response?.status !== 404) {
+        console.error("Failed to fetch generated playlists:", err);
+      }
+      set({ generatedPlaylists: [] });
     }
   },
 

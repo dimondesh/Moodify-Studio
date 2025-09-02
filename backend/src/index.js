@@ -23,7 +23,11 @@ import artistRoutes from "./routes/artist.route.js";
 import mixRoutes from "./routes/mix.route.js";
 import cronRoutes from "./routes/cron.route.js";
 import shareRoutes from "./routes/share.route.js";
+import generatedPlaylistRoutes from "./routes/generatedPlaylist.route.js";
+
 import { updateDailyMixes } from "./controller/mix.controller.js";
+import { generateOnRepeatPlaylistForUser } from "./lib/playlistGenerator.service.js";
+import { ListenHistory } from "./models/listenHistory.model.js";
 
 dotenv.config();
 
@@ -80,6 +84,33 @@ cron.schedule(
   }
 );
 
+// Запускаем каждый день в 4 часа утра
+cron.schedule(
+  "0 4 * * *",
+  async () => {
+    console.log('CRON JOB: Starting "On Repeat" playlist generation...');
+    try {
+      const eligibleUsers = await ListenHistory.aggregate([
+        { $group: { _id: "$user", count: { $sum: 1 } } },
+        { $match: { count: { $gte: 30 } } },
+      ]);
+
+      for (const user of eligibleUsers) {
+        await generateOnRepeatPlaylistForUser(user._id);
+      }
+      console.log(
+        `CRON JOB: "On Repeat" generation finished for ${eligibleUsers.length} users.`
+      );
+    } catch (error) {
+      console.error('CRON JOB: Error in "On Repeat" generation:', error);
+    }
+  },
+  {
+    scheduled: true,
+    timezone: "Europe/Kyiv",
+  }
+);
+
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -99,6 +130,8 @@ app.use("/api/library", libraryRoutes);
 app.use("/api/playlists", playlistRoutes);
 app.use("/api/artists", artistRoutes);
 app.use("/api/mixes", mixRoutes);
+app.use("/api/generated-playlists", generatedPlaylistRoutes);
+
 app.use("/api/cron", cronRoutes);
 app.use("/api/share", shareRoutes);
 

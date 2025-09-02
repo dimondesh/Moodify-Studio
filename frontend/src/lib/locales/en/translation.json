@@ -727,5 +727,11 @@
   "common": {
     "unknownArtist": "Unknown Artist",
     "songsNotFound": "No available songs in this category."
+  },
+  "generatedPlaylists": {
+    "onRepeat": {
+      "title": "On Repeat",
+      "description": "Songs you've been playing the most lately."
+    }
   }
 }

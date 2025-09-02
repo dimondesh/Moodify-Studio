@@ -40,6 +40,7 @@ const LibraryPage = () => {
     error: libraryError,
     fetchLibrary,
     fetchLikedSongs,
+    generatedPlaylists,
   } = useLibraryStore();
   const {
     myPlaylists,
@@ -190,6 +191,14 @@ const LibraryPage = () => {
           } as LikedSongsItem,
         ]
       : []),
+    ...(generatedPlaylists || []).map((playlist) => ({
+      _id: playlist._id,
+      type: "mix" as const,
+      title: t(playlist.nameKey),
+      imageUrl: playlist.imageUrl,
+      createdAt: new Date(playlist.generatedOn),
+      sourceName: "Moodify",
+    })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const filteredLibraryItems = libraryItems.filter((item) => {
@@ -273,59 +282,71 @@ const LibraryPage = () => {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredLibraryItems.map((item) => {
-                      let linkPath: string;
-                      let subtitle: string;
+                      let linkPath: string = "#";
+                      let subtitle: string = "";
                       let coverImageUrl: string | null | undefined =
                         item.imageUrl;
                       let imageClass = "rounded-md";
 
-                      if (item.type === "liked-songs") {
-                        const likedItem = item as LikedSongsItem;
-                        linkPath = "/liked-songs";
-                        subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                          likedItem.songsCount
-                        } ${
-                          likedItem.songsCount !== 1
-                            ? t("sidebar.subtitle.songs")
-                            : t("sidebar.subtitle.song")
-                        }`;
-                        coverImageUrl = item.imageUrl;
-                      } else if (item.type === "album") {
-                        const albumItem = item as AlbumItem;
-                        linkPath = `/albums/${albumItem._id}`;
-                        subtitle = `${
-                          t(`sidebar.subtitle.${albumItem.albumType}`) ||
-                          t("sidebar.subtitle.album")
-                        } • ${getArtistNames(albumItem.artist)}`;
-                        coverImageUrl =
-                          item.imageUrl || "/default-album-cover.png";
-                      } else if (item.type === "playlist") {
-                        const playlistItem = item as PlaylistItem;
-                        linkPath = `/playlists/${playlistItem._id}`;
-                        subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                          playlistItem.owner?.fullName ||
-                          t("common.unknownArtist")
-                        }`;
-                        coverImageUrl =
-                          item.imageUrl || "/default-album-cover.png";
-                      } else if (item.type === "artist") {
-                        const artistItem = item as FollowedArtistItem;
-                        linkPath = `/artists/${artistItem._id}`;
-                        subtitle = t("sidebar.subtitle.artist");
-                        coverImageUrl =
-                          item.imageUrl || "/default-artist-cover.png";
-                        imageClass = "rounded-full";
-                      } else if (item.type === "mix") {
-                        linkPath = `/mixes/${item._id}`;
-                        subtitle = t("sidebar.subtitle.dailyMix");
-                        coverImageUrl =
-                          item.imageUrl || "/default-album-cover.png";
-                        imageClass = "rounded-md";
-                      } else {
-                        linkPath = "#";
-                        subtitle = "";
-                        coverImageUrl = "/default-album-cover.png";
+                      switch (item.type) {
+                        case "album": {
+                          const albumItem = item as AlbumItem;
+                          linkPath = `/albums/${albumItem._id}`;
+                          subtitle = `${
+                            t(`sidebar.subtitle.${albumItem.albumType}`) ||
+                            t("sidebar.subtitle.album")
+                          } • ${getArtistNames(albumItem.artist)}`;
+                          break;
+                        }
+                        case "playlist": {
+                          const playlistItem = item as PlaylistItem;
+                          linkPath = `/playlists/${playlistItem._id}`;
+                          subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                            playlistItem.owner?.fullName ||
+                            t("common.unknownArtist")
+                          }`;
+                          break;
+                        }
+                        case "liked-songs": {
+                          const likedItem = item as LikedSongsItem;
+                          linkPath = "/liked-songs";
+                          subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                            likedItem.songsCount
+                          } ${
+                            likedItem.songsCount !== 1
+                              ? t("sidebar.subtitle.songs")
+                              : t("sidebar.subtitle.song")
+                          }`;
+                          coverImageUrl = item.imageUrl;
+                          break;
+                        }
+                        case "artist": {
+                          const artistItem = item as FollowedArtistItem;
+                          linkPath = `/artists/${artistItem._id}`;
+                          subtitle = t("sidebar.subtitle.artist");
+                          imageClass = "rounded-full";
+                          break;
+                        }
+                        case "mix": {
+                          const isGenerated = generatedPlaylists.some(
+                            (p) => p._id === item._id
+                          );
+                          if (isGenerated) {
+                            linkPath = `/generated-playlists/${item._id}`;
+                            subtitle = t("sidebar.subtitle.playlist");
+                          } else {
+                            const mixItem = item as MixItem;
+                            linkPath = `/mixes/${mixItem._id}`;
+                            subtitle = t("sidebar.subtitle.dailyMix");
+                          }
+                          coverImageUrl =
+                            item.imageUrl || "/default-album-cover.png";
+                          break;
+                        }
+                        default:
+                          break;
                       }
+
                       return (
                         <Link
                           key={item._id}

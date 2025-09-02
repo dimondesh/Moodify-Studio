@@ -45,6 +45,8 @@ const LeftSidebar = () => {
     followedArtists,
     fetchLibrary,
     isLoading: isLoadingLibrary,
+    generatedPlaylists,
+    fetchGeneratedPlaylists,
   } = useLibraryStore();
 
   const {
@@ -74,8 +76,16 @@ const LeftSidebar = () => {
       fetchLibrary();
       fetchMyPlaylists();
       fetchArtists();
+      fetchGeneratedPlaylists();
     }
-  }, [user, loadingUser, fetchLibrary, fetchMyPlaylists, fetchArtists]);
+  }, [
+    user,
+    loadingUser,
+    fetchLibrary,
+    fetchMyPlaylists,
+    fetchArtists,
+    fetchGeneratedPlaylists,
+  ]);
 
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (!artistsData || artistsData.length === 0)
@@ -154,11 +164,20 @@ const LeftSidebar = () => {
       createdAt: new Date(mix.addedAt ?? new Date()),
       sourceName: mix.sourceName,
     })),
+    ...(generatedPlaylists || []).map((playlist) => ({
+      _id: playlist._id,
+      type: "mix" as const,
+      title: t(playlist.nameKey),
+      imageUrl: playlist.imageUrl,
+      createdAt: new Date(playlist.generatedOn),
+      sourceName: "Moodify",
+    })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
     <div className="h-full flex flex-col gap-2">
       <div className="rounded-lg bg-zinc-900 p-4">
+        {/* ... JSX для навигации без изменений ... */}
         <div className="space-y-2">
           <Link
             to="/"
@@ -254,53 +273,65 @@ const LeftSidebar = () => {
           <ScrollArea className="flex-1 h-full pb-7">
             <div className="space-y-2">
               {libraryItems.map((item) => {
-                let linkPath: string;
-                let subtitle: string;
-                let fallbackImage: string;
+                let linkPath: string = "#";
+                let subtitle: string = "";
+                let fallbackImage: string = "/default-album-cover.png";
                 let imageClass = "rounded-md";
 
-                if (item.type === "album") {
-                  const albumItem = item as AlbumItem;
-                  linkPath = `/albums/${albumItem._id}`;
-                  subtitle = `${
-                    t(`sidebar.subtitle.${albumItem.albumType}`) ||
-                    t("sidebar.subtitle.album")
-                  } • ${getArtistNames(albumItem.artist)}`;
-                  fallbackImage = "/default-album-cover.png";
-                } else if (item.type === "playlist") {
-                  const playlistItem = item as PlaylistItem;
-                  linkPath = `/playlists/${playlistItem._id}`;
-                  subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                    playlistItem.owner?.fullName || t("common.unknownArtist")
-                  }`;
-                  fallbackImage = "/default-album-cover.png";
-                } else if (item.type === "liked-songs") {
-                  const likedItem = item as LikedSongsItem;
-                  linkPath = "/liked-songs";
-                  subtitle = `${t("sidebar.subtitle.playlist")} • ${
-                    likedItem.songsCount
-                  } ${
-                    likedItem.songsCount !== 1
-                      ? t("sidebar.subtitle.songs")
-                      : t("sidebar.subtitle.song")
-                  }`;
-                  fallbackImage = "/liked.png";
-                } else if (item.type === "artist") {
-                  const artistItem = item as FollowedArtistItem;
-                  linkPath = `/artists/${artistItem._id}`;
-                  subtitle = t("sidebar.subtitle.artist");
-                  fallbackImage = "/default-album-cover.png";
-                  imageClass = "rounded-full";
-                } else if (item.type === "mix") {
-                  const mixItem = item as MixItem;
-                  linkPath = `/mixes/${mixItem._id}`;
-                  subtitle = t("sidebar.subtitle.dailyMix");
-                  fallbackImage = "/default-album-cover.png";
-                  imageClass = "rounded-md";
-                } else {
-                  linkPath = "#";
-                  subtitle = "";
-                  fallbackImage = "/default-album-cover.png";
+                switch (item.type) {
+                  case "album": {
+                    const albumItem = item as AlbumItem;
+                    linkPath = `/albums/${albumItem._id}`;
+                    subtitle = `${
+                      t(`sidebar.subtitle.${albumItem.albumType}`) ||
+                      t("sidebar.subtitle.album")
+                    } • ${getArtistNames(albumItem.artist)}`;
+                    break;
+                  }
+                  case "playlist": {
+                    const playlistItem = item as PlaylistItem;
+                    linkPath = `/playlists/${playlistItem._id}`;
+                    subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                      playlistItem.owner?.fullName || t("common.unknownArtist")
+                    }`;
+                    break;
+                  }
+                  case "liked-songs": {
+                    const likedItem = item as LikedSongsItem;
+                    linkPath = "/liked-songs";
+                    subtitle = `${t("sidebar.subtitle.playlist")} • ${
+                      likedItem.songsCount
+                    } ${
+                      likedItem.songsCount !== 1
+                        ? t("sidebar.subtitle.songs")
+                        : t("sidebar.subtitle.song")
+                    }`;
+                    fallbackImage = "/liked.png";
+                    break;
+                  }
+                  case "artist": {
+                    const artistItem = item as FollowedArtistItem;
+                    linkPath = `/artists/${artistItem._id}`;
+                    subtitle = t("sidebar.subtitle.artist");
+                    imageClass = "rounded-full";
+                    break;
+                  }
+                  case "mix": {
+                    const isGenerated = generatedPlaylists.some(
+                      (p) => p._id === item._id
+                    );
+                    if (isGenerated) {
+                      linkPath = `/generated-playlists/${item._id}`;
+                      subtitle = t("sidebar.subtitle.playlist");
+                    } else {
+                      const mixItem = item as MixItem;
+                      linkPath = `/mixes/${mixItem._id}`;
+                      subtitle = t("sidebar.subtitle.dailyMix");
+                    }
+                    break;
+                  }
+                  default:
+                    break;
                 }
 
                 return (
