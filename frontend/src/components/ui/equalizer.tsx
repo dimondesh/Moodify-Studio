@@ -1,6 +1,6 @@
 const Equalizer = () => {
   return (
-    <div className="flex items-end gap-[2px] w-5 h-5">
+    <div className="flex items-end gap-[2px] w-4 h-4">
       <div className="w-[2px] bg-violet-500 animate-[eqJump_1.2s_steps(5,end)_infinite] [animation-delay:0s]" />
       <div className="w-[2px] bg-violet-500 animate-[eqJump_1s_steps(4,end)_infinite] [animation-delay:0.2s]" />
       <div className="w-[2px] bg-violet-500 animate-[eqJump_1.3s_steps(6,end)_infinite] [animation-delay:0.1s]" />
