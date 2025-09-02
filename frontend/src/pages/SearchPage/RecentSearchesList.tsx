@@ -129,14 +129,12 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
                 >
                   <Avatar
                     className={`w-12 h-12 flex-shrink-0 ${
-                      item.itemType === "Artist" ||
-                      item.itemType === "User" ||
-                      item.itemType === "Song"
+                      item.itemType === "Artist" || item.itemType === "User"
                         ? "rounded-full"
                         : "rounded-md"
                     }`}
                   >
-                    <AvatarImage src={item.imageUrl} />
+                    <AvatarImage src={item.imageUrl} className="object-cover" />
                     <AvatarFallback>{title[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
