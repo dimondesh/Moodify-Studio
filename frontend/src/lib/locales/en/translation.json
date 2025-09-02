@@ -376,6 +376,11 @@
   "settings": {
     "title": "Settings",
     "language": "Interface Language",
+    "privacy": {
+      "title": "Privacy",
+      "anonymousMode": "Anonymous Mode",
+      "anonymousModeDesc": "When enabled, your listening history won't be saved and your activity won't be visible to friends."
+    },
     "audioTitle": "Audio Settings",
     "equalizer": "Equalizer",
     "selectPreset": "Select a preset",
@@ -406,9 +411,13 @@
     "totalAvailable": "Total Available",
     "clearAllDownloads": "Clear All Downloads",
     "clearLabel": "This will remove all downloaded songs, albums, and playlists from this device.",
-    "playbackSpeed": "Playback Speed", 
+    "playbackSpeed": "Playback Speed",
     "playbackSpeedDesc": "Control the playback speed of your music."
-  
+  },
+  "toasts": {
+    "anonymousEnabled": "Anonymous mode enabled",
+    "anonymousDisabled": "Anonymous mode disabled",
+    "privacyUpdateFailed": "Failed to update privacy settings"
   },
   "admin": {
     "unauthorized": "Unauthorized",

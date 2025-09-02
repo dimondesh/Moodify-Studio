@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { axiosInstance } from "../lib/axios";
 import { auth, signOut as firebaseSignOut } from "../lib/firebase";
+import { useChatStore } from "./useChatStore";
+import { usePlayerStore } from "./usePlayerStore";
 
 interface AuthUser {
   id: string;
@@ -12,6 +14,7 @@ interface AuthUser {
   imageUrl?: string | null;
   isAdmin?: boolean;
   language?: string;
+  isAnonymous?: boolean;
 }
 
 interface UpdateProfileData {
@@ -41,6 +44,7 @@ interface AuthStore {
   reset: () => void;
   updateUserProfile: (data: UpdateProfileData) => Promise<void>;
   updateUserLanguage: (language: string) => Promise<void>;
+  updateUserPrivacy: (isAnonymous: boolean) => Promise<void>;
 }
 
 const getAuthHeaders = async () => {
@@ -127,6 +131,34 @@ export const useAuthStore = create<AuthStore>()(
           throw error;
         }
       },
+      updateUserPrivacy: async (isAnonymous: boolean) => {
+        set({ isLoading: true });
+        try {
+          await axiosInstance.put("/users/privacy", { isAnonymous });
+          set((state) => ({
+            user: state.user ? { ...state.user, isAnonymous } : null,
+            isLoading: false,
+          }));
+
+          const { socket } = useChatStore.getState();
+          if (socket && socket.connected) {
+            if (isAnonymous) {
+              socket.emit("update_activity", { songId: null });
+            } else {
+              const { currentSong, isPlaying } = usePlayerStore.getState();
+              if (isPlaying && currentSong) {
+                socket.emit("update_activity", { songId: currentSong._id });
+              } else {
+                socket.emit("update_activity", { songId: null });
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update privacy settings:", error);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
 
       syncUser: async (userData: FirebaseUserDataForSync) => {
         set({ isLoading: true, error: null });
@@ -167,6 +199,7 @@ export const useAuthStore = create<AuthStore>()(
                 syncedUserFromBackend.fullName || syncedUserFromBackend.email,
               imageUrl: syncedUserFromBackend.imageUrl || null,
               language: syncedUserFromBackend.language,
+              isAnonymous: syncedUserFromBackend.isAnonymous,
             },
             isLoading: false,
             error: null,

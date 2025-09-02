@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "../../stores/useOfflineStore";
+import toast from "react-hot-toast";
 
 const SettingsPage: React.FC = () => {
   const {
@@ -54,7 +55,8 @@ const SettingsPage: React.FC = () => {
   } = useAudioSettingsStore();
 
   const { t, i18n } = useTranslation();
-  const { updateUserLanguage } = useAuthStore();
+  const { user, updateUserLanguage, updateUserPrivacy } = useAuthStore();
+  const isAnonymous = user?.isAnonymous ?? false;
 
   const frequencies = defaultFrequencies;
 
@@ -70,6 +72,16 @@ const SettingsPage: React.FC = () => {
 
   const handleSliderChange = (freq: string) => (value: number[]) => {
     setEqualizerGain(freq, value[0]);
+  };
+  const handleAnonymousToggle = async (checked: boolean) => {
+    try {
+      await updateUserPrivacy(checked);
+      toast.success(
+        checked ? t("toasts.anonymousEnabled") : t("toasts.anonymousDisabled")
+      );
+    } catch {
+      toast.error(t("toasts.privacyUpdateFailed"));
+    }
   };
 
   const handlePresetChange = (presetName: string) => {
@@ -150,6 +162,25 @@ const SettingsPage: React.FC = () => {
                     <SelectItem value="en">English</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="border-t border-zinc-700 pt-8">
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="anonymous-mode-toggle"
+                    className="text-xl font-semibold"
+                  >
+                    {t("settings.privacy.anonymousMode")}
+                  </Label>
+                  <Switch
+                    id="anonymous-mode-toggle"
+                    checked={isAnonymous}
+                    onCheckedChange={handleAnonymousToggle}
+                    className="data-[state=checked]:bg-violet-600"
+                  />
+                </div>
+                <p className="text-zinc-400 text-sm mt-2">
+                  {t("settings.privacy.anonymousModeDesc")}
+                </p>
               </div>
             </Card>
             <h1 className="text-3xl font-bold text-white mb-6">

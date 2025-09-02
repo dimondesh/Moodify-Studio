@@ -1,3 +1,4 @@
+// backend/src/lib/socket.js
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
@@ -64,7 +65,7 @@ export const initializeSocket = (server) => {
     }
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     const userId = socket.userId;
     if (!userId) {
       console.error(
@@ -73,19 +74,38 @@ export const initializeSocket = (server) => {
       socket.disconnect(true);
       return;
     }
+    const user = await User.findById(userId).select("isAnonymous").lean();
+    const isUserAnonymous = user?.isAnonymous || false;
 
-    userSockets.set(userId, socket.id);
-    userActivities.set(userId, "Idle");
+    if (!isUserAnonymous) {
+      userSockets.set(userId, socket.id);
+      userActivities.set(userId, "Idle");
+      io.emit("user_connected", userId);
+    }
 
-    io.emit("user_connected", userId);
-
-    io.emit("users_online", Array.from(userSockets.keys()));
+    const onlineUserIds = Array.from(userSockets.keys());
+    const visibleOnlineUsers = await User.find({
+      _id: { $in: onlineUserIds },
+      isAnonymous: false,
+    }).select("_id");
+    io.emit(
+      "users_online",
+      visibleOnlineUsers.map((u) => u._id.toString())
+    );
     io.emit("activities", Array.from(userActivities.entries()));
 
     console.log(`User ${userId} (MongoDB _id) connected via Socket.IO`);
 
     socket.on("update_activity", async ({ songId }) => {
       const userId = socket.userId;
+      const user = await User.findById(userId).select("isAnonymous").lean();
+      if (user?.isAnonymous) {
+        if (userActivities.get(userId) !== "Idle") {
+          userActivities.set(userId, "Idle");
+          io.emit("activity_updated", { userId, activity: "Idle" });
+        }
+        return;
+      }
       console.log(
         `[Socket] Received update_activity for userId: ${userId}, songId: ${songId}`
       );
@@ -274,4 +294,8 @@ export const initializeSocket = (server) => {
       }
     });
   });
+
+  // --- НАЧАЛО ИЗМЕНЕНИЯ ---
+  return { userSockets, userActivities };
+  // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 };

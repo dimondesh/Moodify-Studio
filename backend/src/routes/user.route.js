@@ -1,5 +1,3 @@
-// backend/src/routes/user.route.js
-
 import { Router } from "express";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import {
@@ -19,6 +17,7 @@ import {
   addRecentSearch,
   removeRecentSearch,
   clearRecentSearches,
+  updateUserPrivacy,
 } from "../controller/user.controller.js";
 
 const router = Router();
@@ -47,4 +46,5 @@ router.get("/:userId/playlists", protectRoute, getPublicPlaylists);
 router.put("/me", protectRoute, updateUserProfile);
 router.get("/", protectRoute, getAllUsers);
 router.put("/language", protectRoute, updateUserLanguage);
+router.put("/privacy", protectRoute, updateUserPrivacy);
 export default router;

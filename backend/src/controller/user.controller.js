@@ -230,6 +230,56 @@ export const updateUserLanguage = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateUserPrivacy = async (req, res, next) => {
+  try {
+    const { isAnonymous } = req.body;
+    const userId = req.user.id;
+
+    if (typeof isAnonymous !== "boolean") {
+      return res.status(400).json({ message: "Invalid isAnonymous value" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isAnonymous },
+      { new: true }
+    );
+
+    const { io, userSockets, userActivities } = req;
+    const userIdStr = userId.toString();
+
+    if (isAnonymous) {
+      userSockets.delete(userIdStr);
+      userActivities.delete(userIdStr);
+      io.emit("user_disconnected", userIdStr);
+    } else {
+      const socket = Array.from(io.sockets.sockets.values()).find(
+        (s) => s.userId === userIdStr
+      );
+      if (socket) {
+        userSockets.set(userIdStr, socket.id);
+        userActivities.set(userIdStr, "Idle");
+        io.emit("user_connected", userIdStr);
+      }
+    }
+    const onlineUserIds = Array.from(userSockets.keys());
+    const visibleOnlineUsers = await User.find({
+      _id: { $in: onlineUserIds },
+      isAnonymous: false,
+    }).select("_id");
+    io.emit("users_online", visibleOnlineUsers.map((u) => u._id.toString()));
+    io.emit("activities", Array.from(userActivities.entries()));
+
+    res.status(200).json({
+      message: "Privacy settings updated",
+      isAnonymous: updatedUser.isAnonymous,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getMutualFollowers = async (req, res, next) => {
   try {
     const currentUserMongoId = req.user.id;
@@ -493,3 +543,4 @@ export const clearRecentSearches = async (req, res, next) => {
     next(error);
   }
 };
+

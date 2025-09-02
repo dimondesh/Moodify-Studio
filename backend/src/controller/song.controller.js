@@ -1,6 +1,6 @@
-// backend/src/controller/song.controller.js
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
+import { User } from "../models/user.model.js";
 import axios from "axios";
 
 export const getAllSongs = async (req, res, next) => {
@@ -169,6 +169,13 @@ export const recordListen = async (req, res, next) => {
     const { id: songId } = req.params;
 
     const userId = req.user.id;
+    const user = await User.findById(userId).select("isAnonymous");
+    if (user && user.isAnonymous) {
+      return res.status(200).json({
+        success: true,
+        message: "Listen not recorded due to anonymous mode.",
+      });
+    }
 
     if (!songId || !userId) {
       console.error(

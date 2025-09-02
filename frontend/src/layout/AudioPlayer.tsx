@@ -555,6 +555,7 @@ const AudioPlayer = () => {
     if (
       isPlaying &&
       user &&
+      !user.isAnonymous &&
       currentSong &&
       currentSong._id &&
       currentTime >= 30 &&

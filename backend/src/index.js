@@ -39,6 +39,8 @@ const __dirname = path.resolve();
 
 const httpServer = createServer(app);
 initializeSocket(httpServer);
+const { userSockets, userActivities } = initializeSocket(httpServer);
+
 const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
 
 app.use(
@@ -113,6 +115,8 @@ cron.schedule(
 
 app.use((req, res, next) => {
   req.io = io;
+  req.userSockets = userSockets;
+  req.userActivities = userActivities;
   next();
 });
 
