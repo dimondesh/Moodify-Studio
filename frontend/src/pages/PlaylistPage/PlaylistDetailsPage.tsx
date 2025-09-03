@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
 import { useChatStore } from "../../stores/useChatStore";
 import { useOfflineStore } from "../../stores/useOfflineStore";
+import EqualizerTitle from "@/components/ui/equalizer-title";
 
 import {
   Play,
@@ -560,7 +561,7 @@ const PlaylistDetailsPage = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-5 sm:size-6 rounded-md p-5 transition-colors flex-shrink-0"
+                      className="size-5 sm:size-6 rounded-md border border-transparent p-5 transition-colors flex-shrink-0"
                       title="Share Playlist"
                       onClick={() =>
                         openShareDialog({
@@ -699,15 +700,11 @@ const PlaylistDetailsPage = () => {
                             if (!(e.target as HTMLElement).closest("button"))
                               handlePlaySong(song, index);
                           }}
-                          // --- НАЧАЛО ИЗМЕНЕНИЙ: Обновлена сетка для строк треков ---
-                          className={`grid grid-cols-[1fr_auto] sm:grid-cols-[16px_4fr_1fr_auto] md:grid-cols-[16px_4fr_2fr_1fr_auto] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          className={`grid grid-cols-[auto_1fr_auto] sm:grid-cols-[16px_4fr_1fr_auto] md:grid-cols-[16px_4fr_2fr_1fr_auto] items-center gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
                             isCurrentSong ? "bg-white/10" : ""
                           }`}
-                          // --- КОНЕЦ ИЗМЕНЕНИЙ ---
                         >
-                          {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Скрыт номер трека на мобильных --- */}
                           <div className="hidden sm:flex items-center justify-center">
-                            {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
                             {isCurrentSong && isPlaying ? (
                               <div className="z-10">
                                 <Equalizer />
@@ -736,11 +733,10 @@ const PlaylistDetailsPage = () => {
                               />
                             </button>
                             <div className="flex flex-col min-w-0">
-                              {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Добавлен эквалайзер для мобильных --- */}
                               <div className="flex items-center gap-2">
                                 {isCurrentSong && isPlaying && (
                                   <div className="block sm:hidden flex-shrink-0">
-                                    <Equalizer />
+                                    <EqualizerTitle />
                                   </div>
                                 )}
                                 <button
@@ -757,7 +753,7 @@ const PlaylistDetailsPage = () => {
                                   <p className="truncate">{song.title}</p>
                                 </button>
                               </div>
-                              {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
+
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
@@ -776,7 +772,6 @@ const PlaylistDetailsPage = () => {
                               </div>
                             </div>
                           </div>
-                          {/* --- НАЧАЛО ИЗМЕНЕНИЙ: Скрыта дата и длительность на мобильных --- */}
                           <div className="items-center hidden md:flex text-xs">
                             {song.createdAt
                               ? format(new Date(song.createdAt), "MMM dd, yyyy")
@@ -785,7 +780,7 @@ const PlaylistDetailsPage = () => {
                           <div className="hidden sm:flex items-center text-xs sm:text-sm flex-shrink-0">
                             {formatDuration(song.duration)}
                           </div>
-                          {/* --- КОНЕЦ ИЗМЕНЕНИЙ --- */}
+
                           <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
                             <Button
                               size="icon"

@@ -330,7 +330,7 @@ const GeneratedPlaylistPage = () => {
                               : "N/A"}
                           </div>
                           <div className="flex items-center justify-end gap-1 sm:gap-4 flex-shrink-0">
-                            <span className="hidden sm:inline text-xs sm:text-sm">
+                            <span className="hidden sm:inline text-xs sm:text-sm md:mr-10">
                               {formatDuration(song.duration)}
                             </span>
                             <Button
