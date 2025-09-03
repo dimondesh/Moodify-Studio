@@ -282,7 +282,7 @@ const HomePage = () => {
               />
               {allGeneratedPlaylists.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.playlistsForYou")}
+                  title={t("homepage.generatedForYou")}
                   items={generatedPlaylistsItems}
                   isLoading={isGeneratedLoading}
                 />

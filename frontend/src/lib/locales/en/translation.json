@@ -83,7 +83,8 @@
     "genreMixes": "Genre Mixes",
     "moodMixes": "Mood Mixes",
     "trending": "Trending",
-    "playlistsForYou": "Playlists For You"
+    "playlistsForYou": "Playlists For You",
+    "generatedForYou": "Generated For You"
   },
    "mixes": {
     "genre": {

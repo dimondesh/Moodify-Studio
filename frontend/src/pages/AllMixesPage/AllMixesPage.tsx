@@ -63,8 +63,8 @@ const AllMixesPage = () => {
                 alt={mix.name}
                 className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
               />
-              <div className="absolute inset-0 flex items-start justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
-                <h3 className="text-white text-lg sm:text-xl font-bold drop-shadow-lg break-words">
+              <div className="absolute inset-0 flex items-end justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                <h3 className="text-white text-lg font-bold drop-shadow-lg break-words whitespace-normal leading-tight">
                   {t(mix.name)}
                 </h3>
               </div>

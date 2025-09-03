@@ -80,7 +80,9 @@
     "genreMixes": "Мікси за жанрами",
     "moodMixes": "Мікси за настроєм",
     "trending": "У тренді",
-    "playlistsForYou": "Плейлисти для вас"
+    "playlistsForYou": "Плейлисти для вас",
+      "generatedForYou": "Сгенеровано для вас"
+
   },
   "mixes": {
     "genre": {

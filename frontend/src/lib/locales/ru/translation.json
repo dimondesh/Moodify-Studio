@@ -82,7 +82,9 @@
     "genreMixes": "Миксы по жанрам",
     "moodMixes": "Миксы по настроению",
     "trending": "В тренде",
-    "playlistsForYou": "Плейлисты для вас"
+    "playlistsForYou": "Плейлисты для вас",
+        "generatedForYou": "Сгенерировано для вас"
+
   },
   "mixes": {
     "genre": {

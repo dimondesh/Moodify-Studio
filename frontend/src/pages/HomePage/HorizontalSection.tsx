@@ -39,7 +39,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   items,
   isLoading,
   onShowAll,
-  limit = 16,
+  limit = 6,
 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -122,28 +122,56 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
 
       <ScrollArea className="w-full whitespace-nowrap rounded-md">
         <div className="flex space-x-4 pb-4">
-          {itemsToShow.map((item) => (
-            <div
-              key={`${item.itemType}-${item._id}`}
-              className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
-              onClick={() => handleItemClick(item)}
-            >
-              <div className="relative mb-4">
-                <div className="aspect-square rounded-md shadow-lg overflow-hidden">
+          {itemsToShow.map((item) => {
+            // --- НАЧАЛО ИЗМЕНЕНИЙ: УСЛОВНЫЙ РЕНДЕРИНГ ДЛЯ МИКСОВ ---
+            if (item.itemType === "mix") {
+              return (
+                <div
+                  key={`${item.itemType}-${item._id}`}
+                  onClick={() => handleItemClick(item)}
+                  className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all w-40 sm:w-48 flex-shrink-0"
+                >
                   <img
-                    src={item.imageUrl || "/default-song-cover.png"}
+                    src={item.imageUrl}
                     alt={getDisplayTitle(item)}
-                    className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 flex items-end justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                    <h3 className="text-white text-lg font-bold drop-shadow-lg break-words whitespace-normal leading-tight">
+                      {getDisplayTitle(item)}
+                    </h3>
+                  </div>
                 </div>
-                {item.itemType === "song" && <PlayButton song={item as Song} />}
+              );
+            }
+            // --- КОНЕЦ ИЗМЕНЕНИЙ: СТАНДАРТНЫЙ РЕНДЕРИНГ ДЛЯ ОСТАЛЬНЫХ ---
+            return (
+              <div
+                key={`${item.itemType}-${item._id}`}
+                className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
+                onClick={() => handleItemClick(item)}
+              >
+                <div className="relative mb-4">
+                  <div className="aspect-square rounded-md shadow-lg overflow-hidden">
+                    <img
+                      src={item.imageUrl || "/default-song-cover.png"}
+                      alt={getDisplayTitle(item)}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  {item.itemType === "song" && (
+                    <PlayButton song={item as Song} />
+                  )}
+                </div>
+                <h3 className="font-medium truncate">
+                  {getDisplayTitle(item)}
+                </h3>
+                <p className="text-sm text-zinc-400 truncate">
+                  {getSubtitle(item)}
+                </p>
               </div>
-              <h3 className="font-medium truncate">{getDisplayTitle(item)}</h3>
-              <p className="text-sm text-zinc-400 truncate">
-                {getSubtitle(item)}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
