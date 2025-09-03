@@ -123,7 +123,6 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
       <ScrollArea className="w-full whitespace-nowrap rounded-md">
         <div className="flex space-x-4 pb-4">
           {itemsToShow.map((item) => {
-            // --- НАЧАЛО ИЗМЕНЕНИЙ: УСЛОВНЫЙ РЕНДЕРИНГ ДЛЯ МИКСОВ ---
             if (item.itemType === "mix") {
               return (
                 <div
@@ -144,7 +143,6 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                 </div>
               );
             }
-            // --- КОНЕЦ ИЗМЕНЕНИЙ: СТАНДАРТНЫЙ РЕНДЕРИНГ ДЛЯ ОСТАЛЬНЫХ ---
             return (
               <div
                 key={`${item.itemType}-${item._id}`}
@@ -156,7 +154,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                     <img
                       src={item.imageUrl || "/default-song-cover.png"}
                       alt={getDisplayTitle(item)}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                   {item.itemType === "song" && (
