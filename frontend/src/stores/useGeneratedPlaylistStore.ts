@@ -58,7 +58,7 @@ export const useGeneratedPlaylistStore = create<GeneratedPlaylistStore>(
           const localPlaylist = await getUserItem("playlists", id, userId);
           if (localPlaylist) {
             set({
-              currentPlaylist: localPlaylist as GeneratedPlaylist,
+              currentPlaylist: localPlaylist as unknown as GeneratedPlaylist,
               isLoading: false,
             });
             return; // Успешно загрузили из офлайна, выходим

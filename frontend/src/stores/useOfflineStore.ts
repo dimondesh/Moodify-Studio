@@ -12,7 +12,7 @@ import {
   getAllUserSongs,
   getUserItem,
 } from "@/lib/offline-db";
-import type { Playlist, Song } from "@/types";
+import type { Song } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
