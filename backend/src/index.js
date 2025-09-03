@@ -38,7 +38,6 @@ const app = express();
 const __dirname = path.resolve();
 
 const httpServer = createServer(app);
-initializeSocket(httpServer);
 const { userSockets, userActivities } = initializeSocket(httpServer);
 
 const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
