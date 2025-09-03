@@ -12,7 +12,7 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import AuthPage from "./pages/AuthPage/AuthPage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react"; // <--- ИМПОРТ useRef
 import { useAuthStore } from "./stores/useAuthStore";
 import { useOfflineStore } from "./stores/useOfflineStore";
 import AllSongsPage from "./pages/AllSongs/AllSongsPage";
@@ -36,39 +36,51 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const {
-      init: initOffline,
-      checkOnlineStatus,
-      syncLibrary,
-    } = useOfflineStore.getState().actions;
+  // --- ИЗМЕНЕНИЕ НАЧАЛО: Используем useRef для хранения ID таймаута ---
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchDataForUser = () => {
     const { fetchLibrary } = useLibraryStore.getState();
     const { fetchMyPlaylists } = usePlaylistStore.getState();
     const { fetchArtists } = useMusicStore.getState();
+    const { syncLibrary } = useOfflineStore.getState().actions;
+
+    console.log(
+      "fetchDataForUser called. Fetching library, playlists, artists..."
+    );
+    fetchLibrary();
+    fetchMyPlaylists();
+    fetchArtists();
+    if (!useOfflineStore.getState().isOffline) {
+      console.log("User is online, syncing library.");
+      syncLibrary();
+    }
+  };
+
+  useEffect(() => {
+    const { init: initOffline, checkOnlineStatus } =
+      useOfflineStore.getState().actions;
 
     const handleNetworkChange = () => {
-      const isNowOffline = !navigator.onLine;
+      const isNowOnline = navigator.onLine;
       checkOnlineStatus();
-      if (!isNowOffline && useAuthStore.getState().user) {
-        console.log("App is back online. Refetching and syncing data...");
-        fetchLibrary();
-        fetchMyPlaylists();
-        fetchArtists();
-        syncLibrary();
+
+      // Очищаем предыдущий таймаут, если он был, на случай быстрых переключений
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+
+      if (isNowOnline && useAuthStore.getState().user) {
+        console.log("App is back online. Scheduling data sync in 3 seconds...");
+        // Устанавливаем задержку перед выполнением запросов
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log("Executing delayed data sync after reconnecting.");
+          fetchDataForUser();
+        }, 3000); // 3-секундная задержка для стабилизации соединения
       }
     };
 
     initOffline();
-
-    if (user) {
-      console.log("User detected in App.tsx, ensuring data is fetched.");
-      fetchLibrary();
-      fetchMyPlaylists();
-      fetchArtists();
-      if (!useOfflineStore.getState().isOffline) {
-        syncLibrary();
-      }
-    }
 
     window.addEventListener("online", handleNetworkChange);
     window.addEventListener("offline", handleNetworkChange);
@@ -76,8 +88,20 @@ function App() {
     return () => {
       window.removeEventListener("online", handleNetworkChange);
       window.removeEventListener("offline", handleNetworkChange);
+      // Очищаем таймаут при размонтировании компонента
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
     };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      console.log("User detected in App.tsx, ensuring data is fetched.");
+      fetchDataForUser();
+    }
   }, [user]);
+  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   useEffect(() => {
     const exactSafePaths = [
@@ -86,7 +110,12 @@ function App() {
       "/liked-songs",
       "/offline",
     ];
-    const prefixSafePaths = ["/albums/", "/playlists/", "/mixes/"];
+    const prefixSafePaths = [
+      "/albums/",
+      "/playlists/",
+      "/mixes/",
+      "/generated-playlists/",
+    ];
 
     const isExactSafe = exactSafePaths.includes(location.pathname);
     const isPrefixSafe = prefixSafePaths.some((path) =>
@@ -112,7 +141,7 @@ function App() {
       </Helmet>
       <Routes>
         <Route path="admin" element={<AdminPage />} />
-        м <Route path="login" element={<AuthPage />} />
+        <Route path="login" element={<AuthPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-songs/:category?" element={<AllSongsPage />} />

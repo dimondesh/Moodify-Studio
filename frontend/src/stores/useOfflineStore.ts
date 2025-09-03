@@ -12,13 +12,14 @@ import {
   getAllUserSongs,
   getUserItem,
 } from "@/lib/offline-db";
-import type { Song } from "@/types";
+import type { Playlist, Song } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 import { useMusicStore } from "./useMusicStore";
+import i18n from "@/lib/i18n";
 
-type ItemType = "albums" | "playlists" | "mixes";
+type ItemType = "albums" | "playlists" | "mixes" | "generated-playlists";
 
 interface OfflineState {
   downloadedItemIds: Set<string>;
@@ -85,7 +86,6 @@ export const useOfflineStore = create<OfflineState>()(
 
           if (isCurrentlyOffline) {
             console.log("[Offline Startup] Forcing data fetch from IndexedDB.");
-            // Данные уже загружены, просто обновим сторы
             useMusicStore.getState().fetchArtists();
           }
 
@@ -116,20 +116,27 @@ export const useOfflineStore = create<OfflineState>()(
 
             for (const localPlaylist of localPlaylists) {
               try {
-                const serverResponse = await axiosInstance.get(
-                  `/playlists/${localPlaylist._id}`
-                );
+                const endpoint = localPlaylist.isGenerated
+                  ? `/generated-playlists/${localPlaylist._id}`
+                  : `/playlists/${localPlaylist._id}`;
+                const serverResponse = await axiosInstance.get(endpoint);
                 const serverPlaylist = serverResponse.data;
-                if (
-                  new Date(serverPlaylist.updatedAt) >
-                  new Date(localPlaylist.updatedAt)
-                ) {
+                const serverDate = localPlaylist.isGenerated
+                  ? serverPlaylist.generatedOn
+                  : serverPlaylist.updatedAt;
+                const localDate = localPlaylist.isGenerated
+                  ? (localPlaylist as any).generatedOn
+                  : localPlaylist.updatedAt;
+
+                if (new Date(serverDate) > new Date(localDate)) {
                   toast.loading(`Updating "${localPlaylist.title}"...`, {
                     id: `sync-${localPlaylist._id}`,
                   });
                   await get().actions.downloadItem(
                     localPlaylist._id,
-                    "playlists"
+                    localPlaylist.isGenerated
+                      ? "generated-playlists"
+                      : "playlists"
                   );
                   toast.dismiss(`sync-${localPlaylist._id}`);
                 }
@@ -185,10 +192,22 @@ export const useOfflineStore = create<OfflineState>()(
           let allOtherSongIds = new Set<string>();
 
           try {
-            const endpoint =
-              itemType === "albums"
-                ? `/albums/${itemId}`
-                : `/${itemType}/${itemId}`;
+            let endpoint = "";
+            let storeName: "albums" | "playlists" | "mixes";
+            let isGenerated = false;
+
+            if (itemType === "generated-playlists") {
+              endpoint = `/generated-playlists/${itemId}`;
+              storeName = "playlists";
+              isGenerated = true;
+            } else {
+              endpoint =
+                itemType === "albums"
+                  ? `/albums/${itemId}`
+                  : `/${itemType}/${itemId}`;
+              storeName = itemType;
+            }
+
             const response = await axiosInstance.get(endpoint);
             const serverItemData =
               itemType === "albums" ? response.data.album : response.data;
@@ -197,9 +216,7 @@ export const useOfflineStore = create<OfflineState>()(
               throw new Error("Invalid item data received from server.");
             }
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО ---
-
-            const oldItemData = await getUserItem(itemType, itemId, userId);
+            const oldItemData = await getUserItem(storeName, itemId, userId);
             const newSongIds = new Set(
               serverItemData.songs.map((s: Song) => s._id)
             );
@@ -244,7 +261,6 @@ export const useOfflineStore = create<OfflineState>()(
                   await deleteUserItem("songs", removedSong._id);
                 }
               }
-              // Используем новое имя кэша из vite.config.ts
               const assetsCache = await caches.open("bunny-assets-cache");
               for (const url of urlsToDelete) {
                 await assetsCache.delete(url).catch((e) => console.warn(e));
@@ -262,23 +278,35 @@ export const useOfflineStore = create<OfflineState>()(
             });
 
             const allUrls = Array.from(urlsToCache).filter(Boolean);
-            // Используем единый кэш для всех ассетов
             const assetsCache = await caches.open("bunny-assets-cache");
 
-            await Promise.all(
-              allUrls.map((url) => {
-                return assetsCache
-                  .add(url)
-                  .catch((err) =>
-                    console.warn(`Could not cache URL: ${url}`, err)
-                  );
-              })
-            );
-
+            // --- ИЗМЕНЕНИЕ НАЧАЛО: Последовательное кэширование вместо параллельного ---
+            for (const url of allUrls) {
+              try {
+                await assetsCache.add(url);
+              } catch (err) {
+                console.warn(`Could not cache URL: ${url}`, err);
+              }
+            }
             // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
-            const itemToSave = { ...serverItemData, songsData, userId };
-            await saveUserItem(itemType, itemToSave as any);
+            let itemToSave;
+            if (isGenerated) {
+              const user = useAuthStore.getState().user;
+              itemToSave = {
+                ...serverItemData,
+                title: i18n.t(serverItemData.nameKey),
+                description: i18n.t(serverItemData.descriptionKey),
+                owner: user,
+                type: "playlist",
+                isGenerated: true,
+                songsData,
+                userId,
+              };
+            } else {
+              itemToSave = { ...serverItemData, songsData, userId };
+            }
+            await saveUserItem(storeName, itemToSave as any);
 
             for (const song of songsData) {
               await saveUserItem("songs", { ...song, userId });
@@ -318,12 +346,14 @@ export const useOfflineStore = create<OfflineState>()(
           }
         },
 
-        // Также обновим функцию deleteItem, чтобы она использовала правильное имя кэша
         deleteItem: async (itemId, itemType, itemTitle) => {
           const userId = useAuthStore.getState().user?.id;
           if (!userId) return;
           try {
-            const itemToDelete = await getUserItem(itemType, itemId, userId);
+            const storeName: "albums" | "playlists" | "mixes" =
+              itemType === "generated-playlists" ? "playlists" : itemType;
+
+            const itemToDelete = await getUserItem(storeName, itemId, userId);
             if (!itemToDelete) return;
 
             const songs = ((itemToDelete as any).songsData ||
@@ -362,14 +392,12 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО ---
             const assetsCache = await caches.open("bunny-assets-cache");
             for (const url of urlsToDelete) {
               await assetsCache.delete(url).catch((e) => console.warn(e));
             }
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
-            await deleteUserItem(itemType, itemId);
+            await deleteUserItem(storeName, itemId);
 
             set((state) => {
               const newDownloaded = new Set(state.downloadedItemIds);
@@ -423,6 +451,7 @@ export const useOfflineStore = create<OfflineState>()(
             ]);
             await caches.delete("moodify-audio-cache");
             await caches.delete("cloudinary-images-cache");
+            await caches.delete("bunny-assets-cache");
 
             set({
               downloadedItemIds: new Set(),

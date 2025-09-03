@@ -242,7 +242,7 @@ const GeneratedPlaylistPage = () => {
                 </Button>
                 <DownloadButton
                   itemId={currentPlaylist._id}
-                  itemType="playlists" // ИСПРАВЛЕННЫЙ ТИП
+                  itemType="generated-playlists"
                   itemTitle={t(currentPlaylist.nameKey)}
                 />
               </div>

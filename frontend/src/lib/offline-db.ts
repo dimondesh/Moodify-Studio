@@ -4,11 +4,17 @@ import { openDB, DBSchema, IDBPDatabase, StoreNames } from "idb";
 import type { Song, Album, Playlist, Mix } from "@/types";
 
 const DB_NAME = "MoodifyOfflineDB";
-const DB_VERSION = 2;
+const DB_VERSION = 5;
 
 type StoredSong = Song & { userId: string };
 type StoredAlbum = Album & { songsData: Song[]; userId: string };
-type StoredPlaylist = Playlist & { songsData: Song[]; userId: string };
+type StoredPlaylist = Playlist & {
+  songsData: Song[];
+  userId: string;
+  isGenerated?: boolean;
+  nameKey?: string;
+  descriptionKey?: string;
+};
 type StoredMix = Mix & { songsData: Song[]; userId: string };
 
 interface MoodifyDB extends DBSchema {

@@ -191,6 +191,7 @@ export interface AlbumItem extends BaseLibraryItem {
 export interface PlaylistItem extends BaseLibraryItem {
   type: "playlist";
   owner: User;
+  isGenerated?: boolean;
 }
 export interface MixItem extends BaseLibraryItem {
   type: "mix";
@@ -201,13 +202,20 @@ export interface FollowedArtistItem extends BaseLibraryItem {
   artistId: string;
   addedAt?: string;
 }
+// --- ИЗМЕНЕНИЕ НАЧАЛО ---
+export interface GeneratedPlaylistItem extends BaseLibraryItem {
+  type: "generated-playlist";
+  sourceName: string;
+}
 
 export type LibraryItem =
   | LikedSongsItem
   | AlbumItem
   | PlaylistItem
   | FollowedArtistItem
-  | MixItem;
+  | MixItem
+  | GeneratedPlaylistItem; // Добавляем новый тип
+// --- ИЗМЕНЕНИЕ КОНЕЦ ---
 export interface LibraryPlaylist extends Playlist {
   addedAt?: string;
 }

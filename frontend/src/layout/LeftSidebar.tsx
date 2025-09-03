@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
 
 import {
@@ -28,6 +29,7 @@ import {
   LikedSongsItem,
   FollowedArtistItem,
   MixItem,
+  GeneratedPlaylistItem,
 } from "../types";
 import { useMusicStore } from "../stores/useMusicStore";
 import { useTranslation } from "react-i18next";
@@ -100,75 +102,86 @@ const LeftSidebar = () => {
   const isLoading =
     (isLoadingLibrary || isLoadingPlaylists || loadingUser) && !isOffline;
 
-  const allPlaylistsMap = new Map<string, PlaylistItem>();
+  // --- ИЗМЕНЕНИЕ НАЧАЛО: Логика дедупликации ---
+  const libraryItemsMap = new Map<string, LibraryItem>();
 
-  (myPlaylists || []).forEach((playlist) => {
-    allPlaylistsMap.set(playlist._id, {
-      _id: playlist._id,
-      type: "playlist" as const,
-      title: playlist.title,
-      imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.updatedAt ?? new Date()),
-      owner: playlist.owner,
-    });
-  });
-
-  (playlists || []).forEach((playlist) => {
-    if (!allPlaylistsMap.has(playlist._id)) {
-      allPlaylistsMap.set(playlist._id, {
-        _id: playlist._id,
-        type: "playlist" as const,
-        title: playlist.title,
-        imageUrl: playlist.imageUrl,
-        createdAt: new Date(playlist.addedAt ?? new Date()),
-        owner: playlist.owner,
-      });
-    }
-  });
-
-  const uniquePlaylists = Array.from(allPlaylistsMap.values());
-
-  const libraryItems: LibraryItem[] = [
-    ...(albums || []).map((album) => ({
+  // 1. Добавляем альбомы
+  (albums || []).forEach((album) =>
+    libraryItemsMap.set(album._id, {
       _id: album._id,
-      type: "album" as const,
+      type: "album",
       title: album.title,
       imageUrl: album.imageUrl,
       createdAt: new Date(album.addedAt ?? new Date()),
       artist: album.artist,
       albumType: album.type,
-    })),
-    ...uniquePlaylists,
-    ...(followedArtists || []).map((artist) => ({
-      _id: artist._id,
-      type: "artist" as const,
-      title: artist.name,
-      imageUrl: artist.imageUrl,
-      createdAt: new Date(artist.addedAt || artist.createdAt),
-      artistId: artist._id,
-    })),
-    ...(savedMixes || []).map((mix) => ({
+    } as AlbumItem)
+  );
+
+  // 2. Добавляем плейлисты (обычные и свои)
+  [...(myPlaylists || []), ...(playlists || [])].forEach((playlist) => {
+    if (!libraryItemsMap.has(playlist._id)) {
+      const isGenerated = (playlist as any).isGenerated;
+      libraryItemsMap.set(playlist._id, {
+        _id: playlist._id,
+        type: isGenerated ? "generated-playlist" : "playlist",
+        title: isGenerated ? t((playlist as any).nameKey) : playlist.title,
+        imageUrl: playlist.imageUrl,
+        createdAt: new Date(
+          (playlist as any).addedAt || playlist.updatedAt || new Date()
+        ),
+        owner: playlist.owner,
+        isGenerated: isGenerated,
+      } as PlaylistItem);
+    }
+  });
+
+  // 3. Добавляем сохраненные генеративные плейлисты из отдельного стора
+  (generatedPlaylists || []).forEach((playlist) => {
+    if (!libraryItemsMap.has(playlist._id)) {
+      libraryItemsMap.set(playlist._id, {
+        _id: playlist._id,
+        type: "generated-playlist",
+        title: t(playlist.nameKey),
+        imageUrl: playlist.imageUrl,
+        createdAt: new Date(playlist.addedAt || playlist.generatedOn),
+        sourceName: "Moodify",
+      } as GeneratedPlaylistItem);
+    }
+  });
+
+  // 4. Добавляем миксы
+  (savedMixes || []).forEach((mix) =>
+    libraryItemsMap.set(mix._id, {
       _id: mix._id,
-      type: "mix" as const,
+      type: "mix",
       title: t(mix.name),
       imageUrl: mix.imageUrl,
       createdAt: new Date(mix.addedAt ?? new Date()),
       sourceName: mix.sourceName,
-    })),
-    ...(generatedPlaylists || []).map((playlist) => ({
-      _id: playlist._id,
-      type: "mix" as const,
-      title: t(playlist.nameKey),
-      imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.addedAt || playlist.generatedOn),
-      sourceName: "Moodify",
-    })),
-  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    } as MixItem)
+  );
+
+  // 5. Добавляем артистов
+  (followedArtists || []).forEach((artist) =>
+    libraryItemsMap.set(artist._id, {
+      _id: artist._id,
+      type: "artist",
+      title: artist.name,
+      imageUrl: artist.imageUrl,
+      createdAt: new Date(artist.addedAt || artist.createdAt),
+      artistId: artist._id,
+    } as FollowedArtistItem)
+  );
+
+  const libraryItems = Array.from(libraryItemsMap.values()).sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
+  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   return (
     <div className="h-full flex flex-col gap-2">
       <div className="rounded-lg bg-zinc-900 p-4">
-        {/* ... JSX для навигации без изменений ... */}
         <div className="space-y-2">
           <Link
             to="/"
@@ -287,6 +300,11 @@ const LeftSidebar = () => {
                     }`;
                     break;
                   }
+                  case "generated-playlist": {
+                    linkPath = `/generated-playlists/${item._id}`;
+                    subtitle = t("sidebar.subtitle.playlist");
+                    break;
+                  }
                   case "liked-songs": {
                     const likedItem = item as LikedSongsItem;
                     linkPath = "/liked-songs";
@@ -308,17 +326,9 @@ const LeftSidebar = () => {
                     break;
                   }
                   case "mix": {
-                    const isGenerated = generatedPlaylists.some(
-                      (p) => p._id === item._id
-                    );
-                    if (isGenerated) {
-                      linkPath = `/generated-playlists/${item._id}`;
-                      subtitle = t("sidebar.subtitle.playlist");
-                    } else {
-                      const mixItem = item as MixItem;
-                      linkPath = `/mixes/${mixItem._id}`;
-                      subtitle = t("sidebar.subtitle.dailyMix");
-                    }
+                    const mixItem = item as MixItem;
+                    linkPath = `/mixes/${mixItem._id}`;
+                    subtitle = t("sidebar.subtitle.dailyMix");
                     break;
                   }
                   default:
@@ -328,7 +338,7 @@ const LeftSidebar = () => {
                 return (
                   <Link
                     to={linkPath}
-                    key={item._id}
+                    key={`${item.type}-${item._id}`}
                     className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
                   >
                     <img

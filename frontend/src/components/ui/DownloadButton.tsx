@@ -5,7 +5,7 @@ import { useOfflineStore } from "@/stores/useOfflineStore";
 import { Button } from "./button";
 import toast from "react-hot-toast";
 
-type ItemType = "albums" | "playlists" | "mixes";
+type ItemType = "albums" | "playlists" | "mixes" | "generated-playlists";
 
 interface DownloadButtonProps {
   itemId: string;
