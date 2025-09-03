@@ -77,6 +77,7 @@ export interface GeneratedPlaylist {
   descriptionKey: string;
   imageUrl: string;
   generatedOn: string;
+  addedAt?: string;
 }
 
 export interface Album {

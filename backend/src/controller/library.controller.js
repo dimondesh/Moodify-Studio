@@ -5,6 +5,7 @@ import { Song } from "../models/song.model.js";
 import { Artist } from "../models/artist.model.js";
 import { Mix } from "../models/mix.model.js";
 import { User } from "../models/user.model.js";
+import { GeneratedPlaylist } from "../models/generatedPlaylist.model.js";
 
 export const getLibraryAlbums = async (req, res, next) => {
   try {
@@ -506,5 +507,76 @@ export const getOwnedPlaylists = async (req, res) => {
   } catch (error) {
     console.error("Error fetching owned playlists:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getSavedGeneratedPlaylists = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const library = await Library.findOne({ userId })
+      .populate({
+        path: "savedGeneratedPlaylists.playlistId",
+        model: "GeneratedPlaylist",
+      })
+      .lean();
+
+    if (!library || !library.savedGeneratedPlaylists) {
+      return res.json({ playlists: [] });
+    }
+
+    const playlists = library.savedGeneratedPlaylists
+      .filter((item) => item.playlistId)
+      .map((item) => ({
+        ...item.playlistId,
+        addedAt: item.addedAt,
+      }));
+
+    res.json({ playlists });
+  } catch (err) {
+    console.error("❌ Error in getSavedGeneratedPlaylists:", err);
+    next(err);
+  }
+};
+
+export const toggleGeneratedPlaylistInLibrary = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { playlistId } = req.body;
+
+    if (!playlistId || !mongoose.Types.ObjectId.isValid(playlistId)) {
+      return res.status(400).json({ message: "Valid Playlist ID is required" });
+    }
+
+    const library = await Library.findOneAndUpdate(
+      { userId },
+      {},
+      { upsert: true, new: true }
+    );
+
+    if (!library.savedGeneratedPlaylists) library.savedGeneratedPlaylists = [];
+
+    const exists = library.savedGeneratedPlaylists.some(
+      (p) => p.playlistId?.toString() === playlistId
+    );
+    let isSaved;
+
+    if (exists) {
+      library.savedGeneratedPlaylists = library.savedGeneratedPlaylists.filter(
+        (p) => p.playlistId?.toString() !== playlistId
+      );
+      isSaved = false;
+    } else {
+      library.savedGeneratedPlaylists.push({
+        playlistId: new mongoose.Types.ObjectId(playlistId),
+        addedAt: new Date(),
+      });
+      isSaved = true;
+    }
+
+    await library.save();
+    res.json({ success: true, isSaved });
+  } catch (err) {
+    console.error("❌ toggleGeneratedPlaylistInLibrary error:", err);
+    next(err);
   }
 };

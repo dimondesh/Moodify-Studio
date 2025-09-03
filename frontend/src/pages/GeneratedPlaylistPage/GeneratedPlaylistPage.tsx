@@ -6,7 +6,7 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
-import { Play, Pause, Heart } from "lucide-react";
+import { Play, Pause, Heart, PlusCircle, CheckCircle2 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song } from "../../types";
 import { useLibraryStore } from "../../stores/useLibraryStore";
@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import EqualizerTitle from "@/components/ui/equalizer-title";
+import { DownloadButton } from "@/components/ui/DownloadButton";
 
 const formatDuration = (totalSeconds: number): string => {
   if (isNaN(totalSeconds) || totalSeconds < 0) return "0:00";
@@ -39,9 +40,14 @@ const GeneratedPlaylistPage = () => {
 
   const { currentPlaylist, error, isLoading, fetchPlaylistById, reset } =
     useGeneratedPlaylistStore();
-  const { likedSongs, toggleSongLike } = useLibraryStore();
+  const {
+    likedSongs,
+    toggleSongLike,
+    isGeneratedPlaylistSaved,
+    toggleGeneratedPlaylistInLibrary,
+  } = useLibraryStore();
   const { playAlbum, togglePlay, isPlaying, currentSong } = usePlayerStore();
-
+  const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
   const { extractColor } = useDominantColor();
   const [isColorLoading, setIsColorLoading] = useState(true);
   const backgroundKeyRef = useRef(0);
@@ -64,7 +70,6 @@ const GeneratedPlaylistPage = () => {
       const newKey = backgroundKeyRef.current;
       setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
     };
-
     if (currentPlaylist?.imageUrl) {
       setIsColorLoading(true);
       extractColor(currentPlaylist.imageUrl)
@@ -75,6 +80,13 @@ const GeneratedPlaylistPage = () => {
       setIsColorLoading(false);
     }
   }, [currentPlaylist, extractColor]);
+
+  const handleToggleInLibrary = async () => {
+    if (!currentPlaylist || isTogglingLibrary) return;
+    setIsTogglingLibrary(true);
+    await toggleGeneratedPlaylistInLibrary(currentPlaylist._id);
+    setIsTogglingLibrary(false);
+  };
 
   const handlePlayPlaylist = () => {
     if (!currentPlaylist || currentPlaylist.songs.length === 0) return;
@@ -109,40 +121,20 @@ const GeneratedPlaylistPage = () => {
     );
   }
 
-  if (error) {
+  if (error || !currentPlaylist) {
     return (
       <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
         <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
-          {t("pages.playlist.errorTitle")}
+          {t("pages.playlist.notFoundTitle")}
         </h1>
-        <p className="text-red-500">
-          {t("pages.playlist.error")}: {error}
+        <p className="text-zinc-400">
+          {error || t("pages.playlist.notFoundDesc")}
         </p>
       </div>
     );
   }
 
-  if (!currentPlaylist) {
-    return (
-      <>
-        <Helmet>
-          <title>Playlist Not Found</title>
-        </Helmet>
-        <div className="p-4 sm:p-6 bg-zinc-900 min-h-screen text-white text-center">
-          <h1 className="text-2xl sm:text-3xl mb-6 font-bold">
-            {t("pages.playlist.notFoundTitle")}
-          </h1>
-          <p className="text-zinc-400">{t("pages.playlist.notFoundDesc")}</p>
-        </div>
-      </>
-    );
-  }
-
-  const totalDurationSeconds = currentPlaylist.songs.reduce(
-    (acc, song) => acc + (song.duration || 0),
-    0
-  );
-  const formattedDuration = formatDuration(totalDurationSeconds);
+  const isInLibrary = isGeneratedPlaylistSaved(currentPlaylist._id);
   const isCurrentPlaylistPlaying =
     isPlaying &&
     currentPlaylist.songs.some((song) => song._id === currentSong?._id);
@@ -172,6 +164,7 @@ const GeneratedPlaylistPage = () => {
                 />
               ))}
             <div className="relative z-10">
+              {/* Header section with image and title */}
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
                 <img
                   src={currentPlaylist.imageUrl || "/default-album-cover.png"}
@@ -197,13 +190,19 @@ const GeneratedPlaylistPage = () => {
                     </span>
                     {currentPlaylist.songs.length > 0 && (
                       <span className="hidden lg:inline">
-                        • {formattedDuration}
+                        •{" "}
+                        {formatDuration(
+                          currentPlaylist.songs.reduce(
+                            (acc, song) => acc + (song.duration || 0),
+                            0
+                          )
+                        )}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-
+              {/* Controls section */}
               <div className="px-4 sm:px-6 pb-4 flex items-center gap-3 sm:gap-6">
                 {currentPlaylist.songs.length > 0 && (
                   <Button
@@ -223,8 +222,32 @@ const GeneratedPlaylistPage = () => {
                     )}
                   </Button>
                 )}
+                <Button
+                  onClick={handleToggleInLibrary}
+                  disabled={isTogglingLibrary}
+                  variant="ghost"
+                  size="icon"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full p-2 transition-colors hover:bg-white/10"
+                  title={
+                    isInLibrary
+                      ? "Remove from Your Library"
+                      : "Add to Your Library"
+                  }
+                >
+                  {isInLibrary ? (
+                    <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                  ) : (
+                    <PlusCircle className="size-5 sm:size-6 text-white" />
+                  )}
+                </Button>
+                <DownloadButton
+                  itemId={currentPlaylist._id}
+                  itemType="playlists" // ИСПРАВЛЕННЫЙ ТИП
+                  itemTitle={t(currentPlaylist.nameKey)}
+                />
               </div>
 
+              {/* Songs list section */}
               <div className="bg-black/20 backdrop-blur-sm">
                 <div className="px-4 sm:px-6">
                   <div className="space-y-2 py-4">
@@ -236,12 +259,8 @@ const GeneratedPlaylistPage = () => {
                       return (
                         <div
                           key={song._id}
-                          onClick={(e) => {
-                            if ((e.target as HTMLElement).closest("button"))
-                              return;
-                            handlePlaySong(song, index);
-                          }}
-                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          onClick={() => handlePlaySong(song, index)}
+                          className={`grid grid-cols-[auto_1fr_auto] sm:grid-cols-[16px_4fr_1fr_auto] md:grid-cols-[16px_4fr_2fr_1fr_auto] items-center gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
                             isCurrentlyPlaying ? "bg-white/10" : ""
                           }`}
                         >
@@ -259,7 +278,6 @@ const GeneratedPlaylistPage = () => {
                               <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
                             )}
                           </div>
-
                           <div className="flex items-center gap-3 overflow-hidden">
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
@@ -306,15 +324,13 @@ const GeneratedPlaylistPage = () => {
                               </div>
                             </div>
                           </div>
-
                           <div className="items-center hidden md:flex text-xs">
                             {song.createdAt
                               ? format(new Date(song.createdAt), "MMM dd, yyyy")
                               : "N/A"}
                           </div>
-
                           <div className="flex items-center justify-end gap-1 sm:gap-4 flex-shrink-0">
-                            <span className="hidden sm:inline text-xs sm:text-sm mr-10">
+                            <span className="hidden sm:inline text-xs sm:text-sm">
                               {formatDuration(song.duration)}
                             </span>
                             <Button

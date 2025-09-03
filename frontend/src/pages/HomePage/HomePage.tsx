@@ -16,6 +16,8 @@ import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { Song } from "@/types";
+import GeneratedPlaylistGrid from "./GeneratedPlaylistGrid";
+import { useGeneratedPlaylistStore } from "../../stores/useGeneratedPlaylistStore"; // 1. ИСПОЛЬЗУЕМ НОВЫЙ СТОР
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -55,12 +57,19 @@ const HomePage = () => {
   const backgroundKeyRef = useRef(0);
   const defaultColorRef = useRef("#18181b");
 
+  const {
+    allGeneratedPlaylists,
+    isLoading: isGeneratedLoading,
+    fetchAllGeneratedPlaylists,
+  } = useGeneratedPlaylistStore();
+
   useEffect(() => {
     if (!isOffline) {
       fetchFeaturedSongs();
       fetchTrendingSongs();
       fetchDailyMixes();
       fetchPublicPlaylists();
+      fetchAllGeneratedPlaylists();
       if (user) {
         fetchMadeForYouSongs();
         fetchRecentlyListenedSongs();
@@ -75,6 +84,7 @@ const HomePage = () => {
     fetchDailyMixes,
     fetchRecentlyListenedSongs,
     fetchPublicPlaylists,
+    fetchAllGeneratedPlaylists,
   ]);
 
   useEffect(() => {
@@ -213,6 +223,13 @@ const HomePage = () => {
                   isLoading={isLoading}
                   showAllPath="/full-songs"
                 />
+                {allGeneratedPlaylists.length > 0 && (
+                  <GeneratedPlaylistGrid
+                    title={t("homepage.playlistsForYou")}
+                    playlists={allGeneratedPlaylists}
+                    isLoading={isGeneratedLoading}
+                  />
+                )}
                 {publicPlaylists.length > 0 && (
                   <PlaylistGrid
                     title={t("homepage.playlistsForYou")}

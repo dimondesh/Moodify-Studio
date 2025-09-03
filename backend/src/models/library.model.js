@@ -25,7 +25,7 @@ const librarySchema = new mongoose.Schema(
       {
         mixId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Mix", 
+          ref: "Mix",
           required: true,
         },
         addedAt: {
@@ -65,6 +65,19 @@ const librarySchema = new mongoose.Schema(
         artistId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Artist",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    savedGeneratedPlaylists: [
+      {
+        playlistId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "GeneratedPlaylist",
           required: true,
         },
         addedAt: {

@@ -46,7 +46,6 @@ const LeftSidebar = () => {
     fetchLibrary,
     isLoading: isLoadingLibrary,
     generatedPlaylists,
-    fetchGeneratedPlaylists,
   } = useLibraryStore();
 
   const {
@@ -76,16 +75,8 @@ const LeftSidebar = () => {
       fetchLibrary();
       fetchMyPlaylists();
       fetchArtists();
-      fetchGeneratedPlaylists();
     }
-  }, [
-    user,
-    loadingUser,
-    fetchLibrary,
-    fetchMyPlaylists,
-    fetchArtists,
-    fetchGeneratedPlaylists,
-  ]);
+  }, [user, loadingUser, fetchLibrary, fetchMyPlaylists, fetchArtists]);
 
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (!artistsData || artistsData.length === 0)
@@ -169,7 +160,7 @@ const LeftSidebar = () => {
       type: "mix" as const,
       title: t(playlist.nameKey),
       imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.generatedOn),
+      createdAt: new Date(playlist.addedAt || playlist.generatedOn),
       sourceName: "Moodify",
     })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

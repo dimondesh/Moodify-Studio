@@ -196,7 +196,7 @@ const LibraryPage = () => {
       type: "mix" as const,
       title: t(playlist.nameKey),
       imageUrl: playlist.imageUrl,
-      createdAt: new Date(playlist.generatedOn),
+      createdAt: new Date(playlist.addedAt || playlist.generatedOn),
       sourceName: "Moodify",
     })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());

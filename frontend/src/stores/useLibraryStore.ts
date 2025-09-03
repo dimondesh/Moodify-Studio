@@ -17,6 +17,7 @@ import {
   getAllUserSongs,
 } from "../lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
+import toast from "react-hot-toast";
 
 interface LibraryStore {
   albums: Album[];
@@ -24,7 +25,7 @@ interface LibraryStore {
   playlists: LibraryPlaylist[];
   followedArtists: Artist[];
   savedMixes: Mix[];
-  generatedPlaylists: GeneratedPlaylist[]; 
+  generatedPlaylists: GeneratedPlaylist[];
 
   isLoading: boolean;
   error: string | null;
@@ -32,7 +33,8 @@ interface LibraryStore {
   fetchLibrary: () => Promise<void>;
   fetchLikedSongs: () => Promise<void>;
   fetchFollowedArtists: () => Promise<void>;
-  fetchGeneratedPlaylists: () => Promise<void>; 
+  isGeneratedPlaylistSaved: (playlistId: string) => boolean; // <-- НОВАЯ ФУНКЦИЯ-ПРОВЕРКА
+  toggleGeneratedPlaylistInLibrary: (playlistId: string) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ-ПЕРЕКЛЮЧАТЕЛЬ
 
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
@@ -53,7 +55,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   playlists: [],
   followedArtists: [],
   savedMixes: [],
-  generatedPlaylists: [], 
+  generatedPlaylists: [],
 
   isLoading: false,
   error: null,
@@ -103,20 +105,21 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
 
     try {
-      console.log("useLibraryStore: Attempting to fetch all library data...");
-
+      // ИСПРАВЛЕНО: Запрашиваем все данные из библиотеки одним махом
       const [
         albumsRes,
         likedSongsRes,
         playlistsRes,
         followedArtistsRes,
         savedMixesRes,
+        savedGeneratedPlaylistsRes, // Этот эндпоинт возвращает только сохраненные
       ] = await Promise.all([
         axiosInstance.get("/library/albums"),
         axiosInstance.get("/library/liked-songs"),
         axiosInstance.get("/library/playlists"),
         axiosInstance.get("/library/artists"),
         axiosInstance.get("/library/mixes"),
+        axiosInstance.get("/library/generated-playlists"), // Правильный эндпоинт
       ]);
 
       set({
@@ -125,31 +128,57 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         playlists: playlistsRes.data.playlists || [],
         followedArtists: followedArtistsRes.data.artists || [],
         savedMixes: savedMixesRes.data.mixes || [],
+        generatedPlaylists: savedGeneratedPlaylistsRes.data.playlists || [],
+        isLoading: false,
       });
-
-      await get().fetchGeneratedPlaylists();
-
-      console.log("useLibraryStore: All library data fetched successfully.");
     } catch (err: any) {
       set({
         error: err.message || "Failed to fetch library",
+        isLoading: false,
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
-  fetchGeneratedPlaylists: async () => {
+  // УДАЛЕНО: Отдельная функция fetchGeneratedPlaylists больше не нужна в этом сторе
+
+  toggleGeneratedPlaylistInLibrary: async (playlistId: string) => {
     if (useOfflineStore.getState().isOffline) return;
+
+    // Оптимистичное обновление для мгновенной реакции UI
+    const previousPlaylists = get().generatedPlaylists;
+    const isCurrentlySaved = get().isGeneratedPlaylistSaved(playlistId);
+
+    set((state) => ({
+      generatedPlaylists: isCurrentlySaved
+        ? state.generatedPlaylists.filter((p) => p._id !== playlistId)
+        : [
+            ...state.generatedPlaylists,
+            { _id: playlistId, nameKey: "placeholder" } as GeneratedPlaylist,
+          ], // Временная заглушка
+    }));
+
     try {
-      const response = await axiosInstance.get("/generated-playlists/me");
-      set({ generatedPlaylists: response.data || [] });
-    } catch (err: any) {
-      if (err.response?.status !== 404) {
-        console.error("Failed to fetch generated playlists:", err);
-      }
-      set({ generatedPlaylists: [] });
+      const response = await axiosInstance.post(
+        "/library/generated-playlists/toggle",
+        { playlistId }
+      );
+      toast.success(
+        response.data.isSaved
+          ? "Saved to Your Library"
+          : "Removed from Your Library"
+      );
+      // После успешного ответа, перезагружаем всю библиотеку, чтобы получить актуальные данные
+      await get().fetchLibrary();
+    } catch (err) {
+      console.error("Toggle generated playlist error", err);
+      toast.error("Failed to update library.");
+      // В случае ошибки, откатываем UI к состоянию до клика
+      set({ generatedPlaylists: previousPlaylists });
     }
+  },
+
+  isGeneratedPlaylistSaved: (playlistId: string) => {
+    return get().generatedPlaylists.some((p) => p._id === playlistId);
   },
 
   fetchLikedSongs: async () => {
