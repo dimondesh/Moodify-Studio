@@ -140,6 +140,7 @@ const HomePage = () => {
     return t("greetings.evening");
   };
 
+  // Преобразуем данные для нового компонента
   const madeForYouSongsItems = madeForYouSongs.map((song) => ({
     ...song,
     itemType: "song" as const,
@@ -222,6 +223,14 @@ const HomePage = () => {
                   title={t("homepage.madeForYou")}
                   items={madeForYouSongsItems}
                   isLoading={isMusicLoading}
+                  onShowAll={() =>
+                    navigate("/all-songs/made-for-you", {
+                      state: {
+                        songs: madeForYouSongs,
+                        title: t("homepage.madeForYou"),
+                      },
+                    })
+                  }
                 />
               )}
               {user && recentlyListenedSongs.length > 0 && (
@@ -229,6 +238,7 @@ const HomePage = () => {
                   title={t("homepage.recentlyListened")}
                   items={recentlyListenedItems}
                   isLoading={isMusicLoading}
+                  limit={16}
                 />
               )}
               <HorizontalSection
@@ -261,17 +271,29 @@ const HomePage = () => {
                 title={t("homepage.trending")}
                 items={trendingSongsItems}
                 isLoading={isMusicLoading}
+                onShowAll={() =>
+                  navigate("/all-songs/trending", {
+                    state: {
+                      songs: trendingSongs,
+                      title: t("homepage.trending"),
+                    },
+                  })
+                }
               />
-              <HorizontalSection
-                title={t("homepage.playlistsForYou")}
-                items={generatedPlaylistsItems}
-                isLoading={isGeneratedLoading}
-              />
-              <HorizontalSection
-                title={t("homepage.playlistsForYou")}
-                items={publicPlaylistsItems}
-                isLoading={isPlaylistsLoading}
-              />
+              {allGeneratedPlaylists.length > 0 && (
+                <HorizontalSection
+                  title={t("homepage.playlistsForYou")}
+                  items={generatedPlaylistsItems}
+                  isLoading={isGeneratedLoading}
+                />
+              )}
+              {publicPlaylists.length > 0 && (
+                <HorizontalSection
+                  title={t("homepage.playlistsForYou")}
+                  items={publicPlaylistsItems}
+                  isLoading={isPlaylistsLoading}
+                />
+              )}
             </div>
           </div>
         </div>

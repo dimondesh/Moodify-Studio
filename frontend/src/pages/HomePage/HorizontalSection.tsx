@@ -31,6 +31,7 @@ interface HorizontalSectionProps {
   items: DisplayItem[];
   isLoading: boolean;
   onShowAll?: () => void;
+  limit?: number;
 }
 
 const HorizontalSection: React.FC<HorizontalSectionProps> = ({
@@ -38,6 +39,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   items,
   isLoading,
   onShowAll,
+  limit = 16,
 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -50,6 +52,9 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   if (!items || items.length === 0) {
     return null;
   }
+
+  const itemsToShow = items.slice(0, limit);
+  const canShowAll = onShowAll && items.length > limit;
 
   const handleItemClick = (item: DisplayItem) => {
     switch (item.itemType) {
@@ -104,7 +109,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
-        {onShowAll && (
+        {canShowAll && (
           <Button
             variant="link"
             className="text-sm text-zinc-400 hover:text-white"
@@ -117,7 +122,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
 
       <ScrollArea className="w-full whitespace-nowrap rounded-md">
         <div className="flex space-x-4 pb-4">
-          {items.map((item) => (
+          {itemsToShow.map((item) => (
             <div
               key={`${item.itemType}-${item._id}`}
               className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
