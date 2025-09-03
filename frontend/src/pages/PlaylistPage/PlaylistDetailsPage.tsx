@@ -1,3 +1,4 @@
+// frontend/src/pages/PlaylistPage/PlaylistDetailsPage.tsx
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -66,6 +67,7 @@ import { DownloadButton } from "@/components/ui/DownloadButton";
 import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
 import { useUIStore } from "../../stores/useUIStore";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -74,6 +76,7 @@ const formatDuration = (seconds: number): string => {
 };
 
 const PlaylistDetailsPage = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { socket } = useChatStore();
 
   const { t } = useTranslation();
@@ -700,7 +703,7 @@ const PlaylistDetailsPage = () => {
                             if (!(e.target as HTMLElement).closest("button"))
                               handlePlaySong(song, index);
                           }}
-                          className={`grid grid-cols-[auto_1fr_auto] sm:grid-cols-[16px_4fr_1fr_auto] md:grid-cols-[16px_4fr_2fr_1fr_auto] items-center gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+                          className={`flex sm:grid items-center gap-3 sm:gap-4 text-sm px-4 py-2 rounded-md text-zinc-400 hover:bg-white/5 group cursor-pointer sm:grid-cols-[16px_4fr_2fr_1fr_auto] ${
                             isCurrentSong ? "bg-white/10" : ""
                           }`}
                         >
@@ -718,53 +721,66 @@ const PlaylistDetailsPage = () => {
                               <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
                             )}
                           </div>
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSongTitleClick(song.albumId);
-                              }}
-                              className="flex-shrink-0"
-                            >
-                              <img
-                                src={song.imageUrl || "/default-song-cover.png"}
-                                alt={song.title}
-                                className="size-10 object-cover rounded-md flex-shrink-0"
-                              />
-                            </button>
-                            <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <img
+                              src={song.imageUrl || "/default-song-cover.png"}
+                              alt={song.title}
+                              className="size-10 object-cover rounded-md flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 {isCurrentSong && isPlaying && (
                                   <div className="block sm:hidden flex-shrink-0">
                                     <EqualizerTitle />
                                   </div>
                                 )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSongTitleClick(song.albumId);
-                                  }}
-                                  className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
-                                    isCurrentSong
-                                      ? "text-violet-400"
-                                      : "text-white"
-                                  }`}
-                                >
-                                  <p className="truncate">{song.title}</p>
-                                </button>
+                                {isMobile ? (
+                                  <span
+                                    className={`font-medium w-full text-left ${
+                                      isCurrentSong
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate max-w-50 xl:max-w-100">
+                                      {song.title}
+                                    </p>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSongTitleClick(song.albumId);
+                                    }}
+                                    className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
+                                      isCurrentSong
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate max-w-50 xl:max-w-100">
+                                      {song.title}
+                                    </p>
+                                  </button>
+                                )}
                               </div>
 
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
-                                    <button
-                                      onClick={() =>
-                                        handleArtistNameClick(artist._id)
-                                      }
-                                      className="hover:underline focus:outline-none focus:underline"
-                                    >
-                                      {artist.name}
-                                    </button>
+                                    {isMobile ? (
+                                      <span>{artist.name}</span>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArtistNameClick(artist._id);
+                                        }}
+                                        className="hover:underline focus:outline-none focus:underline"
+                                      >
+                                        {artist.name}
+                                      </button>
+                                    )}
                                     {artistIndex < song.artist.length - 1 &&
                                       ", "}
                                   </span>
@@ -777,11 +793,10 @@ const PlaylistDetailsPage = () => {
                               ? format(new Date(song.createdAt), "MMM dd, yyyy")
                               : "N/A"}
                           </div>
-                          <div className="hidden sm:flex items-center text-xs sm:text-sm flex-shrink-0">
+                          <div className="hidden sm:flex items-center justify-end text-sm text-zinc-400 md:mr-10">
                             {formatDuration(song.duration)}
                           </div>
-
-                          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
+                          <div className="flex items-center justify-center ml-auto sm:ml-0">
                             <Button
                               size="icon"
                               variant="ghost"
@@ -893,7 +908,7 @@ const PlaylistDetailsPage = () => {
                 )}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="mb-4 bg-zinc-800 text-white border-zinc-700 focus:ring-green-500 w-[80vw] sm:w-[55vw] md:w-[38vw] lg:w-[19.5vw] 2xl:w-[18vw]"
+                className="mb-4 bg-zinc-800 text-white border-zinc-700 focus:ring-violet-500 w-[80vw] sm:w-[55vw] md:w-[38vw] lg:w-[19.5vw] 2xl:w-[18vw]"
               />
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
@@ -942,7 +957,7 @@ const PlaylistDetailsPage = () => {
                             <Button
                               size="sm"
                               onClick={() => handleAddSongToPlaylist(song._id)}
-                              className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
+                              className="bg-violet-500 hover:bg-violet-600 text-white ml-4 flex-shrink-0"
                               disabled={currentPlaylist?.songs.some(
                                 (s) => s._id === song._id
                               )}
@@ -976,7 +991,7 @@ const PlaylistDetailsPage = () => {
                                 onClick={() =>
                                   handleSongTitleClick(song.albumId)
                                 }
-                                className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline"
+                                className="font-semibold text-white truncate text-left hover:underline focus:outline-none focus:underline "
                               >
                                 {song.title}
                               </button>
@@ -1000,7 +1015,7 @@ const PlaylistDetailsPage = () => {
                             <Button
                               size="sm"
                               onClick={() => handleAddSongToPlaylist(song._id)}
-                              className="bg-green-500 hover:bg-green-600 text-white ml-4 flex-shrink-0"
+                              className="bg-violet-500 hover:bg-violet-600 text-white ml-4 flex-shrink-0"
                               disabled={currentPlaylist?.songs.some(
                                 (s) => s._id === song._id
                               )}

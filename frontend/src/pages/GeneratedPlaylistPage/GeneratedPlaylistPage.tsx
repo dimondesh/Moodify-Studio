@@ -17,6 +17,7 @@ import { Helmet } from "react-helmet-async";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import EqualizerTitle from "@/components/ui/equalizer-title";
 import { DownloadButton } from "@/components/ui/DownloadButton";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const formatDuration = (totalSeconds: number): string => {
   if (isNaN(totalSeconds) || totalSeconds < 0) return "0:00";
@@ -34,6 +35,7 @@ const formatDuration = (totalSeconds: number): string => {
 };
 
 const GeneratedPlaylistPage = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { t } = useTranslation();
   const { id: playlistId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -291,32 +293,48 @@ const GeneratedPlaylistPage = () => {
                                     <EqualizerTitle />
                                   </div>
                                 )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSongTitleClick(song.albumId);
-                                  }}
-                                  className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
-                                    isCurrentlyPlaying
-                                      ? "text-violet-400"
-                                      : "text-white"
-                                  }`}
-                                >
-                                  <p className="truncate">{song.title}</p>
-                                </button>
+                                {isMobile ? (
+                                  <span
+                                    className={`font-medium w-full text-left ${
+                                      isCurrentlyPlaying
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate">{song.title}</p>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSongTitleClick(song.albumId);
+                                    }}
+                                    className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
+                                      isCurrentlyPlaying
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate">{song.title}</p>
+                                  </button>
+                                )}
                               </div>
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleArtistNameClick(artist._id);
-                                      }}
-                                      className="hover:underline focus:outline-none focus:underline"
-                                    >
-                                      {artist.name}
-                                    </button>
+                                    {isMobile ? (
+                                      <span>{artist.name}</span>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArtistNameClick(artist._id);
+                                        }}
+                                        className="hover:underline focus:outline-none focus:underline"
+                                      >
+                                        {artist.name}
+                                      </button>
+                                    )}
                                     {artistIndex < song.artist.length - 1 &&
                                       ", "}
                                   </span>

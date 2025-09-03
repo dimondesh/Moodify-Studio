@@ -25,6 +25,7 @@ import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
 import { useUIStore } from "@/stores/useUIStore";
 import EqualizerTitle from "@/components/ui/equalizer-title";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -34,6 +35,7 @@ const formatDuration = (seconds: number) => {
 };
 
 const AlbumPage = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { t } = useTranslation();
   const { albumId } = useParams();
   const navigate = useNavigate();
@@ -348,33 +350,49 @@ const AlbumPage = () => {
                                     <EqualizerTitle />
                                   </div>
                                 )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAlbumTitleClick(song.albumId);
-                                  }}
-                                  className={`font-medium text-left hover:underline focus:outline-none focus:underline min-w-0 truncate max-w-50 xl:max-w-100 ${
-                                    isCurrentSong
-                                      ? "text-violet-400"
-                                      : "text-white"
-                                  }`}
-                                >
-                                  {song.title}
-                                </button>
+                                {isMobile ? (
+                                  <span
+                                    className={`font-medium text-left min-w-0 truncate max-w-50 xl:max-w-100 ${
+                                      isCurrentSong
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    {song.title}
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAlbumTitleClick(song.albumId);
+                                    }}
+                                    className={`font-medium text-left hover:underline focus:outline-none focus:underline min-w-0 truncate max-w-50 xl:max-w-100 ${
+                                      isCurrentSong
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    {song.title}
+                                  </button>
+                                )}
                               </div>
 
                               <div className="text-zinc-400">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleArtistClick(artist._id);
-                                      }}
-                                      className="hover:underline focus:outline-none focus:underline"
-                                    >
-                                      {artist.name}
-                                    </button>
+                                    {isMobile ? (
+                                      <span>{artist.name}</span>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArtistClick(artist._id);
+                                        }}
+                                        className="hover:underline focus:outline-none focus:underline"
+                                      >
+                                        {artist.name}
+                                      </button>
+                                    )}
                                     {artistIndex < song.artist.length - 1 &&
                                       ", "}
                                   </span>

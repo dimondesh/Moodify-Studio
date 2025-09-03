@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
 import EqualizerTitle from "@/components/ui/equalizer-title";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface Artist {
   _id: string;
@@ -28,6 +29,7 @@ const formatDuration = (seconds: number) => {
 };
 
 const LikedSongsPage = () => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { likedSongs, isLoading, error, fetchLikedSongs, toggleSongLike } =
@@ -254,18 +256,30 @@ const LikedSongsPage = () => {
                                     <EqualizerTitle />
                                   </div>
                                 )}
-                                <button
-                                  onClick={(e) =>
-                                    handleNavigateToAlbum(e, song.albumId)
-                                  }
-                                  className={`font-medium w-full  text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
-                                    isThisSongPlaying
-                                      ? "text-violet-400"
-                                      : "text-white"
-                                  }`}
-                                >
-                                  <p className="truncate">{song.title}</p>
-                                </button>
+                                {isMobile ? (
+                                  <span
+                                    className={`font-medium w-full text-left max-w-50 xl:max-w-100 ${
+                                      isThisSongPlaying
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate">{song.title}</p>
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={(e) =>
+                                      handleNavigateToAlbum(e, song.albumId)
+                                    }
+                                    className={`font-medium w-full  text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
+                                      isThisSongPlaying
+                                        ? "text-violet-400"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    <p className="truncate">{song.title}</p>
+                                  </button>
+                                )}
                               </div>
                               <div className="text-zinc-400 text-xs sm:text-sm truncate">
                                 {getArtistNamesDisplay(song.artist)}
