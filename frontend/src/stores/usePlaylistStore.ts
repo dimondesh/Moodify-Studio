@@ -20,6 +20,8 @@ interface PlaylistStore {
   isLoading: boolean;
   error: string | null;
   dominantColor: string | null;
+  recommendedPlaylists: Playlist[];
+  fetchRecommendedPlaylists: () => Promise<void>;
   setDominantColor: (color: string) => void;
   createPlaylistFromSong: (song: Song) => Promise<void>;
   updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
@@ -61,6 +63,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
 
   recommendations: [],
   isRecommendationsLoading: false,
+  recommendedPlaylists: [],
 
   publicPlaylists: [],
   currentPlaylist: null,
@@ -78,6 +81,17 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     });
   },
 
+  fetchRecommendedPlaylists: async () => {
+    if (useOfflineStore.getState().isOffline) return;
+    try {
+      const response = await axiosInstance.get(
+        "/users/me/recommendations/playlists"
+      );
+      set({ recommendedPlaylists: response.data });
+    } catch (err: any) {
+      console.error("Failed to fetch recommended playlists:", err);
+    }
+  },
   createPlaylistFromSong: async (song: Song) => {
     set({ isLoading: true, error: null });
     try {

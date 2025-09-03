@@ -11,6 +11,7 @@ import {
   getPathFromUrl,
 } from "../lib/bunny.service.js";
 import path from "path";
+import { UserRecommendation } from "../models/userRecommendation.model.js";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -268,7 +269,10 @@ export const updateUserPrivacy = async (req, res, next) => {
       _id: { $in: onlineUserIds },
       isAnonymous: false,
     }).select("_id");
-    io.emit("users_online", visibleOnlineUsers.map((u) => u._id.toString()));
+    io.emit(
+      "users_online",
+      visibleOnlineUsers.map((u) => u._id.toString())
+    );
     io.emit("activities", Array.from(userActivities.entries()));
 
     res.status(200).json({
@@ -544,3 +548,83 @@ export const clearRecentSearches = async (req, res, next) => {
   }
 };
 
+export const getFavoriteArtists = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const favoriteArtists = await ListenHistory.aggregate([
+      { $match: { user: userId } },
+      { $sort: { listenedAt: -1 } },
+      { $limit: 200 }, // Анализируем последние 200 прослушиваний
+      {
+        $lookup: {
+          from: "songs",
+          localField: "song",
+          foreignField: "_id",
+          as: "songDetails",
+        },
+      },
+      { $unwind: "$songDetails" },
+      { $unwind: "$songDetails.artist" },
+      { $group: { _id: "$songDetails.artist", listenCount: { $sum: 1 } } },
+      { $sort: { listenCount: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "artists",
+          localField: "_id",
+          foreignField: "_id",
+          as: "artistDetails",
+        },
+      },
+      { $unwind: "$artistDetails" },
+      {
+        $replaceRoot: {
+          newRoot: {
+            _id: "$artistDetails._id",
+            name: "$artistDetails.name",
+            imageUrl: "$artistDetails.imageUrl",
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json(favoriteArtists);
+  } catch (error) {
+    next(error);
+  }
+};
+export const getNewReleases = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const recommendations = await UserRecommendation.findOne({
+      user: userId,
+      type: "NEW_RELEASE",
+    }).populate({
+      path: "items",
+      model: "Album",
+      populate: { path: "artist", model: "Artist", select: "name" },
+    });
+
+    res.status(200).json(recommendations ? recommendations.items : []);
+  } catch (error) {
+    next(error);
+  }
+};
+export const getPlaylistRecommendations = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const recommendations = await UserRecommendation.findOne({
+      user: userId,
+      type: "PLAYLIST_FOR_YOU",
+    }).populate({
+      path: "items",
+      model: "Playlist",
+      populate: { path: "owner", model: "User", select: "fullName" },
+    });
+
+    res.status(200).json(recommendations ? recommendations.items : []);
+  } catch (error) {
+    next(error);
+  }
+};

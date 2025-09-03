@@ -2,18 +2,18 @@ import { Router } from "express";
 import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   getAllSongs,
-  getFeaturedSongs,
   getImageForColorAnalysis,
   getListenHistory,
   getMadeForYouSongs,
   getTrendingSongs,
   recordListen,
+  getQuickPicks, // <-- ИМПОРТИРУЕМ НОВУЮ ФУНКЦИЮ
 } from "../controller/song.controller.js";
 
 const router = Router();
 
 router.get("/", protectRoute, getAllSongs);
-router.get("/featured", getFeaturedSongs);
+router.get("/featured", protectRoute, getQuickPicks);
 router.get("/made-for-you", protectRoute, getMadeForYouSongs);
 router.get("/trending", getTrendingSongs);
 router.post("/:id/listen", protectRoute, recordListen);

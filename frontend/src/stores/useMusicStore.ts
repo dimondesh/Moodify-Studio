@@ -43,6 +43,8 @@ interface MusicStore {
   artistsTotalPages: number;
   artistAppearsOn: Album[];
   isAppearsOnLoading: boolean;
+  favoriteArtists: Artist[];
+  newReleases: Album[];
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
@@ -54,6 +56,8 @@ interface MusicStore {
   fetchStats: () => Promise<void>;
   fetchSongs: () => Promise<void>;
   fetchRecentlyListenedSongs: () => Promise<void>;
+  fetchFavoriteArtists: () => Promise<void>;
+  fetchNewReleases: () => Promise<void>;
 
   fetchArtists: () => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
@@ -81,6 +85,8 @@ export const useMusicStore = create<MusicStore>((set) => ({
   madeForYouSongs: [],
   trendingSongs: [],
   recentlyListenedSongs: [],
+  favoriteArtists: [],
+  newReleases: [],
 
   paginatedSongs: [],
   songsPage: 1,
@@ -116,6 +122,26 @@ export const useMusicStore = create<MusicStore>((set) => ({
           "Failed to fetch 'Appears On' section",
         isAppearsOnLoading: false,
       });
+    }
+  },
+  fetchFavoriteArtists: async () => {
+    if (useOfflineStore.getState().isOffline) return;
+    try {
+      const response = await axiosInstance.get("/users/me/favorite-artists");
+      set({ favoriteArtists: response.data });
+    } catch (error: any) {
+      console.error("Failed to fetch favorite artists:", error);
+    }
+  },
+  fetchNewReleases: async () => {
+    if (useOfflineStore.getState().isOffline) return;
+    try {
+      const response = await axiosInstance.get(
+        "/users/me/recommendations/new-releases"
+      );
+      set({ newReleases: response.data });
+    } catch (error: any) {
+      console.error("Failed to fetch new releases:", error);
     }
   },
 

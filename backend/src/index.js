@@ -26,8 +26,17 @@ import shareRoutes from "./routes/share.route.js";
 import generatedPlaylistRoutes from "./routes/generatedPlaylist.route.js";
 
 import { updateDailyMixes } from "./controller/mix.controller.js";
-import { generateOnRepeatPlaylistForUser } from "./lib/playlistGenerator.service.js";
 import { ListenHistory } from "./models/listenHistory.model.js";
+import {
+  generateOnRepeatPlaylistForUser,
+  generateDiscoverWeeklyForUser, // <-- ИМПОРТ НОВОЙ ФУНКЦИИ
+  generateOnRepeatRewindForUser, // <-- ИМПОРТ
+} from "./lib/playlistGenerator.service.js";
+import { User } from "./models/user.model.js"; // <-- ИМПОРТ МОДЕЛИ USER
+import {
+  generateNewReleasesForUser,
+  generatePlaylistRecommendationsForUser,
+} from "./lib/recommendation.service.js"; // <-- ИМПОРТ
 
 dotenv.config();
 
@@ -59,6 +68,74 @@ app.use(
 );
 
 const tempDir = path.join(process.cwd(), "temp");
+
+cron.schedule(
+  "0 2 */3 * *",
+  async () => {
+    console.log('CRON JOB: Starting "Playlists for You" generation...');
+    const allUsers = await User.find({}).select("_id");
+    for (const user of allUsers) {
+      await generatePlaylistRecommendationsForUser(user._id);
+    }
+    console.log(`CRON JOB: "Playlists for You" generation finished.`);
+  },
+  { scheduled: true, timezone: "Europe/Kyiv" }
+);
+cron.schedule(
+  "0 3 * * *",
+  async () => {
+    console.log('CRON JOB: Starting "New Releases" generation...');
+    const allUsers = await User.find({}).select("_id");
+    for (const user of allUsers) {
+      await generateNewReleasesForUser(user._id);
+    }
+    console.log(`CRON JOB: "New Releases" generation finished.`);
+  },
+  { scheduled: true, timezone: "Europe/Kyiv" }
+);
+cron.schedule(
+  "0 5 1 * *",
+  async () => {
+    console.log('CRON JOB: Starting "On Repeat Rewind" playlist generation...');
+    try {
+      const allUsers = await User.find({}).select("_id");
+      for (const user of allUsers) {
+        await generateOnRepeatRewindForUser(user._id);
+      }
+      console.log(
+        `CRON JOB: "On Repeat Rewind" generation finished for ${allUsers.length} users.`
+      );
+    } catch (error) {
+      console.error('CRON JOB: Error in "On Repeat Rewind" generation:', error);
+    }
+  },
+  {
+    scheduled: true,
+    timezone: "Europe/Kyiv",
+  }
+);
+
+cron.schedule(
+  "0 4 * * 1",
+  async () => {
+    console.log('CRON JOB: Starting "Discover Weekly" playlist generation...');
+    try {
+      const allUsers = await User.find({}).select("_id");
+      for (const user of allUsers) {
+        await generateDiscoverWeeklyForUser(user._id);
+      }
+      console.log(
+        `CRON JOB: "Discover Weekly" generation finished for ${allUsers.length} users.`
+      );
+    } catch (error) {
+      console.error('CRON JOB: Error in "Discover Weekly" generation:', error);
+    }
+  },
+  {
+    scheduled: true,
+    timezone: "Europe/Kyiv",
+  }
+);
 cron.schedule("*/10 * * * *", () => {
   if (fs.existsSync(tempDir)) {
     fs.readdir(tempDir, (err, files) => {

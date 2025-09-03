@@ -738,10 +738,19 @@
     "unknownArtist": "Unknown Artist",
     "songsNotFound": "No available songs in this category."
   },
-  "generatedPlaylists": {
+   "generatedPlaylists": {
     "onRepeat": {
       "title": "On Repeat",
       "description": "Songs you've been playing the most lately."
+    },
+    "discoverWeekly": {
+      "title": "Discover Weekly",
+      "description": "Your weekly mixtape of fresh music. Enjoy new discoveries and deep cuts chosen just for you."
+    },
+    "onRepeatRewind": {
+      "title": "On Repeat Rewind",
+      "description": "Songs you loved in the past. Rediscover your old favorites."
     }
+    
   }
 }

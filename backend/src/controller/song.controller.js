@@ -16,36 +16,125 @@ export const getAllSongs = async (req, res, next) => {
   }
 };
 
-export const getFeaturedSongs = async (req, res, next) => {
+export const getQuickPicks = async (req, res, next) => {
   try {
-    const songs = await Song.aggregate([
-      { $sample: { size: 6 } },
-      {
-        $lookup: {
-          from: "artists",
-          localField: "artist",
-          foreignField: "_id",
-          as: "artistDetails",
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          artist: "$artistDetails",
-          imageUrl: 1,
-          instrumentalUrl: 1,
-          vocalsUrl: 1,
-          albumId: 1,
-          lyrics: 1,
-        },
-      },
-    ]);
-    res.json(songs);
+    const userId = req.user.id;
+
+    // 1. Получаем историю прослушиваний пользователя
+    const listenHistory = await ListenHistory.find({ user: userId })
+      .sort({ listenedAt: -1 })
+      .limit(50) // Берем последние 50 прослушиваний для анализа
+      .populate({
+        path: "song",
+        select: "genres moods artist",
+      });
+
+    // 2. Если у пользователя мало прослушиваний, возвращаем общие тренды
+    if (listenHistory.length < 10) {
+      console.log(
+        `User ${userId} has little history, falling back to trending songs.`
+      );
+      return getTrendingSongs(req, res, next); // Используем уже существующую функцию
+    }
+
+    // 3. Анализируем историю, чтобы найти любимые жанры, настроения и артистов
+    const listenedSongIds = listenHistory
+      .map((item) => item.song?._id)
+      .filter(Boolean);
+
+    const genreCounts = {};
+    const moodCounts = {};
+    const artistCounts = {};
+
+    listenHistory.forEach((item) => {
+      const { song } = item;
+      if (song) {
+        song.genres?.forEach((genreId) => {
+          genreCounts[genreId] = (genreCounts[genreId] || 0) + 1;
+        });
+        song.moods?.forEach((moodId) => {
+          moodCounts[moodId] = (moodCounts[moodId] || 0) + 1;
+        });
+        song.artist?.forEach((artistId) => {
+          artistCounts[artistId] = (artistCounts[artistId] || 0) + 1;
+        });
+      }
+    });
+
+    // Функция для получения топ-N элементов
+    const getTopItems = (counts, limit) =>
+      Object.keys(counts)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, limit);
+
+    const topGenreIds = getTopItems(genreCounts, 3);
+    const topMoodIds = getTopItems(moodCounts, 2);
+    const topArtistIds = getTopItems(artistCounts, 3);
+
+    // 4. Ищем треки, которые пользователь еще не слушал, но которые соответствуют его вкусам
+    const recommendations = await Song.find({
+      _id: { $nin: listenedSongIds }, // Исключаем уже прослушанные
+      $or: [
+        { genres: { $in: topGenreIds } },
+        { moods: { $in: topMoodIds } },
+        { artist: { $in: topArtistIds } },
+      ],
+    })
+      .limit(50) // Берем с запасом для случайной выборки
+      .populate("artist", "name imageUrl");
+
+    // 5. Перемешиваем и отдаем 6 треков
+    const finalPicks = recommendations
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 6);
+
+    // Если рекомендаций не нашлось, можно снова откатиться к трендам или популярным
+    if (finalPicks.length < 6) {
+      const trending = await Song.find({ _id: { $nin: listenedSongIds } })
+        .sort({ playCount: -1 })
+        .limit(6 - finalPicks.length)
+        .populate("artist", "name imageUrl");
+      finalPicks.push(...trending);
+    }
+
+    res.json(finalPicks);
   } catch (error) {
-    next(error);
+    console.error("Error fetching 'Quick Picks':", error);
+    // В случае ошибки, чтобы не ломать главную, отдаем случайные треки (старая логика)
+    return getFeaturedSongs(req, res, next);
   }
 };
+
+// export const getFeaturedSongs = async (req, res, next) => {
+//   try {
+//     const songs = await Song.aggregate([
+//       { $sample: { size: 6 } },
+//       {
+//         $lookup: {
+//           from: "artists",
+//           localField: "artist",
+//           foreignField: "_id",
+//           as: "artistDetails",
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           title: 1,
+//           artist: "$artistDetails",
+//           imageUrl: 1,
+//           instrumentalUrl: 1,
+//           vocalsUrl: 1,
+//           albumId: 1,
+//           lyrics: 1,
+//         },
+//       },
+//     ]);
+//     res.json(songs);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 export const getTrendingSongs = async (req, res, next) => {
   try {

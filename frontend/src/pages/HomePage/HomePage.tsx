@@ -29,6 +29,10 @@ const HomePage = () => {
     madeForYouSongs,
     trendingSongs,
     featuredSongs,
+    favoriteArtists,
+    fetchFavoriteArtists,
+    newReleases,
+    fetchNewReleases,
   } = useMusicStore();
   const {
     genreMixes,
@@ -42,6 +46,8 @@ const HomePage = () => {
     fetchPublicPlaylists,
     publicPlaylists,
     isLoading: isPlaylistsLoading,
+    recommendedPlaylists,
+    fetchRecommendedPlaylists,
   } = usePlaylistStore();
 
   const { initializeQueue, toggleShuffle, isShuffle, currentSong } =
@@ -71,6 +77,9 @@ const HomePage = () => {
       if (user) {
         fetchMadeForYouSongs();
         fetchRecentlyListenedSongs();
+        fetchFavoriteArtists();
+        fetchNewReleases();
+        fetchRecommendedPlaylists();
       }
     }
   }, [
@@ -83,6 +92,9 @@ const HomePage = () => {
     fetchRecentlyListenedSongs,
     fetchPublicPlaylists,
     fetchAllGeneratedPlaylists,
+    fetchFavoriteArtists,
+    fetchNewReleases,
+    fetchRecommendedPlaylists,
   ]);
 
   const changeBackgroundColor = (color: string) => {
@@ -141,6 +153,18 @@ const HomePage = () => {
   };
 
   // Преобразуем данные для нового компонента
+  const recommendedPlaylistsItems = recommendedPlaylists.map((pl) => ({
+    ...pl,
+    itemType: "playlist" as const,
+  }));
+  const newReleasesItems = newReleases.map((album) => ({
+    ...album,
+    itemType: "album" as const,
+  }));
+  const favoriteArtistsItems = favoriteArtists.map((artist) => ({
+    ...artist,
+    itemType: "artist" as const,
+  }));
   const madeForYouSongsItems = madeForYouSongs.map((song) => ({
     ...song,
     itemType: "song" as const,
@@ -280,6 +304,27 @@ const HomePage = () => {
                   })
                 }
               />
+              {user && favoriteArtists.length > 0 && (
+                <HorizontalSection
+                  title="Your Favorite Artists" // TODO: Добавить в переводы
+                  items={favoriteArtistsItems}
+                  isLoading={isMusicLoading}
+                />
+              )}
+              {user && newReleases.length > 0 && (
+                <HorizontalSection
+                  title="New Releases For You" // TODO: Добавить в переводы
+                  items={newReleasesItems}
+                  isLoading={isMusicLoading}
+                />
+              )}
+              {user && recommendedPlaylists.length > 0 && (
+                <HorizontalSection
+                  title={t("homepage.playlistsForYou")} // <-- Используем существующий ключ
+                  items={recommendedPlaylistsItems}
+                  isLoading={isPlaylistsLoading} // Можно использовать общий isLoading
+                />
+              )}
               {allGeneratedPlaylists.length > 0 && (
                 <HorizontalSection
                   title={t("homepage.generatedForYou")}
