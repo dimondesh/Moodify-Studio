@@ -70,7 +70,7 @@ const DisplayListPage = () => {
               key={item._id}
               className="p-4 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 transition-all group cursor-pointer"
             >
-              <div className="relative mb-3 aspect-square shadow-lg">
+              <div className="relative mb-3 aspect-square object-cover shadow-lg">
                 {item.type === "playlist" ? (
                   <img
                     src={item.imageUrl || "/liked.png"}
@@ -78,10 +78,10 @@ const DisplayListPage = () => {
                     className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                   />
                 ) : (
-                  <Avatar className="aspect-square w-auto h-auto">
+                  <Avatar className="aspect-square">
                     <AvatarImage
                       src={item.imageUrl}
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-cover h-auto w-auto transition-transform duration-300 group-hover:scale-105"
                     />
                     <AvatarFallback>
                       {(item.name || item.title)?.[0]}
