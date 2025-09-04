@@ -174,6 +174,14 @@ function App() {
             primary: "#805ad5",
             secondary: "black",
           },
+          blank: {
+            style: {
+              background: "#27272a",
+              borderRadius: "20px",
+              color: "#BAC4C8",
+            },
+          },
+
           success: {
             style: {
               background: "#27272a",

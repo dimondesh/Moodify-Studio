@@ -58,6 +58,12 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   const itemsToShow = items.slice(0, limit);
   const canShowAll = onShowAll && items.length > limit;
 
+  // --- ИЗМЕНЕНИЕ НАЧАЛО: Фильтруем только песни для очереди ---
+  const songsOnly = items.filter(
+    (item): item is Song & { itemType: "song" } => item.itemType === "song"
+  );
+  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+
   const handleItemClick = (item: DisplayItem) => {
     switch (item.itemType) {
       case "song":
@@ -150,6 +156,10 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                 </div>
               );
             }
+            const songIndex =
+              item.itemType === "song"
+                ? songsOnly.findIndex((s) => s._id === item._id)
+                : -1;
             return (
               <div
                 key={`${item.itemType}-${item._id}`}
@@ -184,7 +194,11 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                     )}
                   </div>
                   {item.itemType === "song" && (
-                    <PlayButton song={item as Song} />
+                    <PlayButton
+                      song={item as Song}
+                      songs={songsOnly}
+                      songIndex={songIndex}
+                    />
                   )}
                 </div>
                 <h3 className="font-medium truncate">

@@ -105,7 +105,7 @@ const FeaturedSection = ({
       className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
       onMouseLeave={onSongLeave}
     >
-      {songsArray.map((song) => (
+      {songsArray.map((song, index) => (
         <div
           key={song._id}
           className="flex items-cengridter bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
@@ -144,7 +144,7 @@ const FeaturedSection = ({
               {getArtistNamesDisplay(song.artist)}
             </p>
           </div>
-          <PlayButton song={song} />
+          <PlayButton song={song} songs={songsArray} songIndex={index} />
         </div>
       ))}
     </div>

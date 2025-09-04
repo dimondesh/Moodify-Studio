@@ -1,4 +1,4 @@
-// frontend/src/pages/SongGrid.tsx
+// frontend/src/pages/SearchPage/SongGrid.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -54,33 +54,40 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {songsToShow.map((song) => (
-          <div
-            key={song._id}
-            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
-            onClick={() => handleSongClick(song)}
-          >
-            <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
-              <img
-                src={song.imageUrl || "/default-song-cover.png"}
-                alt={song.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "/default-song-cover.png";
-                }}
-              />
-              <PlayButton song={song} />
+        {songsToShow.map((song) => {
+          const originalIndex = songs.findIndex((s) => s._id === song._id);
+          return (
+            <div
+              key={song._id}
+              className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
+              onClick={() => handleSongClick(song)}
+            >
+              <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
+                <img
+                  src={song.imageUrl || "/default-song-cover.png"}
+                  alt={song.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/default-song-cover.png";
+                  }}
+                />
+                <PlayButton
+                  song={song}
+                  songs={songs}
+                  songIndex={originalIndex}
+                />
+              </div>
+              <h3 className="font-medium mb-2 truncate">{song.title}</h3>
+              <p className="text-sm text-zinc-400 truncate">
+                {getArtistNames(
+                  song.artist.map((artist) => artist._id),
+                  artists
+                )}
+              </p>
             </div>
-            <h3 className="font-medium mb-2 truncate">{song.title}</h3>
-            <p className="text-sm text-zinc-400 truncate">
-              {getArtistNames(
-                song.artist.map((artist) => artist._id),
-                artists
-              )}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
