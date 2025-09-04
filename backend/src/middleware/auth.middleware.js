@@ -3,7 +3,7 @@ import { User } from "../models/user.model.js";
 import dotenv from "dotenv";
 dotenv.config();
 export const protectRoute = async (req, res, next) => {
-  console.log("ProtectRoute middleware triggered");
+  // console.log("ProtectRoute middleware triggered");
 
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -13,10 +13,10 @@ export const protectRoute = async (req, res, next) => {
     }
 
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
-    console.log("Decoded token:", decodedToken);
+    // console.log("Decoded token:", decodedToken);
 
     const user = await User.findOne({ firebaseUid: decodedToken.uid });
-    console.log("User from DB:", user);
+    // console.log("User from DB:", user);
 
     if (!user) {
       console.error("User not found in DB for firebaseUid:", decodedToken.uid);
@@ -29,7 +29,7 @@ export const protectRoute = async (req, res, next) => {
       email: decodedToken.email,
       isAdmin: process.env.ADMIN_EMAILS.split(",").includes(decodedToken.email),
     };
-    console.log("req.user set in protectRoute:", req.user);
+    // console.log("req.user set in protectRoute:", req.user);
 
     next();
   } catch (error) {

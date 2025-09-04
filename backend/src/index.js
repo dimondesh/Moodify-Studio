@@ -29,14 +29,14 @@ import { updateDailyMixes } from "./controller/mix.controller.js";
 import { ListenHistory } from "./models/listenHistory.model.js";
 import {
   generateOnRepeatPlaylistForUser,
-  generateDiscoverWeeklyForUser, // <-- ИМПОРТ НОВОЙ ФУНКЦИИ
-  generateOnRepeatRewindForUser, // <-- ИМПОРТ
+  generateDiscoverWeeklyForUser,
+  generateOnRepeatRewindForUser,
 } from "./lib/playlistGenerator.service.js";
-import { User } from "./models/user.model.js"; // <-- ИМПОРТ МОДЕЛИ USER
+import { User } from "./models/user.model.js";
 import {
   generateNewReleasesForUser,
   generatePlaylistRecommendationsForUser,
-} from "./lib/recommendation.service.js"; // <-- ИМПОРТ
+} from "./lib/recommendation.service.js";
 
 dotenv.config();
 

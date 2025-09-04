@@ -1,4 +1,4 @@
-// src/pages/HomePage/HorizontalSection.tsx
+// frontend/src/pages/HomePage/HorizontalSection.tsx
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import type {
 } from "../../types";
 import { useTranslation } from "react-i18next";
 import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type DisplayItem =
   | (Song & { itemType: "song" })
@@ -99,7 +100,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
       case "mix":
         return "Daily Mix";
       case "artist":
-        return "Artist";
+        return "Artist"; // TODO: Добавить в переводы "Artist" -> "sidebar.subtitle.artist"
       default:
         return "";
     }
@@ -150,12 +151,27 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                 onClick={() => handleItemClick(item)}
               >
                 <div className="relative mb-4">
-                  <div className="aspect-square rounded-md shadow-lg overflow-hidden">
-                    <img
-                      src={item.imageUrl || "/default-song-cover.png"}
-                      alt={getDisplayTitle(item)}
-                      className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                  <div className="aspect-square shadow-lg">
+                    {item.itemType === "artist" ? (
+                      <Avatar className="w-auto h-auto">
+                        <AvatarImage
+                          src={item.imageUrl || "/default-artist-cover.png"}
+                          alt={getDisplayTitle(item)}
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <AvatarFallback>
+                          {getDisplayTitle(item)[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="aspect-square rounded-md overflow-hidden">
+                        <img
+                          src={item.imageUrl || "/default-song-cover.png"}
+                          alt={getDisplayTitle(item)}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
                   </div>
                   {item.itemType === "song" && (
                     <PlayButton song={item as Song} />

@@ -81,7 +81,11 @@
     "moodMixes": "Мікси за настроєм",
     "trending": "У тренді",
     "playlistsForYou": "Плейлисти для вас",
-      "generatedForYou": "Сгенеровано для вас"
+    "generatedForYou": "Сгенеровано для вас",
+      "publicPlaylists": "Публічні плейлисти",
+      "favoriteArtists": "Улюблені виконавці",
+      "newReleases": "Нові релізи для вас"
+
 
   },
   "mixes": {
@@ -740,6 +744,14 @@
     "onRepeat": {
       "title": "На репіті",
       "description": "Треки, які ви слухали найчастіше останнім часом."
+    },
+     "discoverWeekly": {
+      "title": "Відкриття тижня",
+      "description": "Нові треки, які вам можуть сподобатися, щотижня."
+    },
+    "onRepeatRewind": {
+      "title": "На репіті: Перемотка",
+      "description": "Ваші улюблені треки з минулого, які ви слухали найчастіше."
     }
   }
 }

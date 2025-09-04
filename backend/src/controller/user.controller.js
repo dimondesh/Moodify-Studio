@@ -12,6 +12,7 @@ import {
 } from "../lib/bunny.service.js";
 import path from "path";
 import { UserRecommendation } from "../models/userRecommendation.model.js";
+import { ListenHistory } from "../models/listenHistory.model.js";
 
 export const getAllUsers = async (req, res, next) => {
   try {

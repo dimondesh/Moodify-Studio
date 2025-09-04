@@ -84,7 +84,11 @@
     "moodMixes": "Mood Mixes",
     "trending": "Trending",
     "playlistsForYou": "Playlists For You",
-    "generatedForYou": "Generated For You"
+    "generatedForYou": "Generated For You",
+    "publicPlaylists": "Public Playlists",
+    "favoriteArtists": "Your Favorite Artists",
+    "newReleases": "New Releases For You"
+    
   },
    "mixes": {
     "genre": {

@@ -143,8 +143,7 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
       type: "DISCOVER_WEEKLY",
       nameKey: "generatedPlaylists.discoverWeekly.title",
       descriptionKey: "generatedPlaylists.discoverWeekly.description",
-      imageUrl:
-        "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1725354562/Discover_Weekly_goolfj.png", // Загрузите свою обложку
+      imageUrl: "https://moodify.b-cdn.net/discover-weekly.png", 
       songs: finalTracks.map((song) => song._id),
       generatedOn: new Date(),
     };
@@ -226,8 +225,7 @@ export const generateOnRepeatRewindForUser = async (userId) => {
       type: "ON_REPEAT_REWIND",
       nameKey: "generatedPlaylists.onRepeatRewind.title",
       descriptionKey: "generatedPlaylists.onRepeatRewind.description",
-      imageUrl:
-        "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1725354562/On_Repeat_Rewind_v4aflp.png", // Загрузите свою обложку
+      imageUrl: "https://moodify.b-cdn.net/on-repeat-rewind2.png", 
       songs: finalTracks.map((song) => song._id),
       generatedOn: new Date(),
     };

@@ -152,7 +152,6 @@ const HomePage = () => {
     return t("greetings.evening");
   };
 
-  // Преобразуем данные для нового компонента
   const recommendedPlaylistsItems = recommendedPlaylists.map((pl) => ({
     ...pl,
     itemType: "playlist" as const,
@@ -306,23 +305,23 @@ const HomePage = () => {
               />
               {user && favoriteArtists.length > 0 && (
                 <HorizontalSection
-                  title="Your Favorite Artists" // TODO: Добавить в переводы
+                  title={t("homepage.favoriteArtists")} 
                   items={favoriteArtistsItems}
                   isLoading={isMusicLoading}
                 />
               )}
               {user && newReleases.length > 0 && (
                 <HorizontalSection
-                  title="New Releases For You" // TODO: Добавить в переводы
+                  title={t("homepage.newReleases")} 
                   items={newReleasesItems}
                   isLoading={isMusicLoading}
                 />
               )}
               {user && recommendedPlaylists.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.playlistsForYou")} // <-- Используем существующий ключ
+                  title={t("homepage.playlistsForYou")} 
                   items={recommendedPlaylistsItems}
-                  isLoading={isPlaylistsLoading} // Можно использовать общий isLoading
+                  isLoading={isPlaylistsLoading} 
                 />
               )}
               {allGeneratedPlaylists.length > 0 && (
@@ -334,7 +333,7 @@ const HomePage = () => {
               )}
               {publicPlaylists.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.playlistsForYou")}
+                  title={t("homepage.publicPlaylists")}
                   items={publicPlaylistsItems}
                   isLoading={isPlaylistsLoading}
                 />
