@@ -246,6 +246,7 @@ const HomePage = () => {
                   title={t("homepage.madeForYou")}
                   items={madeForYouSongsItems}
                   isLoading={isMusicLoading}
+                  t={t}
                   onShowAll={() =>
                     navigate("/all-songs/made-for-you", {
                       state: {
@@ -261,6 +262,7 @@ const HomePage = () => {
                   title={t("homepage.recentlyListened")}
                   items={recentlyListenedItems}
                   isLoading={isMusicLoading}
+                  t={t}
                   limit={16}
                 />
               )}
@@ -268,6 +270,7 @@ const HomePage = () => {
                 title={t("homepage.genreMixes")}
                 items={genreMixesItems}
                 isLoading={areMixesLoading}
+                t={t}
                 onShowAll={() =>
                   navigate(`/all-mixes/genres`, {
                     state: {
@@ -281,6 +284,7 @@ const HomePage = () => {
                 title={t("homepage.moodMixes")}
                 items={moodMixesItems}
                 isLoading={areMixesLoading}
+                t={t}
                 onShowAll={() =>
                   navigate(`/all-mixes/moods`, {
                     state: {
@@ -294,6 +298,7 @@ const HomePage = () => {
                 title={t("homepage.trending")}
                 items={trendingSongsItems}
                 isLoading={isMusicLoading}
+                t={t}
                 onShowAll={() =>
                   navigate("/all-songs/trending", {
                     state: {
@@ -305,29 +310,33 @@ const HomePage = () => {
               />
               {user && favoriteArtists.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.favoriteArtists")} 
+                  title={t("homepage.favoriteArtists")}
                   items={favoriteArtistsItems}
+                  t={t}
                   isLoading={isMusicLoading}
                 />
               )}
               {user && newReleases.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.newReleases")} 
+                  title={t("homepage.newReleases")}
+                  t={t}
                   items={newReleasesItems}
                   isLoading={isMusicLoading}
                 />
               )}
               {user && recommendedPlaylists.length > 0 && (
                 <HorizontalSection
-                  title={t("homepage.playlistsForYou")} 
+                  title={t("homepage.playlistsForYou")}
                   items={recommendedPlaylistsItems}
-                  isLoading={isPlaylistsLoading} 
+                  t={t}
+                  isLoading={isPlaylistsLoading}
                 />
               )}
               {allGeneratedPlaylists.length > 0 && (
                 <HorizontalSection
                   title={t("homepage.generatedForYou")}
                   items={generatedPlaylistsItems}
+                  t={t}
                   isLoading={isGeneratedLoading}
                 />
               )}
@@ -335,6 +344,7 @@ const HomePage = () => {
                 <HorizontalSection
                   title={t("homepage.publicPlaylists")}
                   items={publicPlaylistsItems}
+                  t={t}
                   isLoading={isPlaylistsLoading}
                 />
               )}

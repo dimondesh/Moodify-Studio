@@ -15,9 +15,9 @@ import type {
   Artist,
   GeneratedPlaylist,
 } from "../../types";
-import { useTranslation } from "react-i18next";
 import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TFunction } from "i18next";
 
 type DisplayItem =
   | (Song & { itemType: "song" })
@@ -33,6 +33,7 @@ interface HorizontalSectionProps {
   isLoading: boolean;
   onShowAll?: () => void;
   limit?: number;
+  t: TFunction;
 }
 
 const HorizontalSection: React.FC<HorizontalSectionProps> = ({
@@ -41,9 +42,9 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   isLoading,
   onShowAll,
   limit = 6,
+  t,
 }) => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { artists: allArtists } = useMusicStore();
 
   if (isLoading) {
@@ -92,15 +93,20 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
       case "song":
         return getArtistNames((item as Song).artist, allArtists);
       case "album":
-        return getArtistNames((item as Album).artist, allArtists);
+        return `${t(
+          `sidebar.subtitle.${(item as Album).type}`
+        )} • ${getArtistNames((item as Album).artist, allArtists)}`;
       case "playlist":
-        return `By ${(item as Playlist).owner?.fullName || "user"}`;
+        return t("sidebar.subtitle.byUser", {
+          name:
+            (item as Playlist).owner?.fullName || t("sidebar.subtitle.user"),
+        });
       case "generated-playlist":
-        return "Playlist • Moodify";
+        return `${t("sidebar.subtitle.playlist")} • Moodify`;
       case "mix":
-        return "Daily Mix";
+        return t("sidebar.subtitle.dailyMix");
       case "artist":
-        return "Artist"; // TODO: Добавить в переводы "Artist" -> "sidebar.subtitle.artist"
+        return t("sidebar.subtitle.artist");
       default:
         return "";
     }
