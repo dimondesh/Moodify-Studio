@@ -26,6 +26,7 @@ interface MusicStore {
   error: string | null;
   currentAlbum: Album | null;
   recentlyListenedSongs: Song[];
+  homePageDataLastFetched: number | null;
 
   featuredSongs: Song[];
   genres: Genre[];
@@ -51,6 +52,7 @@ interface MusicStore {
   newReleases: Album[];
 
   fetchHomePageData: () => Promise<void>;
+  clearHomePageCache: () => void;
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
@@ -77,7 +79,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-export const useMusicStore = create<MusicStore>((set) => ({
+export const useMusicStore = create<MusicStore>((set, get) => ({
   albums: [],
   songs: [],
   artists: [],
@@ -93,6 +95,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   recentlyListenedSongs: [],
   favoriteArtists: [],
   newReleases: [],
+  homePageDataLastFetched: null,
 
   paginatedSongs: [],
   songsPage: 1,
@@ -112,7 +115,10 @@ export const useMusicStore = create<MusicStore>((set) => ({
     totalUsers: 0,
     totalArtists: 0,
   },
-
+  clearHomePageCache: () => {
+    set({ homePageDataLastFetched: null });
+    console.log("Homepage cache cleared.");
+  },
   fetchArtistAppearsOn: async (artistId: string) => {
     set({ isAppearsOnLoading: true, error: null });
     try {
@@ -131,12 +137,24 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchHomePageData: async () => {
-    if (useOfflineStore.getState().isOffline) {
-      // В оффлайн-режиме загружаем данные из каждого стора по отдельности, как и раньше
-      useUIStore.getState().setIsHomePageLoading(true);
-      await Promise.all([
-        // Здесь можно оставить старую логику загрузки для оффлайн-режима если она есть
-      ]);
+    // <-- ИЗМЕНЕНИЕ: Вся логика функции обновлена
+    const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 минут
+    const { homePageDataLastFetched } = get();
+    const now = Date.now();
+    const isOffline = useOfflineStore.getState().isOffline;
+
+    if (
+      !isOffline &&
+      homePageDataLastFetched &&
+      now - homePageDataLastFetched < CACHE_DURATION_MS
+    ) {
+      console.log("Using cached homepage data. Fresh enough.");
+      useUIStore.getState().setIsHomePageLoading(false);
+      return;
+    }
+
+    if (isOffline) {
+      console.log("Offline mode: Skipping homepage data fetch.");
       useUIStore.getState().setIsHomePageLoading(false);
       return;
     }
@@ -148,7 +166,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
       const response = await axiosInstance.get("/homepage");
       const data = response.data;
 
-      // Обновляем этот стор (useMusicStore)
       set({
         featuredSongs: data.featuredSongs || [],
         trendingSongs: data.trendingSongs || [],
@@ -156,9 +173,9 @@ export const useMusicStore = create<MusicStore>((set) => ({
         recentlyListenedSongs: data.recentlyListenedSongs || [],
         favoriteArtists: data.favoriteArtists || [],
         newReleases: data.newReleases || [],
+        homePageDataLastFetched: Date.now(),
       });
 
-      // Обновляем другие сторы
       useMixesStore.setState({
         genreMixes: data.genreMixes || [],
         moodMixes: data.moodMixes || [],
@@ -177,6 +194,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       useUIStore.getState().setIsHomePageLoading(false);
     }
   },
+
   fetchFavoriteArtists: async () => {
     if (useOfflineStore.getState().isOffline) return;
     try {
