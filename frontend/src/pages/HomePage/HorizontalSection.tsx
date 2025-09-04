@@ -211,7 +211,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
             );
           })}
         </div>
-        <ScrollBar orientation="horizontal" />
+        <ScrollBar orientation="horizontal" className="hidden" />
       </ScrollArea>
     </div>
   );
