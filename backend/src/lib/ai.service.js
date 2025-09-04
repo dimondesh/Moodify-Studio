@@ -108,9 +108,120 @@ Example Response: { "primaryGenre": "Alternative", "subGenres": ["Indie Pop", "J
       );
       await sleep(2000);
     } else {
-      await sleep(1000); 
+      await sleep(1000);
     }
 
     return { genreIds: [], moodIds: [] };
+  }
+};
+
+export const analyzePromptForPlaylistMetadata = async (prompt) => {
+  if (!GEMINI_API_KEY) throw new Error("AI Service is not configured.");
+
+  const systemPrompt = `You are a music expert. Analyze the user's request and provide metadata for a playlist.
+  
+  User Request: "${prompt}"
+
+  Your instructions:
+  1.  Create a creative title (max 5-7 words).
+  2.  Write a short description (1-2 sentences).
+  3.  Extract up to 3 relevant music genres.
+  4.  Extract up to 3 relevant moods.
+  5.  Your response MUST be ONLY a valid JSON object with keys: "title", "description", "genres", and "moods". Do not include any text or markdown.
+
+  Example Response:
+  {
+    "title": "Rainy Day Jazz",
+    "description": "Smooth and relaxing jazz for a cozy day indoors.",
+    "genres": ["Jazz", "Lounge", "Soul"],
+    "moods": ["Calm", "Relaxing", "Melancholic"]
+  }`;
+
+  try {
+    const response = await axios.post(GEMINI_API_URL, {
+      contents: [{ parts: [{ text: systemPrompt }] }],
+    });
+    const rawText = response.data.candidates[0].content.parts[0].text;
+    const cleanedText = rawText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    const metadata = JSON.parse(cleanedText);
+
+    if (
+      !metadata.title ||
+      !metadata.description ||
+      !metadata.genres ||
+      !metadata.moods
+    ) {
+      throw new Error("AI returned invalid metadata format.");
+    }
+    return metadata;
+  } catch (error) {
+    console.error(
+      "[AI Service] Error in analyzePromptForPlaylistMetadata:",
+      error.response?.data?.error?.message || error.message
+    );
+    throw new Error("Failed to analyze prompt with AI.");
+  }
+};
+
+// Выбирает лучшие треки из предоставленного списка кандидатов.
+export const selectSongsFromCandidates = async (originalPrompt, candidates) => {
+  if (!GEMINI_API_KEY) throw new Error("AI Service is not configured.");
+  if (candidates.length === 0) return [];
+
+  const candidateList = candidates
+    .map(
+      (c) =>
+        `{"id": "${c._id}", "artist": "${c.artistName}", "title": "${c.title}"}`
+    )
+    .join(",\n");
+
+  const systemPrompt = `You are an expert DJ. Your task is to curate the perfect playlist from a list of available songs based on a user's request.
+  
+  User's request: "${originalPrompt}"
+  
+  Available songs from the library:
+  [
+    ${candidateList}
+  ]
+  
+  Your instructions:
+  1.  From the provided list ONLY, select up to 20 songs that best fit the mood and theme of the request.
+  2.  Try to create a diverse yet cohesive listening experience.
+  3.  Your response MUST be ONLY a valid JSON array of the selected song objects (including their original "id"). Do not add any songs not in the provided list. Do not include any other text or explanations.
+  
+  Example Response:
+  [
+    {"id": "60d5ecb4e85c3e001f6d3a81"},
+    {"id": "60d5ecb4e85c3e001f6d3a82"}
+  ]`;
+
+  try {
+    const response = await axios.post(GEMINI_API_URL, {
+      contents: [{ parts: [{ text: systemPrompt }] }],
+    });
+    const rawText = response.data.candidates[0].content.parts[0].text;
+    const cleanedText = rawText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    const selectedSongs = JSON.parse(cleanedText);
+
+    if (!Array.isArray(selectedSongs)) {
+      throw new Error("AI returned a non-array format for song selection.");
+    }
+    return selectedSongs;
+  } catch (error) {
+    console.error(
+      "[AI Service] Error in selectSongsFromCandidates:",
+      error.response?.data?.error?.message || error.message
+    );
+    // Fallback: если ИИ не справился, просто возвращаем 20 случайных треков из кандидатов.
+    return candidates
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 20)
+      .map((c) => ({ id: c._id }));
   }
 };

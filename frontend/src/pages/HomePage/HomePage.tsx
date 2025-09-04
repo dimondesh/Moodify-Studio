@@ -207,6 +207,7 @@ const HomePage = () => {
                       title={t("homepage.madeForYou")}
                       items={madeForYouSongsItems}
                       isLoading={false}
+                      limit={12}
                       t={t}
                       onShowAll={() =>
                         navigate("/all-songs/made-for-you", {
@@ -224,7 +225,7 @@ const HomePage = () => {
                       items={recentlyListenedItems}
                       isLoading={false}
                       t={t}
-                      limit={16}
+                      limit={12}
                     />
                   )}
                   <HorizontalSection
@@ -232,6 +233,7 @@ const HomePage = () => {
                     items={genreMixesItems}
                     isLoading={false}
                     t={t}
+                    limit={12}
                     onShowAll={() =>
                       navigate(`/all-mixes/genres`, {
                         state: {
@@ -246,6 +248,7 @@ const HomePage = () => {
                     items={moodMixesItems}
                     isLoading={false}
                     t={t}
+                    limit={12}
                     onShowAll={() =>
                       navigate(`/all-mixes/moods`, {
                         state: {
@@ -260,6 +263,7 @@ const HomePage = () => {
                     items={trendingSongsItems}
                     isLoading={false}
                     t={t}
+                    limit={12}
                     onShowAll={() =>
                       navigate("/all-songs/trending", {
                         state: {
@@ -274,6 +278,7 @@ const HomePage = () => {
                       title={t("homepage.favoriteArtists")}
                       items={favoriteArtistsItems}
                       t={t}
+                      limit={12}
                       isLoading={false}
                     />
                   )}
@@ -283,6 +288,7 @@ const HomePage = () => {
                       t={t}
                       items={newReleasesItems}
                       isLoading={false}
+                      limit={12}
                     />
                   )}
                   {user && recommendedPlaylists.length > 0 && (
@@ -291,6 +297,7 @@ const HomePage = () => {
                       items={recommendedPlaylistsItems}
                       t={t}
                       isLoading={false}
+                      limit={12}
                     />
                   )}
                   {allGeneratedPlaylists.length > 0 && (
@@ -299,6 +306,7 @@ const HomePage = () => {
                       items={generatedPlaylistsItems}
                       t={t}
                       isLoading={false}
+                      limit={12}
                     />
                   )}
                   {publicPlaylists.length > 0 && (
@@ -307,6 +315,7 @@ const HomePage = () => {
                       items={publicPlaylistsItems}
                       t={t}
                       isLoading={false}
+                      limit={12}
                     />
                   )}
                 </div>

@@ -25,6 +25,7 @@ interface PlaylistStore {
   setDominantColor: (color: string) => void;
   createPlaylistFromSong: (song: Song) => Promise<void>;
   updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
+  generateAiPlaylist: (prompt: string) => Promise<Playlist | undefined>;
 
   fetchMyPlaylists: () => Promise<void>;
   fetchOwnedPlaylists: () => Promise<void>;
@@ -79,6 +80,32 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
       }
       return state;
     });
+  },
+  generateAiPlaylist: async (prompt: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance.post("/playlists/generate-ai", {
+        prompt,
+      });
+      const newPlaylist: Playlist = response.data;
+
+      get().fetchMyPlaylists();
+      get().fetchOwnedPlaylists();
+
+      toast.success(`AI плейлист "${newPlaylist.title}" успешно создан!`);
+
+      return newPlaylist;
+    } catch (err: any) {
+      console.error("Failed to generate AI playlist:", err);
+      const errorMessage =
+        err.response?.data?.message ||
+        "Не удалось сгенерировать плейлист. Попробуйте другой запрос.";
+      toast.error(errorMessage);
+      set({ error: errorMessage });
+      return undefined;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   fetchRecommendedPlaylists: async () => {

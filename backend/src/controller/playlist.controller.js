@@ -4,11 +4,16 @@ import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
 import { Library } from "../models/library.model.js";
+import { Genre } from "../models/genre.model.js";
+import { Mood } from "../models/mood.model.js";
 import { uploadToBunny } from "../lib/bunny.service.js";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
-import cloudinary from "../lib/cloudinary.js";
 import { getMadeForYouSongs, getTrendingSongs } from "./song.controller.js";
+import {
+  analyzePromptForPlaylistMetadata,
+  selectSongsFromCandidates,
+} from "../lib/ai.service.js";
 
 const uploadImageToBunny = async (file) => {
   try {
@@ -546,6 +551,103 @@ export const getPlaylistRecommendations = async (req, res, next) => {
     res.status(200).json(recommendations);
   } catch (error) {
     console.error("Error getting playlist recommendations:", error);
+    next(error);
+  }
+};
+
+export const createPlaylistWithAI = async (req, res, next) => {
+  try {
+    const { prompt } = req.body;
+    const ownerId = req.user.id;
+
+    if (!prompt) {
+      return res.status(400).json({ message: "Prompt is required" });
+    }
+
+    // --- Анализ промпта и получение метаданных ---
+    const metadata = await analyzePromptForPlaylistMetadata(prompt);
+
+    // Ищем ID жанров и настроений в нашей БД
+    const genreDocs = await Genre.find({
+      name: { $in: metadata.genres.map((g) => new RegExp(`^${g}$`, "i")) },
+    });
+    const moodDocs = await Mood.find({
+      name: { $in: metadata.moods.map((m) => new RegExp(`^${m}$`, "i")) },
+    });
+    const genreIds = genreDocs.map((g) => g._id);
+    const moodIds = moodDocs.map((m) => m._id);
+
+    // --- Поиск кандидатов в БД ---
+    const candidateSongs = await Song.find({
+      $or: [{ genres: { $in: genreIds } }, { moods: { $in: moodIds } }],
+    })
+      .populate("artist", "name")
+      .limit(150) // Собираем большой пул кандидатов
+      .lean();
+
+    if (candidateSongs.length < 10) {
+      return res.status(404).json({
+        message:
+          "Недостаточно подходящих треков в библиотеке. Попробуйте другой запрос.",
+      });
+    }
+
+    const formattedCandidates = candidateSongs.map((song) => ({
+      _id: song._id.toString(),
+      title: song.title,
+      artistName: song.artist.map((a) => a.name).join(", "),
+    }));
+
+    // --- Курирование с помощью ИИ ---
+    const selectedSongsByAI = await selectSongsFromCandidates(
+      prompt,
+      formattedCandidates
+    );
+
+    const finalSongIds = selectedSongsByAI.map((s) => s.id);
+
+    if (finalSongIds.length === 0) {
+      return res.status(404).json({
+        message:
+          "ИИ не смог составить плейлист. Пожалуйста, попробуйте еще раз.",
+      });
+    }
+    let playlistImageUrl = "https://moodify.b-cdn.net/default-album-cover.png";
+    if (finalSongIds.length > 0) {
+      const firstSong = await Song.findById(finalSongIds[0])
+        .select("imageUrl")
+        .lean();
+      if (firstSong && firstSong.imageUrl) {
+        playlistImageUrl = firstSong.imageUrl;
+      }
+    }
+
+    // --- Создание плейлиста ---
+    const newPlaylist = new Playlist({
+      title: metadata.title,
+      description: metadata.description,
+      owner: ownerId,
+      songs: finalSongIds,
+      isPublic: false,
+      imageUrl: playlistImageUrl,
+    });
+    await newPlaylist.save();
+
+    await User.findByIdAndUpdate(ownerId, {
+      $push: { playlists: newPlaylist._id },
+    });
+
+    const populatedPlaylist = await Playlist.findById(newPlaylist._id)
+      .populate("owner", "fullName imageUrl")
+      .populate({
+        path: "songs",
+        populate: { path: "artist", model: "Artist", select: "name imageUrl" },
+      })
+      .lean();
+
+    res.status(201).json(populatedPlaylist);
+  } catch (error) {
+    console.error("Error in createPlaylistWithAI:", error);
     next(error);
   }
 };

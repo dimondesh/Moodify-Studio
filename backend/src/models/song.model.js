@@ -34,7 +34,7 @@ const songSchema = new mongoose.Schema(
     },
     instrumentalPublicId: {
       type: String,
-      required: true, 
+      required: true,
       default: null,
     },
 
@@ -44,11 +44,11 @@ const songSchema = new mongoose.Schema(
     },
     vocalsPublicId: {
       type: String,
-      default: null, 
+      default: null,
     },
 
     duration: {
-      type: Number, 
+      type: Number,
       required: true,
     },
     playCount: {
@@ -79,8 +79,9 @@ const songSchema = new mongoose.Schema(
 songSchema.index({ title: 1 });
 songSchema.index({ artist: 1 });
 songSchema.index({ albumId: 1 });
-songSchema.index({ playCount: -1 }); 
-songSchema.index({ genres: 1 }); 
-songSchema.index({ moods: 1 }); 
+songSchema.index({ playCount: -1 });
+songSchema.index({ genres: 1 });
+songSchema.index({ moods: 1 });
+songSchema.index({ title: "text" });
 
 export const Song = mongoose.model("Song", songSchema);

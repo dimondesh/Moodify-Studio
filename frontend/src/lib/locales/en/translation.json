@@ -652,9 +652,15 @@
         "save": "Save Changes"
       },
       "createDialog": {
-        "title": "Create New Playlist",
+         "title": "Create New Playlist",
         "description": "Enter details for your new playlist.",
-        "buttonText": "Create Playlist"
+        "buttonText": "Create Playlist",
+        "manual": "Manually",
+        "withAi": "With AI",
+        "aiPromptLabel": "Describe your dream playlist",
+        "aiPromptPlaceholder": "e.g., 'High-energy rock for a workout' or 'Calm jazz for a rainy evening'",
+        "generating": "Generating...",
+        "generate": "Generate"
       },
       "headers": {
         "title": "Title",

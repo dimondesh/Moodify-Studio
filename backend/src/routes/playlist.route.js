@@ -14,6 +14,7 @@ import {
   getPublicPlaylists,
   createPlaylistFromSong,
   getPlaylistRecommendations,
+  createPlaylistWithAI,
 } from "../controller/playlist.controller.js";
 
 const router = express.Router();
@@ -23,6 +24,8 @@ router.get("/public", getPublicPlaylists);
 router.use(protectRoute);
 
 router.post("/", createPlaylist);
+router.post("/generate-ai", createPlaylistWithAI);
+
 router.get("/my", getMyPlaylists);
 router.get("/:id/recommendations", getPlaylistRecommendations);
 
