@@ -170,7 +170,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <div className="aspect-square rounded-md overflow-hidden">
+                      <div className="aspect-square rounded-md object-cover overflow-hidden">
                         <img
                           src={item.imageUrl || "/default-song-cover.png"}
                           alt={getDisplayTitle(item)}
