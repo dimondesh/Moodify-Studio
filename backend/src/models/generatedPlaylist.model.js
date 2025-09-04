@@ -10,7 +10,7 @@ const generatedPlaylistSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["ON_REPEAT"],
+      enum: ["ON_REPEAT", "DISCOVER_WEEKLY", "ON_REPEAT_REWIND"],
       required: true,
     },
     songs: [
