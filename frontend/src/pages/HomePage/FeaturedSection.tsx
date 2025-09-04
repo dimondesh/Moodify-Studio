@@ -80,6 +80,8 @@ const FeaturedSection = ({
 
   const songsArray = Array.isArray(featuredSongs) ? featuredSongs : [];
 
+  const songsToShow = songsArray.slice(0, 6);
+
   const handleNavigateToAlbum = (
     e: React.MouseEvent,
     albumId: string | null | undefined
@@ -105,48 +107,57 @@ const FeaturedSection = ({
       className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
       onMouseLeave={onSongLeave}
     >
-      {songsArray.map((song, index) => (
-        <div
-          key={song._id}
-          className="flex items-cengridter bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
-             transition-colors group cursor-pointer relative "
-          onClick={() => {
-            handleNavigateToAlbum(
-              new MouseEvent("click") as unknown as React.MouseEvent,
-              song.albumId
-            );
-          }}
-          onMouseEnter={() => onSongHover(song)}
-        >
-          <button
-            onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
-            className="flex-shrink-0"
+      {songsToShow.map((song) => {
+        const originalIndex = songsArray.findIndex((s) => s._id === song._id);
+
+        return (
+          <div
+            key={song._id}
+            className="flex items-center bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
+               transition-colors group cursor-pointer relative "
+            onClick={() => {
+              handleNavigateToAlbum(
+                new MouseEvent("click") as unknown as React.MouseEvent,
+                song.albumId
+              );
+            }}
+            onMouseEnter={() => onSongHover(song)}
           >
-            <img
-              src={song.imageUrl || "/default-song-cover.png"}
-              alt={song.title}
-              className="w-10 sm:w-20 h-10 sm:h-20 object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/default-song-cover.png";
-              }}
+            <button
+              onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
+              className="flex-shrink-0"
+            >
+              <img
+                src={song.imageUrl || "/default-song-cover.png"}
+                alt={song.title}
+                className="w-10 sm:w-20 h-10 sm:h-20 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "/default-song-cover.png";
+                }}
+              />
+            </button>
+            <div className="flex-1 p-2 sm:p-4 min-w-0">
+              <p className="font-medium truncate">
+                <button
+                  onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
+                  className="hover:underline focus:outline-none focus:underline text-left w-full"
+                >
+                  {song.title || "Без названия"}
+                </button>
+              </p>
+              <p className="hidden sm:inline text-sm text-zinc-400 truncate">
+                {getArtistNamesDisplay(song.artist)}
+              </p>
+            </div>
+            <PlayButton
+              song={song}
+              songs={songsArray}
+              songIndex={originalIndex}
             />
-          </button>
-          <div className="flex-1 p-2 sm:p-4">
-            <p className="font-md truncate">
-              <button
-                onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
-                className="hover:underline focus:outline-none focus:underline text-left w-full"
-              >
-                {song.title || "Без названия"}
-              </button>
-            </p>
-            <p className="hidden sm:inline font-sm text-zinc-400 truncate">
-              {getArtistNamesDisplay(song.artist)}
-            </p>
           </div>
-          <PlayButton song={song} songs={songsArray} songIndex={index} />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
