@@ -8,7 +8,6 @@ import type { Song } from "../../types/index";
 import axios from "axios";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import { useMusicStore } from "../../stores/useMusicStore";
-import React from "react";
 import { useTranslation } from "react-i18next";
 
 interface Artist {
@@ -122,7 +121,7 @@ const AllSongsPage = () => {
     return (
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4">{pageTitle}</h2>
-        <p className="text-zinc-400">{t("pages.common.songsNotFound")}</p>
+        <p className="text-zinc-400">{t("common.songsNotFound")}</p>
       </div>
     );
   }
@@ -132,7 +131,7 @@ const AllSongsPage = () => {
       <div className="p-4 pt-4 pb-14 md:pb-16">
         <h2 className="text-2xl font-bold mb-6">{pageTitle}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {songs.map((song) => (
+          {songs.map((song, index) => (
             <div
               key={song._id}
               className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
@@ -160,7 +159,7 @@ const AllSongsPage = () => {
                     />
                   </button>
                 </div>
-                <PlayButton song={song} />
+                <PlayButton song={song} songs={songs} songIndex={index} />
               </div>
               <h3 className="font-medium mb-2 truncate">
                 <button

@@ -125,10 +125,13 @@ const MainLayout = () => {
       <ResizablePanelGroup
         direction="horizontal"
         className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`}
+        id="main-layout-group"
       >
         {!isMobile && (
           <>
             <ResizablePanel
+              id="left-sidebar-panel"
+              order={1}
               defaultSize={20}
               minSize={10}
               maxSize={30}
@@ -136,11 +139,18 @@ const MainLayout = () => {
             >
               <LeftSidebar />
             </ResizablePanel>
-            <ResizableHandle className="w-2 bg-black rounded-lg transition-colors hidden lg:block" />
+            <ResizableHandle
+              id="left-handle"
+              className="w-2 bg-black rounded-lg transition-colors hidden lg:block"
+            />
           </>
         )}
 
-        <ResizablePanel className="overflow-y-auto flex-1">
+        <ResizablePanel
+          id="main-content-panel"
+          order={2}
+          className="overflow-y-auto flex-1"
+        >
           {isMobileLyricsFullScreen ? (
             <div className="fixed inset-0 z-[80] bg-zinc-950">
               <LyricsPage isMobileFullScreen={true} />
@@ -154,11 +164,17 @@ const MainLayout = () => {
 
         {!isMobile && (
           <>
-            <ResizableHandle className="w-2 bg-black rounded-lg transition-colors" />
+            <ResizableHandle
+              id="right-handle"
+              className="w-2 bg-black rounded-lg transition-colors"
+            />
             <ResizablePanel
+              id="friends-activity-panel"
+              order={3}
               defaultSize={20}
               minSize={0}
               maxSize={25}
+              collapsible={true}
               collapsedSize={0}
               className="hidden lg:block"
             >

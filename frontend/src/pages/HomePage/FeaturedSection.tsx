@@ -5,7 +5,6 @@ import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkel
 import { useMusicStore } from "../../stores/useMusicStore";
 import PlayButton from "./PlayButton";
 import { JSX, useEffect } from "react";
-import React from "react";
 import { Song } from "@/types";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePlayerStore } from "../../stores/usePlayerStore";
