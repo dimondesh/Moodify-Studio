@@ -174,7 +174,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                         <img
                           src={item.imageUrl || "/default-song-cover.png"}
                           alt={getDisplayTitle(item)}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>
                     )}
