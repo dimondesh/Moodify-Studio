@@ -1,4 +1,4 @@
-// frontend/src/pages/HomePage/FeaturedSection.tsx
+// src/pages/HomePage/FeaturedSection.tsx
 
 import { useNavigate } from "react-router-dom";
 import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
@@ -7,6 +7,8 @@ import PlayButton from "./PlayButton";
 import { JSX, useEffect } from "react";
 import React from "react";
 import { Song } from "@/types";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { usePlayerStore } from "../../stores/usePlayerStore";
 
 interface Artist {
   _id: string;
@@ -25,13 +27,16 @@ const FeaturedSection = ({
   const { isLoading, featuredSongs, error, artists, fetchArtists } =
     useMusicStore();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const { playAlbum, togglePlay, currentSong, isPlaying } = usePlayerStore();
 
   useEffect(() => {
     fetchArtists();
   }, [fetchArtists]);
 
   const getArtistNamesDisplay = (
-    artistsInput: (string | Artist)[] | undefined
+    artistsInput: (string | Artist)[] | undefined,
+    isMobileView: boolean
   ) => {
     if (!artistsInput || artistsInput.length === 0) {
       return <span>Неизвестный исполнитель</span>;
@@ -54,9 +59,23 @@ const FeaturedSection = ({
       }
 
       if (artistName && artistId) {
-        artistElements.push(
-          <span key={artistId}>
+        if (isMobileView) {
+          artistElements.push(
+            <span
+              key={artistId}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigateToArtist(artistId);
+              }}
+              className="hover:underline focus:outline-none focus:underline"
+            >
+              {artistName}
+            </span>
+          );
+        } else {
+          artistElements.push(
             <button
+              key={artistId}
               onClick={(e) => {
                 e.stopPropagation();
                 handleNavigateToArtist(artistId);
@@ -65,9 +84,11 @@ const FeaturedSection = ({
             >
               {artistName}
             </button>
-            {index < artistsInput.length - 1 && ", "}
-          </span>
-        );
+          );
+        }
+        if (index < artistsInput.length - 1) {
+          artistElements.push(<span key={`sep-${artistId}`}>, </span>);
+        }
       }
     });
 
@@ -79,14 +100,9 @@ const FeaturedSection = ({
   if (error) return <p className="text-red-500 mb-4 text-lg">{error}</p>;
 
   const songsArray = Array.isArray(featuredSongs) ? featuredSongs : [];
-
   const songsToShow = songsArray.slice(0, 6);
 
-  const handleNavigateToAlbum = (
-    e: React.MouseEvent,
-    albumId: string | null | undefined
-  ) => {
-    e.stopPropagation();
+  const handleNavigateToAlbum = (albumId: string | null | undefined) => {
     if (albumId) {
       navigate(`/albums/${albumId}`);
     } else {
@@ -102,31 +118,36 @@ const FeaturedSection = ({
     return <p className="text-zinc-400">No songs available</p>;
   }
 
+  const handleItemClick = (song: Song, index: number) => {
+    if (isMobile) {
+      const isThisSongPlaying = isPlaying && currentSong?._id === song._id;
+      if (isThisSongPlaying) {
+        togglePlay();
+      } else {
+        playAlbum(songsArray, index);
+      }
+    } else {
+      handleNavigateToAlbum(song.albumId);
+    }
+  };
+
   return (
     <div
-      className="grid grid-cols-2  sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+      className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
       onMouseLeave={onSongLeave}
     >
-      {songsToShow.map((song) => {
-        const originalIndex = songsArray.findIndex((s) => s._id === song._id);
+      {songsToShow.map((song, index) => {
+        const Component = isMobile ? "button" : "div";
 
         return (
-          <div
+          <Component
             key={song._id}
             className="flex items-center bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
-               transition-colors group cursor-pointer relative "
-            onClick={() => {
-              handleNavigateToAlbum(
-                new MouseEvent("click") as unknown as React.MouseEvent,
-                song.albumId
-              );
-            }}
-            onMouseEnter={() => onSongHover(song)}
+               transition-colors group cursor-pointer relative text-left"
+            onClick={() => handleItemClick(song, index)}
+            onMouseEnter={() => !isMobile && onSongHover(song)}
           >
-            <button
-              onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
-              className="flex-shrink-0"
-            >
+            <div className="flex-shrink-0">
               <img
                 src={song.imageUrl || "/default-song-cover.png"}
                 alt={song.title}
@@ -136,26 +157,19 @@ const FeaturedSection = ({
                     "/default-song-cover.png";
                 }}
               />
-            </button>
+            </div>
             <div className="flex-1 p-2 sm:p-4 min-w-0">
-              <p className="font-medium truncate">
-                <button
-                  onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
-                  className="hover:underline focus:outline-none focus:underline text-left w-full"
-                >
-                  {song.title || "Без названия"}
-                </button>
+              <p className="font-medium truncate text-white hover:underline">
+                {song.title || "Без названия"}
               </p>
               <p className="hidden sm:inline text-sm text-zinc-400 truncate">
-                {getArtistNamesDisplay(song.artist)}
+                {getArtistNamesDisplay(song.artist, isMobile)}
               </p>
             </div>
-            <PlayButton
-              song={song}
-              songs={songsArray}
-              songIndex={originalIndex}
-            />
-          </div>
+            {!isMobile && (
+              <PlayButton song={song} songs={songsArray} songIndex={index} />
+            )}
+          </Component>
         );
       })}
     </div>
