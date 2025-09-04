@@ -38,11 +38,14 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  // Состояния для ручного режима
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  // Состояния для AI режима
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -144,7 +147,77 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
 
         {initialData ? (
           <form onSubmit={handleManualSubmit} className="grid gap-4 py-4">
-            {/* Форма редактирования остается без изменений */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title-edit" className="text-right text-white">
+                {t("pages.playlist.editDialog.fieldTitle")}
+              </Label>
+              <Input
+                id="title-edit"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="col-span-3 bg-zinc-800 text-white border-zinc-700"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label
+                htmlFor="description-edit"
+                className="text-right text-white"
+              >
+                {t("pages.playlist.editDialog.fieldDescription")}
+              </Label>
+              <Textarea
+                id="description-edit"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="col-span-3 bg-zinc-800 text-white border-zinc-700"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="image-edit" className="text-right text-white">
+                {t("pages.playlist.editDialog.fieldCover")}
+              </Label>
+              <Input
+                id="image-edit"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="col-span-3 bg-zinc-800 text-white border-zinc-700 file:text-white file:bg-zinc-700 file:border-none hover:file:bg-zinc-600"
+              />
+            </div>
+            {imagePreviewUrl && (
+              <div className="flex justify-center">
+                <img
+                  src={imagePreviewUrl}
+                  alt="Preview"
+                  className="max-w-[100px] rounded-md"
+                />
+              </div>
+            )}
+            <div className="flex items-center justify-between col-span-full mt-2 pl-4 pr-4">
+              <Label htmlFor="isPublic-edit" className="text-white">
+                {t("pages.playlist.editDialog.fieldPublic")}
+              </Label>
+              <Switch
+                id="isPublic-edit"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+            </div>
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isLoading}
+              >
+                {t("admin.common.cancel")}
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? submittingText : submitButtonText}
+              </Button>
+            </DialogFooter>
           </form>
         ) : (
           <Tabs defaultValue="manual" className="w-full">
@@ -157,9 +230,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
               </TabsTrigger>
             </TabsList>
 
-            {/* ВКЛАДКА 1: РУЧНОЕ СОЗДАНИЕ */}
             <TabsContent value="manual">
-              {/* --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ 1 --- */}
               <div className="min-h-[360px] flex flex-col">
                 <form
                   onSubmit={handleManualSubmit}
@@ -246,9 +317,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
               </div>
             </TabsContent>
 
-            {/* ВКЛАДКА 2: ГЕНЕРАЦИЯ С ИИ */}
             <TabsContent value="ai">
-              {/* --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ 2 --- */}
               <div className="min-h-[360px] flex flex-col">
                 <div className="flex flex-col flex-grow gap-4 py-4">
                   <Label htmlFor="ai-prompt" className="text-white">
@@ -258,7 +327,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
                     id="ai-prompt"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="col-span-3 bg-zinc-800 text-white border-zinc-700 flex-grow" // flex-grow
+                    className="col-span-3 bg-zinc-800 text-white border-zinc-700 flex-grow"
                     placeholder={t(
                       "pages.playlist.createDialog.aiPromptPlaceholder"
                     )}
