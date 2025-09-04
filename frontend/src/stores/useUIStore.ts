@@ -20,6 +20,9 @@ interface UIStore {
   playlistToDelete: Playlist | null;
   songToRemoveFromPlaylist: SongRemovalInfo | null;
   isUserSheetOpen: boolean;
+  isHomePageLoading: boolean;
+
+  setIsHomePageLoading: (isLoading: boolean) => void;
 
   openCreatePlaylistDialog: () => void;
   openEditPlaylistDialog: (playlist: Playlist) => void;
@@ -42,6 +45,9 @@ export const useUIStore = create<UIStore>((set) => ({
   playlistToDelete: null,
   songToRemoveFromPlaylist: null,
   isUserSheetOpen: false,
+  isHomePageLoading: true,
+
+  setIsHomePageLoading: (isLoading) => set({ isHomePageLoading: isLoading }),
 
   openCreatePlaylistDialog: () => set({ isCreatePlaylistDialogOpen: true }),
   openEditPlaylistDialog: (playlist) => set({ editingPlaylist: playlist }),

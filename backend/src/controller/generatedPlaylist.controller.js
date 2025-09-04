@@ -1,12 +1,23 @@
 // backend/src/controller/generatedPlaylist.controller.js
+
 import { GeneratedPlaylist } from "../models/generatedPlaylist.model.js";
 
-export const getMyGeneratedPlaylists = async (req, res, next) => {
+export const getMyGeneratedPlaylists = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
     const playlists = await GeneratedPlaylist.find({ user: userId });
-    res.status(200).json(playlists);
+
+    if (returnInternal) {
+      return playlists;
+    }
+    return res.status(200).json(playlists);
   } catch (error) {
+    if (returnInternal) return [];
     next(error);
   }
 };

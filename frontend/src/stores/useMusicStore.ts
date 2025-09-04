@@ -13,6 +13,10 @@ import {
   getAllUserSongs,
 } from "../lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
+import { useUIStore } from "./useUIStore";
+import { usePlaylistStore } from "./usePlaylistStore";
+import { useGeneratedPlaylistStore } from "./useGeneratedPlaylistStore";
+import { useMixesStore } from "./useMixesStore";
 
 interface MusicStore {
   albums: Album[];
@@ -45,6 +49,8 @@ interface MusicStore {
   isAppearsOnLoading: boolean;
   favoriteArtists: Artist[];
   newReleases: Album[];
+
+  fetchHomePageData: () => Promise<void>;
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
@@ -122,6 +128,53 @@ export const useMusicStore = create<MusicStore>((set) => ({
           "Failed to fetch 'Appears On' section",
         isAppearsOnLoading: false,
       });
+    }
+  },
+  fetchHomePageData: async () => {
+    if (useOfflineStore.getState().isOffline) {
+      // В оффлайн-режиме загружаем данные из каждого стора по отдельности, как и раньше
+      useUIStore.getState().setIsHomePageLoading(true);
+      await Promise.all([
+        // Здесь можно оставить старую логику загрузки для оффлайн-режима если она есть
+      ]);
+      useUIStore.getState().setIsHomePageLoading(false);
+      return;
+    }
+
+    useUIStore.getState().setIsHomePageLoading(true);
+    set({ error: null });
+
+    try {
+      const response = await axiosInstance.get("/homepage");
+      const data = response.data;
+
+      // Обновляем этот стор (useMusicStore)
+      set({
+        featuredSongs: data.featuredSongs || [],
+        trendingSongs: data.trendingSongs || [],
+        madeForYouSongs: data.madeForYouSongs || [],
+        recentlyListenedSongs: data.recentlyListenedSongs || [],
+        favoriteArtists: data.favoriteArtists || [],
+        newReleases: data.newReleases || [],
+      });
+
+      // Обновляем другие сторы
+      useMixesStore.setState({
+        genreMixes: data.genreMixes || [],
+        moodMixes: data.moodMixes || [],
+      });
+      usePlaylistStore.setState({
+        publicPlaylists: data.publicPlaylists || [],
+        recommendedPlaylists: data.recommendedPlaylists || [],
+      });
+      useGeneratedPlaylistStore.setState({
+        allGeneratedPlaylists: data.allGeneratedPlaylists || [],
+      });
+    } catch (error: any) {
+      console.error("Failed to fetch homepage data:", error);
+      set({ error: error.response?.data?.message || "Failed to load content" });
+    } finally {
+      useUIStore.getState().setIsHomePageLoading(false);
     }
   },
   fetchFavoriteArtists: async () => {

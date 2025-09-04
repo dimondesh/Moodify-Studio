@@ -1,14 +1,15 @@
+// backend/src/controller/user.controller.js
+
+import mongoose from "mongoose";
 import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
-import { v2 as cloudinary } from "cloudinary";
 import { Library } from "../models/library.model.js";
 import { firebaseAdmin } from "../lib/firebase.js";
 import { RecentSearch } from "../models/recentSearch.model.js";
-import mongoose from "mongoose";
 import {
-  uploadToBunny,
-  deleteFromBunny,
   getPathFromUrl,
+  deleteFromBunny,
+  uploadToBunny,
 } from "../lib/bunny.service.js";
 import path from "path";
 import { UserRecommendation } from "../models/userRecommendation.model.js";
@@ -549,14 +550,19 @@ export const clearRecentSearches = async (req, res, next) => {
   }
 };
 
-export const getFavoriteArtists = async (req, res, next) => {
+export const getFavoriteArtists = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
 
     const favoriteArtists = await ListenHistory.aggregate([
-      { $match: { user: userId } },
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
       { $sort: { listenedAt: -1 } },
-      { $limit: 200 }, // Анализируем последние 200 прослушиваний
+      { $limit: 200 },
       {
         $lookup: {
           from: "songs",
@@ -590,12 +596,22 @@ export const getFavoriteArtists = async (req, res, next) => {
       },
     ]);
 
-    res.status(200).json(favoriteArtists);
+    if (returnInternal) {
+      return favoriteArtists;
+    }
+    return res.status(200).json(favoriteArtists);
   } catch (error) {
+    if (returnInternal) return [];
     next(error);
   }
 };
-export const getNewReleases = async (req, res, next) => {
+
+export const getNewReleases = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
     const recommendations = await UserRecommendation.findOne({
@@ -607,12 +623,22 @@ export const getNewReleases = async (req, res, next) => {
       populate: { path: "artist", model: "Artist", select: "name" },
     });
 
-    res.status(200).json(recommendations ? recommendations.items : []);
+    const result = recommendations ? recommendations.items : [];
+
+    if (returnInternal) return result;
+    return res.status(200).json(result);
   } catch (error) {
+    if (returnInternal) return [];
     next(error);
   }
 };
-export const getPlaylistRecommendations = async (req, res, next) => {
+
+export const getPlaylistRecommendations = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
     const recommendations = await UserRecommendation.findOne({
@@ -624,8 +650,12 @@ export const getPlaylistRecommendations = async (req, res, next) => {
       populate: { path: "owner", model: "User", select: "fullName" },
     });
 
-    res.status(200).json(recommendations ? recommendations.items : []);
+    const result = recommendations ? recommendations.items : [];
+
+    if (returnInternal) return result;
+    return res.status(200).json(result);
   } catch (error) {
+    if (returnInternal) return [];
     next(error);
   }
 };

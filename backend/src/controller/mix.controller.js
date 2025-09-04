@@ -113,33 +113,21 @@ export const updateDailyMixes = async () => {
   }
 };
 
-export const getDailyMixes = async (req, res, next) => {
+export const getDailyMixes = async (req, res, next, returnInternal = false) => {
   try {
     const today = getTodayDate();
-
-    // Используем $gte для надежности, как и договаривались
     let mixes = await Mix.find({ generatedOn: { $gte: today } }).lean();
 
-    // ---!!! ИЗМЕНЕНИЕ ЗДЕСЬ !!!---
-    // Если миксов на сегодня нет, запускаем генерацию и получаем их снова.
     if (mixes.length === 0) {
       console.log(
         "No mixes found for today. Triggering on-demand generation..."
       );
-
-      // Вызываем нашу универсальную функцию для обновления миксов
       await updateDailyMixes();
-
-      // После того как они сгенерировались, снова ищем их в базе
       mixes = await Mix.find({ generatedOn: { $gte: today } }).lean();
       console.log(
         `On-demand generation complete. Found ${mixes.length} new mixes.`
       );
     }
-
-    // Дальнейшая логика остается абсолютно такой же.
-    // Она будет работать с миксами, которые либо уже были в базе,
-    // либо только что сгенерировались.
 
     if (req.user && req.user.id) {
       const userId = req.user.id;
@@ -175,9 +163,17 @@ export const getDailyMixes = async (req, res, next) => {
       populate: { path: "artist", select: "name" },
     });
 
-    res.status(200).json(groupMixes(populatedMixes));
+    const groupedData = groupMixes(populatedMixes);
+
+    if (returnInternal) {
+      return groupedData;
+    }
+    return res.status(200).json(groupedData);
   } catch (error) {
     console.error("Error in getDailyMixes:", error);
+    if (returnInternal) {
+      return { genreMixes: [], moodMixes: [] };
+    }
     next(error);
   }
 };

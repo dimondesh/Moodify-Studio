@@ -1,3 +1,5 @@
+// backend/src/controller/playlist.controller.js
+
 import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
@@ -391,7 +393,12 @@ export const unlikePlaylist = async (req, res, next) => {
   }
 };
 
-export const getPublicPlaylists = async (req, res, next) => {
+export const getPublicPlaylists = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const publicPlaylists = await Playlist.find({ isPublic: true })
       .populate("owner", "fullName imageUrl")
@@ -404,9 +411,16 @@ export const getPublicPlaylists = async (req, res, next) => {
         },
       })
       .lean();
-    res.status(200).json(publicPlaylists);
+
+    if (returnInternal) {
+      return publicPlaylists;
+    }
+    return res.status(200).json(publicPlaylists);
   } catch (error) {
     console.error("Error in getPublicPlaylists:", error);
+    if (returnInternal) {
+      return [];
+    }
     next(error);
   }
 };

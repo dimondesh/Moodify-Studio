@@ -37,6 +37,7 @@ import {
   generateNewReleasesForUser,
   generatePlaylistRecommendationsForUser,
 } from "./lib/recommendation.service.js";
+import homeRoutes from "./routes/home.route.js";
 
 dotenv.config();
 
@@ -211,6 +212,7 @@ app.use("/api/playlists", playlistRoutes);
 app.use("/api/artists", artistRoutes);
 app.use("/api/mixes", mixRoutes);
 app.use("/api/generated-playlists", generatedPlaylistRoutes);
+app.use("/api/homepage", homeRoutes);
 
 app.use("/api/cron", cronRoutes);
 app.use("/api/share", shareRoutes);

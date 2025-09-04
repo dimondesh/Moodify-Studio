@@ -1,3 +1,5 @@
+// backend/src/controller/song.controller.js
+
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
 import { User } from "../models/user.model.js";
@@ -16,28 +18,33 @@ export const getAllSongs = async (req, res, next) => {
   }
 };
 
-export const getQuickPicks = async (req, res, next) => {
+export const getQuickPicks = async (req, res, next, returnInternal = false) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
-    // 1. Получаем историю прослушиваний пользователя
+    if (!userId) {
+      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      if (returnInternal) return trendingFallback;
+      return res.json(trendingFallback);
+    }
+
     const listenHistory = await ListenHistory.find({ user: userId })
       .sort({ listenedAt: -1 })
-      .limit(50) // Берем последние 50 прослушиваний для анализа
+      .limit(50)
       .populate({
         path: "song",
         select: "genres moods artist",
       });
 
-    // 2. Если у пользователя мало прослушиваний, возвращаем общие тренды
     if (listenHistory.length < 10) {
       console.log(
         `User ${userId} has little history, falling back to trending songs.`
       );
-      return getTrendingSongs(req, res, next); // Используем уже существующую функцию
+      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      if (returnInternal) return trendingFallback;
+      return res.json(trendingFallback);
     }
 
-    // 3. Анализируем историю, чтобы найти любимые жанры, настроения и артистов
     const listenedSongIds = listenHistory
       .map((item) => item.song?._id)
       .filter(Boolean);
@@ -61,7 +68,6 @@ export const getQuickPicks = async (req, res, next) => {
       }
     });
 
-    // Функция для получения топ-N элементов
     const getTopItems = (counts, limit) =>
       Object.keys(counts)
         .sort((a, b) => counts[b] - counts[a])
@@ -71,24 +77,21 @@ export const getQuickPicks = async (req, res, next) => {
     const topMoodIds = getTopItems(moodCounts, 2);
     const topArtistIds = getTopItems(artistCounts, 3);
 
-    // 4. Ищем треки, которые пользователь еще не слушал, но которые соответствуют его вкусам
     const recommendations = await Song.find({
-      _id: { $nin: listenedSongIds }, // Исключаем уже прослушанные
+      _id: { $nin: listenedSongIds },
       $or: [
         { genres: { $in: topGenreIds } },
         { moods: { $in: topMoodIds } },
         { artist: { $in: topArtistIds } },
       ],
     })
-      .limit(50) // Берем с запасом для случайной выборки
+      .limit(50)
       .populate("artist", "name imageUrl");
 
-    // 5. Перемешиваем и отдаем 6 треков
     const finalPicks = recommendations
       .sort(() => 0.5 - Math.random())
       .slice(0, 6);
 
-    // Если рекомендаций не нашлось, можно снова откатиться к трендам или популярным
     if (finalPicks.length < 6) {
       const trending = await Song.find({ _id: { $nin: listenedSongIds } })
         .sort({ playCount: -1 })
@@ -97,46 +100,28 @@ export const getQuickPicks = async (req, res, next) => {
       finalPicks.push(...trending);
     }
 
-    res.json(finalPicks);
+    if (returnInternal) {
+      return finalPicks;
+    }
+    return res.json(finalPicks);
   } catch (error) {
     console.error("Error fetching 'Quick Picks':", error);
-    // В случае ошибки, чтобы не ломать главную, отдаем случайные треки (старая логика)
-    return getFeaturedSongs(req, res, next);
+    if (returnInternal) {
+      // Fallback for internal calls
+      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      return trendingFallback.slice(0, 6);
+    }
+    // Fallback for API route
+    return getTrendingSongs(req, res, next);
   }
 };
 
-// export const getFeaturedSongs = async (req, res, next) => {
-//   try {
-//     const songs = await Song.aggregate([
-//       { $sample: { size: 6 } },
-//       {
-//         $lookup: {
-//           from: "artists",
-//           localField: "artist",
-//           foreignField: "_id",
-//           as: "artistDetails",
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: 1,
-//           title: 1,
-//           artist: "$artistDetails",
-//           imageUrl: 1,
-//           instrumentalUrl: 1,
-//           vocalsUrl: 1,
-//           albumId: 1,
-//           lyrics: 1,
-//         },
-//       },
-//     ]);
-//     res.json(songs);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-export const getTrendingSongs = async (req, res, next) => {
+export const getTrendingSongs = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -152,34 +137,46 @@ export const getTrendingSongs = async (req, res, next) => {
       .map((item) => item._id)
       .filter((id) => id);
 
+    let finalSongs;
+
     if (orderedSongIds.length === 0) {
-      const popularSongs = await Song.find()
+      finalSongs = await Song.find()
         .sort({ playCount: -1 })
         .limit(8)
         .populate("artist", "name imageUrl");
-      return res.json(popularSongs);
+    } else {
+      const unorderedSongs = await Song.find({
+        _id: { $in: orderedSongIds },
+      }).populate("artist", "name imageUrl");
+
+      const songMap = new Map(
+        unorderedSongs.map((song) => [song._id.toString(), song])
+      );
+
+      finalSongs = orderedSongIds
+        .map((id) => songMap.get(id.toString()))
+        .filter(Boolean);
     }
 
-    const unorderedSongs = await Song.find({
-      _id: { $in: orderedSongIds },
-    }).populate("artist", "name imageUrl");
-
-    const songMap = new Map(
-      unorderedSongs.map((song) => [song._id.toString(), song])
-    );
-
-    const orderedSongs = orderedSongIds
-      .map((id) => songMap.get(id.toString()))
-      .filter(Boolean);
-
-    res.json(orderedSongs);
+    if (returnInternal) {
+      return finalSongs;
+    }
+    return res.json(finalSongs);
   } catch (error) {
     console.error("Error fetching trending songs:", error);
+    if (returnInternal) {
+      return [];
+    }
     next(error);
   }
 };
 
-export const getMadeForYouSongs = async (req, res, next) => {
+export const getMadeForYouSongs = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
 
@@ -191,14 +188,18 @@ export const getMadeForYouSongs = async (req, res, next) => {
         select: "genres moods artist",
       });
 
-    if (listenHistory.length === 0) {
-      return getTrendingSongs(req, res, next);
+    if (listenHistory.length < 10) {
+      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      if (returnInternal) return trendingFallback;
+      return res.json(trendingFallback);
     }
 
     const validHistory = listenHistory.filter((item) => item.song !== null);
 
     if (validHistory.length === 0) {
-      return getTrendingSongs(req, res, next);
+      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      if (returnInternal) return trendingFallback;
+      return res.json(trendingFallback);
     }
 
     const listenedSongIds = validHistory.map((item) => item.song._id);
@@ -242,13 +243,19 @@ export const getMadeForYouSongs = async (req, res, next) => {
       .limit(50)
       .populate("artist", "name imageUrl");
 
-    const shuffledRecommendations = recommendations.sort(
-      () => 0.5 - Math.random()
-    );
+    const shuffledRecommendations = recommendations
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 18);
 
-    res.json(shuffledRecommendations.slice(0, 18));
+    if (returnInternal) {
+      return shuffledRecommendations;
+    }
+    return res.json(shuffledRecommendations);
   } catch (error) {
     console.error("Error fetching 'Made For You' songs:", error);
+    if (returnInternal) {
+      return [];
+    }
     next(error);
   }
 };
@@ -297,7 +304,12 @@ export const recordListen = async (req, res, next) => {
     next(error);
   }
 };
-export const getListenHistory = async (req, res, next) => {
+export const getListenHistory = async (
+  req,
+  res,
+  next,
+  returnInternal = false
+) => {
   try {
     const userId = req.user.id;
 
@@ -314,7 +326,9 @@ export const getListenHistory = async (req, res, next) => {
       .lean();
 
     if (!fullHistory || fullHistory.length === 0) {
-      return res.json({ songs: [] });
+      const result = { songs: [] };
+      if (returnInternal) return result;
+      return res.json(result);
     }
 
     const uniqueSongs = [];
@@ -327,9 +341,13 @@ export const getListenHistory = async (req, res, next) => {
       }
     }
 
-    res.status(200).json({ songs: uniqueSongs });
+    const result = { songs: uniqueSongs };
+
+    if (returnInternal) return result;
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching listen history:", error);
+    if (returnInternal) return { songs: [] };
     next(error);
   }
 };

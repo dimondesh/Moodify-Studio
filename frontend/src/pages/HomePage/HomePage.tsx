@@ -15,43 +15,30 @@ import { Song } from "@/types";
 import { useGeneratedPlaylistStore } from "../../stores/useGeneratedPlaylistStore";
 import HorizontalSection from "./HorizontalSection";
 import { useNavigate } from "react-router-dom";
+import { useUIStore } from "../../stores/useUIStore";
+import HomePageSkeleton from "./HomePageSkeleton";
 
 const HomePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
   const {
-    fetchFeaturedSongs,
-    fetchMadeForYouSongs,
-    fetchTrendingSongs,
-    fetchRecentlyListenedSongs,
+    fetchHomePageData,
     recentlyListenedSongs,
-    isLoading: isMusicLoading,
     madeForYouSongs,
     trendingSongs,
     featuredSongs,
     favoriteArtists,
-    fetchFavoriteArtists,
     newReleases,
-    fetchNewReleases,
   } = useMusicStore();
-  const {
-    genreMixes,
-    moodMixes,
-    isLoading: areMixesLoading,
-    fetchDailyMixes,
-  } = useMixesStore();
+
+  const { genreMixes, moodMixes } = useMixesStore();
   const { user } = useAuthStore();
+  const { publicPlaylists, recommendedPlaylists } = usePlaylistStore();
+  const { allGeneratedPlaylists } = useGeneratedPlaylistStore();
 
-  const {
-    fetchPublicPlaylists,
-    publicPlaylists,
-    isLoading: isPlaylistsLoading,
-    recommendedPlaylists,
-    fetchRecommendedPlaylists,
-  } = usePlaylistStore();
-
-  const { initializeQueue, toggleShuffle, isShuffle, currentSong } =
-    usePlayerStore();
+  const { isHomePageLoading } = useUIStore();
+  const { initializeQueue, currentSong } = usePlayerStore();
   const { isOffline } = useOfflineStore();
   const { extractColor } = useDominantColor();
 
@@ -61,41 +48,9 @@ const HomePage = () => {
   const backgroundKeyRef = useRef(0);
   const defaultColorRef = useRef("#18181b");
 
-  const {
-    allGeneratedPlaylists,
-    isLoading: isGeneratedLoading,
-    fetchAllGeneratedPlaylists,
-  } = useGeneratedPlaylistStore();
-
   useEffect(() => {
-    if (!isOffline) {
-      fetchFeaturedSongs();
-      fetchTrendingSongs();
-      fetchDailyMixes();
-      fetchPublicPlaylists();
-      fetchAllGeneratedPlaylists();
-      if (user) {
-        fetchMadeForYouSongs();
-        fetchRecentlyListenedSongs();
-        fetchFavoriteArtists();
-        fetchNewReleases();
-        fetchRecommendedPlaylists();
-      }
-    }
-  }, [
-    user,
-    isOffline,
-    fetchFeaturedSongs,
-    fetchTrendingSongs,
-    fetchMadeForYouSongs,
-    fetchDailyMixes,
-    fetchRecentlyListenedSongs,
-    fetchPublicPlaylists,
-    fetchAllGeneratedPlaylists,
-    fetchFavoriteArtists,
-    fetchNewReleases,
-    fetchRecommendedPlaylists,
-  ]);
+    fetchHomePageData();
+  }, [user, isOffline, fetchHomePageData]);
 
   const changeBackgroundColor = (color: string) => {
     backgroundKeyRef.current += 1;
@@ -104,7 +59,7 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    if (featuredSongs.length > 0) {
+    if (featuredSongs.length > 0 && !isHomePageLoading) {
       extractColor(featuredSongs[0].imageUrl).then((color) => {
         const newDefaultColor = color || "#18181b";
         defaultColorRef.current = newDefaultColor;
@@ -113,26 +68,28 @@ const HomePage = () => {
         }
       });
     }
-  }, [featuredSongs, extractColor, backgrounds]);
+  }, [featuredSongs, extractColor, backgrounds, isHomePageLoading]);
 
   useEffect(() => {
     if (
       currentSong === null &&
-      madeForYouSongs.length > 0 &&
-      featuredSongs.length > 0 &&
-      trendingSongs.length > 0
+      !isHomePageLoading &&
+      (madeForYouSongs.length > 0 ||
+        featuredSongs.length > 0 ||
+        trendingSongs.length > 0)
     ) {
       const allSongs = [...featuredSongs, ...madeForYouSongs, ...trendingSongs];
-      initializeQueue(allSongs);
+      if (allSongs.length > 0) {
+        initializeQueue(allSongs);
+      }
     }
   }, [
     initializeQueue,
     madeForYouSongs,
     featuredSongs,
     trendingSongs,
-    isShuffle,
-    toggleShuffle,
     currentSong,
+    isHomePageLoading,
   ]);
 
   const handleSongHover = (song: Song) => {
@@ -230,125 +187,131 @@ const HomePage = () => {
             />
           </div>
 
-          <div className="relative z-10 p-4 sm:p-6">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
-              {getGreeting()}
-            </h1>
+          <div className="relative z-10">
+            {isHomePageLoading ? (
+              <HomePageSkeleton />
+            ) : (
+              <div className="p-4 sm:p-6">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
+                  {getGreeting()}
+                </h1>
 
-            <FeaturedSection
-              onSongHover={handleSongHover}
-              onSongLeave={handleSongLeave}
-            />
+                <FeaturedSection
+                  onSongHover={handleSongHover}
+                  onSongLeave={handleSongLeave}
+                />
 
-            <div className="space-y-8">
-              {user && madeForYouSongs.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.madeForYou")}
-                  items={madeForYouSongsItems}
-                  isLoading={isMusicLoading}
-                  t={t}
-                  onShowAll={() =>
-                    navigate("/all-songs/made-for-you", {
-                      state: {
-                        songs: madeForYouSongs,
-                        title: t("homepage.madeForYou"),
-                      },
-                    })
-                  }
-                />
-              )}
-              {user && recentlyListenedSongs.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.recentlyListened")}
-                  items={recentlyListenedItems}
-                  isLoading={isMusicLoading}
-                  t={t}
-                  limit={16}
-                />
-              )}
-              <HorizontalSection
-                title={t("homepage.genreMixes")}
-                items={genreMixesItems}
-                isLoading={areMixesLoading}
-                t={t}
-                onShowAll={() =>
-                  navigate(`/all-mixes/genres`, {
-                    state: {
-                      mixes: genreMixes,
-                      title: t("homepage.genreMixes"),
-                    },
-                  })
-                }
-              />
-              <HorizontalSection
-                title={t("homepage.moodMixes")}
-                items={moodMixesItems}
-                isLoading={areMixesLoading}
-                t={t}
-                onShowAll={() =>
-                  navigate(`/all-mixes/moods`, {
-                    state: {
-                      mixes: moodMixes,
-                      title: t("homepage.moodMixes"),
-                    },
-                  })
-                }
-              />
-              <HorizontalSection
-                title={t("homepage.trending")}
-                items={trendingSongsItems}
-                isLoading={isMusicLoading}
-                t={t}
-                onShowAll={() =>
-                  navigate("/all-songs/trending", {
-                    state: {
-                      songs: trendingSongs,
-                      title: t("homepage.trending"),
-                    },
-                  })
-                }
-              />
-              {user && favoriteArtists.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.favoriteArtists")}
-                  items={favoriteArtistsItems}
-                  t={t}
-                  isLoading={isMusicLoading}
-                />
-              )}
-              {user && newReleases.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.newReleases")}
-                  t={t}
-                  items={newReleasesItems}
-                  isLoading={isMusicLoading}
-                />
-              )}
-              {user && recommendedPlaylists.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.playlistsForYou")}
-                  items={recommendedPlaylistsItems}
-                  t={t}
-                  isLoading={isPlaylistsLoading}
-                />
-              )}
-              {allGeneratedPlaylists.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.generatedForYou")}
-                  items={generatedPlaylistsItems}
-                  t={t}
-                  isLoading={isGeneratedLoading}
-                />
-              )}
-              {publicPlaylists.length > 0 && (
-                <HorizontalSection
-                  title={t("homepage.publicPlaylists")}
-                  items={publicPlaylistsItems}
-                  t={t}
-                  isLoading={isPlaylistsLoading}
-                />
-              )}
-            </div>
+                <div className="space-y-8">
+                  {user && madeForYouSongs.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.madeForYou")}
+                      items={madeForYouSongsItems}
+                      isLoading={false}
+                      t={t}
+                      onShowAll={() =>
+                        navigate("/all-songs/made-for-you", {
+                          state: {
+                            songs: madeForYouSongs,
+                            title: t("homepage.madeForYou"),
+                          },
+                        })
+                      }
+                    />
+                  )}
+                  {user && recentlyListenedSongs.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.recentlyListened")}
+                      items={recentlyListenedItems}
+                      isLoading={false}
+                      t={t}
+                      limit={16}
+                    />
+                  )}
+                  <HorizontalSection
+                    title={t("homepage.genreMixes")}
+                    items={genreMixesItems}
+                    isLoading={false}
+                    t={t}
+                    onShowAll={() =>
+                      navigate(`/all-mixes/genres`, {
+                        state: {
+                          mixes: genreMixes,
+                          title: t("homepage.genreMixes"),
+                        },
+                      })
+                    }
+                  />
+                  <HorizontalSection
+                    title={t("homepage.moodMixes")}
+                    items={moodMixesItems}
+                    isLoading={false}
+                    t={t}
+                    onShowAll={() =>
+                      navigate(`/all-mixes/moods`, {
+                        state: {
+                          mixes: moodMixes,
+                          title: t("homepage.moodMixes"),
+                        },
+                      })
+                    }
+                  />
+                  <HorizontalSection
+                    title={t("homepage.trending")}
+                    items={trendingSongsItems}
+                    isLoading={false}
+                    t={t}
+                    onShowAll={() =>
+                      navigate("/all-songs/trending", {
+                        state: {
+                          songs: trendingSongs,
+                          title: t("homepage.trending"),
+                        },
+                      })
+                    }
+                  />
+                  {user && favoriteArtists.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.favoriteArtists")}
+                      items={favoriteArtistsItems}
+                      t={t}
+                      isLoading={false}
+                    />
+                  )}
+                  {user && newReleases.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.newReleases")}
+                      t={t}
+                      items={newReleasesItems}
+                      isLoading={false}
+                    />
+                  )}
+                  {user && recommendedPlaylists.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.playlistsForYou")}
+                      items={recommendedPlaylistsItems}
+                      t={t}
+                      isLoading={false}
+                    />
+                  )}
+                  {allGeneratedPlaylists.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.generatedForYou")}
+                      items={generatedPlaylistsItems}
+                      t={t}
+                      isLoading={false}
+                    />
+                  )}
+                  {publicPlaylists.length > 0 && (
+                    <HorizontalSection
+                      title={t("homepage.publicPlaylists")}
+                      items={publicPlaylistsItems}
+                      t={t}
+                      isLoading={false}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
