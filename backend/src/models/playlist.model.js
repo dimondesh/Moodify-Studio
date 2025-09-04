@@ -15,8 +15,7 @@ const playlistSchema = new mongoose.Schema(
     },
     imageUrl: {
       type: String,
-      default:
-        "https://res.cloudinary.com/your-cloud-name/image/upload/v1/default_playlist_image.png", // TODO: Замените на вашу дефолтную картинку плейлиста в Cloudinary
+      default: "https://moodify.b-cdn.net/default-album-cover.png",
     },
     likes: {
       type: Number,
