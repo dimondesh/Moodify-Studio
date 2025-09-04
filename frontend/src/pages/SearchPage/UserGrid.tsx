@@ -1,5 +1,4 @@
 // frontend/src/pages/SearchPage/UserGrid.tsx
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -52,11 +51,11 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
             onClick={() => handleUserClick(user)}
           >
-            <div className="relative mb-4">
-              <Avatar className="w-auto h-auto object-cover shadow-lg">
+            <div className="relative mb-4 aspect-square">
+              <Avatar className="h-full w-full shadow-lg">
                 <AvatarImage
                   src={user.imageUrl}
-                  className=" object-cover group-hover:scale-105 transition-all duration-300"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
               </Avatar>

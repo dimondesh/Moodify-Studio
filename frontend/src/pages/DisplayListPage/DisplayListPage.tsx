@@ -75,7 +75,7 @@ const DisplayListPage = () => {
                   <img
                     src={item.imageUrl || "/liked.png"}
                     alt={item.title || "Playlist"}
-                    className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
+                    className="absolute inset-0 h-full w-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <Avatar className="absolute inset-0 h-full w-full rounded-full">

@@ -23,19 +23,8 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   };
 
   const getArtistNames = (artistsInput: Artist[] | undefined) => {
-    if (!artistsInput || artistsInput.length === 0) {
-      return "Unknown Artist";
-    }
-
-    const names = artistsInput
-      .map((artist) => {
-        if (typeof artist === "object" && artist !== null && "name" in artist) {
-          return artist.name;
-        }
-        return null;
-      })
-      .filter(Boolean);
-
+    if (!artistsInput || artistsInput.length === 0) return "Unknown Artist";
+    const names = artistsInput.map((artist) => artist?.name).filter(Boolean);
     return names.join(", ") || "Unknown Artist";
   };
 
@@ -65,18 +54,16 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer group"
             onClick={() => handleAlbumClick(album)}
           >
-            <div className="relative mb-4">
-              <div className="aspect-square rounded-md shadow-lg overflow-hidden">
-                <img
-                  src={album.imageUrl || "/default-album-cover.png"}
-                  alt={album.title}
-                  className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/default-album-cover.png";
-                  }}
-                />
-              </div>
+            <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
+              <img
+                src={album.imageUrl || "/default-album-cover.png"}
+                alt={album.title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "/default-album-cover.png";
+                }}
+              />
             </div>
             <h3 className="font-medium mb-2 truncate">{album.title}</h3>
             <p className="text-sm text-zinc-400 truncate">

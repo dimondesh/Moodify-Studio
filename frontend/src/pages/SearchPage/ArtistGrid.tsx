@@ -1,3 +1,4 @@
+// ArtistGrid.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -51,19 +52,16 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
             onClick={() => handleArtistClick(artist)}
           >
-            <div className="relative mb-4">
-              <div className="aspect-square rounded-full shadow-lg overflow-hidden">
-                {" "}
-                <img
-                  src={artist.imageUrl || "/default_artist_cover.png"}
-                  alt={artist.name}
-                  className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/default_artist_cover.png";
-                  }}
-                />
-              </div>
+            <div className="relative mb-4 aspect-square rounded-full shadow-lg overflow-hidden">
+              <img
+                src={artist.imageUrl || "/default_artist_cover.png"}
+                alt={artist.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "/default_artist_cover.png";
+                }}
+              />
             </div>
             <h3 className="font-medium mb-2 truncate text-white text-center">
               {artist.name}

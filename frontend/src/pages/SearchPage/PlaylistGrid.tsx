@@ -45,21 +45,19 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
         {playlistsToShow.map((playlist) => (
           <div
             key={playlist._id}
-            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
+            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer group"
             onClick={() => handlePlaylistClick(playlist)}
           >
-            <div className="relative mb-4">
-              <div className=" aspect-square object-cover flex rounded-md shadow-lg overflow-hidden">
-                <img
-                  src={playlist.imageUrl || "/default_playlist_cover.png"}
-                  alt={playlist.title}
-                  className="object-cover w-auto h-auto transition-transform duration-300 hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/default_playlist_cover.png";
-                  }}
-                />
-              </div>
+            <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
+              <img
+                src={playlist.imageUrl || "/default_playlist_cover.png"}
+                alt={playlist.title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "/default_playlist_cover.png";
+                }}
+              />
             </div>
             <h3 className="font-medium mb-2 truncate text-white">
               {playlist.title}

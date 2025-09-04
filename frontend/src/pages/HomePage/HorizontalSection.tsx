@@ -157,26 +157,30 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
                 onClick={() => handleItemClick(item)}
               >
                 <div className="relative mb-4">
-                  <div className="aspect-square shadow-lg">
+                  <div className="relative aspect-square shadow-lg">
                     {item.itemType === "artist" ? (
-                      <Avatar className="w-auto h-auto">
+                      <Avatar className="absolute inset-0 h-full w-full rounded-md">
                         <AvatarImage
-                          src={item.imageUrl || "/default-artist-cover.png"}
+                          src={
+                            item.imageUrl ||
+                            "https://moodify.b-cdn.net/artist.jpeg"
+                          }
                           alt={getDisplayTitle(item)}
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="object-cover h-full w-full rounded-md transition-transform duration-300 group-hover:scale-105"
                         />
                         <AvatarFallback>
                           {getDisplayTitle(item)[0]}
                         </AvatarFallback>
                       </Avatar>
                     ) : (
-                      <div className="aspect-square rounded-md object-cover overflow-hidden">
-                        <img
-                          src={item.imageUrl || "/default-song-cover.png"}
-                          alt={getDisplayTitle(item)}
-                          className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      </div>
+                      <img
+                        src={
+                          item.imageUrl ||
+                          "https://moodify.b-cdn.net/default-album-cover.png"
+                        }
+                        alt={getDisplayTitle(item)}
+                        className="absolute inset-0 h-full w-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
+                      />
                     )}
                   </div>
                   {item.itemType === "song" && (

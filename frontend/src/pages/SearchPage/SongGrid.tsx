@@ -60,18 +60,16 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
             onClick={() => handleSongClick(song)}
           >
-            <div className="relative mb-4">
-              <div className="aspect-square rounded-md shadow-lg overflow-hidden">
-                <img
-                  src={song.imageUrl || "/default-song-cover.png"}
-                  alt={song.title}
-                  className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/default-song-cover.png";
-                  }}
-                />
-              </div>
+            <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
+              <img
+                src={song.imageUrl || "/default-song-cover.png"}
+                alt={song.title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "/default-song-cover.png";
+                }}
+              />
               <PlayButton song={song} />
             </div>
             <h3 className="font-medium mb-2 truncate">{song.title}</h3>
