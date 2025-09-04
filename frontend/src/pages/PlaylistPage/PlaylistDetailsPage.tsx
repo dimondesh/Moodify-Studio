@@ -26,6 +26,7 @@ import {
   Lock,
   Unlock,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
@@ -1020,6 +1021,22 @@ const PlaylistDetailsPage = () => {
                   )}
                 </div>
               </ScrollArea>
+              <div className="flex items-center justify-center">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => playlistId && fetchRecommendations(playlistId)}
+                  disabled={isRecommendationsLoading}
+                  title="Refresh recommendations"
+                  className="flex-shrink-0 mt-4 bg-violet-500 w-30 hover:bg-violet-600 transition-colors"
+                >
+                  <RefreshCw
+                    className={`size-5 ${
+                      isRecommendationsLoading ? "animate-spin" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

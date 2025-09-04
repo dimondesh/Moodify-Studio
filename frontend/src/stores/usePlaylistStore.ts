@@ -74,9 +74,12 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   setDominantColor: (color: string) => set({ dominantColor: color }),
 
   updateCurrentPlaylistFromSocket: (playlist) => {
-    if (get().currentPlaylist?._id === playlist._id) {
-      get().fetchPlaylistDetails(playlist._id);
-    }
+    set((state) => {
+      if (state.currentPlaylist?._id === playlist._id) {
+        return { currentPlaylist: playlist };
+      }
+      return state;
+    });
   },
   generateAiPlaylist: async (prompt: string) => {
     set({ isLoading: true, error: null });
@@ -364,10 +367,10 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         await downloadItem(playlistId, "playlists");
         toast.success("Downloaded playlist updated!", { id: "playlist-sync" });
       }
-      await get().fetchOwnedPlaylists();
-      await get().fetchMyPlaylists();
-
-      get().fetchPlaylistDetails(playlistId);
+      // Убираем полные перезагрузки, полагаемся на сокет
+      // await get().fetchOwnedPlaylists();
+      // await get().fetchMyPlaylists();
+      // await get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to add song to playlist:", err);
