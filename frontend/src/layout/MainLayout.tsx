@@ -52,9 +52,11 @@ const MainLayout = () => {
     isEditProfileDialogOpen ||
     !!playlistToDelete ||
     !!songToRemoveFromPlaylist;
+
   useEffect(() => {
     fetchAlbums();
   }, [fetchAlbums]);
+
   useEffect(() => {
     const rootElement = document.getElementById("root");
     if (rootElement) {
@@ -68,6 +70,7 @@ const MainLayout = () => {
       if (rootElement) {
         rootElement.classList.remove("dialog-open-blur");
       }
+      document.body.style.pointerEvents = "";
     };
   }, [isAnyDialogOpen, isFullScreenPlayerOpen, isUserSheetOpen]);
 

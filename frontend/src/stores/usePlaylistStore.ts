@@ -74,12 +74,9 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   setDominantColor: (color: string) => set({ dominantColor: color }),
 
   updateCurrentPlaylistFromSocket: (playlist) => {
-    set((state) => {
-      if (state.currentPlaylist?._id === playlist._id) {
-        return { currentPlaylist: playlist };
-      }
-      return state;
-    });
+    if (get().currentPlaylist?._id === playlist._id) {
+      get().fetchPlaylistDetails(playlist._id);
+    }
   },
   generateAiPlaylist: async (prompt: string) => {
     set({ isLoading: true, error: null });

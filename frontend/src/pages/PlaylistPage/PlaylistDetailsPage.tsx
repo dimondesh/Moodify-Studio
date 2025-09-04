@@ -66,7 +66,7 @@ import { Helmet } from "react-helmet-async";
 import { DownloadButton } from "@/components/ui/DownloadButton";
 import { Share } from "lucide-react";
 import { ShareDialog } from "@/components/ui/ShareDialog";
-import { useUIStore } from "../../stores/useUIStore";
+import { useUIStore } from "@/stores/useUIStore";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const formatDuration = (seconds: number): string => {
@@ -155,38 +155,26 @@ const PlaylistDetailsPage = () => {
 
   useEffect(() => {
     if (playlistId && socket) {
-      console.log(
-        `[SOCKET] Attempting to join room for playlist: ${playlistId}`
-      );
-
       socket.emit("join_playlist_room", playlistId);
       console.log(`Joined room for playlist ${playlistId}`);
 
       const handlePlaylistUpdate = (data: { playlist: Playlist }) => {
-        console.log("[SOCKET RECEIVE] Got 'playlist_updated' event!", data);
-
-        if (data.playlist._id === playlistId) {
+        if (data && data.playlist && data.playlist._id === playlistId) {
           console.log(
-            `Received update for playlist ${playlistId}. Refetching...`
+            `Received update for current playlist ${playlistId}. Refetching...`
           );
-
           updateCurrentPlaylistFromSocket(data.playlist);
           toast.success("This playlist has been updated by the owner.");
 
           const isPlaylistDownloaded = isDownloaded(playlistId);
 
-          if (isDownloaded(playlistId)) {
-            console.log(
-              `[SYNC] Is this playlist downloaded? -> ${isPlaylistDownloaded}`
-            );
-
+          if (isPlaylistDownloaded) {
             console.log(
               `Downloaded playlist ${playlistId} was updated. Starting sync...`
             );
             toast.loading("Updating your downloaded playlist...", {
               id: "playlist-sync",
             });
-
             downloadItem(playlistId, "playlists")
               .then(() => {
                 toast.success("Downloaded playlist updated!", {
@@ -206,7 +194,6 @@ const PlaylistDetailsPage = () => {
       socket.on("playlist_updated", handlePlaylistUpdate);
 
       return () => {
-        console.log(`Leaving room for playlist ${playlistId}`);
         socket.emit("leave_playlist_room", playlistId);
         socket.off("playlist_updated", handlePlaylistUpdate);
       };
@@ -238,7 +225,6 @@ const PlaylistDetailsPage = () => {
   }, [currentPlaylist, extractColor]);
 
   useEffect(() => {
-    // Этот хук будет загружать рекомендации, когда открывается диалог
     if (isSearchAndAddDialogOpen && playlistId) {
       fetchRecommendations(playlistId);
     }
@@ -400,10 +386,8 @@ const PlaylistDetailsPage = () => {
     );
   }
 
-  const totalDurationSeconds = currentPlaylist.songs.reduce(
-    (acc, song) => acc + song.duration,
-    0
-  );
+  const totalDurationSeconds =
+    currentPlaylist.songs?.reduce((acc, song) => acc + song.duration, 0) || 0;
   const totalMinutes = Math.floor(totalDurationSeconds / 60);
   const remainingSeconds = totalDurationSeconds % 60;
   const formattedDuration = `${totalMinutes}:${remainingSeconds
@@ -411,7 +395,7 @@ const PlaylistDetailsPage = () => {
     .padStart(2, "0")}`;
   const isCurrentPlaylistPlaying =
     isPlaying &&
-    currentPlaylist.songs.length > 0 &&
+    currentPlaylist.songs?.length > 0 &&
     queue.length > 0 &&
     currentSong &&
     currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
@@ -421,7 +405,7 @@ const PlaylistDetailsPage = () => {
   const metaDescription = `Listen to "${
     currentPlaylist.title
   }", a playlist by ${ownerName} on Moodify. Features ${
-    currentPlaylist.songs.length
+    currentPlaylist.songs?.length || 0
   } songs. ${currentPlaylist.description || ""}`;
 
   return (
@@ -495,12 +479,12 @@ const PlaylistDetailsPage = () => {
                         t("common.unknownArtist")}
                     </button>
                     <span className="hidden lg:inline">
-                      • {currentPlaylist.songs.length}{" "}
-                      {currentPlaylist.songs.length !== 1
+                      • {(currentPlaylist.songs || []).length}{" "}
+                      {(currentPlaylist.songs || []).length !== 1
                         ? t("pages.playlist.songs")
                         : t("pages.playlist.song")}
                     </span>
-                    {currentPlaylist.songs.length > 0 && (
+                    {(currentPlaylist.songs || []).length > 0 && (
                       <span className="hidden lg:inline">
                         • {formattedDuration}
                       </span>
@@ -515,7 +499,7 @@ const PlaylistDetailsPage = () => {
               </div>
 
               <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-4">
-                {currentPlaylist.songs.length > 0 && (
+                {currentPlaylist.songs && currentPlaylist.songs.length > 0 && (
                   <Button
                     size="icon"
                     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105"
@@ -677,171 +661,174 @@ const PlaylistDetailsPage = () => {
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="hidden sm:grid grid-cols-[1fr] sm:grid-cols-[16px_4fr_6fr] md:grid-cols-[16px_4fr_min-content_3fr] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
-                  <div className="hidden sm:block">#</div>
-                  <div className="hidden sm:block">
-                    {t("pages.playlist.headers.title")}
-                  </div>
-                  <div className="hidden md:block white-space-nowrap ">
+                <div className="hidden sm:grid grid-cols-[16px_4fr_2fr_1fr_auto] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
+                  <div>#</div>
+                  <div>{t("pages.playlist.headers.title")}</div>
+                  <div className="hidden md:block">
                     {t("pages.playlist.headers.dateAdded")}
                   </div>
-                  <div className="hidden sm:flex items-center justify-center">
+                  <div className="flex items-center justify-end md:mr-10">
                     <Clock className="h-4 w-4" />
                   </div>
+                  <div className="w-8"></div>
                 </div>
-                <div className="px-4 sm:px-6">
-                  <div className="space-y-2 py-4">
-                    {currentPlaylist.songs.map((song, index) => {
-                      const isCurrentSong = currentSong?._id === song._id;
-                      const songIsLiked = likedSongs.some(
-                        (likedSong) => likedSong._id === song._id
-                      );
-                      return (
-                        <div
-                          key={song._id}
-                          onClick={(e) => {
-                            if (!(e.target as HTMLElement).closest("button"))
-                              handlePlaySong(song, index);
-                          }}
-                          className={`flex sm:grid items-center gap-3 sm:gap-4 text-sm px-4 py-2 rounded-md text-zinc-400 hover:bg-white/5 group cursor-pointer sm:grid-cols-[16px_4fr_2fr_1fr_auto] ${
-                            isCurrentSong ? "bg-white/10" : ""
-                          }`}
-                        >
-                          <div className="hidden sm:flex items-center justify-center">
-                            {isCurrentSong && isPlaying ? (
-                              <div className="z-10">
-                                <Equalizer />
-                              </div>
-                            ) : (
-                              <span className="group-hover:hidden text-xs sm:text-sm">
-                                {index + 1}
-                              </span>
-                            )}
-                            {!isCurrentSong && (
-                              <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <img
-                              src={song.imageUrl || "/default-song-cover.png"}
-                              alt={song.title}
-                              className="size-10 object-cover rounded-md flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                {isCurrentSong && isPlaying && (
-                                  <div className="block sm:hidden flex-shrink-0">
-                                    <EqualizerTitle />
-                                  </div>
-                                )}
-                                {isMobile ? (
-                                  <span
-                                    className={`font-medium w-full text-left ${
-                                      isCurrentSong
-                                        ? "text-violet-400"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    <p className="truncate max-w-50 xl:max-w-100">
-                                      {song.title}
-                                    </p>
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSongTitleClick(song.albumId);
-                                    }}
-                                    className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
-                                      isCurrentSong
-                                        ? "text-violet-400"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    <p className="truncate max-w-50 xl:max-w-100">
-                                      {song.title}
-                                    </p>
-                                  </button>
-                                )}
-                              </div>
+                <div className="px-2 sm:px-6">
+                  <div className="space-y-1 py-4">
+                    {currentPlaylist.songs &&
+                      currentPlaylist.songs.map((song, index) => {
+                        const isCurrentSong = currentSong?._id === song._id;
+                        const songIsLiked = likedSongs.some(
+                          (likedSong) => likedSong._id === song._id
+                        );
+                        return (
+                          <div
+                            key={song._id}
+                            onClick={(e) => {
+                              if (!(e.target as HTMLElement).closest("button"))
+                                handlePlaySong(song, index);
+                            }}
+                            className={`flex sm:grid items-center gap-3 sm:gap-4 text-sm px-4 py-2 rounded-md text-zinc-400 hover:bg-white/5 group cursor-pointer sm:grid-cols-[16px_4fr_2fr_1fr_auto] ${
+                              isCurrentSong ? "bg-white/10" : ""
+                            }`}
+                          >
+                            <div className="hidden sm:flex items-center justify-center">
+                              {isCurrentSong && isPlaying ? (
+                                <div className="z-10">
+                                  <Equalizer />
+                                </div>
+                              ) : (
+                                <span className="group-hover:hidden text-xs sm:text-sm">
+                                  {index + 1}
+                                </span>
+                              )}
+                              {!isCurrentSong && (
+                                <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <img
+                                src={song.imageUrl || "/default-song-cover.png"}
+                                alt={song.title}
+                                className="size-10 object-cover rounded-md flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  {isCurrentSong && isPlaying && (
+                                    <div className="block sm:hidden flex-shrink-0">
+                                      <EqualizerTitle />
+                                    </div>
+                                  )}
+                                  {isMobile ? (
+                                    <span
+                                      className={`font-medium w-full text-left ${
+                                        isCurrentSong
+                                          ? "text-violet-400"
+                                          : "text-white"
+                                      }`}
+                                    >
+                                      <p className="truncate max-w-50 xl:max-w-100">
+                                        {song.title}
+                                      </p>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSongTitleClick(song.albumId);
+                                      }}
+                                      className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
+                                        isCurrentSong
+                                          ? "text-violet-400"
+                                          : "text-white"
+                                      }`}
+                                    >
+                                      <p className="truncate max-w-50 xl:max-w-100">
+                                        {song.title}
+                                      </p>
+                                    </button>
+                                  )}
+                                </div>
 
-                              <div className="text-zinc-400 text-xs sm:text-sm truncate">
-                                {song.artist.map((artist, artistIndex) => (
-                                  <span key={artist._id}>
-                                    {isMobile ? (
-                                      <span>{artist.name}</span>
-                                    ) : (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleArtistNameClick(artist._id);
-                                        }}
-                                        className="hover:underline focus:outline-none focus:underline"
-                                      >
-                                        {artist.name}
-                                      </button>
-                                    )}
-                                    {artistIndex < song.artist.length - 1 &&
-                                      ", "}
-                                  </span>
-                                ))}
+                                <div className="text-zinc-400 text-xs sm:text-sm truncate">
+                                  {song.artist.map((artist, artistIndex) => (
+                                    <span key={artist._id}>
+                                      {isMobile ? (
+                                        <span>{artist.name}</span>
+                                      ) : (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleArtistNameClick(artist._id);
+                                          }}
+                                          className="hover:underline focus:outline-none focus:underline"
+                                        >
+                                          {artist.name}
+                                        </button>
+                                      )}
+                                      {artistIndex < song.artist.length - 1 &&
+                                        ", "}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="items-center hidden md:flex text-xs">
-                            {song.createdAt
-                              ? format(new Date(song.createdAt), "MMM dd, yyyy")
-                              : "N/A"}
-                          </div>
-                          <div className="hidden sm:flex items-center justify-end text-sm text-zinc-400 md:mr-10">
-                            {formatDuration(song.duration)}
-                          </div>
-                          <div className="flex items-center justify-center ml-auto sm:ml-0">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className={`rounded-full size-6 sm:size-7 ${
-                                songIsLiked
-                                  ? "text-violet-500 hover:text-violet-400"
-                                  : "text-zinc-400 hover:text-white opacity-100 md:group-hover:opacity-100 transition-opacity"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleSongLike(song._id);
-                              }}
-                              title={
-                                songIsLiked
-                                  ? t("player.unlike")
-                                  : t("player.like")
-                              }
-                            >
-                              <Heart
-                                className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                                  songIsLiked ? "fill-violet-500" : ""
-                                }`}
-                              />
-                            </Button>
-                            {isOwner && (
+                            <div className="items-center hidden md:flex text-xs">
+                              {song.createdAt
+                                ? format(
+                                    new Date(song.createdAt),
+                                    "MMM dd, yyyy"
+                                  )
+                                : "N/A"}
+                            </div>
+                            <div className="hidden sm:flex items-center justify-end text-sm text-zinc-400 md:mr-10">
+                              {formatDuration(song.duration)}
+                            </div>
+                            <div className="flex items-center justify-center ml-auto sm:ml-0">
                               <Button
-                                variant="ghost"
                                 size="icon"
-                                className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:group-hover:opacity-100 transition-opacity"
+                                variant="ghost"
+                                className={`rounded-full size-6 sm:size-7 ${
+                                  songIsLiked
+                                    ? "text-violet-500 hover:text-violet-400"
+                                    : "text-zinc-400 hover:text-white opacity-100 md:group-hover:opacity-100 transition-opacity"
+                                }`}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openRemoveSongFromPlaylistDialog({
-                                    songId: song._id,
-                                    playlistId: currentPlaylist._id,
-                                  });
+                                  toggleSongLike(song._id);
                                 }}
-                                title={t("pages.playlist.actions.removeSong")}
+                                title={
+                                  songIsLiked
+                                    ? t("player.unlike")
+                                    : t("player.like")
+                                }
                               >
-                                <X className="size-3 sm:size-4" />
+                                <Heart
+                                  className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                                    songIsLiked ? "fill-violet-500" : ""
+                                  }`}
+                                />
                               </Button>
-                            )}
+                              {isOwner && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openRemoveSongFromPlaylistDialog({
+                                      songId: song._id,
+                                      playlistId: currentPlaylist._id,
+                                    });
+                                  }}
+                                  title={t("pages.playlist.actions.removeSong")}
+                                >
+                                  <X className="size-3 sm:size-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
                 </div>
               </div>

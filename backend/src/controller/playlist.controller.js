@@ -1,5 +1,3 @@
-// backend/src/controller/playlist.controller.js
-
 import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { Song } from "../models/song.model.js";
@@ -184,7 +182,7 @@ export const updatePlaylist = async (req, res, next) => {
     }
 
     if (title) playlist.title = title;
-    if (description) playlist.description = description;
+    if (description !== undefined) playlist.description = description;
     if (isPublic !== undefined) playlist.isPublic = isPublic === "true";
 
     if (req.files && req.files.image) {
@@ -192,20 +190,27 @@ export const updatePlaylist = async (req, res, next) => {
     }
 
     await playlist.save();
+
+    const updatedPlaylist = await Playlist.findById(playlistId)
+      .populate("owner", "fullName imageUrl")
+      .populate({
+        path: "songs",
+        populate: {
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
+        },
+      })
+      .lean();
     console.log(
       `[SOCKET EMIT] Sending 'playlist_updated' to room 'playlist-${playlistId}' after updating details.`
     );
 
     req.io
       .to(`playlist-${playlistId}`)
-      .emit("playlist_updated", { playlistId });
-
-    const updatedPlaylist = await Playlist.findById(playlistId).lean();
-    req.io
-      .to(`playlist-${playlistId}`)
       .emit("playlist_updated", { playlist: updatedPlaylist });
 
-    res.status(200).json(playlist);
+    res.status(200).json(updatedPlaylist);
   } catch (error) {
     console.error("Error in updatePlaylist:", error);
     next(error);
