@@ -78,7 +78,7 @@ const DisplayListPage = () => {
                     className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                   />
                 ) : (
-                  <Avatar className="aspect-squaref h-auto w-auto object-cover justify-center">
+                  <Avatar className="absolute inset-0 h-full w-full rounded-full">
                     <AvatarImage
                       src={item.imageUrl}
                       className="object-cover h-auto w-auto transition-transform duration-300 group-hover:scale-105"
