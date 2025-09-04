@@ -31,6 +31,7 @@ export const syncUserWithDb = async (req, res) => {
         fullName: fullNameFromRequest || name || email.split("@")[0],
         imageUrl: picture || null,
         language: "en",
+        isAnonymous: false,
       });
       await user.save();
       console.log(
@@ -51,6 +52,7 @@ export const syncUserWithDb = async (req, res) => {
         fullName: user.fullName,
         imageUrl: user.imageUrl,
         language: user.language,
+        isAnonymous: user.isAnonymous,
       },
     });
   } catch (error) {

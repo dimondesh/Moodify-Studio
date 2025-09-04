@@ -163,20 +163,20 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
             return (
               <div
                 key={`${item.itemType}-${item._id}`}
-                className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
+                className="bg-transparent p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
                 onClick={() => handleItemClick(item)}
               >
                 <div className="relative mb-4">
                   <div className="relative aspect-square shadow-lg">
                     {item.itemType === "artist" ? (
-                      <Avatar className="absolute inset-0 h-full w-full rounded-md">
+                      <Avatar className="absolute inset-0 h-full w-full rounded-full">
                         <AvatarImage
                           src={
                             item.imageUrl ||
                             "https://moodify.b-cdn.net/artist.jpeg"
                           }
                           alt={getDisplayTitle(item)}
-                          className="object-cover h-full w-full rounded-md transition-transform duration-300 group-hover:scale-105"
+                          className="object-cover h-full w-full rounded-full transition-transform duration-300 group-hover:scale-105"
                         />
                         <AvatarFallback>
                           {getDisplayTitle(item)[0]}
