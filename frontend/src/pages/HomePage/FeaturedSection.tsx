@@ -133,7 +133,7 @@ const FeaturedSectionComponent = ({
   };
   return (
     <div
-      className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+      className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-8"
       onMouseLeave={onSongLeave}
     >
       {songsToShow.map((song, index) => {
@@ -142,7 +142,7 @@ const FeaturedSectionComponent = ({
         return (
           <Component
             key={song._id}
-            className="flex items-center bg-zinc-800/50 rounded-sm sm:rounded-md overflow-hidden hover:bg-zinc-700/50
+            className="flex items-center bg-zinc-800/50 rounded-md overflow-hidden hover:bg-zinc-700/50
                transition-colors group cursor-pointer relative text-left"
             onClick={() => handleItemClick(song, index)}
             onMouseEnter={() => !isMobile && onSongHover(song)}
@@ -151,15 +151,15 @@ const FeaturedSectionComponent = ({
               <img
                 src={song.imageUrl || "/default-song-cover.png"}
                 alt={song.title}
-                className="w-10 sm:w-20 h-10 sm:h-20 object-cover"
+                className="w-14 h-14 sm:w-20 sm:h-20 object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     "/default-song-cover.png";
                 }}
               />
             </div>
-            <div className="flex-1 p-2 sm:p-4 min-w-0">
-              <p className="font-medium truncate text-white hover:underline">
+            <div className="flex-1 p-2 sm:p-3 min-w-0">
+              <p className="font-medium truncate text-white text-sm sm:text-base">
                 {song.title || t("common.noTitle")}
               </p>
               <p className="hidden sm:inline text-sm text-zinc-400 truncate">

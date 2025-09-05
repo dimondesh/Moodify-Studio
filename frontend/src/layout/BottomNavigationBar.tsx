@@ -46,7 +46,7 @@ const BottomNavigationBar = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 h-16 flex items-center justify-around z-50 pb-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 h-20 flex items-center justify-around z-50 pb-4">
       {navItems.map((item) => {
         if (item.authRequired && !user) {
           return null;

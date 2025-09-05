@@ -226,7 +226,7 @@ const HomePage = () => {
           content="Listen to trending music, discover personal mixes, and explore public playlists. Moodify - your ultimate guide in the world of music."
         />
       </Helmet>
-      <main className="rounded-md overflow-y-auto h-full bg-gradient-to-b from-zinc-900 to-zinc-950 hide-scrollbar">
+      <main className="rounded-md overflow-y-auto h-full bg-gradient-to-b from-zinc-900 to-zinc-950 hide-scrollbar pb-30 lg:pb-0">
         <div className="relative min-h-screen">
           <div className="absolute hidden lg:block inset-0 h-[60vh] w-full pointer-events-none z-0">
             {backgrounds
@@ -258,8 +258,8 @@ const HomePage = () => {
             {isHomePageLoading ? (
               <HomePageSkeleton />
             ) : (
-              <div className="p-4 sm:p-6">
-                <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-white">
+              <div className="p-2 sm:p-6">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-white">
                   {getGreeting()}
                 </h1>
 
@@ -268,7 +268,7 @@ const HomePage = () => {
                   onSongLeave={handleSongLeave}
                 />
 
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {user && madeForYouSongs.length > 0 && (
                     <HorizontalSection
                       title={t("homepage.madeForYou")}

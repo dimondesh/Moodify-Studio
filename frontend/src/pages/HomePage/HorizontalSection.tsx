@@ -117,8 +117,8 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
+    <div className="mb-4 sm:mb-8">
+      <div className="flex items-center justify-between mb-2 sm:mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
         {canShowAll && (
           <Button
@@ -139,15 +139,15 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                 <div
                   key={`${item.itemType}-${item._id}`}
                   onClick={() => handleItemClick(item)}
-                  className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all w-40 sm:w-48 flex-shrink-0"
+                  className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all w-36 sm:w-44 flex-shrink-0"
                 >
                   <img
                     src={item.imageUrl}
                     alt={getDisplayTitle(item)}
                     className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 flex items-end justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
-                    <h3 className="text-white text-lg font-bold drop-shadow-lg break-words whitespace-normal leading-tight">
+                  <div className="absolute inset-0 flex items-end justify-start p-2 sm:p-3 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+                    <h3 className="text-white text-base sm:text-lg font-bold drop-shadow-lg break-words whitespace-normal leading-tight">
                       {getDisplayTitle(item)}
                     </h3>
                   </div>
@@ -161,10 +161,10 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
             return (
               <div
                 key={`${item.itemType}-${item._id}`}
-                className="bg-transparent p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer w-40 sm:w-48 flex-shrink-0"
+                className="bg-transparent p-0 rounded-md hover:bg-zinc-800/50 transition-all group cursor-pointer w-36 sm:w-44 flex-shrink-0"
                 onClick={() => handleItemClick(item)}
               >
-                <div className="relative mb-4">
+                <div className="relative mb-2">
                   <div className="relative aspect-square shadow-lg">
                     {item.itemType === "artist" ? (
                       <Avatar className="absolute inset-0 h-full w-full rounded-full">
@@ -199,12 +199,14 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                     />
                   )}
                 </div>
-                <h3 className="font-medium truncate">
-                  {getDisplayTitle(item)}
-                </h3>
-                <p className="text-sm text-zinc-400 truncate">
-                  {getSubtitle(item)}
-                </p>
+                <div className="px-1">
+                  <h3 className="font-semibold text-sm truncate">
+                    {getDisplayTitle(item)}
+                  </h3>
+                  <p className="text-xs text-zinc-400 truncate">
+                    {getSubtitle(item)}
+                  </p>
+                </div>
               </div>
             );
           })}
