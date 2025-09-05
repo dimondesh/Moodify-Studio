@@ -90,13 +90,14 @@ const MainLayout = () => {
     if (isFullScreenPlayerOpen || isMobileLyricsFullScreen) {
       contentPaddingBottom = "pb-0";
     } else if (currentSong) {
-      contentPaddingBottom = "pb-[calc(4rem+4rem)] sm:pb-[calc(5rem+4rem)]";
+      // 4rem (BottomNav) + 3.5rem (PlaybackControls) = 7.5rem
+      contentPaddingBottom = "pb-[7.5rem]";
     } else {
       contentPaddingBottom = "pb-16";
     }
   } else {
     if (currentSong) {
-      contentPaddingBottom = "";
+      contentPaddingBottom = "pb-24"; // Height of desktop playback controls
     } else {
       contentPaddingBottom = "pb-0";
     }
@@ -127,7 +128,9 @@ const MainLayout = () => {
       <Topbar />
       <ResizablePanelGroup
         direction="horizontal"
-        className={`flex-1 flex overflow-hidden p-2 ${contentPaddingBottom}`}
+        className={`flex-1 flex overflow-hidden ${contentPaddingBottom} ${
+          isMobile ? "p-0" : "p-2"
+        }`}
         id="main-layout-group"
       >
         {!isMobile && (

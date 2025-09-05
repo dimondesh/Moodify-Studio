@@ -359,12 +359,12 @@ const PlaybackControls = () => {
       {isCompactView ? (
         <>
           {!isFullScreenPlayerOpen && (
-            <footer className="fixed bottom-20 left-0 right-0 h-16 sm:h-20 bg-zinc-800 border-t border-zinc-700 px-3 sm:px-4 flex items-center justify-between z-[61]">
+            <footer className="fixed bottom-16 left-0 right-0 h-14 sm:h-16 mx-1 rounded-md bg-zinc-800/80 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between z-[60]">
               <div
                 className="flex items-center gap-3 flex-1 cursor-pointer min-w-0"
                 onClick={() => setIsFullScreenPlayerOpen(true)}
               >
-                <div className="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                   <img
                     src={currentSong.imageUrl || "/default-song-cover.png"}
                     alt={currentSong.title}
@@ -379,7 +379,7 @@ const PlaybackControls = () => {
                 </div>
 
                 <div className="flex flex-col flex-1 min-w-0">
-                  <div className="font-medium truncate text-white text-sm sm:text-base">
+                  <div className="font-medium truncate text-white text-sm">
                     {currentSong.title}
                   </div>
                   <div className="text-xs text-zinc-400 truncate">
@@ -401,16 +401,16 @@ const PlaybackControls = () => {
                 />
                 <Button
                   size="icon"
-                  className="bg-white hover:bg-white/90 text-black rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center"
+                  className="bg-white hover:bg-white/90 text-black rounded-full h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlay();
                   }}
                 >
                   {isPlaying ? (
-                    <Pause className="h-6 w-6 fill-current" />
+                    <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
                   ) : (
-                    <Play className="h-6 w-6 fill-current" />
+                    <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
                   )}
                 </Button>
               </div>

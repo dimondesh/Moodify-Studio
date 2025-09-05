@@ -6,13 +6,13 @@ import { useAuthStore } from "../stores/useAuthStore";
 import { cn } from "../lib/utils";
 import { buttonVariants } from "../components/ui/button";
 import { useTranslation } from "react-i18next";
-import { useChatStore } from "../stores/useChatStore"; 
+import { useChatStore } from "../stores/useChatStore";
 
 const BottomNavigationBar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { user } = useAuthStore();
-  const { unreadMessages } = useChatStore(); 
+  const { unreadMessages } = useChatStore();
   const totalUnread = Array.from(unreadMessages.values()).reduce(
     (acc, count) => acc + count,
     0
@@ -46,7 +46,7 @@ const BottomNavigationBar = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 h-20 flex items-center justify-around z-65 pb-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 h-16 flex items-center justify-around z-50 pb-2">
       {navItems.map((item) => {
         if (item.authRequired && !user) {
           return null;

@@ -164,7 +164,7 @@ const Topbar = () => {
   );
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md sm:px-6">
+    <div className="flex items-center justify-between px-2 py-2 sm:px-4 sm:py-3 sticky top-0 bg-zinc-900/90 backdrop-blur-md z-20 shadow-md">
       <div
         className={`flex gap-3 items-center ${
           isSearchVisible ? "hidden sm:flex" : "flex"
