@@ -1,5 +1,5 @@
-// src/components/ui/WaveAnalyzer.tsx
-import React, { useRef, useEffect } from "react";
+// frontend/src/components/ui/WaveAnalyzer.tsx
+import React, { useRef, useEffect, useCallback } from "react";
 import { useAudioSettingsStore, webAudioService } from "../../lib/webAudio";
 
 interface WaveAnalyzerProps {
@@ -15,128 +15,79 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
   const animationFrameId = useRef<number | null>(null);
   const { waveAnalyzerEnabled } = useAudioSettingsStore();
 
-  useEffect(() => {
+  const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
+    if (!canvas) return;
 
     const canvasCtx = canvas.getContext("2d");
-    if (!canvasCtx) {
-      console.error("WaveAnalyzer: Canvas context is null.");
-      return;
-    }
+    if (!canvasCtx) return;
 
     const analyser = webAudioService.getAnalyserNode();
     const audioContext = webAudioService.getAudioContext();
 
-   
     if (!analyser || !audioContext) {
-      console.log("WaveAnalyzer: Analyser or AudioContext not available yet.");
       canvasCtx.clearRect(0, 0, width, height);
       return;
     }
 
-    console.log(`WaveAnalyzer: Effect triggered.
-      waveAnalyzerEnabled: ${waveAnalyzerEnabled},
-      AudioContext State: ${audioContext.state}`);
-
     const bufferLength = analyser.fftSize;
     const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteTimeDomainData(dataArray);
 
-    const draw = () => {
-      const currentAnalyser = webAudioService.getAnalyserNode();
-      const currentAudioContext = webAudioService.getAudioContext();
-      const currentWaveAnalyzerEnabled =
-        useAudioSettingsStore.getState().waveAnalyzerEnabled;
+    canvasCtx.clearRect(0, 0, width, height);
+    canvasCtx.lineWidth = 1;
+    canvasCtx.strokeStyle = "#8b5cf6";
+    canvasCtx.beginPath();
 
-      
-      if (
-        !currentWaveAnalyzerEnabled ||
-        !currentAnalyser ||
-        !currentAudioContext
-      ) {
-        canvasCtx.clearRect(0, 0, width, height);
-        if (animationFrameId.current) {
-          cancelAnimationFrame(animationFrameId.current);
-          animationFrameId.current = null;
-        }
-        console.log(
-          "WaveAnalyzer: Stopping animation loop due to disabled setting or missing nodes."
-        );
-        return;
-      }
+    const sliceWidth = (width * 1.0) / bufferLength;
+    let x = 0;
 
-      animationFrameId.current = requestAnimationFrame(draw);
+    for (let i = 0; i < bufferLength; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = (v * height) / 2;
 
-      if (
-        currentAudioContext.state === "suspended" ||
-        currentAudioContext.state === "closed"
-      ) {
-        canvasCtx.clearRect(0, 0, width, height);
-        canvasCtx.lineWidth = 1;
-        canvasCtx.strokeStyle = "#8b5cf6";
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(0, height / 2);
-        canvasCtx.lineTo(width, height / 2);
-        canvasCtx.stroke();
+      if (i === 0) {
+        canvasCtx.moveTo(x, y);
       } else {
-        currentAnalyser.getByteTimeDomainData(dataArray);
+        canvasCtx.lineTo(x, y);
+      }
+      x += sliceWidth;
+    }
 
-        canvasCtx.clearRect(0, 0, width, height);
-        canvasCtx.lineWidth = 1;
-        canvasCtx.strokeStyle = "#8b5cf6";
+    canvasCtx.lineTo(width, height / 2);
+    canvasCtx.stroke();
 
-        canvasCtx.beginPath();
+    animationFrameId.current = requestAnimationFrame(draw);
+  }, [width, height]);
 
-        const sliceWidth = (width * 1.0) / bufferLength;
-        let x = 0;
-
-        for (let i = 0; i < bufferLength; i++) {
-          const v = dataArray[i] / 128.0;
-          const y = (v * height) / 2;
-
-          if (i === 0) {
-            canvasCtx.moveTo(x, y);
-          } else {
-            canvasCtx.lineTo(x, y);
-          }
-
-          x += sliceWidth;
-        }
-
-        canvasCtx.lineTo(width, height / 2);
-        canvasCtx.stroke();
+  useEffect(() => {
+    const startAnimation = () => {
+      if (!animationFrameId.current) {
+        animationFrameId.current = requestAnimationFrame(draw);
       }
     };
 
-  
-    if (waveAnalyzerEnabled) {
-      console.log("WaveAnalyzer: Starting initial animation loop.");
-      draw();
-    } else {
-      console.log(
-        "WaveAnalyzer: waveAnalyzerEnabled is false, clearing canvas."
-      );
-      canvasCtx.clearRect(0, 0, width, height);
+    const stopAnimation = () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;
       }
+      const canvasCtx = canvasRef.current?.getContext("2d");
+      if (canvasCtx) {
+        canvasCtx.clearRect(0, 0, width, height);
+      }
+    };
+
+    if (waveAnalyzerEnabled) {
+      startAnimation();
+    } else {
+      stopAnimation();
     }
 
     return () => {
-      console.log(
-        "WaveAnalyzer: Cleanup effect (component unmount or dependencies change)."
-      );
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-        animationFrameId.current = null;
-      }
-      canvasCtx.clearRect(0, 0, width, height); 
+      stopAnimation();
     };
-  }, [waveAnalyzerEnabled, width, height]);
-
+  }, [waveAnalyzerEnabled, draw, width, height]);
 
   if (!waveAnalyzerEnabled) {
     return null;

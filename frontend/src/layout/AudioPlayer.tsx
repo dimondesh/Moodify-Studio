@@ -518,9 +518,7 @@ const AudioPlayer = () => {
     const audioContext = audioContextRef.current;
     if (!audioContext || audioContext.state === "closed") return;
 
-    let animationFrameId: number;
-
-    const updateCurrentTimeLoop = () => {
+    const intervalId = setInterval(() => {
       if (
         isPlayingRef.current &&
         instrumentalSourceRef.current &&
@@ -529,23 +527,15 @@ const AudioPlayer = () => {
         const elapsedRealTime = audioContext.currentTime - startTimeRef.current;
         const newTime = offsetTimeRef.current + elapsedRealTime;
 
-        const newFlooredTime = Math.floor(newTime);
-
-        if (newFlooredTime > lastUpdatedSecondRef.current) {
-          lastUpdatedSecondRef.current = newFlooredTime;
-
-          setCurrentTime(newTime, true);
-        }
+        // isPlayerUpdate = true, чтобы не вызывать seekToTime и предотвратить зацикливание
+        usePlayerStore.getState().setCurrentTime(newTime, true);
       }
-      animationFrameId = requestAnimationFrame(updateCurrentTimeLoop);
-    };
-
-    animationFrameId = requestAnimationFrame(updateCurrentTimeLoop);
+    }, 500);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      clearInterval(intervalId);
     };
-  }, [isAudioContextReady, setCurrentTime]);
+  }, [isAudioContextReady]);
 
   useEffect(() => {
     listenRecordedRef.current = false;
