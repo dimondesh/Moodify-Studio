@@ -15,7 +15,7 @@ import { cn } from "../lib/utils";
 import { Button, buttonVariants } from "../components/ui/button";
 import { ScrollArea } from "../components/ui/scroll-area";
 import PlaylistSkeleton from "../components/ui/skeletons/PlaylistSkeleton";
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { useLibraryStore } from "../stores/useLibraryStore";
 import { usePlaylistStore } from "../stores/usePlaylistStore";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -45,16 +45,11 @@ const LeftSidebar = () => {
     playlists,
     savedMixes,
     followedArtists,
-    fetchLibrary,
     isLoading: isLoadingLibrary,
     generatedPlaylists,
   } = useLibraryStore();
 
-  const {
-    myPlaylists,
-    fetchMyPlaylists,
-    isLoading: isLoadingPlaylists,
-  } = usePlaylistStore();
+  const { myPlaylists, isLoading: isLoadingPlaylists } = usePlaylistStore();
   const { unreadMessages } = useChatStore();
   const totalUnread = Array.from(unreadMessages.values()).reduce(
     (acc, count) => acc + count,
@@ -70,15 +65,7 @@ const LeftSidebar = () => {
     closeAllDialogs,
   } = useUIStore();
 
-  const { artists, fetchArtists } = useMusicStore();
-
-  useEffect(() => {
-    if (user && !loadingUser) {
-      fetchLibrary();
-      fetchMyPlaylists();
-      fetchArtists();
-    }
-  }, [user, loadingUser, fetchLibrary, fetchMyPlaylists, fetchArtists]);
+  const { artists } = useMusicStore();
 
   const getArtistNames = (artistsData: string[] | Artist[] | undefined) => {
     if (!artistsData || artistsData.length === 0)
@@ -102,82 +89,85 @@ const LeftSidebar = () => {
   const isLoading =
     (isLoadingLibrary || isLoadingPlaylists || loadingUser) && !isOffline;
 
-  // --- ИЗМЕНЕНИЕ НАЧАЛО: Логика дедупликации ---
-  const libraryItemsMap = new Map<string, LibraryItem>();
+  const libraryItems = useMemo(() => {
+    const libraryItemsMap = new Map<string, LibraryItem>();
 
-  // 1. Добавляем альбомы
-  (albums || []).forEach((album) =>
-    libraryItemsMap.set(album._id, {
-      _id: album._id,
-      type: "album",
-      title: album.title,
-      imageUrl: album.imageUrl,
-      createdAt: new Date(album.addedAt ?? new Date()),
-      artist: album.artist,
-      albumType: album.type,
-    } as AlbumItem)
-  );
+    (albums || []).forEach((album) =>
+      libraryItemsMap.set(album._id, {
+        _id: album._id,
+        type: "album",
+        title: album.title,
+        imageUrl: album.imageUrl,
+        createdAt: new Date(album.addedAt ?? new Date()),
+        artist: album.artist,
+        albumType: album.type,
+      } as AlbumItem)
+    );
 
-  // 2. Добавляем плейлисты (обычные и свои)
-  [...(myPlaylists || []), ...(playlists || [])].forEach((playlist) => {
-    if (!libraryItemsMap.has(playlist._id)) {
-      const isGenerated = (playlist as any).isGenerated;
-      libraryItemsMap.set(playlist._id, {
-        _id: playlist._id,
-        type: isGenerated ? "generated-playlist" : "playlist",
-        title: isGenerated ? t((playlist as any).nameKey) : playlist.title,
-        imageUrl: playlist.imageUrl,
-        createdAt: new Date(
-          (playlist as any).addedAt || playlist.updatedAt || new Date()
-        ),
-        owner: playlist.owner,
-        isGenerated: isGenerated,
-      } as PlaylistItem);
-    }
-  });
+    [...(myPlaylists || []), ...(playlists || [])].forEach((playlist) => {
+      if (!libraryItemsMap.has(playlist._id)) {
+        const isGenerated = (playlist as any).isGenerated;
+        libraryItemsMap.set(playlist._id, {
+          _id: playlist._id,
+          type: isGenerated ? "generated-playlist" : "playlist",
+          title: isGenerated ? t((playlist as any).nameKey) : playlist.title,
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(
+            (playlist as any).addedAt || playlist.updatedAt || new Date()
+          ),
+          owner: playlist.owner,
+          isGenerated: isGenerated,
+        } as PlaylistItem);
+      }
+    });
 
-  // 3. Добавляем сохраненные генеративные плейлисты из отдельного стора
-  (generatedPlaylists || []).forEach((playlist) => {
-    if (!libraryItemsMap.has(playlist._id)) {
-      libraryItemsMap.set(playlist._id, {
-        _id: playlist._id,
-        type: "generated-playlist",
-        title: t(playlist.nameKey),
-        imageUrl: playlist.imageUrl,
-        createdAt: new Date(playlist.addedAt || playlist.generatedOn),
-        sourceName: "Moodify",
-      } as GeneratedPlaylistItem);
-    }
-  });
+    (generatedPlaylists || []).forEach((playlist) => {
+      if (!libraryItemsMap.has(playlist._id)) {
+        libraryItemsMap.set(playlist._id, {
+          _id: playlist._id,
+          type: "generated-playlist",
+          title: t(playlist.nameKey),
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(playlist.addedAt || playlist.generatedOn),
+          sourceName: "Moodify",
+        } as GeneratedPlaylistItem);
+      }
+    });
 
-  // 4. Добавляем миксы
-  (savedMixes || []).forEach((mix) =>
-    libraryItemsMap.set(mix._id, {
-      _id: mix._id,
-      type: "mix",
-      title: t(mix.name),
-      imageUrl: mix.imageUrl,
-      createdAt: new Date(mix.addedAt ?? new Date()),
-      sourceName: mix.sourceName,
-    } as MixItem)
-  );
+    (savedMixes || []).forEach((mix) =>
+      libraryItemsMap.set(mix._id, {
+        _id: mix._id,
+        type: "mix",
+        title: t(mix.name),
+        imageUrl: mix.imageUrl,
+        createdAt: new Date(mix.addedAt ?? new Date()),
+        sourceName: mix.sourceName,
+      } as MixItem)
+    );
 
-  // 5. Добавляем артистов
-  (followedArtists || []).forEach((artist) =>
-    libraryItemsMap.set(artist._id, {
-      _id: artist._id,
-      type: "artist",
-      title: artist.name,
-      imageUrl: artist.imageUrl,
-      createdAt: new Date(artist.addedAt || artist.createdAt),
-      artistId: artist._id,
-    } as FollowedArtistItem)
-  );
+    (followedArtists || []).forEach((artist) =>
+      libraryItemsMap.set(artist._id, {
+        _id: artist._id,
+        type: "artist",
+        title: artist.name,
+        imageUrl: artist.imageUrl,
+        createdAt: new Date(artist.addedAt || artist.createdAt),
+        artistId: artist._id,
+      } as FollowedArtistItem)
+    );
 
-  const libraryItems = Array.from(libraryItemsMap.values()).sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-  );
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
+    return Array.from(libraryItemsMap.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }, [
+    albums,
+    myPlaylists,
+    playlists,
+    generatedPlaylists,
+    savedMixes,
+    followedArtists,
+    t,
+  ]);
 
   return (
     <div className="h-full flex flex-col gap-2">

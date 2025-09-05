@@ -36,7 +36,7 @@ interface HorizontalSectionProps {
   t: TFunction;
 }
 
-const HorizontalSection: React.FC<HorizontalSectionProps> = ({
+const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
   title,
   items,
   isLoading,
@@ -58,11 +58,9 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   const itemsToShow = items.slice(0, limit);
   const canShowAll = onShowAll && items.length > limit;
 
-  // --- ИЗМЕНЕНИЕ НАЧАЛО: Фильтруем только песни для очереди ---
   const songsOnly = items.filter(
     (item): item is Song & { itemType: "song" } => item.itemType === "song"
   );
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   const handleItemClick = (item: DisplayItem) => {
     switch (item.itemType) {
@@ -217,4 +215,5 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
   );
 };
 
+const HorizontalSection = React.memo(HorizontalSectionComponent);
 export default HorizontalSection;

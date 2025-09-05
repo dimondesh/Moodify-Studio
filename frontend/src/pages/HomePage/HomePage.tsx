@@ -1,6 +1,6 @@
 // src/pages/HomePage/HomePage.tsx
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useMusicStore } from "../../stores/useMusicStore";
 import FeaturedSection from "./FeaturedSection";
 import { usePlayerStore } from "../../stores/usePlayerStore";
@@ -52,11 +52,11 @@ const HomePage = () => {
     fetchHomePageData();
   }, [user, isOffline, fetchHomePageData]);
 
-  const changeBackgroundColor = (color: string) => {
+  const changeBackgroundColor = useCallback((color: string) => {
     backgroundKeyRef.current += 1;
     const newKey = backgroundKeyRef.current;
     setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
-  };
+  }, []);
 
   useEffect(() => {
     if (featuredSongs.length > 0 && !isHomePageLoading) {
@@ -68,7 +68,13 @@ const HomePage = () => {
         }
       });
     }
-  }, [featuredSongs, extractColor, backgrounds, isHomePageLoading]);
+  }, [
+    featuredSongs,
+    extractColor,
+    backgrounds,
+    isHomePageLoading,
+    changeBackgroundColor,
+  ]);
 
   useEffect(() => {
     if (
@@ -92,15 +98,18 @@ const HomePage = () => {
     isHomePageLoading,
   ]);
 
-  const handleSongHover = (song: Song) => {
-    extractColor(song.imageUrl).then((color) => {
-      changeBackgroundColor(color || "#18181b");
-    });
-  };
+  const handleSongHover = useCallback(
+    (song: Song) => {
+      extractColor(song.imageUrl).then((color) => {
+        changeBackgroundColor(color || "#18181b");
+      });
+    },
+    [extractColor, changeBackgroundColor]
+  );
 
-  const handleSongLeave = () => {
+  const handleSongLeave = useCallback(() => {
     changeBackgroundColor(defaultColorRef.current);
-  };
+  }, [changeBackgroundColor]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -109,46 +118,104 @@ const HomePage = () => {
     return t("greetings.evening");
   };
 
-  const recommendedPlaylistsItems = recommendedPlaylists.map((pl) => ({
-    ...pl,
-    itemType: "playlist" as const,
-  }));
-  const newReleasesItems = newReleases.map((album) => ({
-    ...album,
-    itemType: "album" as const,
-  }));
-  const favoriteArtistsItems = favoriteArtists.map((artist) => ({
-    ...artist,
-    itemType: "artist" as const,
-  }));
-  const madeForYouSongsItems = madeForYouSongs.map((song) => ({
-    ...song,
-    itemType: "song" as const,
-  }));
-  const trendingSongsItems = trendingSongs.map((song) => ({
-    ...song,
-    itemType: "song" as const,
-  }));
-  const recentlyListenedItems = recentlyListenedSongs.map((song) => ({
-    ...song,
-    itemType: "song" as const,
-  }));
-  const genreMixesItems = genreMixes.map((mix) => ({
-    ...mix,
-    itemType: "mix" as const,
-  }));
-  const moodMixesItems = moodMixes.map((mix) => ({
-    ...mix,
-    itemType: "mix" as const,
-  }));
-  const publicPlaylistsItems = publicPlaylists.map((pl) => ({
-    ...pl,
-    itemType: "playlist" as const,
-  }));
-  const generatedPlaylistsItems = allGeneratedPlaylists.map((pl) => ({
-    ...pl,
-    itemType: "generated-playlist" as const,
-  }));
+  const recommendedPlaylistsItems = useMemo(
+    () =>
+      recommendedPlaylists.map((pl) => ({
+        ...pl,
+        itemType: "playlist" as const,
+      })),
+    [recommendedPlaylists]
+  );
+  const newReleasesItems = useMemo(
+    () =>
+      newReleases.map((album) => ({ ...album, itemType: "album" as const })),
+    [newReleases]
+  );
+  const favoriteArtistsItems = useMemo(
+    () =>
+      favoriteArtists.map((artist) => ({
+        ...artist,
+        itemType: "artist" as const,
+      })),
+    [favoriteArtists]
+  );
+  const madeForYouSongsItems = useMemo(
+    () =>
+      madeForYouSongs.map((song) => ({ ...song, itemType: "song" as const })),
+    [madeForYouSongs]
+  );
+  const trendingSongsItems = useMemo(
+    () => trendingSongs.map((song) => ({ ...song, itemType: "song" as const })),
+    [trendingSongs]
+  );
+  const recentlyListenedItems = useMemo(
+    () =>
+      recentlyListenedSongs.map((song) => ({
+        ...song,
+        itemType: "song" as const,
+      })),
+    [recentlyListenedSongs]
+  );
+  const genreMixesItems = useMemo(
+    () => genreMixes.map((mix) => ({ ...mix, itemType: "mix" as const })),
+    [genreMixes]
+  );
+  const moodMixesItems = useMemo(
+    () => moodMixes.map((mix) => ({ ...mix, itemType: "mix" as const })),
+    [moodMixes]
+  );
+  const publicPlaylistsItems = useMemo(
+    () =>
+      publicPlaylists.map((pl) => ({ ...pl, itemType: "playlist" as const })),
+    [publicPlaylists]
+  );
+  const generatedPlaylistsItems = useMemo(
+    () =>
+      allGeneratedPlaylists.map((pl) => ({
+        ...pl,
+        itemType: "generated-playlist" as const,
+      })),
+    [allGeneratedPlaylists]
+  );
+
+  const handleShowAllMadeForYou = useCallback(
+    () =>
+      navigate("/all-songs/made-for-you", {
+        state: { songs: madeForYouSongs, title: t("homepage.madeForYou") },
+      }),
+    [navigate, madeForYouSongs, t]
+  );
+  const handleShowAllRecentlyListened = useCallback(
+    () =>
+      navigate("/all-songs/recently-listened", {
+        state: {
+          songs: recentlyListenedSongs,
+          title: t("homepage.recentlyListened"),
+        },
+      }),
+    [navigate, recentlyListenedSongs, t]
+  );
+  const handleShowAllGenreMixes = useCallback(
+    () =>
+      navigate(`/all-mixes/genres`, {
+        state: { mixes: genreMixes, title: t("homepage.genreMixes") },
+      }),
+    [navigate, genreMixes, t]
+  );
+  const handleShowAllMoodMixes = useCallback(
+    () =>
+      navigate(`/all-mixes/moods`, {
+        state: { mixes: moodMixes, title: t("homepage.moodMixes") },
+      }),
+    [navigate, moodMixes, t]
+  );
+  const handleShowAllTrending = useCallback(
+    () =>
+      navigate("/all-songs/trending", {
+        state: { songs: trendingSongs, title: t("homepage.trending") },
+      }),
+    [navigate, trendingSongs, t]
+  );
 
   return (
     <>
@@ -209,14 +276,7 @@ const HomePage = () => {
                       isLoading={false}
                       limit={12}
                       t={t}
-                      onShowAll={() =>
-                        navigate("/all-songs/made-for-you", {
-                          state: {
-                            songs: madeForYouSongs,
-                            title: t("homepage.madeForYou"),
-                          },
-                        })
-                      }
+                      onShowAll={handleShowAllMadeForYou}
                     />
                   )}
                   {user && recentlyListenedSongs.length > 0 && (
@@ -226,14 +286,7 @@ const HomePage = () => {
                       isLoading={false}
                       t={t}
                       limit={12}
-                      onShowAll={() =>
-                        navigate("/all-songs/recently-listened", {
-                          state: {
-                            songs: recentlyListenedItems,
-                            title: t("homepage.recentlyListened"),
-                          },
-                        })
-                      }
+                      onShowAll={handleShowAllRecentlyListened}
                     />
                   )}
                   <HorizontalSection
@@ -242,14 +295,7 @@ const HomePage = () => {
                     isLoading={false}
                     t={t}
                     limit={12}
-                    onShowAll={() =>
-                      navigate(`/all-mixes/genres`, {
-                        state: {
-                          mixes: genreMixes,
-                          title: t("homepage.genreMixes"),
-                        },
-                      })
-                    }
+                    onShowAll={handleShowAllGenreMixes}
                   />
                   <HorizontalSection
                     title={t("homepage.moodMixes")}
@@ -257,14 +303,7 @@ const HomePage = () => {
                     isLoading={false}
                     t={t}
                     limit={12}
-                    onShowAll={() =>
-                      navigate(`/all-mixes/moods`, {
-                        state: {
-                          mixes: moodMixes,
-                          title: t("homepage.moodMixes"),
-                        },
-                      })
-                    }
+                    onShowAll={handleShowAllMoodMixes}
                   />
                   <HorizontalSection
                     title={t("homepage.trending")}
@@ -272,14 +311,7 @@ const HomePage = () => {
                     isLoading={false}
                     t={t}
                     limit={12}
-                    onShowAll={() =>
-                      navigate("/all-songs/trending", {
-                        state: {
-                          songs: trendingSongs,
-                          title: t("homepage.trending"),
-                        },
-                      })
-                    }
+                    onShowAll={handleShowAllTrending}
                   />
                   {user && favoriteArtists.length > 0 && (
                     <HorizontalSection

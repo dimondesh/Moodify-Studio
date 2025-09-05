@@ -1,10 +1,10 @@
 // src/pages/HomePage/FeaturedSection.tsx
-
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
 import PlayButton from "./PlayButton";
-import { JSX, useEffect } from "react";
+import { JSX } from "react";
 import { Song } from "@/types";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePlayerStore } from "../../stores/usePlayerStore";
@@ -20,7 +20,7 @@ interface FeaturedSectionProps {
   onSongLeave: () => void;
 }
 
-const FeaturedSection = ({
+const FeaturedSectionComponent = ({
   onSongHover,
   onSongLeave,
 }: FeaturedSectionProps) => {
@@ -131,7 +131,6 @@ const FeaturedSection = ({
       handleNavigateToAlbum(song.albumId);
     }
   };
-
   return (
     <div
       className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
@@ -177,4 +176,5 @@ const FeaturedSection = ({
   );
 };
 
+const FeaturedSection = React.memo(FeaturedSectionComponent);
 export default FeaturedSection;

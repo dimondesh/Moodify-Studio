@@ -1,6 +1,6 @@
 // frontend/src/pages/LyricsPage/LyricsPage.tsx
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { getArtistNames } from "@/lib/utils";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -16,6 +16,7 @@ interface LyricLine {
 }
 
 const parseLrc = (lrcContent: string): LyricLine[] => {
+  if (!lrcContent) return [];
   const lines = lrcContent.split("\n");
   const parsedLyrics: LyricLine[] = [];
   lines.forEach((line) => {
@@ -26,7 +27,9 @@ const parseLrc = (lrcContent: string): LyricLine[] => {
       const milliseconds = parseInt(timeMatch[3].padEnd(3, "0"), 10);
       const timeInSeconds = minutes * 60 + seconds + milliseconds / 1000;
       const text = line.replace(/\[.*?\]/g, "").trim();
-      parsedLyrics.push({ time: timeInSeconds, text });
+      if (text) {
+        parsedLyrics.push({ time: timeInSeconds, text });
+      }
     }
   });
   parsedLyrics.sort((a, b) => a.time - b.time);
@@ -53,7 +56,6 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const { playbackRateEnabled, playbackRate } = useAudioSettingsStore();
 
   const lyricsScrollAreaRef = useRef<HTMLDivElement>(null);
-  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,6 +66,10 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   const [backgrounds, setBackgrounds] = useState([
     { key: 0, color: "#18181b" },
   ]);
+
+  const lyrics = useMemo(() => {
+    return currentSong?.lyrics ? parseLrc(currentSong.lyrics) : [];
+  }, [currentSong?.lyrics]);
 
   useEffect(() => {
     const updateBackgroundColor = (color: string) => {
@@ -86,16 +92,14 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
   }, [currentSong, extractColor]);
 
   useEffect(() => {
-    if (currentSong?.lyrics) {
-      setLyrics(parseLrc(currentSong.lyrics));
-      setIsUserScrolling(false);
-      if (lyricsScrollAreaRef.current) {
-        lyricsScrollAreaRef.current.scrollTop = 0;
-      }
-    } else {
-      setLyrics([]);
+    setIsUserScrolling(false);
+    if (lyricsScrollAreaRef.current) {
+      const viewport = lyricsScrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
+      if (viewport) viewport.scrollTop = 0;
     }
-  }, [currentSong]);
+  }, [lyrics]);
 
   useEffect(() => {
     if (lyricsScrollAreaRef.current && lyrics.length > 0 && !isUserScrolling) {
@@ -111,13 +115,11 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
       if (activeLineIndex !== -1) {
         const activeLineElement = lyricsScrollAreaRef.current.querySelector(
           `.lyric-line-${activeLineIndex}`
-        );
+        ) as HTMLElement;
         if (activeLineElement) {
-          requestAnimationFrame(() => {
-            activeLineElement.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
+          activeLineElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
           });
         }
       }
@@ -153,8 +155,8 @@ const LyricsPage: React.FC<LyricsPageProps> = ({
       if (scrollAreaElement) {
         scrollAreaElement.removeEventListener("scroll", handleScroll);
         scrollAreaElement.removeEventListener("touchstart", () => {});
-        scrollAreaElement.removeEventListener("touchend", () => {});
-        scrollAreaElement.removeEventListener("touchcancel", () => {});
+        scrollAreaElement.removeEventListener("touchend", handleScroll);
+        scrollAreaElement.removeEventListener("touchcancel", handleScroll);
       }
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };

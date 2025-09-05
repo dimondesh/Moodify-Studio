@@ -1,16 +1,17 @@
 // frontend/src/pages/ProfilePage/PlaylistRow.tsx
 
+import React from "react";
 import { Link } from "react-router-dom";
 import { Playlist } from "@/types";
 import { Music } from "lucide-react";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 interface PlaylistRowProps {
   playlist: Playlist;
 }
 
-const PlaylistRow = ({ playlist }: PlaylistRowProps) => {
-  const { t } = useTranslation(); 
+const PlaylistRowComponent = ({ playlist }: PlaylistRowProps) => {
+  const { t } = useTranslation();
   return (
     <Link
       to={`/playlists/${playlist._id}`}
@@ -38,4 +39,5 @@ const PlaylistRow = ({ playlist }: PlaylistRowProps) => {
   );
 };
 
+const PlaylistRow = React.memo(PlaylistRowComponent);
 export default PlaylistRow;
