@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // frontend/src/pages/LibraryPage/LibraryPage.tsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
 import { useLibraryStore } from "../../stores/useLibraryStore";
@@ -40,15 +40,12 @@ const LibraryPage = () => {
     savedMixes,
     isLoading: isLoadingLibrary,
     error: libraryError,
-    fetchLibrary,
-    fetchLikedSongs,
     generatedPlaylists,
   } = useLibraryStore();
   const {
     myPlaylists,
     isLoading: isLoadingPlaylists,
     error: playlistsError,
-    fetchMyPlaylists,
   } = usePlaylistStore();
   const {
     isCreatePlaylistDialogOpen,
@@ -56,7 +53,7 @@ const LibraryPage = () => {
     closeAllDialogs,
   } = useUIStore();
 
-  const { artists, fetchArtists } = useMusicStore();
+  const { artists } = useMusicStore();
   const [user] = useAuthState(auth);
   const { isDownloaded } = useOfflineStore((s) => s.actions);
   const { isOffline } = useOfflineStore();
@@ -66,23 +63,8 @@ const LibraryPage = () => {
   useEffect(() => {
     if (isOffline) {
       setActiveFilter("downloaded");
-    } else {
-      setActiveFilter("all");
     }
   }, [isOffline]);
-
-  useEffect(() => {
-    fetchLibrary();
-    fetchLikedSongs();
-    fetchMyPlaylists();
-    fetchArtists();
-  }, [
-    isOffline,
-    fetchLibrary,
-    fetchLikedSongs,
-    fetchMyPlaylists,
-    fetchArtists,
-  ]);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -105,6 +87,108 @@ const LibraryPage = () => {
     (libraryError as string | null) || (playlistsError as string | null);
   const errorMessage = combinedError;
 
+  const libraryItems = useMemo(() => {
+    const libraryItemsMap = new Map<string, LibraryItem>();
+
+    (albums || []).forEach((album) =>
+      libraryItemsMap.set(album._id, {
+        _id: album._id,
+        type: "album",
+        title: album.title,
+        imageUrl: album.imageUrl,
+        createdAt: new Date(album.addedAt ?? new Date()),
+        artist: album.artist,
+        albumType: album.type,
+      } as AlbumItem)
+    );
+
+    [...(myPlaylists || []), ...(playlists || [])].forEach((playlist) => {
+      if (!libraryItemsMap.has(playlist._id)) {
+        const isGenerated = (playlist as any).isGenerated;
+        libraryItemsMap.set(playlist._id, {
+          _id: playlist._id,
+          type: isGenerated ? "generated-playlist" : "playlist",
+          title: isGenerated ? t((playlist as any).nameKey) : playlist.title,
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(
+            (playlist as any).addedAt || playlist.updatedAt || new Date()
+          ),
+          owner: playlist.owner,
+          isGenerated: isGenerated,
+        } as PlaylistItem);
+      }
+    });
+
+    (generatedPlaylists || []).forEach((playlist) => {
+      if (!libraryItemsMap.has(playlist._id)) {
+        libraryItemsMap.set(playlist._id, {
+          _id: playlist._id,
+          type: "generated-playlist",
+          title: t(playlist.nameKey),
+          imageUrl: playlist.imageUrl,
+          createdAt: new Date(playlist.addedAt || playlist.generatedOn),
+          sourceName: "Moodify",
+        } as GeneratedPlaylistItem);
+      }
+    });
+
+    (savedMixes || []).forEach((mix) =>
+      libraryItemsMap.set(mix._id, {
+        _id: mix._id,
+        type: "mix",
+        title: t(mix.name),
+        imageUrl: mix.imageUrl,
+        createdAt: new Date(mix.addedAt ?? new Date()),
+        sourceName: mix.sourceName,
+      } as MixItem)
+    );
+
+    (followedArtists || []).forEach((artist) =>
+      libraryItemsMap.set(artist._id, {
+        _id: artist._id,
+        type: "artist",
+        title: artist.name,
+        imageUrl: artist.imageUrl,
+        createdAt: new Date(artist.addedAt || artist.createdAt),
+        artistId: artist._id,
+      } as FollowedArtistItem)
+    );
+
+    if (likedSongs.length > 0) {
+      libraryItemsMap.set("liked-songs", {
+        _id: "liked-songs",
+        type: "liked-songs",
+        title: t("sidebar.likedSongs"),
+        imageUrl: "/liked.png",
+        createdAt: new Date(likedSongs[0]?.likedAt || Date.now()),
+        songsCount: likedSongs.length,
+      });
+    }
+
+    return Array.from(libraryItemsMap.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }, [
+    albums,
+    myPlaylists,
+    playlists,
+    generatedPlaylists,
+    savedMixes,
+    followedArtists,
+    likedSongs,
+    t,
+  ]);
+
+  const filteredLibraryItems = useMemo(() => {
+    if (activeFilter === "downloaded") {
+      return libraryItems.filter((item) => {
+        if (item.type === "liked-songs" || item.type === "artist") return false;
+        return isDownloaded(item._id);
+      });
+    }
+    return libraryItems;
+  }, [libraryItems, activeFilter, isDownloaded]);
+
   if (isLoading) return <LibraryGridSkeleton />;
 
   if (errorMessage && !isOffline) {
@@ -119,105 +203,6 @@ const LibraryPage = () => {
       </div>
     );
   }
-
-  // --- ИЗМЕНЕНИЕ НАЧАЛО: Логика дедупликации ---
-  const libraryItemsMap = new Map<string, LibraryItem>();
-
-  // 1. Добавляем альбомы
-  (albums || []).forEach((album) =>
-    libraryItemsMap.set(album._id, {
-      _id: album._id,
-      type: "album",
-      title: album.title,
-      imageUrl: album.imageUrl,
-      createdAt: new Date(album.addedAt ?? new Date()),
-      artist: album.artist,
-      albumType: album.type,
-    } as AlbumItem)
-  );
-
-  // 2. Добавляем плейлисты (обычные и свои)
-  [...(myPlaylists || []), ...(playlists || [])].forEach((playlist) => {
-    if (!libraryItemsMap.has(playlist._id)) {
-      const isGenerated = (playlist as any).isGenerated;
-      libraryItemsMap.set(playlist._id, {
-        _id: playlist._id,
-        type: isGenerated ? "generated-playlist" : "playlist",
-        title: isGenerated ? t((playlist as any).nameKey) : playlist.title,
-        imageUrl: playlist.imageUrl,
-        createdAt: new Date(
-          (playlist as any).addedAt || playlist.updatedAt || new Date()
-        ),
-        owner: playlist.owner,
-        isGenerated: isGenerated,
-      } as PlaylistItem);
-    }
-  });
-
-  // 3. Добавляем сохраненные генеративные плейлисты
-  (generatedPlaylists || []).forEach((playlist) => {
-    if (!libraryItemsMap.has(playlist._id)) {
-      libraryItemsMap.set(playlist._id, {
-        _id: playlist._id,
-        type: "generated-playlist",
-        title: t(playlist.nameKey),
-        imageUrl: playlist.imageUrl,
-        createdAt: new Date(playlist.addedAt || playlist.generatedOn),
-        sourceName: "Moodify",
-      } as GeneratedPlaylistItem);
-    }
-  });
-
-  // 4. Добавляем миксы
-  (savedMixes || []).forEach((mix) =>
-    libraryItemsMap.set(mix._id, {
-      _id: mix._id,
-      type: "mix",
-      title: t(mix.name),
-      imageUrl: mix.imageUrl,
-      createdAt: new Date(mix.addedAt ?? new Date()),
-      sourceName: mix.sourceName,
-    } as MixItem)
-  );
-
-  // 5. Добавляем артистов
-  (followedArtists || []).forEach((artist) =>
-    libraryItemsMap.set(artist._id, {
-      _id: artist._id,
-      type: "artist",
-      title: artist.name,
-      imageUrl: artist.imageUrl,
-      createdAt: new Date(artist.addedAt || artist.createdAt),
-      artistId: artist._id,
-    } as FollowedArtistItem)
-  );
-
-  // 6. Добавляем "Любимые треки"
-  if (likedSongs.length > 0) {
-    libraryItemsMap.set("liked-songs", {
-      _id: "liked-songs",
-      type: "liked-songs",
-      title: t("sidebar.likedSongs"),
-      imageUrl: "/liked.png",
-      createdAt: new Date(likedSongs[0]?.likedAt || Date.now()),
-      songsCount: likedSongs.length,
-    });
-  }
-
-  const libraryItems = Array.from(libraryItemsMap.values()).sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-  );
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
-
-  const filteredLibraryItems = libraryItems.filter((item) => {
-    if (activeFilter === "downloaded") {
-      if (item.type === "liked-songs" || item.type === "artist") {
-        return false;
-      }
-      return isDownloaded(item._id);
-    }
-    return true;
-  });
 
   return (
     <>
@@ -348,8 +333,6 @@ const LibraryPage = () => {
                             item.imageUrl || "/default-album-cover.png";
                           break;
                         }
-                        default:
-                          break;
                       }
 
                       return (
