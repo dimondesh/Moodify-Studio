@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { Button } from "./button";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 type ItemType = "albums" | "playlists" | "mixes" | "generated-playlists";
 
@@ -18,6 +19,7 @@ export const DownloadButton = ({
   itemType,
   itemTitle,
 }: DownloadButtonProps) => {
+  const { t } = useTranslation();
   const downloadedItemIds = useOfflineStore((s) => s.downloadedItemIds);
   const downloadingItemIds = useOfflineStore((s) => s.downloadingItemIds);
   const { downloadItem, deleteItem } = useOfflineStore((s) => s.actions);
@@ -36,9 +38,9 @@ export const DownloadButton = ({
 
     if (status === "idle") {
       toast.promise(downloadItem(itemId, itemType), {
-        loading: `Downloading "${itemTitle}"...`,
-        success: `"${itemTitle}" is now available offline.`,
-        error: (err) => `Failed to download: ${err.toString()}`,
+        loading: t("toasts.downloading", { itemTitle }),
+        success: t("toasts.downloadSuccess", { itemTitle }),
+        error: (err) => t("toasts.downloadError", { error: err.toString() }),
       });
     } else if (status === "downloaded") {
       deleteItem(itemId, itemType, itemTitle);
@@ -48,12 +50,12 @@ export const DownloadButton = ({
   const getTooltipText = () => {
     switch (status) {
       case "downloaded":
-        return `Remove "${itemTitle}" from downloads`;
+        return t("tooltips.removeFromDownloads", { itemTitle });
       case "downloading":
-        return `Downloading...`;
+        return t("tooltips.downloading");
       case "idle":
       default:
-        return `Download "${itemTitle}" for offline playback`;
+        return t("tooltips.download", { itemTitle });
     }
   };
 

@@ -15,16 +15,16 @@ const AllMixesPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const initialMixes = location.state?.mixes;
-  const pageTitle = location.state?.title || "All Mixes";
+  const pageTitle = location.state?.title || t("pages.allMixes.title");
 
   useEffect(() => {
     if (initialMixes && Array.isArray(initialMixes)) {
       setMixes(initialMixes);
     } else {
-      setError("Mix data not available.");
+      setError(t("pages.allMixes.noData"));
     }
     setIsLoading(false);
-  }, [initialMixes]);
+  }, [initialMixes, t]);
 
   const handleNavigateToMix = (mixId: string) => {
     navigate(`/mixes/${mixId}`);
@@ -34,7 +34,7 @@ const AllMixesPage = () => {
   if (error)
     return (
       <div className="p-4 text-red-500">
-        {t("pages.playlist.errorTitle")}: {error}
+        {t("common.error")}: {error}
       </div>
     );
 
@@ -42,7 +42,7 @@ const AllMixesPage = () => {
     return (
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4">{pageTitle}</h2>
-        <p className="text-zinc-400">No mixes available in this category.</p>
+        <p className="text-zinc-400">{t("pages.allMixes.noMixes")}</p>
       </div>
     );
   }
@@ -60,7 +60,7 @@ const AllMixesPage = () => {
             >
               <img
                 src={mix.imageUrl}
-                alt={mix.name}
+                alt={t(mix.name)}
                 className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
               />
               <div className="absolute inset-0 flex items-end justify-start p-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent">

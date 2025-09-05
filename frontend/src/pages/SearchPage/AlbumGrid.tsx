@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import type { Album, Artist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "@/stores/useSearchStore";
+import { useTranslation } from "react-i18next";
 
 type AlbumGridProps = {
   title: string;
@@ -13,6 +14,7 @@ type AlbumGridProps = {
 };
 
 const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { addRecentSearch } = useSearchStore();
@@ -23,9 +25,10 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   };
 
   const getArtistNames = (artistsInput: Artist[] | undefined) => {
-    if (!artistsInput || artistsInput.length === 0) return "Unknown Artist";
+    if (!artistsInput || artistsInput.length === 0)
+      return t("common.unknownArtist");
     const names = artistsInput.map((artist) => artist?.name).filter(Boolean);
-    return names.join(", ") || "Unknown Artist";
+    return names.join(", ") || t("common.unknownArtist");
   };
 
   if (isLoading) return <SectionGridSkeleton />;
@@ -42,7 +45,7 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
             className="text-sm text-zinc-400 hover:text-white"
             onClick={() => setShowAll(!showAll)}
           >
-            {showAll ? "Show less" : "Show all"}
+            {showAll ? t("searchpage.showLess") : t("searchpage.showAll")}
           </Button>
         )}
       </div>

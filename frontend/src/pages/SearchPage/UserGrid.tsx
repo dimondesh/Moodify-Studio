@@ -64,7 +64,7 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
               {user.fullName}
             </h3>
             <p className="text-sm text-zinc-400 text-center">
-              {t("topbar.profile")}
+              {t("sidebar.subtitle.user")}
             </p>
           </div>
         ))}

@@ -8,6 +8,7 @@ import { JSX, useEffect } from "react";
 import { Song } from "@/types";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePlayerStore } from "../../stores/usePlayerStore";
+import { useTranslation } from "react-i18next";
 
 interface Artist {
   _id: string;
@@ -23,6 +24,7 @@ const FeaturedSection = ({
   onSongHover,
   onSongLeave,
 }: FeaturedSectionProps) => {
+  const { t } = useTranslation();
   const { isLoading, featuredSongs, error, artists, fetchArtists } =
     useMusicStore();
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ const FeaturedSection = ({
     isMobileView: boolean
   ) => {
     if (!artistsInput || artistsInput.length === 0) {
-      return <span>Неизвестный исполнитель</span>;
+      return <span>{t("common.unknownArtist")}</span>;
     }
 
     const artistElements: JSX.Element[] = [];
@@ -114,7 +116,7 @@ const FeaturedSection = ({
   };
 
   if (songsArray.length === 0) {
-    return <p className="text-zinc-400">No songs available</p>;
+    return <p className="text-zinc-400">{t("common.noSongs")}</p>;
   }
 
   const handleItemClick = (song: Song, index: number) => {
@@ -159,7 +161,7 @@ const FeaturedSection = ({
             </div>
             <div className="flex-1 p-2 sm:p-4 min-w-0">
               <p className="font-medium truncate text-white hover:underline">
-                {song.title || "Без названия"}
+                {song.title || t("common.noTitle")}
               </p>
               <p className="hidden sm:inline text-sm text-zinc-400 truncate">
                 {getArtistNamesDisplay(song.artist, isMobile)}

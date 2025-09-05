@@ -29,13 +29,17 @@ interface AddSongToPlaylistDialogProps {
   songToAdd: Song | null;
 }
 
-const getArtistNames = (artistsInput: Artist[] | undefined) => {
-  if (!artistsInput || artistsInput.length === 0) return "Unknown Artist";
+const getArtistNames = (
+  artistsInput: Artist[] | undefined,
+  t: (key: string) => string
+) => {
+  if (!artistsInput || artistsInput.length === 0)
+    return t("common.unknownArtist");
   return (
     artistsInput
       .map((artist) => artist.name)
       .filter(Boolean)
-      .join(", ") || "Unknown Artist"
+      .join(", ") || t("common.unknownArtist")
   );
 };
 
@@ -56,22 +60,24 @@ export const AddSongToPlaylistDialog: React.FC<
 
   const handleSubmit = useCallback(async () => {
     if (!songToAdd) {
-      toast.error("No song selected to add.");
+      toast.error(t("toasts.noSongSelected"));
       return;
     }
     if (!selectedPlaylistId) {
-      toast.error("Please select a playlist.");
+      toast.error(t("toasts.selectPlaylist"));
       return;
     }
     try {
       await addSongToPlaylist(selectedPlaylistId, songToAdd._id);
       onClose();
-      toast.success(`"${songToAdd.title}" added to playlist!`);
+      toast.success(
+        t("toasts.songAddedToPlaylist", { songTitle: songToAdd.title })
+      );
     } catch (error) {
       console.error("Error adding song to playlist in dialog:", error);
-      toast.error("Failed to add song to playlist.");
+      toast.error(t("toasts.addSongToPlaylistError"));
     }
-  }, [songToAdd, selectedPlaylistId, addSongToPlaylist, onClose]);
+  }, [songToAdd, selectedPlaylistId, addSongToPlaylist, onClose, t]);
 
   const handleClose = useCallback(() => {
     setSelectedPlaylistId("");
@@ -94,7 +100,7 @@ export const AddSongToPlaylistDialog: React.FC<
             <h4 className="font-semibold">{t("sidebar.subtitle.song")}:</h4>
             <p className="text-sm text-gray-500">
               {songToAdd
-                ? `${songToAdd.title} by ${getArtistNames(songToAdd.artist)}`
+                ? `${songToAdd.title} by ${getArtistNames(songToAdd.artist, t)}`
                 : "N/A"}
             </p>
           </div>
@@ -113,7 +119,7 @@ export const AddSongToPlaylistDialog: React.FC<
               <SelectContent>
                 {myPlaylists.length === 0 ? (
                   <div className="p-2 text-center text-sm text-gray-500">
-                    No playlists available.
+                    {t("pages.playlist.addSongDialog.noPlaylists")}
                   </div>
                 ) : (
                   <ScrollArea className="h-[200px]">
@@ -128,7 +134,7 @@ export const AddSongToPlaylistDialog: React.FC<
             </Select>
             {myPlaylists.length === 0 && !isLoading && (
               <p className="text-sm text-red-500 mt-1">
-                You don't have any playlists yet.
+                {t("pages.playlist.addSongDialog.noPlaylistsError")}
               </p>
             )}
           </div>

@@ -1,77 +1,80 @@
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useSearchStore } from "../../stores/useSearchStore";
-import AlbumGrid from "../SearchPage/AlbumGrid";
-import { ScrollArea } from "../../components/ui/scroll-area";
-import SongGrid from "../SearchPage/SongGrid";
-import PlaylistGrid from "../SearchPage/PlaylistGrid";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../components/ui/button";
+import SectionGridSkeleton from "./SectionGridSkeleton";
+import { Playlist } from "@/types";
+import { useTranslation } from "react-i18next";
 
-const SearchPage = () => {
-  const [searchParams] = useSearchParams();
-  const queryParam = searchParams.get("q") || "";
+type PlaylistSectionGridProps = {
+  title: string;
+  playlists: Playlist[];
+  isLoading: boolean;
+  showAllPath?: string;
+};
 
-  const { query, songs, albums, playlists, loading, error, setQuery, search } =
-    useSearchStore();
+const PlaylistSectionGrid = ({
+  title,
+  playlists,
+  isLoading,
+  showAllPath,
+}: PlaylistSectionGridProps) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (queryParam !== query) {
-      setQuery(queryParam);
-      search(queryParam);
-    }
-  }, [queryParam, query, setQuery, search]);
+  if (isLoading) {
+    return <SectionGridSkeleton />;
+  }
+  if (!playlists || playlists.length === 0) {
+    return null;
+  }
+
+  const playlistsToShow = playlists.slice(0, 4);
 
   return (
-    <main className="rounded-md overflow-hidden h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
-      <ScrollArea className="h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-160px)] lg:h-[calc(100vh-120px)] w-full pb-20 md:pb-0">
-        <div className="py-10 px-4 sm:px-6">
-          {" "}
-          {queryParam ? (
-            <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
-              {" "}
-              Search results for &quot;{queryParam}&quot;
-            </h1>
-          ) : (
-            <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-white">
-              {" "}
-              Find your favorite songs, albums, and playlists here
-            </h1>
-          )}
-          {loading && <p className="text-zinc-400">Loading...</p>}{" "}
-          {error && <p className="text-red-500">{error}</p>}
-          {!loading &&
-            !error &&
-            songs.length === 0 &&
-            albums.length === 0 &&
-            playlists.length === 0 && (
-              <p className="text-zinc-400">No results found.</p>
-            )}
-          {!loading &&
-            !error &&
-            (songs.length > 0 || albums.length > 0 || playlists.length > 0) && (
-              <>
-                {songs.length > 0 && (
-                  <SongGrid title="Songs" songs={songs} isLoading={loading} />
-                )}
-                {albums.length > 0 && (
-                  <AlbumGrid
-                    title="Albums"
-                    albums={albums}
-                    isLoading={loading}
-                  />
-                )}
-                {playlists.length > 0 && (
-                  <PlaylistGrid
-                    title="Playlists"
-                    playlists={playlists}
-                    isLoading={loading}
-                  />
-                )}
-              </>
-            )}
-        </div>
-      </ScrollArea>
-    </main>
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
+        {playlists.length > 4 && showAllPath && (
+          <Button
+            variant="link"
+            className="text-sm text-zinc-400 hover:text-white"
+            onClick={() => navigate(showAllPath)}
+          >
+            {t("searchpage.showAll")}
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {playlistsToShow.map((playlist) => (
+          <div
+            key={playlist._id}
+            className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all group cursor-pointer"
+            onClick={() => navigate(`/playlists/${playlist._id}`)}
+          >
+            <div className="relative mb-4">
+              <div className=" aspect-square rounded-md shadow-lg overflow-hidden">
+                <img
+                  src={playlist.imageUrl || "/default_playlist_cover.png"}
+                  alt={playlist.title}
+                  className=" w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/default_playlist_cover.png";
+                  }}
+                />
+              </div>
+            </div>
+            <h3 className="font-medium mb-2 truncate">{playlist.title}</h3>
+            <p className="text-sm text-zinc-400 truncate">
+              {t("sidebar.subtitle.byUser", {
+                name: playlist.owner?.fullName || t("common.unknownArtist"),
+              })}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
-export default SearchPage;
+export default PlaylistSectionGrid;

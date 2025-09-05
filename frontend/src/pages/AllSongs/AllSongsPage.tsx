@@ -41,10 +41,10 @@ const AllSongsPage = () => {
           if (Array.isArray(fetchedData)) {
             setSongs(fetchedData);
           } else {
-            setError(t("pages.playlist.error"));
+            setError(t("common.error"));
           }
         } catch (err) {
-          setError(t("pages.playlist.error"));
+          setError(t("common.error"));
         } finally {
           setIsLoading(false);
         }
@@ -52,7 +52,7 @@ const AllSongsPage = () => {
       fetchSongs();
     } else {
       setIsLoading(false);
-      setError("No data available to display.");
+      setError(t("common.noData"));
     }
     fetchArtists();
   }, [initialSongs, apiEndpoint, fetchArtists, t]);
@@ -114,7 +114,7 @@ const AllSongsPage = () => {
   if (error)
     return (
       <div className="p-4 text-red-500">
-        {t("pages.playlist.errorTitle")}: {error}
+        {t("common.error")}: {error}
       </div>
     );
   if (!songs || songs.length === 0) {
@@ -150,7 +150,7 @@ const AllSongsPage = () => {
                   >
                     <img
                       src={song.imageUrl || "/default-song-cover.png"}
-                      alt={song.title || "No title"}
+                      alt={song.title || t("common.noTitle")}
                       className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
@@ -166,7 +166,7 @@ const AllSongsPage = () => {
                   onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
                   className="hover:underline focus:outline-none focus:underline text-left w-full"
                 >
-                  {song.title || "No title"}
+                  {song.title || t("common.noTitle")}
                 </button>
               </h3>
               <p className="text-sm text-zinc-400 truncate">

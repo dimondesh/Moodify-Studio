@@ -18,6 +18,7 @@ import {
 } from "../lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
+import i18n from "@/lib/i18n";
 
 interface LibraryStore {
   albums: Album[];
@@ -33,8 +34,8 @@ interface LibraryStore {
   fetchLibrary: () => Promise<void>;
   fetchLikedSongs: () => Promise<void>;
   fetchFollowedArtists: () => Promise<void>;
-  isGeneratedPlaylistSaved: (playlistId: string) => boolean; // <-- НОВАЯ ФУНКЦИЯ-ПРОВЕРКА
-  toggleGeneratedPlaylistInLibrary: (playlistId: string) => Promise<void>; // <-- НОВАЯ ФУНКЦИЯ-ПЕРЕКЛЮЧАТЕЛЬ
+  isGeneratedPlaylistSaved: (playlistId: string) => boolean;
+  toggleGeneratedPlaylistInLibrary: (playlistId: string) => Promise<void>;
 
   toggleAlbum: (albumId: string) => Promise<void>;
   toggleSongLike: (songId: string) => Promise<void>;
@@ -56,7 +57,6 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
   followedArtists: [],
   savedMixes: [],
   generatedPlaylists: [],
-
   isLoading: false,
   error: null,
 
@@ -70,7 +70,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       if (!userId) {
         set({
           isLoading: false,
-          error: "User not available for offline library.",
+          error: i18n.t("errors.userNotAvailableOffline"), // ИЗМЕНЕНИЕ
         });
         return;
       }
@@ -97,7 +97,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       } catch (err: any) {
         console.error("Failed to fetch offline library data:", err);
         set({
-          error: err.message || "Failed to fetch library from storage",
+          error: err.message || i18n.t("errors.fetchLibraryOfflineError"),
           isLoading: false,
         });
       }
@@ -105,21 +105,20 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
 
     try {
-      // ИСПРАВЛЕНО: Запрашиваем все данные из библиотеки одним махом
       const [
         albumsRes,
         likedSongsRes,
         playlistsRes,
         followedArtistsRes,
         savedMixesRes,
-        savedGeneratedPlaylistsRes, // Этот эндпоинт возвращает только сохраненные
+        savedGeneratedPlaylistsRes,
       ] = await Promise.all([
         axiosInstance.get("/library/albums"),
         axiosInstance.get("/library/liked-songs"),
         axiosInstance.get("/library/playlists"),
         axiosInstance.get("/library/artists"),
         axiosInstance.get("/library/mixes"),
-        axiosInstance.get("/library/generated-playlists"), // Правильный эндпоинт
+        axiosInstance.get("/library/generated-playlists"),
       ]);
 
       set({
@@ -133,18 +132,15 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       });
     } catch (err: any) {
       set({
-        error: err.message || "Failed to fetch library",
+        error: err.message || i18n.t("errors.fetchLibraryError"),
         isLoading: false,
       });
     }
   },
 
-  // УДАЛЕНО: Отдельная функция fetchGeneratedPlaylists больше не нужна в этом сторе
-
   toggleGeneratedPlaylistInLibrary: async (playlistId: string) => {
     if (useOfflineStore.getState().isOffline) return;
 
-    // Оптимистичное обновление для мгновенной реакции UI
     const previousPlaylists = get().generatedPlaylists;
     const isCurrentlySaved = get().isGeneratedPlaylistSaved(playlistId);
 
@@ -154,7 +150,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         : [
             ...state.generatedPlaylists,
             { _id: playlistId, nameKey: "placeholder" } as GeneratedPlaylist,
-          ], // Временная заглушка
+          ],
     }));
 
     try {
@@ -164,15 +160,13 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       );
       toast.success(
         response.data.isSaved
-          ? "Saved to Your Library"
-          : "Removed from Your Library"
+          ? i18n.t("toasts.savedToLibrary")
+          : i18n.t("toasts.removedFromLibrary")
       );
-      // После успешного ответа, перезагружаем всю библиотеку, чтобы получить актуальные данные
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle generated playlist error", err);
-      toast.error("Failed to update library.");
-      // В случае ошибки, откатываем UI к состоянию до клика
+      toast.error(i18n.t("toasts.libraryUpdateError"));
       set({ generatedPlaylists: previousPlaylists });
     }
   },
@@ -188,7 +182,10 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
     if (isOffline) {
       if (!userId) {
-        set({ isLoading: false, error: "User not available offline." });
+        set({
+          isLoading: false,
+          error: i18n.t("errors.userNotAvailableOffline"),
+        });
         return;
       }
       console.log(
@@ -199,7 +196,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
         set({ likedSongs: allDownloadedSongs, isLoading: false });
       } catch (err: any) {
         set({
-          error: err.message || "Failed to fetch offline songs",
+          error: err.message || i18n.t("errors.fetchOfflineSongsError"),
           isLoading: false,
         });
       }
@@ -211,7 +208,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       set({ likedSongs: res.data.songs, isLoading: false });
     } catch (err: any) {
       set({
-        error: err.message || "Failed to fetch liked songs",
+        error: err.message || i18n.t("errors.fetchLikedSongsError"),
         isLoading: false,
       });
     }
@@ -226,7 +223,7 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       set({ followedArtists: res.data.artists, isLoading: false });
     } catch (err: any) {
       set({
-        error: err.message || "Failed to fetch followed artists",
+        error: err.message || i18n.t("errors.fetchFollowedArtistsError"),
         isLoading: false,
       });
     }
@@ -234,80 +231,67 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
 
   toggleAlbum: async (albumId: string) => {
     if (useOfflineStore.getState().isOffline) return;
-
     try {
       await axiosInstance.post("/library/albums/toggle", { albumId });
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle album error", err);
-      set({ error: "Failed to toggle album" });
+      set({ error: i18n.t("errors.toggleAlbumError") });
     }
   },
 
   toggleSongLike: async (songId: string) => {
     if (useOfflineStore.getState().isOffline) return;
-
     try {
       await axiosInstance.post("/library/songs/toggle-like", { songId });
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle song like error", err);
-      set({ error: "Failed to toggle song like" });
+      set({ error: i18n.t("errors.toggleSongLikeError") });
     }
   },
 
   togglePlaylist: async (playlistId: string) => {
     if (useOfflineStore.getState().isOffline) return;
-
     try {
       await axiosInstance.post("/library/playlists/toggle", { playlistId });
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle playlist error", err);
-      set({ error: "Failed to toggle playlist in library" });
+      set({ error: i18n.t("errors.togglePlaylistError") });
     }
   },
 
   toggleArtistFollow: async (artistId: string) => {
     if (useOfflineStore.getState().isOffline) return;
-
     try {
       await axiosInstance.post("/library/artists/toggle", { artistId });
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle artist follow error", err);
-      set({ error: "Failed to toggle artist follow" });
+      set({ error: i18n.t("errors.toggleArtistFollowError") });
     }
-  },
-  isAlbumInLibrary: (albumId: string) => {
-    return get().albums.some((album) => album._id === albumId);
-  },
-
-  isPlaylistInLibrary: (playlistId: string) => {
-    return get().playlists.some((playlist) => playlist._id === playlistId);
   },
 
   toggleMixInLibrary: async (mixId: string) => {
     if (useOfflineStore.getState().isOffline) return;
-
     try {
       await axiosInstance.post("/library/mixes/toggle", { mixId });
       await get().fetchLibrary();
     } catch (err) {
       console.error("Toggle mix in library error", err);
-      set({ error: "Failed to toggle mix in library" });
+      set({ error: i18n.t("errors.toggleMixError") });
     }
   },
 
-  isSongLiked: (songId: string) => {
-    return get().likedSongs.some((song) => song._id === songId);
-  },
-
-  isArtistFollowed: (artistId: string) => {
-    return get().followedArtists.some((artist) => artist._id === artistId);
-  },
-
-  isMixSaved: (mixId: string) => {
-    return get().savedMixes.some((mix) => mix._id === mixId);
-  },
+  isAlbumInLibrary: (albumId: string) =>
+    get().albums.some((album) => album._id === albumId),
+  isPlaylistInLibrary: (playlistId: string) =>
+    get().playlists.some((playlist) => playlist._id === playlistId),
+  isSongLiked: (songId: string) =>
+    get().likedSongs.some((song) => song._id === songId),
+  isArtistFollowed: (artistId: string) =>
+    get().followedArtists.some((artist) => artist._id === artistId),
+  isMixSaved: (mixId: string) =>
+    get().savedMixes.some((mix) => mix._id === mixId),
 }));

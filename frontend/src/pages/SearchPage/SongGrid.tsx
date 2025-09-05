@@ -8,6 +8,7 @@ import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"
 import { useMusicStore } from "../../stores/useMusicStore";
 import { getArtistNames } from "../../lib/utils";
 import { useSearchStore } from "@/stores/useSearchStore";
+import { useTranslation } from "react-i18next";
 
 type SectionGridProps = {
   title: string;
@@ -16,6 +17,7 @@ type SectionGridProps = {
 };
 
 const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { artists, fetchArtists } = useMusicStore();
@@ -26,7 +28,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
     if (typeof song.albumId === "string" && song.albumId.length > 0) {
       navigate(`/albums/${song.albumId}`);
     } else {
-      console.warn("albumId отсутствует или не строка:", song.albumId);
+      console.warn("albumId is missing or not a string:", song.albumId);
     }
   };
 
@@ -48,7 +50,7 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
             className="text-sm text-zinc-400 hover:text-white"
             onClick={() => setShowAll(!showAll)}
           >
-            {showAll ? "Show less" : "Show all"}
+            {showAll ? t("searchpage.showLess") : t("searchpage.showAll")}
           </Button>
         )}
       </div>

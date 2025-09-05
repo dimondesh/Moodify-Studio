@@ -5,6 +5,7 @@ import PlayButton from "./PlayButton";
 import SectionGridSkeleton from "./SectionGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { JSX, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Artist {
   _id: string;
@@ -25,6 +26,7 @@ const SectionGrid = ({
   isLoading,
   apiEndpoint,
 }: SectionGridProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { artists, fetchArtists } = useMusicStore();
 
@@ -36,7 +38,7 @@ const SectionGrid = ({
     artistsInput: (string | Artist)[] | undefined
   ) => {
     if (!artistsInput || artistsInput.length === 0) {
-      return <span>Unknown artist</span>;
+      return <span>{t("common.unknownArtist")}</span>;
     }
 
     const artistElements: JSX.Element[] = [];
@@ -87,7 +89,7 @@ const SectionGrid = ({
         navigate(`/albums/${albumIdStr}`);
       }
     } else {
-      console.warn("albumId отсутствует или не строка:", albumId);
+      console.warn("albumId is missing or not a string:", albumId);
     }
   };
 
@@ -104,7 +106,7 @@ const SectionGrid = ({
     return (
       <div className="mb-8">
         <h2 className="text-xl sm:text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-zinc-400">No Songs Available</p>
+        <p className="text-zinc-400">{t("common.songsNotFound")}</p>
       </div>
     );
   }
@@ -129,7 +131,7 @@ const SectionGrid = ({
             className="text-sm text-zinc-400 hover:text-white"
             onClick={handleShowAll}
           >
-            Show all
+            {t("searchpage.showAll")}
           </Button>
         )}
       </div>
@@ -148,7 +150,7 @@ const SectionGrid = ({
                   }
                 } else {
                   console.warn(
-                    "albumId отсутствует или не строка:",
+                    "albumId is missing or not a string:",
                     song.albumId
                   );
                 }
@@ -162,7 +164,7 @@ const SectionGrid = ({
                   >
                     <img
                       src={song.imageUrl || "/default-song-cover.png"}
-                      alt={song.title || "No title"}
+                      alt={song.title || t("common.noTitle")}
                       className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
@@ -182,7 +184,7 @@ const SectionGrid = ({
                   onClick={(e) => handleNavigateToAlbum(e, song.albumId)}
                   className="hover:underline focus:outline-none focus:underline text-left w-full"
                 >
-                  {song.title || "No title"}
+                  {song.title || t("common.noTitle")}
                 </button>
               </h3>
               <p className="text-sm text-zinc-400 truncate">

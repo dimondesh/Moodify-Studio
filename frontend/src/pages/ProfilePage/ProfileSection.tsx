@@ -2,7 +2,7 @@
 
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 interface Item {
   _id: string;
@@ -19,7 +19,7 @@ interface ProfileSectionProps {
 }
 
 const ProfileSection = ({ title, items, apiEndpoint }: ProfileSectionProps) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   if (!items || items.length === 0) {
     return null;
   }

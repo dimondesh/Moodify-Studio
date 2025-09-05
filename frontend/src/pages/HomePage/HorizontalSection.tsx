@@ -128,7 +128,7 @@ const HorizontalSection: React.FC<HorizontalSectionProps> = ({
             className="text-sm text-zinc-400 hover:text-white"
             onClick={onShowAll}
           >
-            Show all
+            {t("searchpage.showAll")}
           </Button>
         )}
       </div>

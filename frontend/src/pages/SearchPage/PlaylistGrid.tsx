@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import type { Playlist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "@/stores/useSearchStore";
+import { useTranslation } from "react-i18next";
 
 type PlaylistGridProps = {
   title: string;
@@ -13,6 +14,7 @@ type PlaylistGridProps = {
 };
 
 const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { addRecentSearch } = useSearchStore();
@@ -29,14 +31,14 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
   return (
     <div className="mb-8 w-full">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-white">{title}</h2>{" "}
+        <h2 className="text-xl sm:text-2xl font-bold text-white">{title}</h2>
         {playlists.length > 4 && (
           <Button
             variant="link"
             className="text-sm text-zinc-400 hover:text-white"
             onClick={() => setShowAll(!showAll)}
           >
-            {showAll ? "Show less" : "Show all"}
+            {showAll ? t("searchpage.showLess") : t("searchpage.showAll")}
           </Button>
         )}
       </div>
@@ -61,9 +63,9 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
             </div>
             <h3 className="font-medium mb-2 truncate text-white">
               {playlist.title}
-            </h3>{" "}
+            </h3>
             <p className="text-sm text-zinc-400 truncate">
-              {playlist.owner?.fullName || "Unknown Artist"}{" "}
+              {playlist.owner?.fullName || t("common.unknownArtist")}
             </p>
           </div>
         ))}

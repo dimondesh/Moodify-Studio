@@ -106,7 +106,7 @@ export const useOfflineStore = create<OfflineState>()(
           const userId = useAuthStore.getState().user?.id;
           if (isOffline || !userId) return;
 
-          toast.loading("Syncing your library...", { id: "sync-toast" });
+          toast.loading(i18n.t("toasts.syncingLibrary"), { id: "sync-toast" });
 
           try {
             const [localPlaylists, localMixes] = await Promise.all([
@@ -129,9 +129,14 @@ export const useOfflineStore = create<OfflineState>()(
                   : localPlaylist.updatedAt;
 
                 if (new Date(serverDate) > new Date(localDate)) {
-                  toast.loading(`Updating "${localPlaylist.title}"...`, {
-                    id: `sync-${localPlaylist._id}`,
-                  });
+                  toast.loading(
+                    i18n.t("toasts.updatingItem", {
+                      itemTitle: localPlaylist.title,
+                    }),
+                    {
+                      id: `sync-${localPlaylist._id}`,
+                    }
+                  );
                   await get().actions.downloadItem(
                     localPlaylist._id,
                     localPlaylist.isGenerated
@@ -158,9 +163,12 @@ export const useOfflineStore = create<OfflineState>()(
                   new Date(serverMix.generatedOn) >
                   new Date(localMix.generatedOn)
                 ) {
-                  toast.loading(`Updating "${localMix.name}"...`, {
-                    id: `sync-${localMix._id}`,
-                  });
+                  toast.loading(
+                    i18n.t("toasts.updatingItem", { itemTitle: localMix.name }),
+                    {
+                      id: `sync-${localMix._id}`,
+                    }
+                  );
                   await get().actions.downloadItem(localMix._id, "mixes");
                   toast.dismiss(`sync-${localMix._id}`);
                 }
@@ -169,17 +177,17 @@ export const useOfflineStore = create<OfflineState>()(
               }
             }
 
-            toast.success("Library synced successfully!", { id: "sync-toast" });
+            toast.success(i18n.t("toasts.syncSuccess"), { id: "sync-toast" });
           } catch (error) {
             console.error("Library sync failed:", error);
-            toast.error("Could not sync your library.", { id: "sync-toast" });
+            toast.error(i18n.t("toasts.syncError"), { id: "sync-toast" });
           }
         },
 
         downloadItem: async (itemId, itemType) => {
           const userId = useAuthStore.getState().user?.id;
           if (!userId) {
-            toast.error("You must be logged in to download content.");
+            toast.error(i18n.t("toasts.loginRequiredForDownload"));
             return;
           }
 
@@ -213,7 +221,7 @@ export const useOfflineStore = create<OfflineState>()(
               itemType === "albums" ? response.data.album : response.data;
 
             if (!serverItemData || !serverItemData.songs) {
-              throw new Error("Invalid item data received from server.");
+              throw new Error(i18n.t("errors.invalidServerData"));
             }
 
             const oldItemData = await getUserItem(storeName, itemId, userId);
@@ -280,7 +288,6 @@ export const useOfflineStore = create<OfflineState>()(
             const allUrls = Array.from(urlsToCache).filter(Boolean);
             const assetsCache = await caches.open("bunny-assets-cache");
 
-            // --- ИЗМЕНЕНИЕ НАЧАЛО: Последовательное кэширование вместо параллельного ---
             for (const url of allUrls) {
               try {
                 await assetsCache.add(url);
@@ -288,7 +295,6 @@ export const useOfflineStore = create<OfflineState>()(
                 console.warn(`Could not cache URL: ${url}`, err);
               }
             }
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
             let itemToSave;
             if (isGenerated) {
@@ -412,10 +418,12 @@ export const useOfflineStore = create<OfflineState>()(
                 downloadedSongIds: newDownloadedSongs,
               };
             });
-            toast.success(`"${itemTitle}" removed from downloads.`);
+            toast.success(
+              i18n.t("toasts.itemRemovedFromDownloads", { itemTitle })
+            );
           } catch (error) {
             console.error(`Failed to delete ${itemType} ${itemId}:`, error);
-            toast.error(`Could not remove "${itemTitle}".`);
+            toast.error(i18n.t("toasts.removeItemError", { itemTitle }));
           }
         },
         getStorageUsage: async () => {
@@ -431,16 +439,16 @@ export const useOfflineStore = create<OfflineState>()(
         clearAllDownloads: async () => {
           const userId = useAuthStore.getState().user?.id;
           if (!userId) {
-            toast.error("You need to be logged in to clear downloads.");
+            toast.error(i18n.t("toasts.loginToClearDownloads"));
             return;
           }
 
           if (get().downloadedItemIds.size === 0) {
-            toast.success("No downloads to clear.");
+            toast.success(i18n.t("toasts.noDownloadsToClear"));
             return;
           }
 
-          toast.loading("Clearing all downloads...");
+          toast.loading(i18n.t("toasts.clearingDownloads"));
           try {
             const db = await getDb();
             await Promise.all([
@@ -460,11 +468,11 @@ export const useOfflineStore = create<OfflineState>()(
             });
 
             toast.dismiss();
-            toast.success("Your downloads have been cleared.");
+            toast.success(i18n.t("toasts.downloadsCleared"));
           } catch (error) {
             console.error("Failed to clear all downloads:", error);
             toast.dismiss();
-            toast.error("An error occurred while clearing downloads.");
+            toast.error(i18n.t("toasts.clearDownloadsError"));
           }
         },
       },

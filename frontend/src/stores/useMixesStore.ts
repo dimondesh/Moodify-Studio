@@ -7,6 +7,7 @@ import { useLibraryStore } from "./useLibraryStore";
 import { useOfflineStore } from "./useOfflineStore";
 import { getUserItem } from "@/lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
+import i18n from "@/lib/i18n";
 
 interface MixesData {
   genreMixes: Mix[];
@@ -20,7 +21,6 @@ interface MixesStore {
   isLoading: boolean;
   error: string | null;
   fetchMixById: (id: string) => Promise<void>;
-
   fetchDailyMixes: () => Promise<void>;
   toggleMixInLibrary: (mixId: string) => Promise<void>;
 }
@@ -43,7 +43,9 @@ export const useMixesStore = create<MixesStore>((set) => ({
       });
     } catch (err: any) {
       console.error("Failed to fetch mixes inlibrary:", err);
-      toast.error(err.response?.data?.message || "Could not fetch mixes.");
+      toast.error(
+        err.response?.data?.message || i18n.t("errors.fetchMixesError")
+      );
     }
   },
 
@@ -54,13 +56,17 @@ export const useMixesStore = create<MixesStore>((set) => ({
       });
       const { isSaved } = response.data;
       toast.success(
-        isSaved ? "Mix added to your library" : "Mix removed from your library"
+        isSaved
+          ? i18n.t("toasts.mixAddedToLibrary")
+          : i18n.t("toasts.mixRemovedFromLibrary")
       );
 
       useLibraryStore.getState().fetchLibrary();
     } catch (err: any) {
       console.error("Failed to toggle mix in library:", err);
-      toast.error(err.response?.data?.message || "Could not update library.");
+      toast.error(
+        err.response?.data?.message || i18n.t("errors.libraryUpdateError")
+      );
     }
   },
   fetchMixById: async (id: string) => {
@@ -70,7 +76,7 @@ export const useMixesStore = create<MixesStore>((set) => ({
     const userId = useAuthStore.getState().user?.id;
 
     if (isDownloaded(id) && userId) {
-      console.log(`[Offline] Загрузка микса ${id} из IndexedDB.`);
+      console.log(`[Offline] Loading mix ${id} from IndexedDB.`);
       const localMix = await getUserItem("mixes", id, userId);
       if (localMix) {
         set({ currentMix: localMix, isLoading: false });
@@ -79,7 +85,7 @@ export const useMixesStore = create<MixesStore>((set) => ({
     }
 
     if (isOffline) {
-      const errorMsg = "Этот микс не скачан и недоступен в офлайн-режиме.";
+      const errorMsg = i18n.t("errors.mixNotAvailableOffline");
       set({ currentMix: null, error: errorMsg, isLoading: false });
       toast.error(errorMsg);
       return;
@@ -88,7 +94,10 @@ export const useMixesStore = create<MixesStore>((set) => ({
       const response = await axiosInstance.get(`/mixes/${id}`);
       set({ currentMix: response.data, isLoading: false });
     } catch (err: any) {
-      set({ error: err.message || "Failed to fetch mix", isLoading: false });
+      set({
+        error: err.message || i18n.t("errors.fetchMixError"),
+        isLoading: false,
+      });
     }
   },
 }));

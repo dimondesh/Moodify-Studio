@@ -47,7 +47,7 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
             className="text-sm text-zinc-400 hover:text-white"
             onClick={handleShowAll}
           >
-            Show all
+            {t("searchpage.showAll")}
           </Button>
         )}
       </div>

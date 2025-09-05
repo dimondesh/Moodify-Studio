@@ -226,6 +226,14 @@ const HomePage = () => {
                       isLoading={false}
                       t={t}
                       limit={12}
+                      onShowAll={() =>
+                        navigate("/all-songs/recently-listened", {
+                          state: {
+                            songs: recentlyListenedItems,
+                            title: t("homepage.recentlyListened"),
+                          },
+                        })
+                      }
                     />
                   )}
                   <HorizontalSection

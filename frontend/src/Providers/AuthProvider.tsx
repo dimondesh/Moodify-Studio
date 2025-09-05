@@ -47,7 +47,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           (p) => p.providerId === "password"
         );
         if (isEmailPasswordProvider && !firebaseUser.emailVerified) {
-          toast.error("Please verify your email before logging in.", {
+          toast.error(t("auth.verifyEmailPrompt"), {
+            // Assuming this key exists
             duration: 5000,
           });
           logout();
@@ -94,7 +95,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [setUser, fetchUser, logout, disconnectSocket]);
+  }, [setUser, fetchUser, logout, disconnectSocket, t]);
 
   useEffect(() => {
     if (

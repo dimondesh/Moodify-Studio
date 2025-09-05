@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import type { Artist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "../../stores/useSearchStore";
+import { useTranslation } from "react-i18next";
 
 type ArtistGridProps = {
   title: string;
@@ -20,6 +21,7 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   const { addRecentSearch } = useSearchStore();
+  const { t } = useTranslation();
 
   const handleArtistClick = (artist: Artist) => {
     addRecentSearch(artist._id, "Artist");
@@ -40,7 +42,7 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
             className="text-sm text-zinc-400 hover:text-white"
             onClick={() => setShowAll(!showAll)}
           >
-            {showAll ? "Show less" : "Show all"}
+            {showAll ? t("searchpage.showLess") : t("searchpage.showAll")}
           </Button>
         )}
       </div>
