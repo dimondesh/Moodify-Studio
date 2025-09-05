@@ -9,6 +9,9 @@ import { Song } from "@/types";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { useTranslation } from "react-i18next";
+// --- ИЗМЕНЕНИЕ НАЧАЛО: Импортируем утилиту cn для условных классов ---
+import { cn } from "@/lib/utils";
+// --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
 interface Artist {
   _id: string;
@@ -29,7 +32,9 @@ const FeaturedSectionComponent = ({
     useMusicStore();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  // --- ИЗМЕНЕНИЕ НАЧАЛО: Получаем currentSong и isPlaying из стора ---
   const { playAlbum, togglePlay, currentSong, isPlaying } = usePlayerStore();
+  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   useEffect(() => {
     fetchArtists();
@@ -138,12 +143,19 @@ const FeaturedSectionComponent = ({
     >
       {songsToShow.map((song, index) => {
         const Component = isMobile ? "button" : "div";
+        // --- ИЗМЕНЕНИЕ НАЧАЛО: Определяем, играет ли текущий трек ---
+        const isThisSongPlaying = isPlaying && currentSong?._id === song._id;
+        // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
         return (
           <Component
             key={song._id}
-            className="flex items-center bg-zinc-800/50 rounded-md overflow-hidden hover:bg-zinc-700/50
-               transition-colors group cursor-pointer relative text-left"
+            // --- ИЗМЕНЕНИЕ НАЧАЛО: Добавляем условный класс для подсветки ---
+            className={cn(
+              "flex items-center bg-zinc-800/50 rounded-md overflow-hidden hover:bg-zinc-700/50 transition-colors group cursor-pointer relative text-left",
+              isThisSongPlaying && "bg-violet-500/20 hover:bg-violet-500/30"
+            )}
+            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
             onClick={() => handleItemClick(song, index)}
             onMouseEnter={() => !isMobile && onSongHover(song)}
           >
@@ -159,7 +171,12 @@ const FeaturedSectionComponent = ({
               />
             </div>
             <div className="flex-1 p-2 sm:p-3 min-w-0">
-              <p className="font-medium truncate text-white text-sm sm:text-base">
+              <p
+                className={cn(
+                  "font-medium truncate text-sm sm:text-base transition-all duration-400",
+                  isThisSongPlaying ? "text-violet-400" : "text-white"
+                )}
+              >
                 {song.title || t("common.noTitle")}
               </p>
               <p className="hidden sm:inline text-sm text-zinc-400 truncate">
