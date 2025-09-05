@@ -17,10 +17,12 @@ import HorizontalSection from "./HorizontalSection";
 import { useNavigate } from "react-router-dom";
 import { useUIStore } from "../../stores/useUIStore";
 import HomePageSkeleton from "./HomePageSkeleton";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const HomePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
     fetchHomePageData,
@@ -52,14 +54,18 @@ const HomePage = () => {
     fetchHomePageData();
   }, [user, isOffline, fetchHomePageData]);
 
-  const changeBackgroundColor = useCallback((color: string) => {
-    backgroundKeyRef.current += 1;
-    const newKey = backgroundKeyRef.current;
-    setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
-  }, []);
+  const changeBackgroundColor = useCallback(
+    (color: string) => {
+      if (isMobile) return;
+      backgroundKeyRef.current += 1;
+      const newKey = backgroundKeyRef.current;
+      setBackgrounds((prev) => [{ key: newKey, color }, ...prev.slice(0, 1)]);
+    },
+    [isMobile]
+  );
 
   useEffect(() => {
-    if (featuredSongs.length > 0 && !isHomePageLoading) {
+    if (featuredSongs.length > 0 && !isHomePageLoading && !isMobile) {
       extractColor(featuredSongs[0].imageUrl).then((color) => {
         const newDefaultColor = color || "#18181b";
         defaultColorRef.current = newDefaultColor;
@@ -74,6 +80,7 @@ const HomePage = () => {
     backgrounds,
     isHomePageLoading,
     changeBackgroundColor,
+    isMobile,
   ]);
 
   useEffect(() => {
@@ -100,16 +107,18 @@ const HomePage = () => {
 
   const handleSongHover = useCallback(
     (song: Song) => {
+      if (isMobile) return;
       extractColor(song.imageUrl).then((color) => {
         changeBackgroundColor(color || "#18181b");
       });
     },
-    [extractColor, changeBackgroundColor]
+    [extractColor, changeBackgroundColor, isMobile]
   );
 
   const handleSongLeave = useCallback(() => {
+    if (isMobile) return;
     changeBackgroundColor(defaultColorRef.current);
-  }, [changeBackgroundColor]);
+  }, [changeBackgroundColor, isMobile]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
