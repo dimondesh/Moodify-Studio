@@ -1,11 +1,12 @@
-// AlbumGrid.tsx
-import { useState } from "react";
+// src/pages/SearchPage/AlbumGrid.tsx
+import React, { useState } from "react"; // <--- ИМПОРТ
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import type { Album, Artist } from "../../types";
+import type { Album } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useTranslation } from "react-i18next";
+import { getArtistNames } from "@/lib/utils";
 
 type AlbumGridProps = {
   title: string;
@@ -13,7 +14,7 @@ type AlbumGridProps = {
   isLoading: boolean;
 };
 
-const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
+const AlbumGridComponent = ({ title, albums, isLoading }: AlbumGridProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
@@ -22,13 +23,6 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   const handleAlbumClick = (album: Album) => {
     addRecentSearch(album._id, "Album");
     navigate(`/albums/${album._id}`);
-  };
-
-  const getArtistNames = (artistsInput: Artist[] | undefined) => {
-    if (!artistsInput || artistsInput.length === 0)
-      return t("common.unknownArtist");
-    const names = artistsInput.map((artist) => artist?.name).filter(Boolean);
-    return names.join(", ") || t("common.unknownArtist");
   };
 
   if (isLoading) return <SectionGridSkeleton />;
@@ -79,4 +73,5 @@ const AlbumGrid = ({ title, albums, isLoading }: AlbumGridProps) => {
   );
 };
 
+const AlbumGrid = React.memo(AlbumGridComponent);
 export default AlbumGrid;

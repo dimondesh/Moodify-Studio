@@ -1,5 +1,5 @@
-// src/components/SearchPage/PlaylistGrid.tsx
-import { useState } from "react";
+// src/pages/SearchPage/PlaylistGrid.tsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Playlist } from "../../types";
@@ -13,7 +13,11 @@ type PlaylistGridProps = {
   isLoading: boolean;
 };
 
-const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
+const PlaylistGridComponent = ({
+  title,
+  playlists,
+  isLoading,
+}: PlaylistGridProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
@@ -74,4 +78,5 @@ const PlaylistGrid = ({ title, playlists, isLoading }: PlaylistGridProps) => {
   );
 };
 
+const PlaylistGrid = React.memo(PlaylistGridComponent);
 export default PlaylistGrid;

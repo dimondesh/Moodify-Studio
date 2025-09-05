@@ -1,5 +1,5 @@
 // frontend/src/pages/ArtistPage/ArtistPage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Button } from "../../components/ui/button";
@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useMusicStore } from "../../stores/useMusicStore";
+import { getArtistNames } from "@/lib/utils";
 
 const ArtistPage = () => {
   const { t } = useTranslation();
@@ -74,6 +75,59 @@ const ArtistPage = () => {
     fetchFollowedArtists();
   }, [id, fetchLikedSongs, fetchFollowedArtists, t, fetchArtistAppearsOn]);
 
+  const { popularSongs, albums, singlesAndEps } = useMemo(() => {
+    const allArtistSongs: Song[] = artist?.songs || [];
+    const allArtistAlbums: Album[] = artist?.albums || [];
+    return {
+      popularSongs: allArtistSongs.slice(0, 5),
+      albums: allArtistAlbums.filter((album) => album.type === "Album"),
+      singlesAndEps: allArtistAlbums.filter(
+        (album) => album.type === "Single" || album.type === "EP"
+      ),
+    };
+  }, [artist]);
+
+  const isAnyPopularSongPlaying = useMemo(
+    () =>
+      isPlaying && popularSongs.some((song) => song._id === currentSong?._id),
+    [isPlaying, popularSongs, currentSong]
+  );
+
+  const handlePlayArtistSongs = useCallback(() => {
+    if (popularSongs.length === 0) {
+      toast.error("No popular songs available to play.");
+      return;
+    }
+    if (isAnyPopularSongPlaying) togglePlay();
+    else playAlbum(popularSongs, 0);
+  }, [popularSongs, isAnyPopularSongPlaying, togglePlay, playAlbum]);
+
+  const handlePlaySpecificSong = useCallback(
+    (song: Song, index: number) => {
+      if (currentSong?._id === song._id) togglePlay();
+      else {
+        setCurrentSong(song);
+        playAlbum(popularSongs, index);
+      }
+    },
+    [currentSong, togglePlay, setCurrentSong, playAlbum, popularSongs]
+  );
+
+  const handleToggleFollow = useCallback(async () => {
+    if (!artist) return;
+    try {
+      await toggleArtistFollow(artist._id);
+      toast.success(
+        isArtistFollowed(artist._id)
+          ? `Now you are following ${artist.name}`
+          : `You unfollowed ${artist.name}`
+      );
+    } catch (e) {
+      toast.error("Failed to change follow status");
+      console.error("Error toggling artist follow:", e);
+    }
+  }, [artist, toggleArtistFollow, isArtistFollowed]);
+
   if (loading) {
     return (
       <>
@@ -122,65 +176,11 @@ const ArtistPage = () => {
     );
   }
 
-  const allArtistSongs: Song[] = artist.songs || [];
-  const allArtistAlbums: Album[] = artist.albums || [];
-  const popularSongs = allArtistSongs.slice(0, 5);
-  const albums = allArtistAlbums.filter((album) => album.type === "Album");
-  const singlesAndEps = allArtistAlbums.filter(
-    (album) => album.type === "Single" || album.type === "EP"
-  );
-  const isAnyPopularSongPlaying =
-    isPlaying && popularSongs.some((song) => song._id === currentSong?._id);
-
-  const handlePlayArtistSongs = () => {
-    if (popularSongs.length === 0) {
-      toast.error("No popular songs available to play.");
-      return;
-    }
-    if (isAnyPopularSongPlaying) togglePlay();
-    else playAlbum(popularSongs, 0);
-  };
-
-  const handlePlaySpecificSong = (song: Song, index: number) => {
-    if (currentSong?._id === song._id) togglePlay();
-    else {
-      setCurrentSong(song);
-      playAlbum(popularSongs, index);
-    }
-  };
-
-  const getArtistNames = (
-    artistData: (Artist | string)[] | undefined
-  ): string => {
-    if (!artistData || artistData.length === 0)
-      return t("common.unknownArtist");
-    return artistData
-      .map((item) =>
-        typeof item === "object" && item !== null && "name" in item
-          ? item.name
-          : String(item)
-      )
-      .join(", ");
-  };
   const metaDescription = `Listen to ${
     artist.name
   } on Moodify. Discover popular tracks, albums, and the full discography. ${
     artist.bio ? artist.bio.substring(0, 120) + "..." : ""
   }`;
-  const handleToggleFollow = async () => {
-    if (!artist) return;
-    try {
-      await toggleArtistFollow(artist._id);
-      toast.success(
-        isArtistFollowed(artist._id)
-          ? `Now you are following ${artist.name}`
-          : `You unfollowed ${artist.name}`
-      );
-    } catch (e) {
-      toast.error("Failed to change follow status");
-      console.error("Error toggling artist follow:", e);
-    }
-  };
 
   return (
     <>
@@ -378,7 +378,6 @@ const ArtistPage = () => {
     </>
   );
 };
-
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
   const minutes = Math.floor(seconds / 60);

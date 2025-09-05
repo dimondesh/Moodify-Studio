@@ -1,4 +1,4 @@
-// ArtistGrid.tsx
+// src/pages/SearchPage/ArtistGrid.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -13,7 +13,7 @@ type ArtistGridProps = {
   isLoading: boolean;
 };
 
-const ArtistGrid: React.FC<ArtistGridProps> = ({
+const ArtistGridComponent: React.FC<ArtistGridProps> = ({
   title,
   artists,
   isLoading,
@@ -75,4 +75,5 @@ const ArtistGrid: React.FC<ArtistGridProps> = ({
   );
 };
 
+const ArtistGrid = React.memo(ArtistGridComponent);
 export default ArtistGrid;

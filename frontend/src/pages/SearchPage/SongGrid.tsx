@@ -1,5 +1,5 @@
-// frontend/src/pages/SearchPage/SongGrid.tsx
-import { useState, useEffect } from "react";
+// src/pages/SearchPage/SongGrid.tsx
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Song } from "../../types";
@@ -16,7 +16,7 @@ type SectionGridProps = {
   isLoading: boolean;
 };
 
-const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
+const SongGridComponent = ({ title, songs, isLoading }: SectionGridProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
@@ -95,4 +95,5 @@ const SongGrid = ({ title, songs, isLoading }: SectionGridProps) => {
   );
 };
 
+const SongGrid = React.memo(SongGridComponent);
 export default SongGrid;
