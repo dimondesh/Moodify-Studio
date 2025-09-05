@@ -489,18 +489,18 @@ const PlaybackControls = () => {
                       )}
 
                       <div className="flex justify-between items-center w-full mb-4 px-2">
-                        <div className="flex flex-col text-left">
+                        <div className="flex flex-col text-left min-w-0 flex-1">
                           <button
                             onClick={() => {
                               if (currentSong?.albumId) {
                                 handleAlbumClick(currentSong.albumId);
                               }
                             }}
-                            className="text-2xl font-bold text-white mb-1 text-left hover:underline focus:outline-none focus:underline"
+                            className="text-2xl font-bold text-white mb-1 text-left hover:underline focus:outline-none focus:underline truncate"
                           >
                             {currentSong?.title || t("player.noSong")}
                           </button>
-                          <p className="text-zinc-400 text-base">
+                          <p className="text-zinc-400 text-base truncate">
                             {currentSong.artist.map((artist, index) => (
                               <span key={artist._id}>
                                 <button
@@ -518,10 +518,12 @@ const PlaybackControls = () => {
                           </p>
                         </div>
                         {currentSong && (
-                          <AddToPlaylistControl
-                            song={currentSong}
-                            iconClassName="size-5"
-                          />
+                          <div className="flex-shrink-0 ml-2">
+                            <AddToPlaylistControl
+                              song={currentSong}
+                              iconClassName="size-5"
+                            />
+                          </div>
                         )}
                       </div>
 
@@ -805,7 +807,7 @@ const PlaybackControls = () => {
                       className="w-14 h-14 object-cover"
                     />
                   </button>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <button
                       onClick={() => {
                         if (currentSong.albumId) {

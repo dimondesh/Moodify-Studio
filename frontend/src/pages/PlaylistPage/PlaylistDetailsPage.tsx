@@ -443,15 +443,15 @@ const PlaylistDetailsPage = () => {
                   alt={currentPlaylist.title}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
                 />
-                <div className="flex flex-col justify-end flex-grow">
+                <div className="flex flex-col justify-end flex-grow min-w-0">
                   <p className="text-xs sm:text-sm font-medium">
                     {t("pages.playlist.type")}
                   </p>
-                  <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4">
+                  <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4 break-words">
                     {currentPlaylist.title}
                   </h1>
                   {currentPlaylist.description && (
-                    <p className="text-zinc-400 text-base mt-2">
+                    <p className="text-zinc-400 text-base mt-2 break-words">
                       {currentPlaylist.description}
                     </p>
                   )}
@@ -721,15 +721,13 @@ const PlaylistDetailsPage = () => {
                                   )}
                                   {isMobile ? (
                                     <span
-                                      className={`font-medium w-full text-left ${
+                                      className={`font-medium w-full text-left truncate ${
                                         isCurrentSong
                                           ? "text-violet-400"
                                           : "text-white"
                                       }`}
                                     >
-                                      <p className="truncate max-w-50 xl:max-w-100">
-                                        {song.title}
-                                      </p>
+                                      {song.title}
                                     </span>
                                   ) : (
                                     <button
@@ -737,15 +735,13 @@ const PlaylistDetailsPage = () => {
                                         e.stopPropagation();
                                         handleSongTitleClick(song.albumId);
                                       }}
-                                      className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline max-w-50 xl:max-w-100 ${
+                                      className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline truncate ${
                                         isCurrentSong
                                           ? "text-violet-400"
                                           : "text-white"
                                       }`}
                                     >
-                                      <p className="truncate max-w-50 xl:max-w-100">
-                                        {song.title}
-                                      </p>
+                                      {song.title}
                                     </button>
                                   )}
                                 </div>
@@ -916,7 +912,7 @@ const PlaylistDetailsPage = () => {
                             key={song._id}
                             className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
                           >
-                            <div className="flex flex-col truncate">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <button
                                 onClick={() =>
                                   handleSongTitleClick(song.albumId)
@@ -974,7 +970,7 @@ const PlaylistDetailsPage = () => {
                             key={song._id}
                             className="flex items-center justify-between p-2 hover:bg-zinc-800 rounded-md cursor-pointer sm:w-[55vw] md:w-[38vw] w-[80vw] lg:w-[20vw] 2xl:w-[18vw]"
                           >
-                            <div className="flex flex-col truncate">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <button
                                 onClick={() =>
                                   handleSongTitleClick(song.albumId)

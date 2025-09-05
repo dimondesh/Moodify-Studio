@@ -189,19 +189,15 @@ const AlbumPage = () => {
                       "/default-album-cover.png";
                   }}
                 />
-                <div className="flex flex-col justify-end text-center sm:text-left">
+                <div className="flex flex-col justify-end text-center sm:text-left min-w-0">
                   <p className="text-xs sm:text-sm font-medium ">
                     {currentAlbum.type || t("pages.album.type")}
                   </p>
                   <h1
-                    className={`
-                    ${
-                      currentAlbum.title.length > 25
-                        ? "text-3xl sm:text-4xl lg:text-5xl"
-                        : "text-4xl sm:text-5xl lg:text-7xl"
-                    } 
+                    className="
+                    text-4xl sm:text-5xl lg:text-7xl 
                     font-bold mt-2 mb-2 sm:my-4 break-words
-                  `}
+                  "
                   >
                     {currentAlbum.title}
                   </h1>
@@ -314,7 +310,7 @@ const AlbumPage = () => {
                         <div
                           key={song._id}
                           onClick={() => handlePlaySong(index)}
-                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm
+                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] items-center gap-4 px-4 py-2 text-sm
                       text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer
                       ${isCurrentSong ? "bg-white/10" : ""}`}
                         >
@@ -333,17 +329,17 @@ const AlbumPage = () => {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <img
                               src={song.imageUrl || "/default-song-cover.png"}
                               alt={song.title}
-                              className="hidden sm:block size-10 object-cover rounded-md"
+                              className="hidden sm:block size-10 object-cover rounded-md flex-shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
                                   "/default-song-cover.png";
                               }}
                             />
-                            <div>
+                            <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 {isCurrentSong && isPlaying && (
                                   <div className="block sm:hidden">
@@ -352,7 +348,7 @@ const AlbumPage = () => {
                                 )}
                                 {isMobile ? (
                                   <span
-                                    className={`font-medium text-left min-w-0 truncate max-w-50 xl:max-w-100 ${
+                                    className={`font-medium text-left truncate ${
                                       isCurrentSong
                                         ? "text-violet-400"
                                         : "text-white"
@@ -366,7 +362,7 @@ const AlbumPage = () => {
                                       e.stopPropagation();
                                       handleAlbumTitleClick(song.albumId);
                                     }}
-                                    className={`font-medium text-left hover:underline focus:outline-none focus:underline min-w-0 truncate max-w-50 xl:max-w-100 ${
+                                    className={`font-medium text-left hover:underline focus:outline-none focus:underline truncate ${
                                       isCurrentSong
                                         ? "text-violet-400"
                                         : "text-white"
@@ -377,7 +373,7 @@ const AlbumPage = () => {
                                 )}
                               </div>
 
-                              <div className="text-zinc-400">
+                              <div className="text-zinc-400 truncate">
                                 {song.artist.map((artist, artistIndex) => (
                                   <span key={artist._id}>
                                     {isMobile ? (
