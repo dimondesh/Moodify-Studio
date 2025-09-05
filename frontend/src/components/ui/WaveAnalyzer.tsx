@@ -20,43 +20,48 @@ const WaveAnalyzer: React.FC<WaveAnalyzerProps> = ({
     if (!canvas) return;
 
     const canvasCtx = canvas.getContext("2d");
-    if (!canvasCtx) return;
-
     const analyser = webAudioService.getAnalyserNode();
     const audioContext = webAudioService.getAudioContext();
 
-    if (!analyser || !audioContext) {
-      canvasCtx.clearRect(0, 0, width, height);
+    if (!canvasCtx || !analyser || !audioContext) {
+      canvasCtx?.clearRect(0, 0, width, height);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
       return;
     }
-
-    const bufferLength = analyser.fftSize;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteTimeDomainData(dataArray);
 
     canvasCtx.clearRect(0, 0, width, height);
     canvasCtx.lineWidth = 1;
     canvasCtx.strokeStyle = "#8b5cf6";
     canvasCtx.beginPath();
 
-    const sliceWidth = (width * 1.0) / bufferLength;
-    let x = 0;
+    if (audioContext.state === "suspended" || audioContext.state === "closed") {
+      canvasCtx.moveTo(0, height / 2);
+      canvasCtx.lineTo(width, height / 2);
+    } else {
+      const bufferLength = analyser.fftSize;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteTimeDomainData(dataArray);
 
-    for (let i = 0; i < bufferLength; i++) {
-      const v = dataArray[i] / 128.0;
-      const y = (v * height) / 2;
+      const sliceWidth = (width * 1.0) / bufferLength;
+      let x = 0;
 
-      if (i === 0) {
-        canvasCtx.moveTo(x, y);
-      } else {
-        canvasCtx.lineTo(x, y);
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * height) / 2;
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+        x += sliceWidth;
       }
-      x += sliceWidth;
+      canvasCtx.lineTo(width, height / 2);
     }
 
-    canvasCtx.lineTo(width, height / 2);
     canvasCtx.stroke();
-
     animationFrameId.current = requestAnimationFrame(draw);
   }, [width, height]);
 
