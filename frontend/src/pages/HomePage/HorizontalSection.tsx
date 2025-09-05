@@ -132,7 +132,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
       </div>
 
       <ScrollArea className="w-full whitespace-nowrap rounded-md">
-        <div className="flex space-x-4 pb-4">
+        <div className="flex gap-4 pb-4">
           {itemsToShow.map((item) => {
             if (item.itemType === "mix") {
               return (
@@ -165,7 +165,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                 onClick={() => handleItemClick(item)}
               >
                 <div className="relative mb-2">
-                  <div className="relative aspect-square shadow-lg">
+                  <div className="relative aspect-square shadow-lg overflow-hidden rounded-md">
                     {item.itemType === "artist" ? (
                       <Avatar className="absolute inset-0 h-full w-full rounded-full">
                         <AvatarImage
