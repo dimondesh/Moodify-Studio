@@ -626,7 +626,7 @@ const PlaybackControls = () => {
                             <DropdownMenuContent
                               side="top"
                               align="center"
-                              className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                              className="w-48 bg-zinc-800/50 border-zinc-700 p-3 rounded-md shadow-lg z-70 backdrop-blur-md"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <DropdownMenuItem className="focus:bg-transparent">
@@ -672,7 +672,7 @@ const PlaybackControls = () => {
                             <DropdownMenuContent
                               side="top"
                               align="center"
-                              className="w-48 bg-zinc-800 border-zinc-700 p-3 rounded-md shadow-lg z-70"
+                              className="w-48 bg-zinc-800/50 border-zinc-700 p-3 rounded-md backdrop-blur-md shadow-lg z-70"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <DropdownMenuItem className="focus:bg-transparent">
