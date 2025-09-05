@@ -40,7 +40,7 @@ const GeneratedPlaylistPage = lazy(
 );
 
 function App() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const isOffline = useOfflineStore((state) => state.isOffline);
   const location = useLocation();
   const navigate = useNavigate();

@@ -19,11 +19,20 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [firebaseChecked, setFirebaseChecked] = useState(false);
   const { t } = useTranslation();
 
-  const { user, setUser, fetchUser, logout } = useAuthStore();
-  const { initSocket, disconnectSocket, isConnected } = useChatStore();
-  const { i18n } = useTranslation();
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const setUser = useAuthStore((state) => state.setUser);
+  const fetchUser = useAuthStore((state) => state.fetchUser);
+  const logout = useAuthStore((state) => state.logout);
 
+  const initSocket = useChatStore((state) => state.initSocket);
+  const disconnectSocket = useChatStore((state) => state.disconnectSocket);
+  const isConnected = useChatStore((state) => state.isConnected);
+  const chatError = useChatStore((state) => state.error);
+
+  const { i18n } = useTranslation();
   const socketInitializedRef = useRef(false);
+
   useEffect(() => {
     if (user?.language && user.language !== i18n.language) {
       console.log(
@@ -36,28 +45,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log(
-          "AuthProvider: Firebase user detected:",
-          firebaseUser.uid,
-          firebaseUser.email
-        );
+        console.log("AuthProvider: Firebase user detected:", firebaseUser.uid);
 
-        // --- ИЗМЕНЕНИЕ НАЧАЛО: Проверка верификации email ---
         const isEmailPasswordProvider = firebaseUser.providerData.some(
           (p) => p.providerId === "password"
         );
         if (isEmailPasswordProvider && !firebaseUser.emailVerified) {
           toast.error(t("auth.verifyEmailPrompt"), {
-            // Assuming this key exists
             duration: 5000,
           });
           logout();
           setFirebaseChecked(true);
-          return; // Прерываем дальнейшую обработку
+          return;
         }
-        // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
-        if (!useAuthStore.getState().user && navigator.onLine) {
+        const authState = useAuthStore.getState();
+        if (!authState.user && !authState.isLoading && navigator.onLine) {
           console.log(
             "AuthProvider: Online and no user in state. Syncing user with backend..."
           );
@@ -69,11 +72,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               "AuthProvider: Error syncing Firebase user with MongoDB:",
               error
             );
-
             logout();
           }
-        } else if (useAuthStore.getState().user) {
+        } else if (authState.user) {
           console.log("AuthProvider: User already in state. No sync needed.");
+        } else if (authState.isLoading) {
+          console.log(
+            "AuthProvider: Auth operation already in progress. Waiting..."
+          );
         } else {
           console.log("AuthProvider: Offline. Trusting persisted user state.");
         }
@@ -120,7 +126,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user, initSocket, disconnectSocket, isConnected, firebaseChecked]);
 
-  const { error: chatError } = useChatStore();
   useEffect(() => {
     if (chatError) {
       if (
@@ -136,7 +141,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [chatError]);
 
-  if (!firebaseChecked) {
+  if (!firebaseChecked || isLoading) {
     return (
       <div className="h-screen w-full bg-zinc-950 flex items-center justify-center">
         <Card className="w-[90%] max-w-md bg-zinc-900 border-zinc-800">
