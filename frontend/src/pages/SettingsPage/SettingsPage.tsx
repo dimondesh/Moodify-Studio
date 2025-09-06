@@ -139,12 +139,12 @@ const SettingsPage: React.FC = () => {
       </Helmet>
       <div className="h-full relative">
         <div className="absolute inset-0 bg-radial from-violet-950 to-zinc-950 animate-fade-in" />
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-full pb-35 lg:pb-0">
           <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-2xl">
             <h1 className="text-3xl font-bold text-white mb-6">
               {t("settings.title")}
             </h1>
-            <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8 mb-8">
+            <Card className="bg-zinc-800/50 border-zinc-700 text-white shadow-lg p-6 space-y-8 mb-8 backdrop-blur-md">
               <div>
                 <Label className="text-xl font-semibold mb-4 block">
                   {t("settings.language")}
@@ -186,7 +186,7 @@ const SettingsPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-white mb-6">
               {t("settings.audioTitle")}
             </h1>
-            <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
+            <Card className="bg-zinc-800/50 backdrop-blur-md border-zinc-700 text-white shadow-lg p-6 space-y-8">
               {/* Equalizer Section */}
               <div className="border-b border-zinc-700 pb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -447,7 +447,7 @@ const SettingsPage: React.FC = () => {
               {" "}
               {t("settings.downloads")}
             </h1>
-            <Card className="bg-zinc-800 border-zinc-700 text-white shadow-lg p-6 space-y-8">
+            <Card className="bg-zinc-800/50 backdrop-blur-md border-zinc-700 text-white shadow-lg p-6 space-y-8">
               <div>
                 <Label className="text-xl font-semibold mb-4 block">
                   {t("settings.storage")}

@@ -626,7 +626,7 @@ const PlaybackControls = () => {
                             <DropdownMenuContent
                               side="top"
                               align="center"
-                              className="w-48 bg-zinc-800/50 border-zinc-700 p-3 rounded-md shadow-lg z-70 backdrop-blur-md"
+                              className="w-48 bg-zinc-800/70 border-zinc-700 p-3 rounded-md shadow-lg z-70 backdrop-blur-md"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <DropdownMenuItem className="focus:bg-transparent">
@@ -787,7 +787,7 @@ const PlaybackControls = () => {
         </>
       ) : (
         <footer
-          className={`h-20 sm:h-24 bg-zinc-900 border-t border-zinc-800 px-4 z-40`}
+          className={`h-20 bg-zinc-900 border-t border-zinc-800 px-4 z-40`}
         >
           <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
             <div className="flex items-center gap-4 min-w-[180px] w-[30%]">

@@ -167,14 +167,14 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                 <div className="relative mb-2">
                   <div className="relative aspect-square shadow-lg overflow-hidden rounded-md">
                     {item.itemType === "artist" ? (
-                      <Avatar className="absolute inset-0 h-full w-full rounded-full">
+                      <Avatar className="absolute inset-0 h-full w-full object-cover rounded-full">
                         <AvatarImage
                           src={
                             item.imageUrl ||
                             "https://moodify.b-cdn.net/artist.jpeg"
                           }
                           alt={getDisplayTitle(item)}
-                          className="object-cover h-full w-full rounded-full transition-transform duration-300 group-hover:scale-105"
+                          className="object-cover h-auto w-auto rounded-full transition-transform duration-300 group-hover:scale-105"
                         />
                         <AvatarFallback>
                           {getDisplayTitle(item)[0]}

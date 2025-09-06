@@ -129,7 +129,7 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
         <DialogHeader>
           <DialogTitle className="text-white">
             {t("pages.playlist.editDialog.title")}
@@ -186,15 +186,15 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between col-span-full mt-2">
-            <Label htmlFor="public" className="text-white">
+          <div className="flex items-center justify-start col-span-full mt-2">
+            <Label htmlFor="public" className="text-white mr-4">
               {t("pages.playlist.editDialog.fieldPublic")}
             </Label>
             <Switch
               id="public"
               checked={isPublic}
               onCheckedChange={setIsPublic}
-              className="data-[state=checked]:bg-green-500"
+              className="data-[state=checked]:bg-violet-500"
             />
           </div>
         </div>
@@ -210,7 +210,7 @@ export const EditPlaylistDialog: React.FC<EditPlaylistDialogProps> = ({
           <Button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-green-500 hover:bg-green-600 text-white"
+            className="bg-violet-500 hover:bg-violet-600 text-white"
           >
             {isLoading
               ? t("admin.common.saving")

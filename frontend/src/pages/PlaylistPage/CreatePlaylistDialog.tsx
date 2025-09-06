@@ -137,7 +137,7 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-zinc-900 text-white border-zinc-700 z-[120]">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-900/70 backdrop-blur-md   text-white border-zinc-700 z-[120]">
         <DialogHeader>
           <DialogTitle className="text-white">{dialogTitle}</DialogTitle>
           <DialogDescription className="text-zinc-400">
@@ -290,8 +290,11 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
                       />
                     </div>
                   )}
-                  <div className="flex items-center justify-between col-span-full mt-2 pl-4 pr-4">
-                    <Label htmlFor="isPublic-manual" className="text-white">
+                  <div className="flex items-center justify-start col-span-full mt-2 pr-4">
+                    <Label
+                      htmlFor="isPublic-manual"
+                      className="text-white mr-4"
+                    >
                       {t("pages.playlist.editDialog.fieldPublic")}
                     </Label>
                     <Switch

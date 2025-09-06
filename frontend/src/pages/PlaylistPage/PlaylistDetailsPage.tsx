@@ -417,7 +417,7 @@ const PlaylistDetailsPage = () => {
       </Helmet>
       <div className="h-full">
         <ScrollArea className="h-full rounded-md md:pb-0">
-          <div className="relative min-h-screen">
+          <div className="relative min-h-screen max-w-screen">
             {backgrounds
               .slice(0, 2)
               .reverse()
@@ -630,7 +630,7 @@ const PlaylistDetailsPage = () => {
                               {t("pages.playlist.actions.delete")}
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+                          <AlertDialogContent className="bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
                             <AlertDialogHeader>
                               <AlertDialogTitle className="text-white">
                                 {t("pages.playlist.deleteDialog.title")}
@@ -846,7 +846,7 @@ const PlaylistDetailsPage = () => {
           open={!!songToRemoveFromPlaylist}
           onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
         >
-          <AlertDialogContent className="bg-zinc-900 text-white border-zinc-700">
+          <AlertDialogContent className="bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-white">
                 {t("pages.playlist.removeSongDialog.title")}
@@ -876,7 +876,7 @@ const PlaylistDetailsPage = () => {
           open={isSearchAndAddDialogOpen}
           onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
         >
-          <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900 text-white border-zinc-700">
+          <DialogContent className="sm:w-[60%vw] w-[40%vw] bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
             <DialogHeader>
               <DialogTitle className="text-white max-w-[80vw]">
                 {t("pages.playlist.addSongDialog.title")}
