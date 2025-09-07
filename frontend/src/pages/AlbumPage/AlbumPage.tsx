@@ -359,7 +359,7 @@ const AlbumPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex items-center gap-4 sm:gap-4 ">
+              <div className="px-4 sm:px-6 pb-4 flex items-center gap-4 ">
                 <Button
                   onClick={handlePlayAlbum}
                   size="icon"
@@ -380,7 +380,7 @@ const AlbumPage = () => {
                     disabled={isToggling}
                     variant="ghost"
                     size="icon"
-                    className={`size-1 sm:w-5  rounded-full p-2 transition-colors ${
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full p-2 transition-colors ${
                       inLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
                     }`}
                     title={
@@ -390,9 +390,9 @@ const AlbumPage = () => {
                     }
                   >
                     {inLibrary ? (
-                      <CheckCircle2 className="size-5  text-violet-400" />
+                      <CheckCircle2 className="size-5 sm:size-6  text-violet-400" />
                     ) : (
-                      <PlusCircle className="size-5  text-white" />
+                      <PlusCircle className="size-5 sm:size-6   text-white" />
                     )}
                   </Button>
                 )}
@@ -416,7 +416,7 @@ const AlbumPage = () => {
 
               <div className="bg-black/20 backdrop-blur-sm">
                 {!isMobile && (
-                  <div className="grid grid-cols-[16px_4fr_2fr_auto] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
+                  <div className="grid grid-cols-[16px_4fr_2.5fr_auto] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
                     <div>#</div>
                     <div>{t("pages.album.headers.title")}</div>
                     <div className="hidden md:block">
