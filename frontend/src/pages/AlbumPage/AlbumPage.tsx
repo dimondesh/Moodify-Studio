@@ -193,7 +193,7 @@ const AlbumPage = () => {
                   e.stopPropagation();
                   handleAlbumTitleClick(song.albumId);
                 }}
-                className={`font-medium text-left hover:underline focus:outline-none focus:underline truncate ${
+                className={`font-medium text-left hover:underline focus:outline-none focus:underline truncate w-70 lg:w-60 xl:w-80 2xl:w-100 ${
                   isCurrentSong ? "text-violet-400" : "text-white"
                 }`}
               >
@@ -273,7 +273,7 @@ const AlbumPage = () => {
                   </div>
                 )}
                 <p
-                  className={`font-medium truncate ${
+                  className={`font-medium truncate w-80 sm:w-120 ${
                     isCurrentSong ? "text-violet-400" : "text-white"
                   }`}
                 >
