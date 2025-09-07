@@ -11,7 +11,7 @@ import {
   Play,
   PlusCircle,
   Heart,
-  MoreVertical,
+  MoreHorizontal,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import Equalizer from "../../components/ui/equalizer";
@@ -273,7 +273,7 @@ const AlbumPage = () => {
                   </div>
                 )}
                 <p
-                  className={`font-medium truncate w-80 sm:w-120 ${
+                  className={`font-medium truncate w-70 sm:w-120 ${
                     isCurrentSong ? "text-violet-400" : "text-white"
                   }`}
                 >
@@ -291,7 +291,7 @@ const AlbumPage = () => {
               setSelectedSongForMenu(song);
             }}
           >
-            <MoreVertical className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+            <MoreHorizontal className="h-5 w-5 text-zinc-400 group-hover:text-white" />
           </Button>
         </div>
       );
