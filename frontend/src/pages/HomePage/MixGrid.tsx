@@ -59,7 +59,7 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
             className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all"
           >
             <img
-              src={mix.imageUrl}
+              src={mix.imageUrl || "https://moodify.b-cdn.net/artist.jpeg"}
               alt={t(mix.name)}
               className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
             />

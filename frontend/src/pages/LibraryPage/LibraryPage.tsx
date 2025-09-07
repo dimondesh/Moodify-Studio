@@ -330,7 +330,8 @@ const LibraryPage = () => {
                           linkPath = `/mixes/${mixItem._id}`;
                           subtitle = t("sidebar.subtitle.dailyMix");
                           coverImageUrl =
-                            item.imageUrl || "/default-album-cover.png";
+                            item.imageUrl ||
+                            "https://moodify.b-cdn.net/default-album-cover.png";
                           break;
                         }
                       }
@@ -347,13 +348,14 @@ const LibraryPage = () => {
                             >
                               <img
                                 src={
-                                  coverImageUrl || "/default-album-cover.png"
+                                  coverImageUrl ||
+                                  "https://moodify.b-cdn.net/default-album-cover.png"
                                 }
                                 alt={item.title}
                                 className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
-                                    "/default-album-cover.png";
+                                    "https://moodify.b-cdn.net/default-album-cover.png";
                                 }}
                               />
                             </div>

@@ -771,7 +771,12 @@
       "tableArtists": "Artists",
       "tableReleaseYear": "Release Year",
       "tableSongs": "Songs",
-      "tableActions": "Actions"
+      "tableActions": "Actions",
+       "share": "Share",
+    "addToLiked": "Add to Liked Songs",
+    "removeFromLiked": "Remove from Liked",
+    "addToPlaylist": "Add to playlist",
+    "goToArtist": "Go to artist"
     },
     "artists": {
       "title": "Artists Library",

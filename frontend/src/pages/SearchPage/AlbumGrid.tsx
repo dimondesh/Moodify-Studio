@@ -53,12 +53,15 @@ const AlbumGridComponent = ({ title, albums, isLoading }: AlbumGridProps) => {
           >
             <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
               <img
-                src={album.imageUrl || "/default-album-cover.png"}
+                src={
+                  album.imageUrl ||
+                  "https://moodify.b-cdn.net/default-album-cover.png"
+                }
                 alt={album.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "/default-album-cover.png";
+                    "https://moodify.b-cdn.net/default-album-cover.png";
                 }}
               />
             </div>

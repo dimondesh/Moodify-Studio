@@ -438,7 +438,7 @@ const PlaylistDetailsPage = () => {
                 <img
                   src={
                     currentPlaylist.imageUrl ||
-                    "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1755425854/default-album-cover_qhwd4c.png"
+                    "https://moodify.b-cdn.net/default-album-cover.png"
                   }
                   alt={currentPlaylist.title}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"

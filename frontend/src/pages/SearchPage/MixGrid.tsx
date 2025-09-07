@@ -53,12 +53,12 @@ const MixGrid = ({ title, mixes, isLoading }: MixGridProps) => {
             <div className="relative mb-4">
               <div className=" aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={mix.imageUrl || "/default_playlist_cover.png"}
+                  src={mix.imageUrl || "https://moodify.b-cdn.net/artist.jpeg"}
                   alt={mix.name}
                   className=" w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      "/default_playlist_cover.png";
+                      "https://moodify.b-cdn.net/artist.jpeg";
                   }}
                 />
               </div>

@@ -451,9 +451,7 @@ export const createPlaylistFromSong = async (req, res, next) => {
       description: ``,
       isPublic: true,
       owner: ownerId,
-      imageUrl:
-        imageUrl ||
-        "https://res.cloudinary.com/dzbf3cpwm/image/upload/v1755425854/default-album-cover_qhwd4c.png",
+      imageUrl: imageUrl || "https://moodify.b-cdn.net/default-album-cover.png",
       songs: [initialSongId],
     });
 

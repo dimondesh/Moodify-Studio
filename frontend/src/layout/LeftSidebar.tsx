@@ -269,7 +269,8 @@ const LeftSidebar = () => {
               {libraryItems.map((item) => {
                 let linkPath: string = "#";
                 let subtitle: string = "";
-                let fallbackImage: string = "/default-album-cover.png";
+                let fallbackImage: string =
+                  "https://moodify.b-cdn.net/default-album-cover.png";
                 let imageClass = "rounded-md";
 
                 switch (item.type) {

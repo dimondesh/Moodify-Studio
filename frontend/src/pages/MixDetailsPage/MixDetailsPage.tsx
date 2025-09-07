@@ -233,7 +233,10 @@ const MixDetailsPage = () => {
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end text-center sm:text-left">
                 <img
-                  src={currentMix.imageUrl || "/default-album-cover.png"}
+                  src={
+                    currentMix.imageUrl ||
+                    "https://moodify.b-cdn.net/artist.jpeg"
+                  }
                   alt={currentMix.name}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
                 />

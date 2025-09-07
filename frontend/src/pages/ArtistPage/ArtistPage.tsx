@@ -199,7 +199,10 @@ const ArtistPage = () => {
                     ? artist.bannerUrl
                       ? `url(${artist.bannerUrl})`
                       : "linear-gradient(to bottom, #333, #111)"
-                    : `url(${artist.imageUrl || "/default-artist-cover.png"})`,
+                    : `url(${
+                        artist.imageUrl ||
+                        "https://moodify.b-cdn.net/artist.jpeg"
+                      })`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
