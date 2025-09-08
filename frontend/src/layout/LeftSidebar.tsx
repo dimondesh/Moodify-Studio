@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Heart,
   HomeIcon,
@@ -37,6 +37,7 @@ import { Download } from "lucide-react";
 import { useOfflineStore } from "../stores/useOfflineStore";
 import { useChatStore } from "../stores/useChatStore";
 import { useUIStore } from "../stores/useUIStore";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 const LeftSidebar = () => {
   const { t } = useTranslation();
@@ -333,7 +334,10 @@ const LeftSidebar = () => {
                     className="p-2 hover:bg-zinc-800 rounded-md flex items-center gap-3 group cursor-pointer"
                   >
                     <img
-                      src={item.imageUrl || fallbackImage}
+                      src={getOptimizedImageUrl(
+                        item.imageUrl || fallbackImage,
+                        100
+                      )}
                       alt={item.title}
                       className={`size-12 object-cover ${imageClass} flex-shrink-0`}
                       onError={(e) => {

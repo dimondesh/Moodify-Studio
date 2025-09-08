@@ -39,7 +39,7 @@ import {
 } from "../components/ui/dropdown-menu";
 import { useChatStore } from "../stores/useChatStore";
 
-import { getArtistNames } from "@/lib/utils";
+import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
 import { CreatePlaylistDialog } from "../pages/PlaylistPage/CreatePlaylistDialog";
 
@@ -366,7 +366,10 @@ const PlaybackControls = () => {
               >
                 <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                   <img
-                    src={currentSong.imageUrl || "/default-song-cover.png"}
+                    src={getOptimizedImageUrl(
+                      currentSong.imageUrl || "/default-song-cover.png",
+                      80
+                    )}
                     alt={currentSong.title}
                     className="w-full h-full object-cover"
                   />
@@ -476,9 +479,10 @@ const PlaybackControls = () => {
                     <div className="flex flex-col items-center justify-center px-4 py-8 flex-shrink-0 w-full">
                       {currentSong ? (
                         <img
-                          src={
-                            currentSong.imageUrl || "/default-song-cover.png"
-                          }
+                          src={getOptimizedImageUrl(
+                            currentSong.imageUrl || "/default-song-cover.png",
+                            600
+                          )}
                           alt={currentSong.title}
                           className="w-full max-w-md aspect-square object-cover rounded-lg shadow-2xl mb-8"
                         />
@@ -802,7 +806,10 @@ const PlaybackControls = () => {
                     className="flex-shrink-0 rounded-md overflow-hidden"
                   >
                     <img
-                      src={currentSong.imageUrl || "/default-song-cover.png"}
+                      src={getOptimizedImageUrl(
+                        currentSong.imageUrl || "/default-song-cover.png",
+                        120
+                      )}
                       alt={currentSong.title}
                       className="w-14 h-14 object-cover"
                     />
