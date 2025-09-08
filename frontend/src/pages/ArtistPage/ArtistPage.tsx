@@ -1,4 +1,5 @@
 // frontend/src/pages/ArtistPage/ArtistPage.tsx
+
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -30,10 +31,9 @@ const ArtistPage = () => {
   const {
     isSongLiked,
     toggleSongLike,
-    fetchLikedSongs,
+    // --- ИЗМЕНЕНИЕ: fetchLikedSongs и fetchFollowedArtists больше не нужны здесь ---
     isArtistFollowed,
     toggleArtistFollow,
-    fetchFollowedArtists,
   } = useLibraryStore();
 
   const { artistAppearsOn, isAppearsOnLoading, fetchArtistAppearsOn } =
@@ -50,10 +50,9 @@ const ArtistPage = () => {
       }
       try {
         setLoading(true);
-        const [artistRes] = await Promise.all([
-          axiosInstance.get<Artist>(`/artists/${id}`),
-          fetchArtistAppearsOn(id),
-        ]);
+        // --- ИЗМЕНЕНИЕ: Упрощаем Promise.all, так как нам нужна только информация об артисте ---
+        const artistRes = await axiosInstance.get<Artist>(`/artists/${id}`);
+        fetchArtistAppearsOn(id); // Запускаем в фоне, не дожидаясь
         setArtist(artistRes.data);
         setError(null);
       } catch (err: unknown) {
@@ -71,10 +70,12 @@ const ArtistPage = () => {
       }
     };
     fetchArtistData();
-    fetchLikedSongs();
-    fetchFollowedArtists();
-  }, [id, fetchLikedSongs, fetchFollowedArtists, t, fetchArtistAppearsOn]);
+    // --- ИЗМЕНЕНИЕ: Удаляем лишние вызовы. Данные для сайдбара уже загружены в App.tsx ---
+    // fetchLikedSongs();
+    // fetchFollowedArtists();
+  }, [id, t, fetchArtistAppearsOn]);
 
+  // ... остальной код компонента остается без изменений ...
   const { popularSongs, albums, singlesAndEps } = useMemo(() => {
     const allArtistSongs: Song[] = artist?.songs || [];
     const allArtistAlbums: Album[] = artist?.albums || [];
