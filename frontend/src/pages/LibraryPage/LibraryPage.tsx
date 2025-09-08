@@ -214,8 +214,8 @@ const LibraryPage = () => {
         />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md pb-0">
-          <div className="relative min-h-screen p-4 sm:p-6 ">
+        <ScrollArea className="h-full rounded-md">
+          <div className="relative min-h-screen p-4 sm:p-6 pb-40 sm:pb-50 lg:pb-10 ">
             <div
               className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
               aria-hidden="true"
@@ -273,7 +273,7 @@ const LibraryPage = () => {
                       : t("sidebar.emptyLibrary")}
                   </p>
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     {filteredLibraryItems.map((item) => {
                       let linkPath: string = "#";
                       let subtitle: string = "";
@@ -343,7 +343,7 @@ const LibraryPage = () => {
                           <div className="relative mb-2 w-full">
                             <div
                               className={cn(
-                                "aspect-square object-cover flex-shrink-0 w-full overflow-hidden shadow-lg",
+                                "relative aspect-square w-full overflow-hidden shadow-lg",
                                 item.type === "artist"
                                   ? "rounded-full"
                                   : "rounded-md"
@@ -355,7 +355,7 @@ const LibraryPage = () => {
                                   "https://moodify.b-cdn.net/default-album-cover.png"
                                 }
                                 alt={item.title}
-                                className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
                                     "https://moodify.b-cdn.net/default-album-cover.png";
