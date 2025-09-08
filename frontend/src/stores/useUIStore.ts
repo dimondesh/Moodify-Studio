@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Playlist } from "../types";
 
 interface ShareEntity {
-  type: "song" | "album" | "playlist";
+  type: "song" | "album" | "playlist" | "mix";
   id: string;
 }
 

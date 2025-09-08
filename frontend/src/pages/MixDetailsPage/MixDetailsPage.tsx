@@ -6,7 +6,15 @@ import { ScrollArea } from "../../components/ui/scroll-area";
 import PlaylistDetailsSkeleton from "../../components/ui/skeletons/PlaylistDetailsSkeleton";
 import { format } from "date-fns";
 import { Button } from "../../components/ui/button";
-import { Play, Pause, PlusCircle, CheckCircle2, Heart } from "lucide-react";
+import {
+  Play,
+  Pause,
+  PlusCircle,
+  CheckCircle2,
+  Heart,
+  MoreHorizontal,
+  Share,
+} from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song } from "../../types";
 import toast from "react-hot-toast";
@@ -20,6 +28,10 @@ import { useDominantColor } from "@/hooks/useDominantColor";
 import { useChatStore } from "../../stores/useChatStore";
 import EqualizerTitle from "@/components/ui/equalizer-title";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useUIStore } from "@/stores/useUIStore";
+import { ShareDialog } from "@/components/ui/ShareDialog";
+import SongOptionsDrawer from "../PlaylistPage/SongOptionsDrawer";
+import { getArtistNames } from "@/lib/utils";
 
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -39,6 +51,10 @@ const MixDetailsPage = () => {
     useLibraryStore();
   const { playAlbum, togglePlay, isPlaying, currentSong, queue } =
     usePlayerStore();
+  const { openShareDialog, closeAllDialogs, shareEntity } = useUIStore();
+  const [selectedSongForMenu, setSelectedSongForMenu] = useState<Song | null>(
+    null
+  );
 
   const [isTogglingLibrary, setIsTogglingLibrary] = useState(false);
   const { extractColor } = useDominantColor();
@@ -203,13 +219,182 @@ const MixDetailsPage = () => {
   const isCurrentMixPlaying =
     isPlaying && currentMix.songs.some((song) => song._id === currentSong?._id);
 
+  const renderDesktopSongList = () =>
+    currentMix.songs.map((song, index) => {
+      const isCurrentlyPlaying = currentSong?._id === song._id;
+      const songIsLiked = likedSongs.some(
+        (likedSong) => likedSong._id === song._id
+      );
+      return (
+        <div
+          key={song._id}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest("button")) return;
+            handlePlaySong(song, index);
+          }}
+          className={`grid grid-cols-[16px_4fr_2fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
+            isCurrentlyPlaying ? "bg-white/10" : ""
+          }`}
+        >
+          <div className="flex items-center justify-center">
+            {isCurrentlyPlaying && isPlaying ? (
+              <div className="z-10">
+                <Equalizer />
+              </div>
+            ) : (
+              <span className="group-hover:hidden text-xs sm:text-sm">
+                {index + 1}
+              </span>
+            )}
+            {!isCurrentlyPlaying && (
+              <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
+            )}
+          </div>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSongTitleClick(song.albumId);
+              }}
+              className="flex-shrink-0"
+            >
+              <img
+                src={song.imageUrl || "/default-song-cover.png"}
+                alt={song.title}
+                className="size-10 object-cover rounded-md"
+              />
+            </button>
+            <div className="flex flex-col min-w-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSongTitleClick(song.albumId);
+                }}
+                className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline truncate ${
+                  isCurrentlyPlaying ? "text-violet-400" : "text-white"
+                }`}
+              >
+                {song.title}
+              </button>
+              <div className="text-zinc-400 text-xs sm:text-sm truncate">
+                {song.artist.map((artist, artistIndex) => (
+                  <span key={artist._id}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleArtistNameClick(artist._id);
+                      }}
+                      className="hover:underline focus:outline-none focus:underline"
+                    >
+                      {artist.name}
+                    </button>
+                    {artistIndex < song.artist.length - 1 && ", "}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="items-center hidden md:flex text-xs">
+            {song.createdAt
+              ? format(new Date(song.createdAt), "MMM dd, yyyy")
+              : "N/A"}
+          </div>
+          <div className="flex items-center text-xs sm:text-sm flex-shrink-0 justify-end md:mr-10">
+            {formatDuration(song.duration)}
+          </div>
+          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
+            <Button
+              size="icon"
+              variant="ghost"
+              className={`rounded-full size-6 sm:size-7 ${
+                songIsLiked
+                  ? "text-violet-500 hover:text-violet-400"
+                  : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSongLike(song._id);
+              }}
+              title={songIsLiked ? t("player.unlike") : t("player.like")}
+            >
+              <Heart
+                className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                  songIsLiked ? "fill-violet-500" : ""
+                }`}
+              />
+            </Button>
+          </div>
+        </div>
+      );
+    });
+
+  const renderMobileSongList = () =>
+    currentMix.songs.map((song) => {
+      const isCurrentSong = currentSong?._id === song._id;
+      return (
+        <div
+          key={song._id}
+          onClick={() =>
+            handlePlaySong(
+              song,
+              currentMix.songs.findIndex((s) => s._id === song._id)
+            )
+          }
+          className={`flex items-center justify-between gap-4 p-2 rounded-md group cursor-pointer ${
+            isCurrentSong ? "bg-white/10" : "hover:bg-white/5"
+          }`}
+        >
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <img
+              src={song.imageUrl || "/default-song-cover.png"}
+              alt={song.title}
+              className="size-12 object-cover rounded-md flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                {isCurrentSong && isPlaying && (
+                  <div className="block sm:hidden flex-shrink-0">
+                    <EqualizerTitle />
+                  </div>
+                )}
+                <p
+                  className={`font-medium truncate w-45 sm:w-120 ${
+                    isCurrentSong ? "text-violet-400" : "text-white"
+                  }`}
+                >
+                  {song.title}
+                </p>
+              </div>
+              <p className="text-sm text-zinc-400 truncate">
+                {getArtistNames(song.artist)}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedSongForMenu(song);
+            }}
+          >
+            <MoreHorizontal className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+          </Button>
+        </div>
+      );
+    });
+
   return (
     <>
       <Helmet>
-        <title>{`${t(currentMix.name)}`}</title>{" "}
+        <title>{`${t(currentMix.name)}`}</title>
         <meta
           name="description"
-          content={`Listen to ${currentMix.name}. A daily mix of songs based on your listening habits for '${currentMix.sourceName}'.`}
+          content={`Listen to ${t(
+            currentMix.name
+          )}. A daily mix of songs based on your listening habits for '${
+            currentMix.sourceName
+          }'.`}
         />
       </Helmet>
       <div className="h-full">
@@ -237,7 +422,7 @@ const MixDetailsPage = () => {
                     currentMix.imageUrl ||
                     "https://moodify.b-cdn.net/artist.jpeg"
                   }
-                  alt={currentMix.name}
+                  alt={t(currentMix.name)}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
                 />
                 <div className="flex flex-col justify-end flex-grow">
@@ -307,151 +492,27 @@ const MixDetailsPage = () => {
                 <DownloadButton
                   itemId={currentMix._id}
                   itemType="mixes"
-                  itemTitle={currentMix.name}
+                  itemTitle={t(currentMix.name)}
                 />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-md p-2 transition-colors"
+                  title="Share"
+                  onClick={() =>
+                    openShareDialog({ type: "mix", id: currentMix._id })
+                  }
+                >
+                  <Share className="size-6 text-white" />
+                </Button>
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="px-4 sm:px-6">
-                  <div className="space-y-2 py-4">
-                    {currentMix.songs.map((song, index) => {
-                      const isCurrentlyPlaying = currentSong?._id === song._id;
-                      const songIsLiked = likedSongs.some(
-                        (likedSong) => likedSong._id === song._id
-                      );
-                      return (
-                        <div
-                          key={song._id}
-                          onClick={(e) => {
-                            if ((e.target as HTMLElement).closest("button"))
-                              return;
-                            handlePlaySong(song, index);
-                          }}
-                          className={`grid grid-cols-[4fr_1fr_min-content] sm:grid-cols-[16px_4fr_1fr_min-content] md:grid-cols-[16px_4fr_2fr_1fr_min-content] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/5 rounded-md group cursor-pointer ${
-                            isCurrentlyPlaying ? "bg-white/10" : ""
-                          }`}
-                        >
-                          <div className="hidden sm:flex items-center justify-center">
-                            {isCurrentlyPlaying && isPlaying ? (
-                              <div className="z-10">
-                                <Equalizer />
-                              </div>
-                            ) : (
-                              <span className="group-hover:hidden text-xs sm:text-sm">
-                                {index + 1}
-                              </span>
-                            )}
-                            {!isCurrentlyPlaying && (
-                              <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSongTitleClick(song.albumId);
-                              }}
-                              className="flex-shrink-0"
-                            >
-                              <img
-                                src={song.imageUrl || "/default-song-cover.png"}
-                                alt={song.title}
-                                className="size-10 object-cover rounded-md"
-                              />
-                            </button>
-                            <div className="flex flex-col min-w-0">
-                              <div className="flex items-center gap-2">
-                                {isCurrentlyPlaying && isPlaying && (
-                                  <div className="block sm:hidden flex-shrink-0">
-                                    <EqualizerTitle />
-                                  </div>
-                                )}
-                                {isMobile ? (
-                                  <span
-                                    className={`font-medium w-full text-left ${
-                                      isCurrentlyPlaying
-                                        ? "text-violet-400"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    <p className="truncate">{song.title}</p>
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSongTitleClick(song.albumId);
-                                    }}
-                                    className={`font-medium w-full text-left hover:underline focus:outline-none focus:underline ${
-                                      isCurrentlyPlaying
-                                        ? "text-violet-400"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    <p className="truncate">{song.title}</p>
-                                  </button>
-                                )}
-                              </div>
-                              <div className="text-zinc-400 text-xs sm:text-sm truncate">
-                                {song.artist.map((artist, artistIndex) => (
-                                  <span key={artist._id}>
-                                    {isMobile ? (
-                                      <span>{artist.name}</span>
-                                    ) : (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleArtistNameClick(artist._id);
-                                        }}
-                                        className="hover:underline focus:outline-none focus:underline"
-                                      >
-                                        {artist.name}
-                                      </button>
-                                    )}
-                                    {artistIndex < song.artist.length - 1 &&
-                                      ", "}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="items-center hidden md:flex text-xs">
-                            {song.createdAt
-                              ? format(new Date(song.createdAt), "MMM dd, yyyy")
-                              : "N/A"}
-                          </div>
-                          <div className="flex items-center text-xs sm:text-sm flex-shrink-0">
-                            {formatDuration(song.duration)}
-                          </div>
-                          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-shrink-0">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className={`rounded-full size-6 sm:size-7 ${
-                                songIsLiked
-                                  ? "text-violet-500 hover:text-violet-400"
-                                  : "text-zinc-400 hover:text-white opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleSongLike(song._id);
-                              }}
-                              title={
-                                songIsLiked
-                                  ? t("player.unlike")
-                                  : t("player.like")
-                              }
-                            >
-                              <Heart
-                                className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                                  songIsLiked ? "fill-violet-500" : ""
-                                }`}
-                              />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="px-2 sm:px-6">
+                  <div className="space-y-1 py-4">
+                    {isMobile
+                      ? renderMobileSongList()
+                      : renderDesktopSongList()}
                   </div>
                 </div>
               </div>
@@ -459,6 +520,31 @@ const MixDetailsPage = () => {
           </div>
         </ScrollArea>
       </div>
+      {currentMix && (
+        <ShareDialog
+          isOpen={
+            shareEntity?.type === "mix" && shareEntity.id === currentMix._id
+          }
+          onClose={closeAllDialogs}
+          entityType="mix"
+          entityId={currentMix._id}
+        />
+      )}
+      {shareEntity?.type === "song" && (
+        <ShareDialog
+          isOpen={true}
+          onClose={closeAllDialogs}
+          entityType="song"
+          entityId={shareEntity.id}
+        />
+      )}
+      <SongOptionsDrawer
+        song={selectedSongForMenu}
+        playlistId={currentMix?._id || ""}
+        isOwner={false}
+        isOpen={!!selectedSongForMenu}
+        onOpenChange={(open) => !open && setSelectedSongForMenu(null)}
+      />
     </>
   );
 };

@@ -111,7 +111,7 @@ export interface Message {
   isRead: boolean;
 
   shareDetails?: {
-    entityType: "song" | "album" | "playlist";
+    entityType: "song" | "album" | "playlist" | "mix";
     entityId: string;
   };
 }
@@ -202,7 +202,6 @@ export interface FollowedArtistItem extends BaseLibraryItem {
   artistId: string;
   addedAt?: string;
 }
-// --- ИЗМЕНЕНИЕ НАЧАЛО ---
 export interface GeneratedPlaylistItem extends BaseLibraryItem {
   type: "generated-playlist";
   sourceName: string;
@@ -214,8 +213,7 @@ export type LibraryItem =
   | PlaylistItem
   | FollowedArtistItem
   | MixItem
-  | GeneratedPlaylistItem; // Добавляем новый тип
-// --- ИЗМЕНЕНИЕ КОНЕЦ ---
+  | GeneratedPlaylistItem;
 export interface LibraryPlaylist extends Playlist {
   addedAt?: string;
 }

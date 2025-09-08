@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 interface ShareDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  entityType: "song" | "album" | "playlist";
+  entityType: "song" | "album" | "playlist" | "mix";
   entityId: string;
 }
 
