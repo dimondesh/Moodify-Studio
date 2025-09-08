@@ -1,3 +1,5 @@
+// frontend/src/pages/PlaylistPage/PlaylistDetailsPage.tsx
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -10,7 +12,7 @@ import { useChatStore } from "../../stores/useChatStore";
 import { useOfflineStore } from "../../stores/useOfflineStore";
 import EqualizerTitle from "@/components/ui/equalizer-title";
 import SongOptionsDrawer from "./SongOptionsDrawer";
-import { getArtistNames } from "@/lib/utils";
+import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 
 import {
   Play,
@@ -358,7 +360,10 @@ const PlaylistDetailsPage = () => {
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <img
-              src={song.imageUrl || "/default-song-cover.png"}
+              src={getOptimizedImageUrl(
+                song.imageUrl || "/default-song-cover.png",
+                100
+              )}
               alt={song.title}
               className="size-12 object-cover rounded-md flex-shrink-0"
             />
@@ -377,7 +382,7 @@ const PlaylistDetailsPage = () => {
                   {song.title}
                 </p>
               </div>
-              <p className="text-sm text-zinc-400 truncate">
+              <p className="text-sm text-zinc-400 truncate w-45 sm:w-120">
                 {getArtistNames(song.artist)}
               </p>
             </div>
@@ -438,7 +443,10 @@ const PlaylistDetailsPage = () => {
               className="flex-shrink-0"
             >
               <img
-                src={song.imageUrl || "/default-song-cover.png"}
+                src={getOptimizedImageUrl(
+                  song.imageUrl || "/default-song-cover.png",
+                  80
+                )}
                 alt={song.title}
                 className="size-10 object-cover rounded-md"
               />
@@ -617,10 +625,11 @@ const PlaylistDetailsPage = () => {
             <div className="relative z-10 w-full">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end w-full">
                 <img
-                  src={
+                  src={getOptimizedImageUrl(
                     currentPlaylist.imageUrl ||
-                    "https://moodify.b-cdn.net/default-album-cover.png"
-                  }
+                      "https://moodify.b-cdn.net/default-album-cover.png",
+                    500
+                  )}
                   alt={currentPlaylist.title}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded-md object-cover flex-shrink-0 mx-auto sm:mx-0"
                 />

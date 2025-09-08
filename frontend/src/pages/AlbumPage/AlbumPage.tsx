@@ -29,6 +29,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import SongOptionsDrawer from "./SongOptionsDrawer";
 import { Song } from "@/types";
 import EqualizerTitle from "@/components/ui/equalizer-title";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 const formatDuration = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -183,7 +184,10 @@ const AlbumPage = () => {
           </div>
           <div className="flex items-center gap-3 min-w-0">
             <img
-              src={song.imageUrl || "/default-song-cover.png"}
+              src={getOptimizedImageUrl(
+                song.imageUrl || "/default-song-cover.png",
+                80
+              )}
               alt={song.title}
               className="size-10 object-cover rounded-md flex-shrink-0"
             />
@@ -303,8 +307,8 @@ const AlbumPage = () => {
         <title>{`${currentAlbum.title} - ${artistNames}`}</title>
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md">
-          <div className="relative min-h-screen pb-40 lg:pb-10">
+        <ScrollArea className="h-full pb-30 rounded-md lg:pb-0">
+          <div className="relative min-h-screen">
             {backgrounds
               .slice(0, 2)
               .reverse()
@@ -323,7 +327,7 @@ const AlbumPage = () => {
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end">
                 <img
-                  src={currentAlbum.imageUrl}
+                  src={getOptimizedImageUrl(currentAlbum.imageUrl, 500)}
                   alt={currentAlbum.title}
                   className="w-48 h-48 sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px] shadow-xl rounded object-cover"
                 />
@@ -437,7 +441,6 @@ const AlbumPage = () => {
               </div>
             </div>
           </div>
-          {/* Share Dialog для альбома */}
           {currentAlbum && (
             <ShareDialog
               isOpen={
@@ -449,7 +452,6 @@ const AlbumPage = () => {
               entityId={currentAlbum._id}
             />
           )}
-          {/* Share Dialog для выбранного трека */}
           {shareEntity?.type === "song" && (
             <ShareDialog
               isOpen={true}
