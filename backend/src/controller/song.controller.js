@@ -352,26 +352,47 @@ export const getListenHistory = async (
   }
 };
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const getImageForColorAnalysis = async (req, res, next) => {
-  try {
-    const { url } = req.query;
-    if (!url) {
-      return res.status(400).send({ message: "Image URL is required" });
+  const { url } = req.query;
+  if (!url) {
+    return res.status(400).send({ message: "Image URL is required" });
+  }
+
+  const decodedUrl = decodeURIComponent(url);
+  const maxRetries = 3;
+  const retryDelay = 500; // 500ms
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios({
+        method: "get",
+        url: decodedUrl,
+        responseType: "stream",
+        timeout: 5000,
+      });
+
+      res.setHeader("Content-Type", response.headers["content-type"]);
+      response.data.pipe(res);
+      return;
+    } catch (error) {
+      console.error(
+        `Image proxy error (Attempt ${attempt}/${maxRetries}):`,
+        error.message
+      );
+
+      if (attempt === maxRetries) {
+        if (error.response) {
+          console.error(
+            "Proxy target responded with status:",
+            error.response.status
+          );
+        }
+        return next(new Error("Failed to proxy image after multiple attempts"));
+      }
+
+      await delay(retryDelay);
     }
-
-    const decodedUrl = decodeURIComponent(url);
-
-    const response = await axios({
-      method: "get",
-      url: decodedUrl,
-      responseType: "stream",
-    });
-
-    res.setHeader("Content-Type", response.headers["content-type"]);
-
-    response.data.pipe(res);
-  } catch (error) {
-    console.error("Image proxy error:", error.message);
-    next(new Error("Failed to proxy image"));
   }
 };

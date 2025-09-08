@@ -19,7 +19,6 @@ export const useDominantColor = () => {
         return "#18181b";
       }
 
-      let objectUrl: string | null = null;
       const fallbackColor = "#18181b";
 
       try {
@@ -31,27 +30,26 @@ export const useDominantColor = () => {
         });
 
         const imageBlob = response.data;
-        objectUrl = URL.createObjectURL(imageBlob);
+        const objectUrl = URL.createObjectURL(imageBlob);
 
-        const imageElement = await new Promise<HTMLImageElement>(
-          (resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => resolve(img);
-            img.onerror = (err) => reject(err);
-            img.src = objectUrl!;
-          }
-        );
-
-        const color = await fac.getColorAsync(imageElement);
-        return color.hex;
-      } catch (error) {
-        console.error("Ошибка при извлечении цвета через прокси:", error);
-        return fallbackColor;
-      } finally {
-        if (objectUrl) {
+        try {
+          const imageElement = await new Promise<HTMLImageElement>(
+            (resolve, reject) => {
+              const img = new Image();
+              img.crossOrigin = "Anonymous";
+              img.onload = () => resolve(img);
+              img.onerror = (err) => reject(err);
+              img.src = objectUrl;
+            }
+          );
+          const color = await fac.getColorAsync(imageElement);
+          return color.hex;
+        } finally {
           URL.revokeObjectURL(objectUrl);
         }
+      } catch (error) {
+        console.warn(`Ошибка при извлечении цвета для ${imageUrl}:`, error);
+        return fallbackColor;
       }
     },
     []

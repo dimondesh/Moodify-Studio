@@ -14,8 +14,8 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/"
+      "source": "/((?!api/|assets/|_next/|static/|sw.js|robots.txt|sitemap.xml|manifest.webmanifest|favicon.ico|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
