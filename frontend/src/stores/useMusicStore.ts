@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // frontend/src/stores/useMusicStore.ts
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -51,12 +50,15 @@ interface MusicStore {
   favoriteArtists: Artist[];
   newReleases: Album[];
 
-  fetchHomePageData: () => Promise<void>;
+  // --- ИЗМЕНЕНИЕ: Разделяем одну функцию на две ---
+  fetchPrimaryHomePageData: () => Promise<void>;
+  fetchSecondaryHomePageData: () => Promise<void>;
+
   clearHomePageCache: () => void;
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
-  fetchFeaturedSongs: () => Promise<void>;
+  fetchFeaturedSongs: () => Promise<void>; // Оставим на случай, если где-то используется отдельно
   fetchMadeForYouSongs: () => Promise<void>;
   fetchTrendingSongs: () => Promise<void>;
   fetchGenres: () => Promise<void>;
@@ -86,7 +88,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   isLoading: false,
   error: null,
   genres: [],
-
   moods: [],
   currentAlbum: null,
   featuredSongs: [],
@@ -96,7 +97,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   favoriteArtists: [],
   newReleases: [],
   homePageDataLastFetched: null,
-
   paginatedSongs: [],
   songsPage: 1,
   songsTotalPages: 1,
@@ -108,7 +108,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   artistsTotalPages: 1,
   artistAppearsOn: [],
   isAppearsOnLoading: false,
-
   stats: {
     totalSongs: 0,
     totalAlbums: 0,
@@ -119,55 +118,45 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     set({ homePageDataLastFetched: null });
     console.log("Homepage cache cleared.");
   },
-  fetchArtistAppearsOn: async (artistId: string) => {
-    set({ isAppearsOnLoading: true, error: null });
-    try {
-      const response = await axiosInstance.get(
-        `/artists/${artistId}/appears-on`
-      );
-      set({ artistAppearsOn: response.data, isAppearsOnLoading: false });
-    } catch (error: any) {
-      console.error("Failed to fetch 'Appears On' albums:", error);
-      set({
-        error:
-          error.response?.data?.message ||
-          "Failed to fetch 'Appears On' section",
-        isAppearsOnLoading: false,
-      });
-    }
-  },
-  fetchHomePageData: async () => {
-    // <-- ИЗМЕНЕНИЕ: Вся логика функции обновлена
-    const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 минут
-    const { homePageDataLastFetched } = get();
-    const now = Date.now();
+
+  fetchPrimaryHomePageData: async () => {
     const isOffline = useOfflineStore.getState().isOffline;
-
-    if (
-      !isOffline &&
-      homePageDataLastFetched &&
-      now - homePageDataLastFetched < CACHE_DURATION_MS
-    ) {
-      console.log("Using cached homepage data. Fresh enough.");
-      useUIStore.getState().setIsHomePageLoading(false);
-      return;
-    }
-
     if (isOffline) {
-      console.log("Offline mode: Skipping homepage data fetch.");
       useUIStore.getState().setIsHomePageLoading(false);
+      useUIStore.getState().setIsSecondaryHomePageLoading(false);
       return;
     }
 
     useUIStore.getState().setIsHomePageLoading(true);
+    useUIStore.getState().setIsSecondaryHomePageLoading(true);
     set({ error: null });
 
     try {
-      const response = await axiosInstance.get("/homepage");
+      const response = await axiosInstance.get("/homepage/primary");
+      set({
+        featuredSongs: response.data.featuredSongs || [],
+      });
+    } catch (error: any) {
+      console.error("Failed to fetch primary homepage data:", error);
+      set({
+        error:
+          error.response?.data?.message || "Failed to load featured content",
+      });
+      useUIStore.getState().setIsSecondaryHomePageLoading(false);
+    } finally {
+      useUIStore.getState().setIsHomePageLoading(false);
+    }
+  },
+
+  fetchSecondaryHomePageData: async () => {
+    const isOffline = useOfflineStore.getState().isOffline;
+    if (isOffline) return;
+
+    try {
+      const response = await axiosInstance.get("/homepage/secondary");
       const data = response.data;
 
       set({
-        featuredSongs: data.featuredSongs || [],
         trendingSongs: data.trendingSongs || [],
         madeForYouSongs: data.madeForYouSongs || [],
         recentlyListenedSongs: data.recentlyListenedSongs || [],
@@ -188,13 +177,29 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         allGeneratedPlaylists: data.allGeneratedPlaylists || [],
       });
     } catch (error: any) {
-      console.error("Failed to fetch homepage data:", error);
-      set({ error: error.response?.data?.message || "Failed to load content" });
+      console.error("Failed to fetch secondary homepage data:", error);
     } finally {
-      useUIStore.getState().setIsHomePageLoading(false);
+      useUIStore.getState().setIsSecondaryHomePageLoading(false);
     }
   },
 
+  fetchArtistAppearsOn: async (artistId: string) => {
+    set({ isAppearsOnLoading: true, error: null });
+    try {
+      const response = await axiosInstance.get(
+        `/artists/${artistId}/appears-on`
+      );
+      set({ artistAppearsOn: response.data, isAppearsOnLoading: false });
+    } catch (error: any) {
+      console.error("Failed to fetch 'Appears On' albums:", error);
+      set({
+        error:
+          error.response?.data?.message ||
+          "Failed to fetch 'Appears On' section",
+        isAppearsOnLoading: false,
+      });
+    }
+  },
   fetchFavoriteArtists: async () => {
     if (useOfflineStore.getState().isOffline) return;
     try {
@@ -215,7 +220,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       console.error("Failed to fetch new releases:", error);
     }
   },
-
   fetchPaginatedSongs: async (page = 1, limit = 50) => {
     set({ isLoading: true, error: null });
     try {
@@ -232,7 +236,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ error: error.message, isLoading: false });
     }
   },
-
   fetchPaginatedAlbums: async (page = 1, limit = 50) => {
     set({ isLoading: true, error: null });
     try {
@@ -249,7 +252,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ error: error.message, isLoading: false });
     }
   },
-
   fetchPaginatedArtists: async (page = 1, limit = 50) => {
     set({ isLoading: true, error: null });
     try {
@@ -266,7 +268,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ error: error.message, isLoading: false });
     }
   },
-
   fetchGenres: async () => {
     try {
       const response = await axiosInstance.get("/admin/genres");
@@ -275,7 +276,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       console.error("Failed to fetch genres", error);
     }
   },
-
   fetchMoods: async () => {
     try {
       const response = await axiosInstance.get("/admin/moods");
@@ -288,7 +288,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.delete(`/admin/songs/${id}`);
-
       set((state) => ({
         songs: state.songs.filter((song) => song._id !== id),
       }));
@@ -300,7 +299,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   deleteAlbum: async (id) => {
     set({ isLoading: true, error: null });
     try {
@@ -318,7 +316,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   deleteArtist: async (id) => {
     set({ isLoading: true, error: null });
     try {
@@ -400,7 +397,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   fetchAlbums: async () => {
     if (useOfflineStore.getState().isOffline) return;
-
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/albums");
@@ -413,11 +409,9 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   fetchAlbumbyId: async (id: string) => {
     set({ isLoading: true, error: null, currentAlbum: null });
-
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
     const userId = useAuthStore.getState().user?.id;
-
     if (isOffline) {
       if (isDownloaded(id) && userId) {
         console.log(`[Offline] Загрузка альбома ${id} из IndexedDB.`);
@@ -445,18 +439,15 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
         return;
       }
     }
-
     try {
       const response = await axiosInstance.get(`/albums/${id}`);
       const albumData = response.data.album;
-
       if (albumData && albumData.songs) {
         albumData.songs = albumData.songs.map((song: Song) => ({
           ...song,
           albumTitle: albumData.title,
         }));
       }
-
       set({ currentAlbum: albumData, isLoading: false });
     } catch (error: any) {
       set({
@@ -465,10 +456,8 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       });
     }
   },
-
   fetchFeaturedSongs: async () => {
     if (useOfflineStore.getState().isOffline) return;
-
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/featured");
@@ -479,10 +468,8 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   fetchMadeForYouSongs: async () => {
     if (useOfflineStore.getState().isOffline) return;
-
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/made-for-you");
@@ -509,7 +496,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   },
   fetchTrendingSongs: async () => {
     if (useOfflineStore.getState().isOffline) return;
-
     set({ isLoading: true, error: null });
     try {
       const response = await axiosInstance.get("/songs/trending");
@@ -520,7 +506,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   fetchSongs: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -532,12 +517,10 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   fetchArtists: async () => {
     const { isOffline } = useOfflineStore.getState();
     const userId = useAuthStore.getState().user?.id;
     set({ isLoading: true, error: null });
-
     if (isOffline) {
       console.log(
         "[Offline] Constructing artists list from downloaded content."
@@ -551,22 +534,18 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
           getAllUserAlbums(userId),
           getAllUserSongs(userId),
         ]);
-
         const artistMap = new Map<string, Artist>();
-
         const processArtist = (artist: Artist) => {
           if (artist && artist._id && !artistMap.has(artist._id)) {
             artistMap.set(artist._id, artist);
           }
         };
-
         albums.forEach((album: Album) =>
           (album.artist as Artist[]).forEach(processArtist)
         );
         songs.forEach((song: Song) =>
           (song.artist as Artist[]).forEach(processArtist)
         );
-
         const offlineArtists = Array.from(artistMap.values());
         set({ artists: offlineArtists, isLoading: false });
       } catch (e: any) {
@@ -575,7 +554,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       }
       return;
     }
-
     try {
       const response = await axiosInstance.get("/artists");
       set({ artists: response.data });
@@ -585,7 +563,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ isLoading: false });
     }
   },
-
   fetchStats: async () => {
     set({ isLoading: true, error: null });
     try {

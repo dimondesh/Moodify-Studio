@@ -1,3 +1,5 @@
+// src/stores/useUIStore.ts
+
 import { create } from "zustand";
 import type { Playlist } from "../types";
 
@@ -21,8 +23,10 @@ interface UIStore {
   songToRemoveFromPlaylist: SongRemovalInfo | null;
   isUserSheetOpen: boolean;
   isHomePageLoading: boolean;
+  isSecondaryHomePageLoading: boolean;
 
   setIsHomePageLoading: (isLoading: boolean) => void;
+  setIsSecondaryHomePageLoading: (isLoading: boolean) => void;
 
   openCreatePlaylistDialog: () => void;
   openEditPlaylistDialog: (playlist: Playlist) => void;
@@ -46,8 +50,11 @@ export const useUIStore = create<UIStore>((set) => ({
   songToRemoveFromPlaylist: null,
   isUserSheetOpen: false,
   isHomePageLoading: true,
+  isSecondaryHomePageLoading: true,
 
   setIsHomePageLoading: (isLoading) => set({ isHomePageLoading: isLoading }),
+  setIsSecondaryHomePageLoading: (isLoading) =>
+    set({ isSecondaryHomePageLoading: isLoading }),
 
   openCreatePlaylistDialog: () => set({ isCreatePlaylistDialogOpen: true }),
   openEditPlaylistDialog: (playlist) => set({ editingPlaylist: playlist }),

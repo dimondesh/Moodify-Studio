@@ -2,10 +2,15 @@
 
 import { Router } from "express";
 import { identifyUser } from "../middleware/identifyUser.middleware.js";
-import { getHomePageData } from "../controller/home.controller.js";
+import {
+  getPrimaryHomePageData,
+  getSecondaryHomePageData,
+} from "../controller/home.controller.js";
 
 const router = Router();
 
-router.get("/", identifyUser, getHomePageData);
+router.get("/primary", identifyUser, getPrimaryHomePageData);
+
+router.get("/secondary", identifyUser, getSecondaryHomePageData);
 
 export default router;

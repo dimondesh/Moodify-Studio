@@ -1,10 +1,13 @@
 // backend/src/controller/home.controller.js
 
-import { getQuickPicks } from "./song.controller.js";
-import { getTrendingSongs } from "./song.controller.js";
+import {
+  getQuickPicks,
+  getTrendingSongs,
+  getMadeForYouSongs,
+  getListenHistory,
+} from "./song.controller.js";
 import { getDailyMixes } from "./mix.controller.js";
 import { getPublicPlaylists } from "./playlist.controller.js";
-import { getMadeForYouSongs, getListenHistory } from "./song.controller.js";
 import {
   getFavoriteArtists,
   getNewReleases,
@@ -12,13 +15,29 @@ import {
 } from "./user.controller.js";
 import { getMyGeneratedPlaylists } from "./generatedPlaylist.controller.js";
 
-export const getHomePageData = async (req, res, next) => {
+/**
+ * @description Получает только основные данные для первого экрана. Должен быть максимально быстрым.
+ */
+export const getPrimaryHomePageData = async (req, res, next) => {
+  try {
+    // Получаем только featuredSongs (бывший getQuickPicks)
+    const featuredSongs = await getQuickPicks(req, res, next, true);
+    res.status(200).json({ featuredSongs });
+  } catch (error) {
+    console.error("Error fetching primary homepage data:", error);
+    next(error);
+  }
+};
+
+/**
+ * @description Получает все остальные данные для главной страницы, которые можно загрузить в фоне.
+ */
+export const getSecondaryHomePageData = async (req, res, next) => {
   try {
     const userId = req.user?.id;
 
-    // --- Запросы, которые выполняются для всех пользователей ---
+    // --- Запросы, которые выполняются для всех пользователей (кроме featured) ---
     const commonPromises = [
-      getQuickPicks(req, res, next, true), // true, чтобы вернуть данные, а не отправлять ответ
       getTrendingSongs(req, res, next, true),
       getDailyMixes(req, res, next, true),
       getPublicPlaylists(req, res, next, true),
@@ -36,16 +55,10 @@ export const getHomePageData = async (req, res, next) => {
         ]
       : [];
 
-    const [
-      featuredSongs,
-      trendingSongs,
-      mixesData,
-      publicPlaylists,
-      allGeneratedPlaylists,
-    ] = await Promise.all(commonPromises);
+    const [trendingSongs, mixesData, publicPlaylists, allGeneratedPlaylists] =
+      await Promise.all(commonPromises);
 
-    const homePageData = {
-      featuredSongs,
+    const secondaryData = {
       trendingSongs,
       genreMixes: mixesData.genreMixes,
       moodMixes: mixesData.moodMixes,
@@ -58,7 +71,7 @@ export const getHomePageData = async (req, res, next) => {
       recommendedPlaylists: [],
     };
 
-    if (userId) {
+    if (userId && userSpecificPromises.length > 0) {
       const [
         madeForYouSongs,
         recentlyListened,
@@ -67,16 +80,16 @@ export const getHomePageData = async (req, res, next) => {
         recommendedPlaylists,
       ] = await Promise.all(userSpecificPromises);
 
-      homePageData.madeForYouSongs = madeForYouSongs;
-      homePageData.recentlyListenedSongs = recentlyListened.songs;
-      homePageData.favoriteArtists = favoriteArtists;
-      homePageData.newReleases = newReleases;
-      homePageData.recommendedPlaylists = recommendedPlaylists;
+      secondaryData.madeForYouSongs = madeForYouSongs;
+      secondaryData.recentlyListenedSongs = recentlyListened.songs;
+      secondaryData.favoriteArtists = favoriteArtists;
+      secondaryData.newReleases = newReleases;
+      secondaryData.recommendedPlaylists = recommendedPlaylists;
     }
 
-    res.status(200).json(homePageData);
+    res.status(200).json(secondaryData);
   } catch (error) {
-    console.error("Error fetching homepage data:", error);
+    console.error("Error fetching secondary homepage data:", error);
     next(error);
   }
 };
