@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // frontend/src/stores/useMusicStore.ts
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -81,7 +82,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-export const useMusicStore = create<MusicStore>((set, get) => ({
+export const useMusicStore = create<MusicStore>((set) => ({
   albums: [],
   songs: [],
   artists: [],
