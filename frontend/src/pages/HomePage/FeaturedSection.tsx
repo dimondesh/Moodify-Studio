@@ -9,9 +9,7 @@ import { Song } from "@/types";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { useTranslation } from "react-i18next";
-// --- ИЗМЕНЕНИЕ НАЧАЛО: Импортируем утилиту cn для условных классов ---
-import { cn } from "@/lib/utils";
-// --- ИЗМЕНЕНИЕ КОНЕЦ ---
+import { cn, getOptimizedImageUrl } from "@/lib/utils";
 
 interface Artist {
   _id: string;
@@ -32,9 +30,7 @@ const FeaturedSectionComponent = ({
     useMusicStore();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  // --- ИЗМЕНЕНИЕ НАЧАЛО: Получаем currentSong и isPlaying из стора ---
   const { playAlbum, togglePlay, currentSong, isPlaying } = usePlayerStore();
-  // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
   useEffect(() => {
     fetchArtists();
@@ -143,25 +139,24 @@ const FeaturedSectionComponent = ({
     >
       {songsToShow.map((song, index) => {
         const Component = isMobile ? "button" : "div";
-        // --- ИЗМЕНЕНИЕ НАЧАЛО: Определяем, играет ли текущий трек ---
         const isThisSongPlaying = isPlaying && currentSong?._id === song._id;
-        // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
         return (
           <Component
             key={song._id}
-            // --- ИЗМЕНЕНИЕ НАЧАЛО: Добавляем условный класс для подсветки ---
             className={cn(
               "flex items-center bg-zinc-800/50 rounded-md overflow-hidden hover:bg-zinc-700/50 transition-colors group cursor-pointer relative text-left",
               isThisSongPlaying && "bg-violet-500/20 hover:bg-violet-500/30"
             )}
-            // --- ИЗМЕНЕНИЕ КОНЕЦ ---
             onClick={() => handleItemClick(song, index)}
             onMouseEnter={() => !isMobile && onSongHover(song)}
           >
             <div className="flex-shrink-0">
               <img
-                src={song.imageUrl || "/default-song-cover.png"}
+                src={getOptimizedImageUrl(
+                  song.imageUrl || "/default-song-cover.png",
+                  160
+                )}
                 alt={song.title}
                 className="w-14 h-14 sm:w-20 sm:h-20 object-cover"
                 onError={(e) => {

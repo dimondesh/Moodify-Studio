@@ -31,7 +31,7 @@ export const getArtistNames = (
       }
       return null;
     })
-    .filter(Boolean);
+    .filter(Boolean); // filter(Boolean) уберет все null значения
 
   return names.join(", ") || "Unknown artist";
 };
@@ -55,5 +55,6 @@ export const getOptimizedImageUrl = (
   if (!originalUrl || !originalUrl.includes("b-cdn.net")) {
     return originalUrl;
   }
+  // Добавляем параметры к URL
   return `${originalUrl}?width=${width}&quality=${quality}`;
 };

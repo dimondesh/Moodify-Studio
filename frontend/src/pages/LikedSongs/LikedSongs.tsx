@@ -1,3 +1,5 @@
+// frontend/src/pages/LikedSongs/LikedSongs.tsx
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLibraryStore } from "../../stores/useLibraryStore";
@@ -13,7 +15,8 @@ import { format } from "date-fns";
 import EqualizerTitle from "@/components/ui/equalizer-title";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Song } from "@/types";
-import { getArtistNames } from "@/lib/utils";
+// --- ИЗМЕНЕНИЕ: Импортируем утилиты ---
+import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 import SongOptionsDrawer from "../PlaylistPage/SongOptionsDrawer";
 
 const formatDuration = (seconds: number) => {
@@ -103,7 +106,11 @@ const LikedSongsPage = () => {
               className="flex-shrink-0"
             >
               <img
-                src={song.imageUrl || "/default-song-cover.png"}
+                // --- ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЯ ---
+                src={getOptimizedImageUrl(
+                  song.imageUrl || "/default-song-cover.png",
+                  80
+                )}
                 alt={song.title}
                 className="size-10 object-cover rounded-md"
               />
@@ -178,7 +185,11 @@ const LikedSongsPage = () => {
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <img
-              src={song.imageUrl || "/default-song-cover.png"}
+              // --- ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЯ ---
+              src={getOptimizedImageUrl(
+                song.imageUrl || "/default-song-cover.png",
+                100
+              )}
               alt={song.title}
               className="size-12 object-cover rounded-md flex-shrink-0"
             />
