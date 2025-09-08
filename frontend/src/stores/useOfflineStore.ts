@@ -12,7 +12,7 @@ import {
   getAllUserSongs,
   getUserItem,
 } from "@/lib/offline-db";
-import type { Song } from "@/types";
+import type { Song, Album, Playlist, Mix } from "@/types";
 import { axiosInstance } from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
@@ -42,6 +42,7 @@ interface OfflineState {
     syncLibrary: () => Promise<void>;
     getStorageUsage: () => Promise<{ usage: number; quota: number }>;
     clearAllDownloads: () => Promise<void>;
+    fetchAllDownloaded: () => Promise<(Album | Playlist | Mix)[]>;
   };
 }
 
@@ -182,6 +183,16 @@ export const useOfflineStore = create<OfflineState>()(
             console.error("Library sync failed:", error);
             toast.error(i18n.t("toasts.syncError"), { id: "sync-toast" });
           }
+        },
+        fetchAllDownloaded: async () => {
+          const userId = useAuthStore.getState().user?.id;
+          if (!userId) return [];
+          const [albums, playlists, mixes] = await Promise.all([
+            getAllUserAlbums(userId),
+            getAllUserPlaylists(userId),
+            getAllUserMixes(userId),
+          ]);
+          return [...albums, ...playlists, ...mixes];
         },
 
         downloadItem: async (itemId, itemType) => {

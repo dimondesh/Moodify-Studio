@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // frontend/src/pages/LibraryPage/LibraryPage.tsx
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "../../components/ui/scroll-area";
@@ -273,13 +273,12 @@ const LibraryPage = () => {
                       : t("sidebar.emptyLibrary")}
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     {filteredLibraryItems.map((item) => {
                       let linkPath: string = "#";
                       let subtitle: string = "";
                       let coverImageUrl: string | null | undefined =
                         item.imageUrl;
-                      let imageClass = "rounded-md";
 
                       switch (item.type) {
                         case "album": {
@@ -322,7 +321,6 @@ const LibraryPage = () => {
                           const artistItem = item as FollowedArtistItem;
                           linkPath = `/artists/${artistItem._id}`;
                           subtitle = t("sidebar.subtitle.artist");
-                          imageClass = "rounded-full";
                           break;
                         }
                         case "mix": {
@@ -340,11 +338,16 @@ const LibraryPage = () => {
                         <Link
                           key={`${item.type}-${item._id}`}
                           to={linkPath}
-                          className="bg-zinc-800/40 p-4 rounded-md hover:bg-zinc-700/40 transition-all cursor-pointer"
+                          className="bg-transparent p-0 rounded-md hover:bg-zinc-800/50 transition-all group cursor-pointer flex flex-col items-center text-center"
                         >
-                          <div className="relative mb-4">
+                          <div className="relative mb-2 w-full">
                             <div
-                              className={`aspect-square flex object-cover shadow-lg overflow-hidden ${imageClass}`}
+                              className={cn(
+                                "aspect-square flex-shrink-0 w-full overflow-hidden shadow-lg",
+                                item.type === "artist"
+                                  ? "rounded-full"
+                                  : "rounded-md"
+                              )}
                             >
                               <img
                                 src={
@@ -352,7 +355,7 @@ const LibraryPage = () => {
                                   "https://moodify.b-cdn.net/default-album-cover.png"
                                 }
                                 alt={item.title}
-                                className="w-auto h-auto object-cover transition-transform duration-300 hover:scale-105"
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
                                     "https://moodify.b-cdn.net/default-album-cover.png";
@@ -360,16 +363,18 @@ const LibraryPage = () => {
                               />
                             </div>
                           </div>
-                          <h3 className="font-medium mb-1 truncate text-white">
-                            {item.title}
-                          </h3>
-                          <div className="flex items-center gap-1.5">
-                            {isDownloaded(item._id) && (
-                              <Download className="size-3 text-violet-400 flex-shrink-0" />
-                            )}
-                            <p className="text-sm text-zinc-400 truncate">
-                              {subtitle}
-                            </p>
+                          <div className="px-1 w-full">
+                            <h3 className="font-semibold text-sm truncate text-white">
+                              {item.title}
+                            </h3>
+                            <div className="flex items-center gap-1.5 justify-center">
+                              {isDownloaded(item._id) && (
+                                <Download className="size-3 text-violet-400 flex-shrink-0" />
+                              )}
+                              <p className="text-xs text-zinc-400 truncate">
+                                {subtitle}
+                              </p>
+                            </div>
                           </div>
                         </Link>
                       );
