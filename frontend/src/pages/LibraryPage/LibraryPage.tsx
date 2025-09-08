@@ -343,7 +343,7 @@ const LibraryPage = () => {
                           <div className="relative mb-2 w-full">
                             <div
                               className={cn(
-                                "aspect-square flex-shrink-0 w-full overflow-hidden shadow-lg",
+                                "aspect-square object-cover flex-shrink-0 w-full overflow-hidden shadow-lg",
                                 item.type === "artist"
                                   ? "rounded-full"
                                   : "rounded-md"
@@ -355,7 +355,7 @@ const LibraryPage = () => {
                                   "https://moodify.b-cdn.net/default-album-cover.png"
                                 }
                                 alt={item.title}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                className="w-auto h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src =
                                     "https://moodify.b-cdn.net/default-album-cover.png";
