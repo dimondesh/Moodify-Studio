@@ -3,11 +3,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
 var BUNNY_CDN_HOSTNAME = "moodify.b-cdn.net";
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         react(),
+        visualizer({
+            template: "treemap",
+            open: true,
+            gzipSize: true,
+            brotliSize: true,
+            filename: "bundle-analysis.html",
+        }),
         VitePWA({
             registerType: "autoUpdate",
             devOptions: {
@@ -17,8 +25,6 @@ export default defineConfig({
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
                 maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
                 runtimeCaching: [
-                    // --- ИЗМЕНЕНИЕ НАЧАЛО ---
-                    // Единое правило для всех ассетов с Bunny.net (изображения и аудио)
                     {
                         urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
                         handler: "CacheFirst",
