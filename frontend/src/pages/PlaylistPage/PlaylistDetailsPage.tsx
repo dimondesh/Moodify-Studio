@@ -28,7 +28,6 @@ import {
   Unlock,
   Loader2,
   RefreshCw,
-  MoreVertical,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
@@ -412,7 +411,7 @@ const PlaylistDetailsPage = () => {
         <meta name="description" content={metaDescription.substring(0, 160)} />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md md:pb-0">
+        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
           <div className="relative min-h-screen max-w-screen">
             {backgrounds
               .slice(0, 2)
@@ -490,7 +489,7 @@ const PlaylistDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex flex-wrap sm:justify-start items-center gap-3 sm:gap-4">
+              <div className="px-4 sm:px-6 pb-4 flex flex-wrap sm:justify-start items-center gap-2">
                 {currentPlaylist.songs.length > 0 && (
                   <Button
                     size="icon"
@@ -768,7 +767,7 @@ const PlaylistDetailsPage = () => {
                                     setSelectedSongForMenu(song);
                                   }}
                                 >
-                                  <MoreVertical className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+                                  <MoreHorizontal className="h-5 w-5 text-zinc-400 group-hover:text-white" />
                                 </Button>
                               ) : (
                                 <>
