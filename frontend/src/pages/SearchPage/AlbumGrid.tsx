@@ -1,12 +1,12 @@
 // src/pages/SearchPage/AlbumGrid.tsx
-import React, { useState } from "react"; // <--- ИМПОРТ
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import type { Album } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useTranslation } from "react-i18next";
-import { getArtistNames } from "@/lib/utils";
+import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 
 type AlbumGridProps = {
   title: string;
@@ -53,10 +53,11 @@ const AlbumGridComponent = ({ title, albums, isLoading }: AlbumGridProps) => {
           >
             <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
               <img
-                src={
+                src={getOptimizedImageUrl(
                   album.imageUrl ||
-                  "https://moodify.b-cdn.net/default-album-cover.png"
-                }
+                    "https://moodify.b-cdn.net/default-album-cover.png",
+                  300
+                )}
                 alt={album.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(e) => {

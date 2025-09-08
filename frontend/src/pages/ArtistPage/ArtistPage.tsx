@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { getArtistNames } from "@/lib/utils";
+import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 
 const ArtistPage = () => {
   const { t } = useTranslation();
@@ -194,15 +194,13 @@ const ArtistPage = () => {
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
-                backgroundImage:
-                  window.innerWidth >= 1024
+                backgroundImage: `url(${getOptimizedImageUrl(
+                  (window.innerWidth >= 1024
                     ? artist.bannerUrl
-                      ? `url(${artist.bannerUrl})`
-                      : "linear-gradient(to bottom, #333, #111)"
-                    : `url(${
-                        artist.imageUrl ||
-                        "https://moodify.b-cdn.net/artist.jpeg"
-                      })`,
+                    : artist.imageUrl) ||
+                    "https://moodify.b-cdn.net/artist.jpeg",
+                  800
+                )})`,
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
@@ -210,7 +208,7 @@ const ArtistPage = () => {
               <div className="hidden lg:block absolute bottom-10 left-10 z-10">
                 <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
                   <img
-                    src={artist.imageUrl}
+                    src={getOptimizedImageUrl(artist.imageUrl, 400)}
                     alt={artist.name}
                     className="w-full h-full object-cover"
                   />
@@ -294,7 +292,10 @@ const ArtistPage = () => {
                       </div>
                       <div className="w-12 h-12 flex-shrink-0">
                         <img
-                          src={song.imageUrl || "/default-song-cover.png"}
+                          src={getOptimizedImageUrl(
+                            song.imageUrl || "/default-song-cover.png",
+                            100
+                          )}
                           alt={song.title}
                           className="w-full h-full object-cover rounded-md"
                         />
