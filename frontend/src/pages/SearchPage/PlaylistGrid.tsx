@@ -6,6 +6,7 @@ import type { Playlist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useTranslation } from "react-i18next";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 type PlaylistGridProps = {
   title: string;
@@ -56,7 +57,10 @@ const PlaylistGridComponent = ({
           >
             <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
               <img
-                src={playlist.imageUrl || "/default_playlist_cover.png"}
+                src={getOptimizedImageUrl(
+                  playlist.imageUrl || "/default_playlist_cover.png",
+                  300
+                )}
                 alt={playlist.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(e) => {

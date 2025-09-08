@@ -7,6 +7,7 @@ import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
 import { useSearchStore } from "@/stores/useSearchStore";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 type UserGridProps = {
   title: string;
@@ -54,7 +55,7 @@ const UserGrid: React.FC<UserGridProps> = ({ title, users, isLoading }) => {
             <div className="relative mb-4 aspect-square">
               <Avatar className="h-full w-full shadow-lg">
                 <AvatarImage
-                  src={user.imageUrl}
+                  src={getOptimizedImageUrl(user.imageUrl, 300)}
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>

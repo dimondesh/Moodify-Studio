@@ -6,6 +6,7 @@ import type { Artist } from "../../types";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useSearchStore } from "../../stores/useSearchStore";
 import { useTranslation } from "react-i18next";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 type ArtistGridProps = {
   title: string;
@@ -56,7 +57,10 @@ const ArtistGridComponent: React.FC<ArtistGridProps> = ({
           >
             <div className="relative mb-4 aspect-square rounded-full shadow-lg overflow-hidden">
               <img
-                src={artist.imageUrl || "/default_artist_cover.png"}
+                src={getOptimizedImageUrl(
+                  artist.imageUrl || "/default_artist_cover.png",
+                  300
+                )}
                 alt={artist.name}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(e) => {

@@ -6,7 +6,7 @@ import type { Song } from "../../types";
 import PlayButton from "../HomePage/PlayButton";
 import SectionGridSkeleton from "../../components/ui/skeletons/PlaylistSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { getArtistNames } from "../../lib/utils";
+import { getArtistNames, getOptimizedImageUrl } from "../../lib/utils";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useTranslation } from "react-i18next";
 
@@ -66,8 +66,11 @@ const SongGridComponent = ({ title, songs, isLoading }: SectionGridProps) => {
             >
               <div className="relative mb-4 aspect-square rounded-md shadow-lg overflow-hidden">
                 <img
-                  src={song.imageUrl || "/default-song-cover.png"}
-                  alt={song.title}
+                  src={getOptimizedImageUrl(
+                    song.imageUrl || "/default-song-cover.png",
+                    300
+                  )}
+                  alt={song.title || t("common.noTitle")}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
