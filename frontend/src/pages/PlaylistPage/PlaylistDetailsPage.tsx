@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { useChatStore } from "../../stores/useChatStore";
 import { useOfflineStore } from "../../stores/useOfflineStore";
 import EqualizerTitle from "@/components/ui/equalizer-title";
+import SongOptionsDrawer from "./SongOptionsDrawer";
 
 import {
   Play,
@@ -27,6 +28,7 @@ import {
   Unlock,
   Loader2,
   RefreshCw,
+  MoreVertical,
 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import { Song, Playlist } from "../../types";
@@ -38,6 +40,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+  DrawerHeader as DrawerHeaderComponent,
+  DrawerTitle as DrawerTitleComponent,
+} from "@/components/ui/drawer";
 import { Input } from "../../components/ui/input";
 import { useSearchStore } from "../../stores/useSearchStore";
 import toast from "react-hot-toast";
@@ -50,13 +59,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "../../components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "../../components/ui/dropdown-menu";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import { EditPlaylistDialog } from "./EditPlaylistDialog";
@@ -79,7 +88,6 @@ const formatDuration = (seconds: number): string => {
 const PlaylistDetailsPage = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { socket } = useChatStore();
-
   const { t } = useTranslation();
   const { playlistId } = useParams<{ playlistId: string }>();
   const {
@@ -124,6 +132,9 @@ const PlaylistDetailsPage = () => {
   const [backgrounds, setBackgrounds] = useState([
     { key: 0, color: "#18181b" },
   ]);
+  const [selectedSongForMenu, setSelectedSongForMenu] = useState<Song | null>(
+    null
+  );
   const {
     songs: searchSongs,
     loading: searchLoading,
@@ -157,43 +168,29 @@ const PlaylistDetailsPage = () => {
   useEffect(() => {
     if (playlistId && socket) {
       socket.emit("join_playlist_room", playlistId);
-      console.log(`Joined room for playlist ${playlistId}`);
-
       const handlePlaylistUpdate = (data: { playlist: Playlist }) => {
         if (data && data.playlist && data.playlist._id === playlistId) {
-          console.log(
-            `Received update for current playlist ${playlistId}. Refetching...`
-          );
           updateCurrentPlaylistFromSocket(data.playlist);
           toast.success("This playlist has been updated by the owner.");
-
-          const isPlaylistDownloaded = isDownloaded(playlistId);
-
-          if (isPlaylistDownloaded) {
-            console.log(
-              `Downloaded playlist ${playlistId} was updated. Starting sync...`
-            );
+          if (isDownloaded(playlistId)) {
             toast.loading("Updating your downloaded playlist...", {
               id: "playlist-sync",
             });
             downloadItem(playlistId, "playlists")
-              .then(() => {
+              .then(() =>
                 toast.success("Downloaded playlist updated!", {
                   id: "playlist-sync",
-                });
-              })
-              .catch((err) => {
-                console.error("Failed to sync downloaded playlist:", err);
+                })
+              )
+              .catch(() =>
                 toast.error("Could not update downloaded playlist.", {
                   id: "playlist-sync",
-                });
-              });
+                })
+              );
           }
         }
       };
-
       socket.on("playlist_updated", handlePlaylistUpdate);
-
       return () => {
         socket.emit("leave_playlist_room", playlistId);
         socket.off("playlist_updated", handlePlaylistUpdate);
@@ -401,7 +398,6 @@ const PlaylistDetailsPage = () => {
     currentSong &&
     currentPlaylist.songs.some((song) => song._id === currentSong._id) &&
     queue[0]?._id === currentPlaylist.songs[0]?._id;
-
   const ownerName = currentPlaylist.owner?.fullName || "a user";
   const metaDescription = `Listen to "${
     currentPlaylist.title
@@ -424,7 +420,7 @@ const PlaylistDetailsPage = () => {
               .map((bg, index) => (
                 <div
                   key={bg.key}
-                  className={`absolute inset-0 pointer-events-none  ${
+                  className={`absolute inset-0 pointer-events-none ${
                     index === 1 ? "animate-fade-in" : ""
                   }`}
                   aria-hidden="true"
@@ -433,8 +429,8 @@ const PlaylistDetailsPage = () => {
                   }}
                 />
               ))}
-            <div className="relative z-10 w-screen">
-              <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end w-screen">
+            <div className="relative z-10 w-full">
+              <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 sm:pb-8 items-center sm:items-end w-full">
                 <img
                   src={
                     currentPlaylist.imageUrl ||
@@ -456,17 +452,12 @@ const PlaylistDetailsPage = () => {
                     </p>
                   )}
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100 mt-2">
-                    {isOwner ? (
-                      <>
-                        {currentPlaylist.isPublic ? (
-                          <Unlock className="size-3.5" />
-                        ) : (
-                          <Lock className="size-3.5" />
-                        )}
-                      </>
-                    ) : (
-                      <></>
-                    )}{" "}
+                    {isOwner &&
+                      (currentPlaylist.isPublic ? (
+                        <Unlock className="size-3.5" />
+                      ) : (
+                        <Lock className="size-3.5" />
+                      ))}
                     <button
                       onClick={handleOwnerClick}
                       className="font-semibold text-white flex items-center hover:underline focus:outline-none focus:underline"
@@ -499,17 +490,12 @@ const PlaylistDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex flex-wrap  sm:justify-start items-center gap-3 sm:gap-4">
-                {currentPlaylist.songs && currentPlaylist.songs.length > 0 && (
+              <div className="px-4 sm:px-6 pb-4 flex flex-wrap sm:justify-start items-center gap-3 sm:gap-4">
+                {currentPlaylist.songs.length > 0 && (
                   <Button
                     size="icon"
                     className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-violet-500 hover:bg-violet-400 transition-colors shadow-lg flex-shrink-0 hover:scale-105"
                     onClick={handlePlayPlaylist}
-                    title={
-                      isCurrentPlaylistPlaying
-                        ? t("pages.playlist.actions.pause")
-                        : t("pages.playlist.actions.play")
-                    }
                   >
                     {isCurrentPlaylistPlaying ? (
                       <Pause className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-current" />
@@ -518,151 +504,142 @@ const PlaylistDetailsPage = () => {
                     )}
                   </Button>
                 )}
-
-                {!isOwner ? (
-                  <>
-                    <Button
-                      onClick={handleTogglePlaylistInLibrary}
-                      disabled={isTogglingLibrary}
-                      variant="ghost"
-                      size="icon"
-                      className={`size-5 sm:size-6 rounded-full p-5 transition-colors flex-shrink-0 ${
-                        isInLibrary ? "hover:bg-white/20" : "hover:bg-white/10"
-                      }`}
-                      title={
-                        isInLibrary
-                          ? t("pages.playlist.actions.removeFromLibrary")
-                          : t("pages.playlist.actions.addToLibrary")
-                      }
+                {!isOwner && (
+                  <Button
+                    onClick={handleTogglePlaylistInLibrary}
+                    disabled={isTogglingLibrary}
+                    variant="ghost"
+                    size="icon"
+                  >
+                    {isInLibrary ? (
+                      <CheckCircle2 className="size-7 text-violet-400" />
+                    ) : (
+                      <PlusCircle className="size-7 text-white" />
+                    )}
+                  </Button>
+                )}
+                {isOwner && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={openSearchAndAddDialog}
+                  >
+                    <Plus className="size-7" />
+                  </Button>
+                )}
+                <DownloadButton
+                  itemId={currentPlaylist._id}
+                  itemType="playlists"
+                  itemTitle={currentPlaylist.title}
+                />
+                {isMobile ? (
+                  <Drawer>
+                    <DrawerTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="size-7" />
+                      </Button>
+                    </DrawerTrigger>
+                    <DrawerContent
+                      className="bg-zinc-900 border-zinc-800 text-white p-4"
+                      aria-describedby={undefined}
                     >
-                      {isInLibrary ? (
-                        <CheckCircle2 className="size-5 sm:size-7 text-violet-400" />
-                      ) : (
-                        <PlusCircle className="size-5 sm:size-7 text-white" />
-                      )}
-                    </Button>
-                    <DownloadButton
-                      itemId={currentPlaylist._id}
-                      itemType="playlists"
-                      itemTitle={currentPlaylist.title}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-5 sm:size-6 rounded-md border border-transparent p-5 transition-colors flex-shrink-0"
-                      title="Share Playlist"
-                      onClick={() =>
-                        openShareDialog({
-                          type: "playlist",
-                          id: currentPlaylist._id,
-                        })
-                      }
-                    >
-                      <Share className="size-5 sm:size-6  text-white" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-5 sm:size-6 p-5 hover:bg-zinc-800 text-white flex-shrink-0"
-                      onClick={openSearchAndAddDialog}
-                      title={t("pages.playlist.actions.addSong")}
-                    >
-                      <Plus className="size-5 sm:size-7" />
-                    </Button>
-                    <DownloadButton
-                      itemId={currentPlaylist._id}
-                      itemType="playlists"
-                      itemTitle={currentPlaylist.title}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-5 sm:size-6 rounded-md border border-transparent p-5 transition-colors flex-shrink-0"
-                      title="Share Playlist"
-                      onClick={() =>
-                        openShareDialog({
-                          type: "playlist",
-                          id: currentPlaylist._id,
-                        })
-                      }
-                    >
-                      <Share className="size-5 sm:size-6  text-white" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DrawerHeaderComponent className="p-0 text-center mb-4">
+                        <DrawerTitleComponent className="sr-only">
+                          Playlist Options
+                        </DrawerTitleComponent>
+                      </DrawerHeaderComponent>
+                      <div className="flex flex-col gap-2">
                         <Button
                           variant="ghost"
-                          size="icon"
-                          className="size-5 sm:size-6 hover:bg-zinc-800 p-5 text-white flex-shrink-0"
-                          title={t("pages.playlist.actions.moreActions")}
+                          className="justify-start p-3 h-auto text-base"
+                          onClick={() => {
+                            openShareDialog({
+                              type: "playlist",
+                              id: currentPlaylist._id,
+                            });
+                          }}
                         >
-                          <MoreHorizontal className="size-5 sm:size-6" />
+                          <Share className="mr-4 h-5 w-5" />
+                          {t("admin.albums.share")}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-48 bg-zinc-800 text-white border-zinc-700">
-                        <DropdownMenuItem
-                          className="cursor-pointer hover:bg-zinc-700"
-                          onClick={() =>
-                            openEditPlaylistDialog(currentPlaylist)
-                          }
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          {t("pages.playlist.actions.edit")}
-                        </DropdownMenuItem>
-                        <AlertDialog
-                          open={playlistToDelete?._id === currentPlaylist._id}
-                          onOpenChange={(isOpen) =>
-                            !isOpen && closeAllDialogs()
-                          }
-                        >
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              className="cursor-pointer text-red-400 hover:bg-zinc-700 hover:text-red-300"
-                              onSelect={(e) => {
-                                e.preventDefault();
-                                openDeletePlaylistDialog(currentPlaylist);
-                              }}
+                        {isOwner && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              className="justify-start p-3 h-auto text-base"
+                              onClick={() =>
+                                openEditPlaylistDialog(currentPlaylist)
+                              }
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Edit className="mr-4 h-5 w-5" />
+                              {t("pages.playlist.actions.edit")}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="justify-start p-3 h-auto text-base text-red-400 hover:text-red-400"
+                              onClick={() =>
+                                openDeletePlaylistDialog(currentPlaylist)
+                              }
+                            >
+                              <Trash2 className="mr-4 h-5 w-5" />
                               {t("pages.playlist.actions.delete")}
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-white">
-                                {t("pages.playlist.deleteDialog.title")}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-zinc-400">
-                                {t("pages.playlist.deleteDialog.description")}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel
-                                onClick={closeAllDialogs}
-                                className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
-                              >
-                                {t("pages.playlist.deleteDialog.cancel")}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-red-600 text-white hover:bg-red-700"
-                                onClick={handleDeletePlaylistConfirm}
-                              >
-                                {t("pages.playlist.deleteDialog.delete")}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </DrawerContent>
+                  </Drawer>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="size-7" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48 bg-zinc-800 text-white border-zinc-700">
+                      <DropdownMenuItem
+                        className="cursor-pointer hover:bg-zinc-700"
+                        onSelect={() =>
+                          openShareDialog({
+                            type: "playlist",
+                            id: currentPlaylist._id,
+                          })
+                        }
+                      >
+                        <Share className="mr-2 h-4 w-4" />
+                        {t("admin.albums.share")}
+                      </DropdownMenuItem>
+                      {isOwner && (
+                        <>
+                          <DropdownMenuSeparator className="bg-zinc-700" />
+                          <DropdownMenuItem
+                            className="cursor-pointer hover:bg-zinc-700"
+                            onSelect={() =>
+                              openEditPlaylistDialog(currentPlaylist)
+                            }
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            {t("pages.playlist.actions.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer text-red-400 hover:bg-zinc-700 hover:text-red-300"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              openDeletePlaylistDialog(currentPlaylist);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {t("pages.playlist.actions.delete")}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
 
               <div className="bg-black/20 backdrop-blur-sm">
-                <div className="hidden sm:grid grid-cols-[16px_4fr_2fr_1fr_auto] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
+                <div className="hidden md:grid md:grid-cols-[16px_4fr_2fr_1fr_0.6fr] gap-4 px-4 sm:px-6 md:px-10 py-2 text-sm text-zinc-400 border-b border-white/5">
                   <div>#</div>
                   <div>{t("pages.playlist.headers.title")}</div>
                   <div className="hidden md:block">
@@ -688,22 +665,20 @@ const PlaylistDetailsPage = () => {
                               if (!(e.target as HTMLElement).closest("button"))
                                 handlePlaySong(song, index);
                             }}
-                            className={`flex sm:grid items-center gap-3 sm:gap-4 text-sm px-4 py-2 rounded-md text-zinc-400 hover:bg-white/5 group cursor-pointer sm:grid-cols-[16px_4fr_2fr_1fr_auto] ${
+                            className={`flex md:grid items-center gap-3 md:gap-4 text-sm px-2 sm:px-4 py-2 rounded-md text-zinc-400 hover:bg-white/5 group cursor-pointer md:grid-cols-[16px_4fr_2fr_1fr_auto] ${
                               isCurrentSong ? "bg-white/10" : ""
                             }`}
                           >
-                            <div className="hidden sm:flex items-center justify-center">
+                            <div className="hidden md:flex items-center justify-center">
                               {isCurrentSong && isPlaying ? (
-                                <div className="z-10">
-                                  <Equalizer />
-                                </div>
+                                <Equalizer />
                               ) : (
-                                <span className="group-hover:hidden text-xs sm:text-sm">
+                                <span className="group-hover:hidden">
                                   {index + 1}
                                 </span>
                               )}
                               {!isCurrentSong && (
-                                <Play className="h-3 w-3 sm:h-4 sm:w-4 hidden group-hover:block" />
+                                <Play className="h-4 w-4 hidden group-hover:block" />
                               )}
                             </div>
                             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -715,7 +690,7 @@ const PlaylistDetailsPage = () => {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   {isCurrentSong && isPlaying && (
-                                    <div className="block sm:hidden flex-shrink-0">
+                                    <div className="block md:hidden flex-shrink-0">
                                       <EqualizerTitle />
                                     </div>
                                   )}
@@ -745,13 +720,16 @@ const PlaylistDetailsPage = () => {
                                     </button>
                                   )}
                                 </div>
-
                                 <div className="text-zinc-400 text-xs sm:text-sm truncate">
-                                  {song.artist.map((artist, artistIndex) => (
-                                    <span key={artist._id}>
-                                      {isMobile ? (
-                                        <span>{artist.name}</span>
-                                      ) : (
+                                  {isMobile ? (
+                                    <span>
+                                      {song.artist
+                                        .map((artist) => artist.name)
+                                        .join(", ")}
+                                    </span>
+                                  ) : (
+                                    song.artist.map((artist, artistIndex) => (
+                                      <span key={artist._id}>
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -761,11 +739,11 @@ const PlaylistDetailsPage = () => {
                                         >
                                           {artist.name}
                                         </button>
-                                      )}
-                                      {artistIndex < song.artist.length - 1 &&
-                                        ", "}
-                                    </span>
-                                  ))}
+                                        {artistIndex < song.artist.length - 1 &&
+                                          ", "}
+                                      </span>
+                                    ))
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -777,50 +755,59 @@ const PlaylistDetailsPage = () => {
                                   )
                                 : "N/A"}
                             </div>
-                            <div className="hidden sm:flex items-center justify-end text-sm text-zinc-400 md:mr-10">
+                            <div className="hidden md:flex items-center justify-end text-sm text-zinc-400 md:mr-10">
                               {formatDuration(song.duration)}
                             </div>
-                            <div className="flex items-center justify-center ml-auto sm:ml-0">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className={`rounded-full size-6 sm:size-7 ${
-                                  songIsLiked
-                                    ? "text-violet-500 hover:text-violet-400"
-                                    : "text-zinc-400 hover:text-white opacity-100 md:group-hover:opacity-100 transition-opacity"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleSongLike(song._id);
-                                }}
-                                title={
-                                  songIsLiked
-                                    ? t("player.unlike")
-                                    : t("player.like")
-                                }
-                              >
-                                <Heart
-                                  className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                                    songIsLiked ? "fill-violet-500" : ""
-                                  }`}
-                                />
-                              </Button>
-                              {isOwner && (
+                            <div className="flex items-center justify-end ml-auto md:ml-0">
+                              {isMobile ? (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 rounded-full size-6 sm:size-7 opacity-100 md:group-hover:opacity-100 transition-opacity"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openRemoveSongFromPlaylistDialog({
-                                      songId: song._id,
-                                      playlistId: currentPlaylist._id,
-                                    });
+                                    setSelectedSongForMenu(song);
                                   }}
-                                  title={t("pages.playlist.actions.removeSong")}
                                 >
-                                  <X className="size-3 sm:size-4" />
+                                  <MoreVertical className="h-5 w-5 text-zinc-400 group-hover:text-white" />
                                 </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={`rounded-full ${
+                                      songIsLiked
+                                        ? "text-violet-500"
+                                        : "text-zinc-400 opacity-0 group-hover:opacity-100"
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSongLike(song._id);
+                                    }}
+                                  >
+                                    <Heart
+                                      className={`h-4 w-4 ${
+                                        songIsLiked ? "fill-current" : ""
+                                      }`}
+                                    />
+                                  </Button>
+                                  {isOwner && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="hover:bg-zinc-700 text-zinc-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openRemoveSongFromPlaylistDialog({
+                                          songId: song._id,
+                                          playlistId: currentPlaylist._id,
+                                        });
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -832,7 +819,6 @@ const PlaylistDetailsPage = () => {
             </div>
           </div>
         </ScrollArea>
-
         {currentPlaylist && (
           <EditPlaylistDialog
             isOpen={!!editingPlaylist}
@@ -841,6 +827,35 @@ const PlaylistDetailsPage = () => {
             onSuccess={() => fetchPlaylistDetails(currentPlaylist._id)}
           />
         )}
+        <AlertDialog
+          open={!!playlistToDelete}
+          onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
+        >
+          <AlertDialogContent className="bg-zinc-900/70 backdrop-blur-md text-white border-zinc-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">
+                {t("pages.playlist.deleteDialog.title")}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-zinc-400">
+                {t("pages.playlist.deleteDialog.description")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={closeAllDialogs}
+                className="bg-zinc-700 text-white hover:bg-zinc-600 border-none"
+              >
+                {t("pages.playlist.deleteDialog.cancel")}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={handleDeletePlaylistConfirm}
+              >
+                {t("pages.playlist.deleteDialog.delete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog
           open={!!songToRemoveFromPlaylist}
@@ -871,7 +886,6 @@ const PlaylistDetailsPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
         <Dialog
           open={isSearchAndAddDialogOpen}
           onOpenChange={(isOpen) => !isOpen && closeAllDialogs()}
@@ -1047,9 +1061,23 @@ const PlaylistDetailsPage = () => {
             entityId={currentPlaylist._id}
           />
         )}
+        {shareEntity?.type === "song" && (
+          <ShareDialog
+            isOpen={true}
+            onClose={closeAllDialogs}
+            entityType="song"
+            entityId={shareEntity.id}
+          />
+        )}
       </div>
+      <SongOptionsDrawer
+        song={selectedSongForMenu}
+        playlistId={currentPlaylist?._id || ""}
+        isOwner={!!isOwner}
+        isOpen={!!selectedSongForMenu}
+        onOpenChange={(open) => !open && setSelectedSongForMenu(null)}
+      />
     </>
   );
 };
-
 export default PlaylistDetailsPage;
