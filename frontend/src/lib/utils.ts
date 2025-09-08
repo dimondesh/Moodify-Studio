@@ -29,7 +29,7 @@ export const getArtistNames = (
         const foundArtist = allArtists.find((artist) => artist._id === item);
         return foundArtist ? foundArtist.name : null;
       }
-      return String(item);
+      return null;
     })
     .filter(Boolean);
 
@@ -39,3 +39,21 @@ export const getArtistNames = (
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/**
+ * Создает URL для оптимизированного изображения через Bunny.net.
+ * @param originalUrl Оригинальный URL изображения.
+ * @param width Требуемая ширина в пикселях.
+ * @param quality Качество изображения (0-100).
+ * @returns Новый URL с параметрами для оптимизации.
+ */
+export const getOptimizedImageUrl = (
+  originalUrl: string,
+  width: number,
+  quality = 85
+): string => {
+  if (!originalUrl || !originalUrl.includes("b-cdn.net")) {
+    return originalUrl;
+  }
+  return `${originalUrl}?width=${width}&quality=${quality}`;
+};

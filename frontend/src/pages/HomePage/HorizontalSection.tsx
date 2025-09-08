@@ -5,7 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import PlayButton from "./PlayButton";
-import { getArtistNames } from "../../lib/utils";
+// --- ИЗМЕНЕНИЕ: Импортируем новую утилиту ---
+import { getArtistNames, getOptimizedImageUrl } from "../../lib/utils";
 import { useMusicStore } from "../../stores/useMusicStore";
 import type {
   Song,
@@ -19,6 +20,7 @@ import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TFunction } from "i18next";
 
+// ... (интерфейсы остаются без изменений)
 type DisplayItem =
   | (Song & { itemType: "song" })
   | (Album & { itemType: "album" })
@@ -142,7 +144,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                   className="group relative cursor-pointer overflow-hidden rounded-md bg-zinc-800/60 hover:bg-zinc-700/80 transition-all w-36 sm:w-44 flex-shrink-0"
                 >
                   <img
-                    src={item.imageUrl}
+                    src={getOptimizedImageUrl(item.imageUrl, 200)}
                     alt={getDisplayTitle(item)}
                     className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-105"
                   />
@@ -169,10 +171,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                     {item.itemType === "artist" ? (
                       <Avatar className="absolute inset-0 h-full w-full object-cover rounded-full">
                         <AvatarImage
-                          src={
-                            item.imageUrl ||
-                            "https://moodify.b-cdn.net/artist.jpeg"
-                          }
+                          src={getOptimizedImageUrl(item.imageUrl, 200)}
                           alt={getDisplayTitle(item)}
                           className="object-cover h-auto w-auto rounded-full transition-transform duration-300 group-hover:scale-105"
                         />
@@ -182,10 +181,11 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
                       </Avatar>
                     ) : (
                       <img
-                        src={
+                        src={getOptimizedImageUrl(
                           item.imageUrl ||
-                          "https://moodify.b-cdn.net/default-album-cover.png"
-                        }
+                            "https://moodify.b-cdn.net/default-album-cover.png",
+                          200
+                        )}
                         alt={getDisplayTitle(item)}
                         className="absolute inset-0 h-full w-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                       />
