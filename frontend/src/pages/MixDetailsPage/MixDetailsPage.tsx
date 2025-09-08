@@ -365,7 +365,7 @@ const MixDetailsPage = () => {
                   {song.title}
                 </p>
               </div>
-              <p className="text-sm text-zinc-400 truncate">
+              <p className="text-sm text-zinc-400 truncate w-45 sm:w-120">
                 {getArtistNames(song.artist)}
               </p>
             </div>
@@ -398,7 +398,7 @@ const MixDetailsPage = () => {
         />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md md:pb-0">
+        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
           <div className="relative min-h-screen">
             {backgrounds
               .slice(0, 2)

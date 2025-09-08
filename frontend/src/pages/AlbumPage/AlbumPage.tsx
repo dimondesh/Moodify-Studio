@@ -273,7 +273,7 @@ const AlbumPage = () => {
                   </div>
                 )}
                 <p
-                  className={`font-medium truncate w-70 sm:w-120 ${
+                  className={`font-medium truncate w-50 sm:w-120 ${
                     isCurrentSong ? "text-violet-400" : "text-white"
                   }`}
                 >
