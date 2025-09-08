@@ -41,6 +41,7 @@ const SettingsPage: React.FC = () => {
     reverbRoomSize,
     playbackRateEnabled,
     playbackRate,
+    isReduceMotionEnabled,
     setEqualizerEnabled,
     setEqualizerGain,
     setNormalizationMode,
@@ -52,6 +53,7 @@ const SettingsPage: React.FC = () => {
     setReverbRoomSize,
     setPlaybackRateEnabled,
     setPlaybackRate,
+    setIsReduceMotionEnabled,
   } = useAudioSettingsStore();
 
   const { t, i18n } = useTranslation();
@@ -181,6 +183,19 @@ const SettingsPage: React.FC = () => {
                 <p className="text-zinc-400 text-sm mt-2">
                   {t("settings.privacy.anonymousModeDesc")}
                 </p>
+              </div>
+              <div className="border-b border-zinc-700 pb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-xl font-semibold">
+                    {t("settings.reduceMotion")}
+                  </Label>
+                  <Switch
+                    id="reduceMotion-enabled"
+                    checked={isReduceMotionEnabled}
+                    onCheckedChange={setIsReduceMotionEnabled}
+                    className="data-[state=checked]:bg-violet-600"
+                  />
+                </div>
               </div>
             </Card>
             <h1 className="text-3xl font-bold text-white mb-6">

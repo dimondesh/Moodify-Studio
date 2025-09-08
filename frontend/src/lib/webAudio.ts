@@ -207,6 +207,7 @@ interface AudioSettings {
   reverbRoomSize: ReverbRoomSize;
   playbackRateEnabled: boolean;
   playbackRate: number;
+  isReduceMotionEnabled: boolean;
 }
 
 // Интерфейс для экшенов Zustand-хранилища
@@ -223,6 +224,7 @@ interface AudioStore extends AudioSettings {
   setReverbRoomSize: (size: ReverbRoomSize) => Promise<void>;
   setPlaybackRateEnabled: (enabled: boolean) => void;
   setPlaybackRate: (rate: number) => void;
+  setIsReduceMotionEnabled: (isLoading: boolean) => void;
 }
 
 // Zustand store для настроек аудио с сохранением в localStorage
@@ -240,6 +242,10 @@ export const useAudioSettingsStore = create<AudioStore>()(
       reverbRoomSize: "medium", // По умолчанию средняя комната
       playbackRateEnabled: false,
       playbackRate: 0.85, // (дефолтное значение для slowed)
+      isReduceMotionEnabled: false,
+
+      setIsReduceMotionEnabled: (enabled) =>
+        set({ isReduceMotionEnabled: enabled }),
 
       setEqualizerEnabled: (enabled) => {
         set({ equalizerEnabled: enabled });

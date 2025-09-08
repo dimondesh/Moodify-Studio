@@ -628,7 +628,8 @@
     "clearAllDownloads": "Clear All Downloads",
     "clearLabel": "This will remove all downloaded songs, albums, and playlists from this device.",
     "playbackSpeed": "Playback Speed",
-    "playbackSpeedDesc": "Control the playback speed of your music."
+    "playbackSpeedDesc": "Control the playback speed of your music.",
+    "reduceMotion": "Reduce Motion"
   },
   "toasts": {
     "anonymousEnabled": "Anonymous mode enabled",

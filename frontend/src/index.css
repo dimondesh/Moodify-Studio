@@ -189,11 +189,7 @@
     @apply transition-transform duration-300 ease-in-out;
   }
   
-  /* 
-    Это правило — магия! 
-    Оно сработает, только когда vaul/sheet добавит атрибут к body.
-    И будет действовать до тех пор, пока vaul его не уберет (после завершения анимации закрытия).
-  */
+
   body[vaul-drawer-visible="true"] .main-layout-wrapper {
     transform: translateX(-250px);
     border-radius: 10px;

@@ -163,7 +163,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
             return (
               <div
                 key={`${item.itemType}-${item._id}`}
-                className="bg-transparent p-0 rounded-md hover:bg-zinc-800/50 transition-all group cursor-pointer w-36 sm:w-44 flex-shrink-0"
+                className="bg-transparent p-0 rounded-md transition-all group cursor-pointer w-36 sm:w-44 flex-shrink-0"
                 onClick={() => handleItemClick(item)}
               >
                 <div className="relative mb-2">
