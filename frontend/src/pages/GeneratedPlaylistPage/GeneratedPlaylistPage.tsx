@@ -208,7 +208,7 @@ const GeneratedPlaylistPage = () => {
                 </div>
               </div>
               {/* Controls section */}
-              <div className="px-4 sm:px-6 pb-4 flex items-center gap-3 sm:gap-6">
+              <div className="px-4 sm:px-6 pb-4 flex items-center gap-2">
                 {currentPlaylist.songs.length > 0 && (
                   <Button
                     size="icon"
@@ -240,9 +240,9 @@ const GeneratedPlaylistPage = () => {
                   }
                 >
                   {isInLibrary ? (
-                    <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                    <CheckCircle2 className="size-6  text-violet-400" />
                   ) : (
-                    <PlusCircle className="size-5 sm:size-6 text-white" />
+                    <PlusCircle className="size-6 text-white" />
                   )}
                 </Button>
                 <DownloadButton

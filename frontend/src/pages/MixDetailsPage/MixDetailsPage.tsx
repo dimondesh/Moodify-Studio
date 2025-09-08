@@ -265,7 +265,7 @@ const MixDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 pb-4 flex flex-wrap sm:justify-start items-center gap-3 sm:gap-6">
+              <div className="px-4 sm:px-6 pb-4 flex flex-wrap sm:justify-start items-center gap-2">
                 {currentMix.songs.length > 0 && (
                   <Button
                     size="icon"
@@ -299,9 +299,9 @@ const MixDetailsPage = () => {
                   }
                 >
                   {isInLibrary ? (
-                    <CheckCircle2 className="size-5 sm:size-6 text-violet-400" />
+                    <CheckCircle2 className="size-6 text-violet-400" />
                   ) : (
-                    <PlusCircle className="size-5 sm:size-6 text-white" />
+                    <PlusCircle className="size-6 text-white" />
                   )}
                 </Button>
                 <DownloadButton
