@@ -214,8 +214,8 @@ const LibraryPage = () => {
         />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
-          <div className="relative min-h-screen p-4 sm:p-6 pb-10">
+        <ScrollArea className="h-full rounded-md pb-0">
+          <div className="relative min-h-screen p-4 sm:p-6 ">
             <div
               className="absolute inset-0 bg-gradient-to-b from-zinc-900/80 via-zinc-900/80 to-zinc-900 pointer-events-none"
               aria-hidden="true"

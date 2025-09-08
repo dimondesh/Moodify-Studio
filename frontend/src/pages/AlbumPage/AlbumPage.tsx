@@ -303,8 +303,8 @@ const AlbumPage = () => {
         <title>{`${currentAlbum.title} - ${artistNames}`}</title>
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full pb-30 rounded-md lg:pb-0">
-          <div className="relative min-h-screen">
+        <ScrollArea className="h-full rounded-md">
+          <div className="relative min-h-screen pb-40 lg:pb-10">
             {backgrounds
               .slice(0, 2)
               .reverse()

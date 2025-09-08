@@ -267,8 +267,8 @@ const LikedSongsPage = () => {
           className="absolute inset-0 bg-gradient-to-b from-[#5038a0]/80 via-zinc-900/80 to-zinc-900 pointer-events-none animate-fade-in"
           aria-hidden="true"
         />
-        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
-          <div className="relative min-h-screen">
+        <ScrollArea className="h-full rounded-md">
+          <div className="relative min-h-screen pb-40 lg:pb-0">
             <div className="relative z-10">
               <div className="flex flex-col sm:flex-row p-4 sm:p-6 gap-4 sm:gap-6 pb-8 items-center sm:items-end">
                 <img

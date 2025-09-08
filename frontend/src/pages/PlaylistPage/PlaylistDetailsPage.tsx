@@ -597,8 +597,8 @@ const PlaylistDetailsPage = () => {
         <meta name="description" content={metaDescription.substring(0, 160)} />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
-          <div className="relative min-h-screen max-w-screen">
+        <ScrollArea className="h-full rounded-md">
+          <div className="relative min-h-screen max-w-screen pb-30 lg:pb-0">
             {backgrounds
               .slice(0, 2)
               .reverse()

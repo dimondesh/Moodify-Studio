@@ -327,8 +327,8 @@ const GeneratedPlaylistPage = () => {
         <meta name="description" content={t(currentPlaylist.descriptionKey)} />
       </Helmet>
       <div className="h-full">
-        <ScrollArea className="h-full rounded-md pb-30 lg:pb-0">
-          <div className="relative min-h-screen">
+        <ScrollArea className="h-full rounded-md">
+          <div className="relative min-h-screen pb-30 lg:pb-0">
             {backgrounds
               .slice(0, 2)
               .reverse()
