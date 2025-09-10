@@ -49,7 +49,7 @@ const AuthPage: React.FC = () => {
 
   const validateEmail = (email: string) => {
     if (!email) return t("auth.emailRequired");
-    if (email.length > 30) return t("auth.emailMaxLength");
+    if (email.length > 42) return t("auth.emailMaxLength");
     if (!/\S+@\S+\.\S+/.test(email)) return t("auth.emailInvalid");
     return "";
   };
