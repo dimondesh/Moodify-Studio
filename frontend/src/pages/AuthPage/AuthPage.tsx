@@ -241,7 +241,7 @@ const AuthPage: React.FC = () => {
                     onChange={handleChange}
                     placeholder={t("auth.emailPlaceholder")}
                     required
-                    maxLength={30}
+                    maxLength={42}
                     className="mt-1"
                   />
                   {errors.email && (
@@ -259,7 +259,7 @@ const AuthPage: React.FC = () => {
                     placeholder={t("auth.passwordPlaceholder")}
                     required
                     minLength={6}
-                    maxLength={20}
+                    maxLength={42}
                     className="mt-1"
                   />
                   {errors.password && (
