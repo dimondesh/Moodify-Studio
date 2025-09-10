@@ -1,6 +1,12 @@
 // src/pages/HomePage/HomePage.tsx
 
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useMusicStore } from "../../stores/useMusicStore";
 import FeaturedSection from "./FeaturedSection";
 import { usePlayerStore } from "../../stores/usePlayerStore";
@@ -22,7 +28,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import LazyLoadSection from "./LazyLoadSection";
 import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 
-const HomePage = () => {
+const HomePageComponent = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -421,4 +427,5 @@ const HomePage = () => {
     </>
   );
 };
+const HomePage = React.memo(HomePageComponent);
 export default HomePage;
