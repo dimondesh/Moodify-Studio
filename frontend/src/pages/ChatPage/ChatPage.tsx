@@ -23,6 +23,7 @@ import { Helmet } from "react-helmet-async";
 import { SharedContentMessage } from "./SharedContentMessage";
 import { Check, CheckCheck } from "lucide-react";
 import { TypingIndicator } from "./TypingIndicator";
+import { useAudioSettingsStore } from "@/lib/webAudio";
 
 const formatTime = (date: string) => {
   return new Date(date).toLocaleTimeString("en-US", {
@@ -291,12 +292,14 @@ export default ChatPage;
 
 const NoConversationPlaceholder = () => {
   const { t } = useTranslation();
+  const { isReduceMotionEnabled } = useAudioSettingsStore();
+
   return (
     <div className="flex flex-col items-center justify-center h-full space-y-6 text-center">
       <img
-        src="/Moodify.png"
+        src="/Moodify.svg"
         alt="Moodify"
-        className="size-16 animate-bounce"
+        className={`size-16 ${isReduceMotionEnabled ? "" : "animate-bounce"}`}
       />
       <div className="text-center">
         <h3 className="text-zinc-300 text-lg font-medium mb-1">

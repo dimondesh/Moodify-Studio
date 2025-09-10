@@ -234,7 +234,7 @@ export const useAudioSettingsStore = create<AudioStore>()(
       equalizerEnabled: false,
       equalizerGains: { ...equalizerPresets[0].gains }, // Дефолт - "Flat"
       normalizationMode: "normal",
-      waveAnalyzerEnabled: true,
+      waveAnalyzerEnabled: false,
       activePresetName: equalizerPresets[0].name, // Дефолт - "Flat"
       // --- ИНИЦИАЛИЗАЦИЯ СОСТОЯНИЙ РЕВЕРБЕРАЦИИ ---
       reverbEnabled: false,
