@@ -11,12 +11,14 @@ import {
   getSavedMixes,
   toggleMixInLibrary,
   getOwnedPlaylists,
-  getSavedGeneratedPlaylists, // <-- ИМПОРТ
-  toggleGeneratedPlaylistInLibrary, // <-- ИМПОРТ
+  getSavedGeneratedPlaylists,
+  getLibrarySummary,
+  toggleGeneratedPlaylistInLibrary,
 } from "../controller/library.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
+router.get("/summary", protectRoute, getLibrarySummary);
 
 router.get("/albums", protectRoute, getLibraryAlbums);
 router.get("/liked-songs", protectRoute, getLikedSongs);

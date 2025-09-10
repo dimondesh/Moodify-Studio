@@ -580,3 +580,112 @@ export const toggleGeneratedPlaylistInLibrary = async (req, res, next) => {
     next(err);
   }
 };
+export const getLibrarySummary = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const library = await Library.findOne({ userId }).lean();
+
+    if (!library) {
+      // Если у пользователя еще нет библиотеки, возвращаем пустые массивы
+      return res.json({
+        albums: [],
+        likedSongs: [],
+        playlists: [],
+        followedArtists: [],
+        savedMixes: [],
+        generatedPlaylists: [],
+      });
+    }
+
+    // Собираем все ID из документа библиотеки
+    const albumIds = library.albums?.map((a) => a.albumId) || [];
+    const likedSongIds = library.likedSongs?.map((s) => s.songId) || [];
+    const playlistIds = library.playlists?.map((p) => p.playlistId) || [];
+    const artistIds = library.followedArtists?.map((a) => a.artistId) || [];
+    const mixIds = library.savedMixes?.map((m) => m.mixId) || [];
+    const genPlaylistIds =
+      library.savedGeneratedPlaylists?.map((p) => p.playlistId) || [];
+
+    // Используем Promise.all для параллельного выполнения всех запросов
+    const [
+      albums,
+      likedSongs,
+      playlists,
+      followedArtists,
+      savedMixes,
+      generatedPlaylists,
+    ] = await Promise.all([
+      // Альбомы: выбираем только нужные поля
+      mongoose
+        .model("Album")
+        .find({ _id: { $in: albumIds } })
+        .populate("artist", "name")
+        .select("title imageUrl artist type releaseYear songs")
+        .lean(),
+      // Любимые треки: также выбираем нужные поля
+      mongoose
+        .model("Song")
+        .find({ _id: { $in: likedSongIds } })
+        .populate("artist", "name")
+        .select(
+          "title imageUrl artist duration playCount albumId createdAt albumTitle"
+        )
+        .lean(),
+      // Плейлисты: НЕ подгружаем полный список песен, только owner
+      mongoose
+        .model("Playlist")
+        .find({ _id: { $in: playlistIds } })
+        .populate("owner", "fullName")
+        .select("title imageUrl owner isPublic description songs")
+        .lean(),
+      // Исполнители
+      mongoose
+        .model("Artist")
+        .find({ _id: { $in: artistIds } })
+        .select("name imageUrl")
+        .lean(),
+      // Миксы
+      mongoose
+        .model("Mix")
+        .find({ _id: { $in: mixIds } })
+        .select("name imageUrl sourceName type generatedOn")
+        .lean(),
+      // Сгенерированные плейлисты
+      mongoose
+        .model("GeneratedPlaylist")
+        .find({ _id: { $in: genPlaylistIds } })
+        .select("nameKey descriptionKey imageUrl generatedOn songs")
+        .lean(),
+    ]);
+
+    // Добавляем 'addedAt' обратно к объектам для сортировки на фронтенде
+    const addAddedAt = (items, libraryField) => {
+      const lookup = new Map(
+        libraryField.map((i) => [i[Object.keys(i)[0]].toString(), i.addedAt])
+      );
+      return items.map((item) => ({
+        ...item,
+        addedAt: lookup.get(item._id.toString()),
+      }));
+    };
+
+    res.json({
+      albums: addAddedAt(albums, library.albums),
+      likedSongs: addAddedAt(likedSongs, library.likedSongs),
+      playlists: addAddedAt(playlists, library.playlists),
+      followedArtists: addAddedAt(followedArtists, library.followedArtists),
+      savedMixes: addAddedAt(savedMixes, library.savedMixes),
+      generatedPlaylists: addAddedAt(
+        generatedPlaylists,
+        library.savedGeneratedPlaylists
+      ),
+    });
+  } catch (err) {
+    console.error("❌ Error in getLibrarySummary:", err);
+    next(err);
+  }
+};

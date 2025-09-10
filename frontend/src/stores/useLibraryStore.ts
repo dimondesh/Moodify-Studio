@@ -70,29 +70,28 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
       if (!userId) {
         set({
           isLoading: false,
-          error: i18n.t("errors.userNotAvailableOffline"), // ИЗМЕНЕНИЕ
+          error: i18n.t("errors.userNotAvailableOffline"),
         });
         return;
       }
       try {
-        const [albums, playlists, savedMixes] = await Promise.all([
+        const [albums, playlists, savedMixes, songs] = await Promise.all([
           getAllUserAlbums(userId),
           getAllUserPlaylists(userId),
           getAllUserMixes(userId),
+          getAllUserSongs(userId),
         ]);
 
         set({
           albums,
           playlists: playlists as LibraryPlaylist[],
           savedMixes,
-          likedSongs: [],
+          likedSongs: songs,
           followedArtists: [],
+          generatedPlaylists: playlists.filter(
+            (p: any) => p.isGenerated
+          ) as unknown as GeneratedPlaylist[],
           isLoading: false,
-        });
-        console.log("[Offline] Library data loaded from IndexedDB.", {
-          albums,
-          playlists,
-          savedMixes,
         });
       } catch (err: any) {
         console.error("Failed to fetch offline library data:", err);
@@ -105,29 +104,16 @@ export const useLibraryStore = create<LibraryStore>((set, get) => ({
     }
 
     try {
-      const [
-        albumsRes,
-        likedSongsRes,
-        playlistsRes,
-        followedArtistsRes,
-        savedMixesRes,
-        savedGeneratedPlaylistsRes,
-      ] = await Promise.all([
-        axiosInstance.get("/library/albums"),
-        axiosInstance.get("/library/liked-songs"),
-        axiosInstance.get("/library/playlists"),
-        axiosInstance.get("/library/artists"),
-        axiosInstance.get("/library/mixes"),
-        axiosInstance.get("/library/generated-playlists"),
-      ]);
+      const response = await axiosInstance.get("/library/summary");
+      const data = response.data;
 
       set({
-        albums: albumsRes.data.albums || [],
-        likedSongs: likedSongsRes.data.songs || [],
-        playlists: playlistsRes.data.playlists || [],
-        followedArtists: followedArtistsRes.data.artists || [],
-        savedMixes: savedMixesRes.data.mixes || [],
-        generatedPlaylists: savedGeneratedPlaylistsRes.data.playlists || [],
+        albums: data.albums || [],
+        likedSongs: data.likedSongs || [],
+        playlists: data.playlists || [],
+        followedArtists: data.followedArtists || [],
+        savedMixes: data.savedMixes || [],
+        generatedPlaylists: data.generatedPlaylists || [],
         isLoading: false,
       });
     } catch (err: any) {
