@@ -12,10 +12,7 @@
       "permanent": true
     }
   ],
-  "rewrites": [
-    {
-      "source": "/((?!api/|assets/|_next/|static/|sw.js|robots.txt|sitemap.xml|manifest.webmanifest|favicon.ico|.*\\..*).*)",
-      "destination": "/index.html"
-    }
+ "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
