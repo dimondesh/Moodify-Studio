@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminPage/AdminPage.tsx
 
-import { Album, Home, Music, Users2 } from "lucide-react";
+import { Album, Home, ImageDown, Music, Users2 } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -18,6 +18,8 @@ import { useMusicStore } from "../../stores/useMusicStore";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import { axiosInstance } from "@/lib/axios";
 
 const AdminPage = () => {
   const { t } = useTranslation();
@@ -27,6 +29,26 @@ const AdminPage = () => {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  const handleOptimizeImages = async () => {
+    try {
+      toast.loading("Starting image optimization process...", {
+        id: "optimize-toast",
+      });
+
+      const response = await axiosInstance.post("/images/optimize-existing");
+
+      toast.success(response.data.message, {
+        id: "optimize-toast",
+        duration: 5000,
+      });
+    } catch (error) {
+      toast.error("Failed to start image optimization process.", {
+        id: "optimize-toast",
+      });
+      console.error("Optimization trigger error:", error);
+    }
+  };
 
   const navigate = useNavigate();
   if (!isAdmin && !isLoading)
@@ -73,6 +95,13 @@ const AdminPage = () => {
             <Users2 className="mr-2 size-4" />
             {t("admin.tabs.artists")}
           </TabsTrigger>
+          <Button
+            onClick={handleOptimizeImages}
+            className="bg-violet-500 hover:bg-violet-600 text-white text-sm truncate w-40 h-8 flex"
+          >
+            <ImageDown />
+            Optimize All Images
+          </Button>
         </TabsList>
         <TabsContent value="songs">
           <SongsTabContent />

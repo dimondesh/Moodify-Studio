@@ -24,6 +24,7 @@ import mixRoutes from "./routes/mix.route.js";
 import cronRoutes from "./routes/cron.route.js";
 import shareRoutes from "./routes/share.route.js";
 import generatedPlaylistRoutes from "./routes/generatedPlaylist.route.js";
+import imageRoutes from "./routes/image.route.js";
 
 import { updateDailyMixes } from "./controller/mix.controller.js";
 import { ListenHistory } from "./models/listenHistory.model.js";
@@ -201,6 +202,8 @@ const jsonParser = express.json();
 app.use(jsonParser);
 
 app.use("/api/users", userRoutes);
+app.use("/api/images", imageRoutes);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/songs", songRoutes);
