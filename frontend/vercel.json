@@ -8,11 +8,8 @@
         }
       ],
       "source": "/(.*)",
-      "destination": "https://moodify-music.vercel.app/$1",
+      "destination": "https://moodify-music.vercel.app/",
       "permanent": true
     }
-  ],
- "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
