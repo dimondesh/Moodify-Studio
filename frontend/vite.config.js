@@ -7,6 +7,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 var BUNNY_CDN_HOSTNAME = "moodify.b-cdn.net";
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: "/",
     plugins: [
         react(),
         visualizer({

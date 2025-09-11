@@ -706,9 +706,9 @@ const PlaylistDetailsPage = () => {
                     size="icon"
                   >
                     {isInLibrary ? (
-                      <CheckCircle2 className="size-7 text-violet-400" />
+                      <CheckCircle2 className="size-6 text-violet-400" />
                     ) : (
-                      <PlusCircle className="size-7 text-white" />
+                      <PlusCircle className="size-6 text-white" />
                     )}
                   </Button>
                 )}
@@ -718,7 +718,7 @@ const PlaylistDetailsPage = () => {
                     size="icon"
                     onClick={openSearchAndAddDialog}
                   >
-                    <Plus className="size-7" />
+                    <Plus className="size-6" />
                   </Button>
                 )}
                 <DownloadButton
@@ -730,7 +730,7 @@ const PlaylistDetailsPage = () => {
                   <Drawer>
                     <DrawerTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="size-7" />
+                        <MoreHorizontal className="size-6" />
                       </Button>
                     </DrawerTrigger>
                     <DrawerContent
@@ -787,7 +787,7 @@ const PlaylistDetailsPage = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="size-7" />
+                        <MoreHorizontal className="size-6" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48 bg-zinc-800 text-white border-zinc-700">
