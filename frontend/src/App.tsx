@@ -63,6 +63,13 @@ function App() {
   }, [fetchInitialData]);
 
   useEffect(() => {
+    if (!useAuthStore.getState().user && navigator.onLine) {
+      console.log("No user on initial load. Fetching public data.");
+      fetchInitialData();
+    }
+  }, [fetchInitialData]);
+
+  useEffect(() => {
     const { init: initOffline, checkOnlineStatus } =
       useOfflineStore.getState().actions;
 
