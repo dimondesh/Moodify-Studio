@@ -63,9 +63,16 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         const authState = useAuthStore.getState();
-        if (!authState.user && !authState.isLoading && navigator.onLine) {
+
+        if (
+          (!authState.user ||
+            authState.user.firebaseUid !== firebaseUser.uid ||
+            !authState.isAdmin) &&
+          !authState.isLoading &&
+          navigator.onLine
+        ) {
           console.log(
-            "AuthProvider: Online and no user in state. Syncing user with backend..."
+            "AuthProvider: Online. Syncing user with backend to ensure data consistency..."
           );
           try {
             await fetchUser(firebaseUser.uid);
@@ -81,7 +88,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             logout();
           }
         } else if (authState.user) {
-          console.log("AuthProvider: User already in state. No sync needed.");
+          console.log(
+            "AuthProvider: User already in state and consistent. No sync needed."
+          );
         } else if (authState.isLoading) {
           console.log(
             "AuthProvider: Auth operation already in progress. Waiting..."
