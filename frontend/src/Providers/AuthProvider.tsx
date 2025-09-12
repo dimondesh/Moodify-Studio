@@ -85,7 +85,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           disconnectSocket();
         } else {
           console.log(
-            "AuthProvider: Offline or no user in state. No action needed."
+            "AuthProvider: Offline or no user in state. No action needed to preserve offline session."
           );
         }
       }
@@ -133,7 +133,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [chatError]);
 
-  if (!firebaseChecked || isLoading) {
+  if (!firebaseChecked || (isLoading && !user)) {
     return (
       <div className="h-screen w-full bg-zinc-950 flex items-center justify-center">
         <Card className="w-[90%] max-w-md bg-zinc-900 border-zinc-800">

@@ -8,6 +8,7 @@ import { useOfflineStore } from "./stores/useOfflineStore";
 import { Helmet } from "react-helmet-async";
 import { useUIStore } from "./stores/useUIStore";
 import { useLibraryStore } from "./stores/useLibraryStore";
+
 import MainLayout from "./layout/MainLayout";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
 import LibraryPage from "./pages/LibraryPage/LibraryPage";
@@ -46,7 +47,7 @@ function App() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { fetchInitialData } = useUIStore();
-  const { fetchLibrary } = useLibraryStore();
+  const { fetchLibrary } = useLibraryStore(); // <--- ВАЖНО
 
   const fetchDataForUser = useCallback(() => {
     if (navigator.onLine) {
@@ -106,19 +107,13 @@ function App() {
   }, [fetchDataForUser]);
 
   useEffect(() => {
-    if (user && navigator.onLine) {
+    if (user && !navigator.onLine) {
       console.log(
-        "User detected in App.tsx while online, ensuring data is fetched."
+        "App.tsx: User detected while offline. Triggering offline data load from library."
       );
-      fetchDataForUser();
-    } else if (user && !navigator.onLine) {
-      console.log(
-        "User detected in App.tsx while offline. Data should be loaded from DB."
-      );
-
       fetchLibrary();
     }
-  }, [user, fetchDataForUser, fetchLibrary]);
+  }, [user, fetchLibrary]);
 
   useEffect(() => {
     const exactSafePaths = [
