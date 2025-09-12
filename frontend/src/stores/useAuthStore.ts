@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: false,
       error: null,
 
-      setUser: (user) => set({ user, isAdmin: user?.isAdmin ?? false }),
+      setUser: (user) => set({ user }),
 
       updateUserLanguage: async (language: string) => {
         set({ isLoading: true, error: null });
@@ -189,26 +189,26 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
 
-          const fullUser: AuthUser = {
-            id: syncedUserFromBackend._id,
-            firebaseUid: syncedUserFromBackend.firebaseUid,
-            email: syncedUserFromBackend.email,
-            fullName:
-              syncedUserFromBackend.fullName || syncedUserFromBackend.email,
-            imageUrl: syncedUserFromBackend.imageUrl || null,
-            language: syncedUserFromBackend.language,
-            isAnonymous: syncedUserFromBackend.isAnonymous,
-            isAdmin: syncedUserFromBackend.isAdmin,
-          };
-
-          get().setUser(fullUser);
-          set({ isLoading: false, error: null });
-
+          await get().checkAdminStatus();
+          set({
+            user: {
+              id: syncedUserFromBackend._id,
+              firebaseUid: syncedUserFromBackend.firebaseUid,
+              email: syncedUserFromBackend.email,
+              fullName:
+                syncedUserFromBackend.fullName || syncedUserFromBackend.email,
+              imageUrl: syncedUserFromBackend.imageUrl || null,
+              language: syncedUserFromBackend.language,
+              isAnonymous: syncedUserFromBackend.isAnonymous,
+            },
+            isLoading: false,
+            error: null,
+          });
           console.log(
             "AuthStore: User synced with backend. MongoDB ID:",
             syncedUserFromBackend._id,
-            "Is Admin:",
-            syncedUserFromBackend.isAdmin
+            "AuthStore: User synced with backend. Language:",
+            syncedUserFromBackend.language
           );
         } catch (error: any) {
           console.error("AuthStore: Sync error:", error);
@@ -262,7 +262,10 @@ export const useAuthStore = create<AuthStore>()(
           const currentUserData = response.data;
 
           set((state) => ({
-            user: state.user ? { ...state.user, ...currentUserData } : null,
+            user: {
+              ...state.user!,
+              ...currentUserData,
+            },
             isAdmin: currentUserData.isAdmin || false,
             isLoading: false,
             error: null,
@@ -305,7 +308,6 @@ export const useAuthStore = create<AuthStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        isAdmin: state.isAdmin,
       }),
     }
   )

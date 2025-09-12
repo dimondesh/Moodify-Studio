@@ -64,15 +64,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const authState = useAuthStore.getState();
 
-        if (
-          (!authState.user ||
-            authState.user.firebaseUid !== firebaseUser.uid ||
-            !authState.isAdmin) &&
-          !authState.isLoading &&
-          navigator.onLine
-        ) {
+        const needsSync =
+          !authState.user ||
+          authState.user.firebaseUid !== firebaseUser.uid ||
+          authState.user.isAdmin === undefined;
+
+        if (navigator.onLine && needsSync && !authState.isLoading) {
           console.log(
-            "AuthProvider: Online. Syncing user with backend to ensure data consistency..."
+            "AuthProvider: Online and user data needs sync. Fetching full user profile..."
           );
           try {
             await fetchUser(firebaseUser.uid);
@@ -88,9 +87,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             logout();
           }
         } else if (authState.user) {
-          console.log(
-            "AuthProvider: User already in state and consistent. No sync needed."
-          );
+          console.log("AuthProvider: User already in state. No sync needed.");
         } else if (authState.isLoading) {
           console.log(
             "AuthProvider: Auth operation already in progress. Waiting..."
@@ -99,13 +96,17 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log("AuthProvider: Offline. Trusting persisted user state.");
         }
       } else {
-        if (useAuthStore.getState().user) {
+        if (navigator.onLine && useAuthStore.getState().user) {
           console.log(
-            "AuthProvider: No Firebase user, but user was in state. Clearing user state."
+            "AuthProvider: Online and no Firebase user, but user was in state. Clearing user state."
           );
           setUser(null);
           socketInitializedRef.current = false;
           disconnectSocket();
+        } else if (!navigator.onLine) {
+          console.log(
+            "AuthProvider: Offline and no Firebase user. Trusting persisted state to preserve offline data access."
+          );
         } else {
           console.log(
             "AuthProvider: No Firebase user and no user in state. Nothing to do."
