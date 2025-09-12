@@ -1,13 +1,11 @@
 // frontend/src/stores/usePlayerStore.ts
-// Изменение: Глобальное обогащение песни названием альбома при каждом переключении.
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Song } from "../types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
 import { silentAudioService } from "@/lib/silentAudioService";
-import { useMusicStore } from "./useMusicStore";
+import { axiosInstance } from "@/lib/axios"; // <--- ДОБАВЛЕНО
 
 interface PlayerStore {
   currentSong: Song | null;
@@ -57,253 +55,133 @@ const shuffleQueue = (length: number) => {
 
 export const usePlayerStore = create<PlayerStore>()(
   persist(
-    (set, get) => ({
-      currentSong: null,
-      isPlaying: false,
-      queue: [],
-      currentIndex: -1,
-      repeatMode: "off",
-      isShuffle: false,
-      shuffleHistory: [],
-      shufflePointer: -1,
-      isFullScreenPlayerOpen: false,
-      vocalsVolume: 100,
-      masterVolume: 75,
-      currentTime: 0,
-      duration: 0,
-      originalDuration: 0,
-      seekVersion: 0,
-
-      isDesktopLyricsOpen: false,
-      isMobileLyricsFullScreen: false,
-
-      enrichSongWithAlbumTitle: (song: Song): Song => {
-        if (song.albumTitle) {
-          return song;
+    (set, get) => {
+      const enrichSongWithAlbumTitleIfNeeded = async (song: Song) => {
+        if (
+          song.albumTitle ||
+          !song.albumId ||
+          useOfflineStore.getState().isOffline
+        ) {
+          return;
         }
-        if (song.albumId) {
-          const { albums } = useMusicStore.getState();
-          const foundAlbum = albums.find((album) => album._id === song.albumId);
-          if (foundAlbum) {
-            return { ...song, albumTitle: foundAlbum.title };
+
+        try {
+          const response = await axiosInstance.get(`/albums/${song.albumId}`);
+          const albumTitle = response.data.album?.title;
+
+          if (albumTitle && get().currentSong?._id === song._id) {
+            set((state) => ({
+              currentSong: { ...state.currentSong!, albumTitle },
+            }));
           }
+        } catch (error) {
+          console.warn(
+            `Could not fetch album title for song ${song._id}`,
+            error
+          );
         }
-        return song;
-      },
+      };
 
-      initializeQueue: (songs: Song[]) => {
-        set((state) => {
-          const newQueue = songs;
-          const currentSong =
-            state.currentSong &&
-            newQueue.some((s) => s._id === state.currentSong!._id)
-              ? state.currentSong
-              : newQueue.length > 0
-              ? newQueue[0]
-              : null;
+      return {
+        currentSong: null,
+        isPlaying: false,
+        queue: [],
+        currentIndex: -1,
+        repeatMode: "off",
+        isShuffle: false,
+        shuffleHistory: [],
+        shufflePointer: -1,
+        isFullScreenPlayerOpen: false,
+        vocalsVolume: 100,
+        masterVolume: 75,
+        currentTime: 0,
+        duration: 0,
+        originalDuration: 0,
+        seekVersion: 0,
 
-          const currentIndex = currentSong
-            ? newQueue.findIndex((s) => s._id === currentSong._id)
-            : -1;
+        isDesktopLyricsOpen: false,
+        isMobileLyricsFullScreen: false,
 
-          let newShuffleHistory = state.shuffleHistory;
-          let newShufflePointer = state.shufflePointer;
+        initializeQueue: (songs: Song[]) => {
+          set((state) => {
+            const newQueue = songs;
+            const currentSong =
+              state.currentSong &&
+              newQueue.some((s) => s._id === state.currentSong!._id)
+                ? state.currentSong
+                : newQueue.length > 0
+                ? newQueue[0]
+                : null;
 
-          if (state.isShuffle && newQueue.length > 0) {
-            newShuffleHistory = shuffleQueue(newQueue.length);
-            if (currentSong && currentIndex !== -1) {
-              const currentPosInShuffle =
-                newShuffleHistory.indexOf(currentIndex);
-              if (currentPosInShuffle !== -1) {
-                [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
+            const currentIndex = currentSong
+              ? newQueue.findIndex((s) => s._id === currentSong._id)
+              : -1;
+
+            let newShuffleHistory = state.shuffleHistory;
+            let newShufflePointer = state.shufflePointer;
+
+            if (state.isShuffle && newQueue.length > 0) {
+              newShuffleHistory = shuffleQueue(newQueue.length);
+              if (currentSong && currentIndex !== -1) {
+                const currentPosInShuffle =
+                  newShuffleHistory.indexOf(currentIndex);
+                if (currentPosInShuffle !== -1) {
                   [
+                    newShuffleHistory[0],
+                    newShuffleHistory[currentPosInShuffle],
+                  ] = [
                     newShuffleHistory[currentPosInShuffle],
                     newShuffleHistory[0],
                   ];
+                } else {
+                  newShuffleHistory.unshift(currentIndex);
+                  newShuffleHistory.pop();
+                }
+                newShufflePointer = 0;
               } else {
-                newShuffleHistory.unshift(currentIndex);
-                newShuffleHistory.pop();
+                newShufflePointer = -1;
               }
-              newShufflePointer = 0;
-            } else {
-              newShufflePointer = -1;
-            }
-          } else {
-            newShuffleHistory = [];
-            newShufflePointer = -1;
-          }
-
-          return {
-            queue: newQueue,
-            currentSong: currentSong,
-            currentIndex: currentIndex,
-            shuffleHistory: newShuffleHistory,
-            shufflePointer: newShufflePointer,
-          };
-        });
-      },
-
-      playAlbum: (songs: Song[], startIndex = 0) => {
-        if (songs.length === 0) {
-          silentAudioService.pause();
-          set({
-            currentSong: null,
-            isPlaying: false,
-            queue: [],
-            currentIndex: -1,
-            shuffleHistory: [],
-            shufflePointer: -1,
-          });
-          return;
-        }
-
-        silentAudioService.play();
-
-        set((state) => {
-          const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
-            enrichSongWithAlbumTitle: (song: Song) => Song;
-          };
-          const isShuffle = state.isShuffle;
-          let songToPlay: Song;
-          let targetIndexInQueue: number;
-          let newShuffleHistory: number[] = [];
-          let newShufflePointer: number = -1;
-
-          if (isShuffle) {
-            newShuffleHistory = shuffleQueue(songs.length);
-            const currentPosInShuffle = newShuffleHistory.indexOf(startIndex);
-            if (currentPosInShuffle !== -1) {
-              [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] = [
-                newShuffleHistory[currentPosInShuffle],
-                newShuffleHistory[0],
-              ];
-            } else {
-              newShuffleHistory.unshift(startIndex);
-              newShuffleHistory.pop();
-            }
-            newShufflePointer = 0;
-            targetIndexInQueue = newShuffleHistory[newShufflePointer];
-            songToPlay = songs[targetIndexInQueue];
-          } else {
-            targetIndexInQueue = startIndex;
-            songToPlay = songs[targetIndexInQueue];
-            newShuffleHistory = [];
-            newShufflePointer = -1;
-          }
-
-          const enrichedSong = enrichSongWithAlbumTitle(songToPlay);
-
-          const newState = {
-            queue: songs,
-            isPlaying: true,
-            currentSong: enrichedSong,
-            currentIndex: targetIndexInQueue,
-            shuffleHistory: newShuffleHistory,
-            shufflePointer: newShufflePointer,
-            currentTime: 0,
-          };
-          set(newState);
-
-          return newState;
-        });
-      },
-
-      setCurrentSong: (song: Song | null) => {
-        if (!song) {
-          silentAudioService.pause();
-          set({
-            currentSong: null,
-            isPlaying: false,
-            currentIndex: -1,
-            currentTime: 0,
-            duration: 0,
-          });
-          return;
-        }
-
-        silentAudioService.play();
-
-        set((state) => {
-          const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
-            enrichSongWithAlbumTitle: (song: Song) => Song;
-          };
-          const songIndex = state.queue.findIndex((s) => s._id === song._id);
-          let newShufflePointer = state.shufflePointer;
-          let newShuffleHistory = state.shuffleHistory;
-
-          if (state.isShuffle) {
-            if (songIndex !== -1) {
-              newShuffleHistory = shuffleQueue(state.queue.length);
-              const currentPos = newShuffleHistory.indexOf(songIndex);
-              if (currentPos !== -1) {
-                [newShuffleHistory[0], newShuffleHistory[currentPos]] = [
-                  newShuffleHistory[currentPos],
-                  newShuffleHistory[0],
-                ];
-              } else {
-                newShuffleHistory.unshift(songIndex);
-                newShuffleHistory.pop();
-              }
-              newShufflePointer = 0;
             } else {
               newShuffleHistory = [];
               newShufflePointer = -1;
             }
-          }
 
-          const enrichedSong = enrichSongWithAlbumTitle(song);
-
-          const newState = {
-            currentSong: enrichedSong,
-            isPlaying: true,
-            currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
-            shuffleHistory: newShuffleHistory,
-            shufflePointer: newShufflePointer,
-            currentTime: 0,
-          };
-          set(newState);
-
-          return newState;
-        });
-      },
-
-      togglePlay: () => {
-        set((state) => {
-          const newIsPlaying = !state.isPlaying;
-          if (newIsPlaying) {
-            silentAudioService.play();
-          } else {
-            silentAudioService.pause();
-          }
-          return { isPlaying: newIsPlaying };
-        });
-      },
-
-      toggleShuffle: () => {
-        set((state) => {
-          const newShuffleMode = !state.isShuffle;
-          if (!newShuffleMode) {
             return {
-              isShuffle: false,
+              queue: newQueue,
+              currentSong: currentSong,
+              currentIndex: currentIndex,
+              shuffleHistory: newShuffleHistory,
+              shufflePointer: newShufflePointer,
+            };
+          });
+        },
+
+        playAlbum: (songs: Song[], startIndex = 0) => {
+          if (songs.length === 0) {
+            silentAudioService.pause();
+            set({
+              currentSong: null,
+              isPlaying: false,
+              queue: [],
+              currentIndex: -1,
               shuffleHistory: [],
               shufflePointer: -1,
-            };
-          } else {
-            const queueLength = state.queue.length;
-            if (queueLength === 0) {
-              return {
-                isShuffle: true,
-                shuffleHistory: [],
-                shufflePointer: -1,
-              };
-            }
+            });
+            return;
+          }
 
-            const newShuffleHistory = shuffleQueue(queueLength);
-            const currentIndex = state.currentIndex;
+          silentAudioService.play();
 
-            if (currentIndex !== -1) {
-              const currentPosInShuffle =
-                newShuffleHistory.indexOf(currentIndex);
+          set((state) => {
+            const isShuffle = state.isShuffle;
+            let songToPlay: Song;
+            let targetIndexInQueue: number;
+            let newShuffleHistory: number[] = [];
+            let newShufflePointer: number = -1;
+
+            if (isShuffle) {
+              newShuffleHistory = shuffleQueue(songs.length);
+              const currentPosInShuffle = newShuffleHistory.indexOf(startIndex);
               if (currentPosInShuffle !== -1) {
                 [newShuffleHistory[0], newShuffleHistory[currentPosInShuffle]] =
                   [
@@ -311,240 +189,368 @@ export const usePlayerStore = create<PlayerStore>()(
                     newShuffleHistory[0],
                   ];
               } else {
-                newShuffleHistory.unshift(currentIndex);
+                newShuffleHistory.unshift(startIndex);
                 newShuffleHistory.pop();
               }
+              newShufflePointer = 0;
+              targetIndexInQueue = newShuffleHistory[newShufflePointer];
+              songToPlay = songs[targetIndexInQueue];
+            } else {
+              targetIndexInQueue = startIndex;
+              songToPlay = songs[targetIndexInQueue];
+              newShuffleHistory = [];
+              newShufflePointer = -1;
             }
-            return {
-              isShuffle: true,
+
+            enrichSongWithAlbumTitleIfNeeded(songToPlay);
+
+            const newState = {
+              queue: songs,
+              isPlaying: true,
+              currentSong: songToPlay,
+              currentIndex: targetIndexInQueue,
               shuffleHistory: newShuffleHistory,
-              shufflePointer: currentIndex !== -1 ? 0 : -1,
+              shufflePointer: newShufflePointer,
+              currentTime: 0,
             };
-          }
-        });
-      },
+            set(newState);
 
-      playNext: () => {
-        if (get().repeatMode === "one") {
-          set({ repeatMode: "all" });
-        }
+            return newState;
+          });
+        },
 
-        const {
-          queue,
-          isShuffle,
-          shuffleHistory,
-          shufflePointer,
-          currentIndex,
-        } = get();
-        const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
-          enrichSongWithAlbumTitle: (song: Song) => Song;
-        };
-        const repeatMode = get().repeatMode;
-
-        const { isOffline } = useOfflineStore.getState();
-        const { isSongDownloaded } = useOfflineStore.getState().actions;
-
-        if (queue.length === 0) {
-          silentAudioService.pause();
-          set({ isPlaying: false });
-          return;
-        }
-
-        let tempShufflePointer = shufflePointer;
-        let tempShuffleHistory = [...shuffleHistory];
-        let nextIndex = -1;
-
-        if (isShuffle) {
-          if (tempShuffleHistory.length === 0 && queue.length > 0) {
-            tempShuffleHistory = shuffleQueue(queue.length);
-            const currentPos = tempShuffleHistory.indexOf(currentIndex);
-            if (currentPos !== -1) {
-              [tempShuffleHistory[0], tempShuffleHistory[currentPos]] = [
-                tempShuffleHistory[currentPos],
-                tempShuffleHistory[0],
-              ];
-            }
-            tempShufflePointer = 0;
+        setCurrentSong: (song: Song | null) => {
+          if (!song) {
+            silentAudioService.pause();
+            set({
+              currentSong: null,
+              isPlaying: false,
+              currentIndex: -1,
+              currentTime: 0,
+              duration: 0,
+            });
+            return;
           }
 
-          let checkedCount = 0;
-          let potentialPointer = tempShufflePointer;
-          while (checkedCount < tempShuffleHistory.length) {
-            potentialPointer++;
-            if (potentialPointer >= tempShuffleHistory.length) {
-              if (repeatMode === "all") {
-                potentialPointer = 0;
+          silentAudioService.play();
+
+          set((state) => {
+            const songIndex = state.queue.findIndex((s) => s._id === song._id);
+            let newShufflePointer = state.shufflePointer;
+            let newShuffleHistory = state.shuffleHistory;
+
+            if (state.isShuffle) {
+              if (songIndex !== -1) {
+                newShuffleHistory = shuffleQueue(state.queue.length);
+                const currentPos = newShuffleHistory.indexOf(songIndex);
+                if (currentPos !== -1) {
+                  [newShuffleHistory[0], newShuffleHistory[currentPos]] = [
+                    newShuffleHistory[currentPos],
+                    newShuffleHistory[0],
+                  ];
+                } else {
+                  newShuffleHistory.unshift(songIndex);
+                  newShuffleHistory.pop();
+                }
+                newShufflePointer = 0;
               } else {
-                break;
+                newShuffleHistory = [];
+                newShufflePointer = -1;
               }
             }
-            const potentialIndex = tempShuffleHistory[potentialPointer];
-            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
-              nextIndex = potentialIndex;
-              tempShufflePointer = potentialPointer;
-              break;
+
+            enrichSongWithAlbumTitleIfNeeded(song);
+
+            const newState = {
+              currentSong: song,
+              isPlaying: true,
+              currentIndex: songIndex !== -1 ? songIndex : state.currentIndex,
+              shuffleHistory: newShuffleHistory,
+              shufflePointer: newShufflePointer,
+              currentTime: 0,
+            };
+            set(newState);
+
+            return newState;
+          });
+        },
+
+        togglePlay: () => {
+          set((state) => {
+            const newIsPlaying = !state.isPlaying;
+            if (newIsPlaying) {
+              silentAudioService.play();
+            } else {
+              silentAudioService.pause();
             }
-            checkedCount++;
-          }
-        } else {
-          let potentialIndex = currentIndex;
-          for (let i = 0; i < queue.length; i++) {
-            potentialIndex = (potentialIndex + 1) % queue.length;
-            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
-              nextIndex = potentialIndex;
-              break;
+            return { isPlaying: newIsPlaying };
+          });
+        },
+
+        toggleShuffle: () => {
+          set((state) => {
+            const newShuffleMode = !state.isShuffle;
+            if (!newShuffleMode) {
+              return {
+                isShuffle: false,
+                shuffleHistory: [],
+                shufflePointer: -1,
+              };
+            } else {
+              const queueLength = state.queue.length;
+              if (queueLength === 0) {
+                return {
+                  isShuffle: true,
+                  shuffleHistory: [],
+                  shufflePointer: -1,
+                };
+              }
+
+              const newShuffleHistory = shuffleQueue(queueLength);
+              const currentIndex = state.currentIndex;
+
+              if (currentIndex !== -1) {
+                const currentPosInShuffle =
+                  newShuffleHistory.indexOf(currentIndex);
+                if (currentPosInShuffle !== -1) {
+                  [
+                    newShuffleHistory[0],
+                    newShuffleHistory[currentPosInShuffle],
+                  ] = [
+                    newShuffleHistory[currentPosInShuffle],
+                    newShuffleHistory[0],
+                  ];
+                } else {
+                  newShuffleHistory.unshift(currentIndex);
+                  newShuffleHistory.pop();
+                }
+              }
+              return {
+                isShuffle: true,
+                shuffleHistory: newShuffleHistory,
+                shufflePointer: currentIndex !== -1 ? 0 : -1,
+              };
             }
-            if (potentialIndex === currentIndex) break;
+          });
+        },
+
+        playNext: () => {
+          if (get().repeatMode === "one") {
+            set({ repeatMode: "all" });
           }
-          if (nextIndex <= currentIndex && repeatMode !== "all") {
-            nextIndex = -1;
+
+          const {
+            queue,
+            isShuffle,
+            shuffleHistory,
+            shufflePointer,
+            currentIndex,
+          } = get();
+          const repeatMode = get().repeatMode;
+
+          const { isOffline } = useOfflineStore.getState();
+          const { isSongDownloaded } = useOfflineStore.getState().actions;
+
+          if (queue.length === 0) {
+            silentAudioService.pause();
+            set({ isPlaying: false });
+            return;
           }
-        }
 
-        if (nextIndex === -1) {
-          toast(isOffline ? "No other downloaded songs." : "End of queue.");
-          silentAudioService.pause();
-          set({ isPlaying: false });
-          return;
-        }
+          let tempShufflePointer = shufflePointer;
+          let tempShuffleHistory = [...shuffleHistory];
+          let nextIndex = -1;
 
-        const nextSong = queue[nextIndex];
-        const enrichedSong = enrichSongWithAlbumTitle(nextSong);
+          if (isShuffle) {
+            if (tempShuffleHistory.length === 0 && queue.length > 0) {
+              tempShuffleHistory = shuffleQueue(queue.length);
+              const currentPos = tempShuffleHistory.indexOf(currentIndex);
+              if (currentPos !== -1) {
+                [tempShuffleHistory[0], tempShuffleHistory[currentPos]] = [
+                  tempShuffleHistory[currentPos],
+                  tempShuffleHistory[0],
+                ];
+              }
+              tempShufflePointer = 0;
+            }
 
-        silentAudioService.play();
-        set({
-          currentSong: enrichedSong,
-          currentIndex: nextIndex,
-          isPlaying: true,
-          shuffleHistory: tempShuffleHistory,
-          shufflePointer: tempShufflePointer,
-          currentTime: 0,
-        });
-      },
-
-      playPrevious: () => {
-        const { currentTime } = get();
-
-        if (currentTime > 3) {
-          set({ currentTime: 0 });
-          return;
-        }
-        if (get().repeatMode === "one") {
-          set({ repeatMode: "all" });
-        }
-
-        const {
-          currentIndex,
-          queue,
-          isShuffle,
-          shuffleHistory,
-          shufflePointer,
-        } = get();
-        const { enrichSongWithAlbumTitle } = get() as PlayerStore & {
-          enrichSongWithAlbumTitle: (song: Song) => Song;
-        };
-        const repeatMode = get().repeatMode;
-
-        const { isOffline } = useOfflineStore.getState();
-        const { isSongDownloaded } = useOfflineStore.getState().actions;
-
-        if (queue.length === 0) {
-          silentAudioService.pause();
-          set({ isPlaying: false });
-          return;
-        }
-
-        let tempShufflePointer = shufflePointer;
-        let prevIndex = -1;
-
-        if (isShuffle) {
-          let checkedCount = 0;
-          let potentialPointer = tempShufflePointer;
-          while (checkedCount < shuffleHistory.length) {
-            potentialPointer--;
-            if (potentialPointer < 0) {
-              if (repeatMode === "all") {
-                potentialPointer = shuffleHistory.length - 1;
-              } else {
+            let checkedCount = 0;
+            let potentialPointer = tempShufflePointer;
+            while (checkedCount < tempShuffleHistory.length) {
+              potentialPointer++;
+              if (potentialPointer >= tempShuffleHistory.length) {
+                if (repeatMode === "all") {
+                  potentialPointer = 0;
+                } else {
+                  break;
+                }
+              }
+              const potentialIndex = tempShuffleHistory[potentialPointer];
+              if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
+                nextIndex = potentialIndex;
+                tempShufflePointer = potentialPointer;
                 break;
               }
+              checkedCount++;
             }
-            const potentialIndex = shuffleHistory[potentialPointer];
-            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
-              prevIndex = potentialIndex;
-              tempShufflePointer = potentialPointer;
-              break;
+          } else {
+            let potentialIndex = currentIndex;
+            for (let i = 0; i < queue.length; i++) {
+              potentialIndex = (potentialIndex + 1) % queue.length;
+              if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
+                nextIndex = potentialIndex;
+                break;
+              }
+              if (potentialIndex === currentIndex) break;
             }
-            checkedCount++;
-          }
-        } else {
-          let potentialIndex = currentIndex;
-          for (let i = 0; i < queue.length; i++) {
-            potentialIndex = (potentialIndex - 1 + queue.length) % queue.length;
-            if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
-              prevIndex = potentialIndex;
-              break;
+            if (nextIndex <= currentIndex && repeatMode !== "all") {
+              nextIndex = -1;
             }
-            if (potentialIndex === currentIndex) break;
           }
-          if (prevIndex >= currentIndex && repeatMode !== "all") {
-            prevIndex = -1;
+
+          if (nextIndex === -1) {
+            toast(isOffline ? "No other downloaded songs." : "End of queue.");
+            silentAudioService.pause();
+            set({ isPlaying: false });
+            return;
           }
-        }
 
-        if (prevIndex === -1) {
-          toast(
-            isOffline ? "No previous downloaded songs." : "Start of queue."
-          );
-          set({ currentTime: 0 });
-          return;
-        }
+          const nextSong = queue[nextIndex];
 
-        const prevSong = queue[prevIndex];
-        const enrichedSong = enrichSongWithAlbumTitle(prevSong);
+          silentAudioService.play();
+          set({
+            currentSong: nextSong,
+            currentIndex: nextIndex,
+            isPlaying: true,
+            shuffleHistory: tempShuffleHistory,
+            shufflePointer: tempShufflePointer,
+            currentTime: 0,
+          });
 
-        silentAudioService.play();
-        set({
-          currentSong: enrichedSong,
-          currentIndex: prevIndex,
-          isPlaying: true,
-          shufflePointer: tempShufflePointer,
-          currentTime: 0,
-        });
-      },
+          enrichSongWithAlbumTitleIfNeeded(nextSong);
+        },
 
-      setRepeatMode: (mode) => set({ repeatMode: mode }),
-      setIsFullScreenPlayerOpen: (isOpen: boolean) =>
-        set({ isFullScreenPlayerOpen: isOpen }),
-      setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
-      setMasterVolume: (volume) => set({ masterVolume: volume }),
+        playPrevious: () => {
+          const { currentTime } = get();
 
-      setCurrentTime: (time, isPlayerUpdate = false) => {
-        set((state) => ({
-          currentTime: time,
-          seekVersion: isPlayerUpdate
-            ? state.seekVersion
-            : state.seekVersion + 1,
-        }));
-      },
-      setDuration: (duration, originalDuration) => {
-        set({
-          duration: duration,
-          originalDuration:
-            originalDuration !== undefined ? originalDuration : duration,
-        });
-      },
-      setIsDesktopLyricsOpen: (isOpen: boolean) =>
-        set({ isDesktopLyricsOpen: isOpen }),
-      setIsMobileLyricsFullScreen: (isOpen: boolean) => {
-        set({ isMobileLyricsFullScreen: isOpen });
-      },
-      seekToTime: (time: number) => {
-        get().setCurrentTime(time, false);
-        set({ isPlaying: true });
-      },
-    }),
+          if (currentTime > 3) {
+            set({ currentTime: 0 });
+            return;
+          }
+          if (get().repeatMode === "one") {
+            set({ repeatMode: "all" });
+          }
 
+          const {
+            currentIndex,
+            queue,
+            isShuffle,
+            shuffleHistory,
+            shufflePointer,
+          } = get();
+          const repeatMode = get().repeatMode;
+
+          const { isOffline } = useOfflineStore.getState();
+          const { isSongDownloaded } = useOfflineStore.getState().actions;
+
+          if (queue.length === 0) {
+            silentAudioService.pause();
+            set({ isPlaying: false });
+            return;
+          }
+
+          let tempShufflePointer = shufflePointer;
+          let prevIndex = -1;
+
+          if (isShuffle) {
+            let checkedCount = 0;
+            let potentialPointer = tempShufflePointer;
+            while (checkedCount < shuffleHistory.length) {
+              potentialPointer--;
+              if (potentialPointer < 0) {
+                if (repeatMode === "all") {
+                  potentialPointer = shuffleHistory.length - 1;
+                } else {
+                  break;
+                }
+              }
+              const potentialIndex = shuffleHistory[potentialPointer];
+              if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
+                prevIndex = potentialIndex;
+                tempShufflePointer = potentialPointer;
+                break;
+              }
+              checkedCount++;
+            }
+          } else {
+            let potentialIndex = currentIndex;
+            for (let i = 0; i < queue.length; i++) {
+              potentialIndex =
+                (potentialIndex - 1 + queue.length) % queue.length;
+              if (!isOffline || isSongDownloaded(queue[potentialIndex]._id)) {
+                prevIndex = potentialIndex;
+                break;
+              }
+              if (potentialIndex === currentIndex) break;
+            }
+            if (prevIndex >= currentIndex && repeatMode !== "all") {
+              prevIndex = -1;
+            }
+          }
+
+          if (prevIndex === -1) {
+            toast(
+              isOffline ? "No previous downloaded songs." : "Start of queue."
+            );
+            set({ currentTime: 0 });
+            return;
+          }
+
+          const prevSong = queue[prevIndex];
+          silentAudioService.play();
+          set({
+            currentSong: prevSong,
+            currentIndex: prevIndex,
+            isPlaying: true,
+            shufflePointer: tempShufflePointer,
+            currentTime: 0,
+          });
+
+          enrichSongWithAlbumTitleIfNeeded(prevSong);
+        },
+
+        setRepeatMode: (mode) => set({ repeatMode: mode }),
+        setIsFullScreenPlayerOpen: (isOpen: boolean) =>
+          set({ isFullScreenPlayerOpen: isOpen }),
+        setVocalsVolume: (volume) => set({ vocalsVolume: volume }),
+        setMasterVolume: (volume) => set({ masterVolume: volume }),
+
+        setCurrentTime: (time, isPlayerUpdate = false) => {
+          set((state) => ({
+            currentTime: time,
+            seekVersion: isPlayerUpdate
+              ? state.seekVersion
+              : state.seekVersion + 1,
+          }));
+        },
+        setDuration: (duration, originalDuration) => {
+          set({
+            duration: duration,
+            originalDuration:
+              originalDuration !== undefined ? originalDuration : duration,
+          });
+        },
+        setIsDesktopLyricsOpen: (isOpen: boolean) =>
+          set({ isDesktopLyricsOpen: isOpen }),
+        setIsMobileLyricsFullScreen: (isOpen: boolean) => {
+          set({ isMobileLyricsFullScreen: isOpen });
+        },
+        seekToTime: (time: number) => {
+          get().setCurrentTime(time, false);
+          set({ isPlaying: true });
+        },
+      };
+    },
     {
       name: "music-player-storage",
       storage: createJSONStorage(() => localStorage),
