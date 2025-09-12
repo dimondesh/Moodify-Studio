@@ -12,6 +12,7 @@ import {
   analyzePromptForPlaylistMetadata,
   selectSongsFromCandidates,
 } from "../lib/ai.service.js";
+import { optimizeAndUploadImage } from "../lib/image.service.js";
 
 const uploadImageToBunny = async (file) => {
   try {
@@ -38,14 +39,23 @@ export const createPlaylist = async (req, res, next) => {
     }
 
     let imageUrl = "https://moodify.b-cdn.net/default-album-cover.png";
+    let imagePublicId = null;
+
     if (req.files && req.files.image) {
-      imageUrl = await uploadImageToBunny(req.files.image);
+      const imageUpload = await optimizeAndUploadImage(
+        req.files.image,
+        req.files.image.name,
+        "playlist_covers"
+      );
+      imageUrl = imageUpload.url;
+      imagePublicId = imageUpload.path;
     }
 
     const playlist = new Playlist({
       title,
       description,
       imageUrl,
+      imagePublicId,
       owner: ownerId,
       isPublic: isPublic === "true",
       songs: [],
@@ -186,7 +196,16 @@ export const updatePlaylist = async (req, res, next) => {
     if (isPublic !== undefined) playlist.isPublic = isPublic === "true";
 
     if (req.files && req.files.image) {
-      playlist.imageUrl = await uploadImageToBunny(req.files.image);
+      if (playlist.imagePublicId) {
+        await deleteFromBunny(playlist.imagePublicId);
+      }
+      const imageUpload = await optimizeAndUploadImage(
+        req.files.image,
+        req.files.image.name,
+        "playlist_covers"
+      );
+      playlist.imageUrl = imageUpload.url;
+      playlist.imagePublicId = imageUpload.path;
     }
 
     await playlist.save();
@@ -202,9 +221,6 @@ export const updatePlaylist = async (req, res, next) => {
         },
       })
       .lean();
-    console.log(
-      `[SOCKET EMIT] Sending 'playlist_updated' to room 'playlist-${playlistId}' after updating details.`
-    );
 
     req.io
       .to(`playlist-${playlistId}`)

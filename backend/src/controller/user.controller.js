@@ -14,6 +14,7 @@ import {
 import path from "path";
 import { UserRecommendation } from "../models/userRecommendation.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
+import { optimizeAndUploadImage } from "../lib/image.service.js";
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -181,6 +182,8 @@ export const updateUserProfile = async (req, res, next) => {
     }
 
     if (req.files && req.files.imageUrl) {
+      const file = req.files.imageUrl;
+
       if (currentUser.imageUrl) {
         const oldImagePath = getPathFromUrl(currentUser.imageUrl);
         if (oldImagePath) {
@@ -188,13 +191,13 @@ export const updateUserProfile = async (req, res, next) => {
         }
       }
 
-      const file = req.files.imageUrl;
-      const fileName = `${userId}_${Date.now()}${path.extname(file.name)}`;
-      const result = await uploadToBunny(
-        file.tempFilePath,
+      const result = await optimizeAndUploadImage(
+        file,
+        file.name,
         "profile_pictures",
-        fileName
-      );
+        400,
+        85
+      ); 
       updateDataMongo.imageUrl = result.url;
       updateDataFirebase.photoURL = result.url;
     }

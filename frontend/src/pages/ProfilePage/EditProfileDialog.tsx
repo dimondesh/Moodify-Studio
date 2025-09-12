@@ -17,7 +17,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { User } from "@/types";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 interface EditProfileDialogProps {
   user: User;
@@ -32,7 +32,7 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
   user,
   onSuccess,
 }) => {
-  const { t } = useTranslation(); 
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
@@ -100,8 +100,11 @@ export const EditProfileDialog: React.FC<EditProfileDialogProps> = ({
         </DialogHeader>
         <div className="py-4 space-y-6">
           <div className="flex flex-col items-center gap-4">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={imagePreviewUrl || undefined} />
+            <Avatar className="w-24 h-24 object-cover">
+              <AvatarImage
+                src={imagePreviewUrl || undefined}
+                className="object-cover"
+              />
               <AvatarFallback>{user.fullName?.[0] || "U"}</AvatarFallback>
             </Avatar>
             <Button
