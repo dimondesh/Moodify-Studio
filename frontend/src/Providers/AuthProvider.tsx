@@ -38,9 +38,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (user?.language && user.language !== i18n.language) {
-      console.log(
-        `AuthProvider: Setting language from user profile to '${user.language}'`
-      );
       i18n.changeLanguage(user.language);
     }
   }, [user, i18n]);
@@ -54,62 +51,41 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           (p) => p.providerId === "password"
         );
         if (isEmailPasswordProvider && !firebaseUser.emailVerified) {
-          toast.error(t("auth.verifyEmailPrompt"), {
-            duration: 5000,
-          });
+          toast.error(t("auth.verifyEmailPrompt"), { duration: 5000 });
           logout();
           setFirebaseChecked(true);
           return;
         }
 
         const authState = useAuthStore.getState();
-
         const needsSync =
           !authState.user ||
           authState.user.firebaseUid !== firebaseUser.uid ||
           authState.user.isAdmin === undefined;
 
-        if (navigator.onLine && needsSync && !authState.isLoading) {
-          console.log(
-            "AuthProvider: Online and user data needs sync. Fetching full user profile..."
-          );
+        if (needsSync && !authState.isLoading) {
+          console.log("AuthProvider: Online, syncing user with backend...");
           try {
             await fetchUser(firebaseUser.uid);
-            console.log(
-              "AuthProvider: MongoDB user synced successfully. Fetching initial data..."
-            );
             fetchInitialData();
           } catch (error) {
-            console.error(
-              "AuthProvider: Error syncing Firebase user with MongoDB:",
-              error
-            );
+            console.error("AuthProvider: Sync error:", error);
             logout();
           }
-        } else if (authState.user) {
-          console.log("AuthProvider: User already in state. No sync needed.");
-        } else if (authState.isLoading) {
-          console.log(
-            "AuthProvider: Auth operation already in progress. Waiting..."
-          );
         } else {
-          console.log("AuthProvider: Offline. Trusting persisted user state.");
+          console.log("AuthProvider: User data is already fresh.");
         }
       } else {
         if (navigator.onLine && useAuthStore.getState().user) {
           console.log(
-            "AuthProvider: Online and no Firebase user, but user was in state. Clearing user state."
+            "AuthProvider: Online and no Firebase user. Clearing state."
           );
           setUser(null);
           socketInitializedRef.current = false;
           disconnectSocket();
-        } else if (!navigator.onLine) {
-          console.log(
-            "AuthProvider: Offline and no Firebase user. Trusting persisted state to preserve offline data access."
-          );
         } else {
           console.log(
-            "AuthProvider: No Firebase user and no user in state. Nothing to do."
+            "AuthProvider: Offline or no user in state. No action needed."
           );
         }
       }
