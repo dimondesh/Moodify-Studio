@@ -13,10 +13,6 @@ import {
   getAllUserSongs,
 } from "../lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
-import { useUIStore } from "./useUIStore";
-import { usePlaylistStore } from "./usePlaylistStore";
-import { useGeneratedPlaylistStore } from "./useGeneratedPlaylistStore";
-import { useMixesStore } from "./useMixesStore";
 
 interface MusicStore {
   albums: Album[];
@@ -51,9 +47,6 @@ interface MusicStore {
   favoriteArtists: Artist[];
   newReleases: Album[];
 
-  fetchPrimaryHomePageData: () => Promise<void>;
-  fetchSecondaryHomePageData: () => Promise<void>;
-
   clearHomePageCache: () => void;
 
   fetchAlbums: () => Promise<void>;
@@ -81,7 +74,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-export const useMusicStore = create<MusicStore>((set, get) => ({
+export const useMusicStore = create<MusicStore>((set) => ({
   albums: [],
   songs: [],
   artists: [],
@@ -118,81 +111,6 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   clearHomePageCache: () => {
     set({ homePageDataLastFetched: null });
     console.log("Homepage cache cleared.");
-  },
-
-  fetchPrimaryHomePageData: async () => {
-    if (get().homePageDataLastFetched) {
-      console.log("Primary homepage data already loaded. Skipping fetch.");
-      useUIStore.getState().setIsHomePageLoading(false);
-      useUIStore.getState().setIsSecondaryHomePageLoading(false);
-      return;
-    }
-
-    const isOffline = useOfflineStore.getState().isOffline;
-    if (isOffline) {
-      useUIStore.getState().setIsHomePageLoading(false);
-      useUIStore.getState().setIsSecondaryHomePageLoading(false);
-      return;
-    }
-
-    useUIStore.getState().setIsHomePageLoading(true);
-    useUIStore.getState().setIsSecondaryHomePageLoading(true);
-    set({ error: null });
-
-    try {
-      const response = await axiosInstance.get("/homepage/primary");
-      set({
-        featuredSongs: response.data.featuredSongs || [],
-      });
-    } catch (error: any) {
-      console.error("Failed to fetch primary homepage data:", error);
-      set({
-        error:
-          error.response?.data?.message || "Failed to load featured content",
-      });
-      useUIStore.getState().setIsSecondaryHomePageLoading(false);
-    } finally {
-      useUIStore.getState().setIsHomePageLoading(false);
-    }
-  },
-
-  fetchSecondaryHomePageData: async () => {
-    if (get().homePageDataLastFetched) {
-      return;
-    }
-
-    const isOffline = useOfflineStore.getState().isOffline;
-    if (isOffline) return;
-
-    try {
-      const response = await axiosInstance.get("/homepage/secondary");
-      const data = response.data;
-
-      set({
-        trendingSongs: data.trendingSongs || [],
-        madeForYouSongs: data.madeForYouSongs || [],
-        recentlyListenedSongs: data.recentlyListenedSongs || [],
-        favoriteArtists: data.favoriteArtists || [],
-        newReleases: data.newReleases || [],
-        homePageDataLastFetched: Date.now(),
-      });
-
-      useMixesStore.setState({
-        genreMixes: data.genreMixes || [],
-        moodMixes: data.moodMixes || [],
-      });
-      usePlaylistStore.setState({
-        publicPlaylists: data.publicPlaylists || [],
-        recommendedPlaylists: data.recommendedPlaylists || [],
-      });
-      useGeneratedPlaylistStore.setState({
-        allGeneratedPlaylists: data.allGeneratedPlaylists || [],
-      });
-    } catch (error: any) {
-      console.error("Failed to fetch secondary homepage data:", error);
-    } finally {
-      useUIStore.getState().setIsSecondaryHomePageLoading(false);
-    }
   },
 
   fetchArtistAppearsOn: async (artistId: string) => {

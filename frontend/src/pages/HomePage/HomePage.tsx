@@ -15,7 +15,6 @@ import { useMixesStore } from "../../stores/useMixesStore";
 import { useAuthStore } from "../../stores/useAuthStore";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
-import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useDominantColor } from "@/hooks/useDominantColor";
 import { Song } from "@/types";
 import { useGeneratedPlaylistStore } from "../../stores/useGeneratedPlaylistStore";
@@ -31,8 +30,6 @@ const HomePageComponent = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
-    fetchPrimaryHomePageData,
-    fetchSecondaryHomePageData,
     recentlyListenedSongs,
     madeForYouSongs,
     trendingSongs,
@@ -48,7 +45,6 @@ const HomePageComponent = () => {
 
   const { isHomePageLoading, isSecondaryHomePageLoading } = useUIStore();
   const { initializeQueue, currentSong } = usePlayerStore();
-  const { isOffline } = useOfflineStore();
   const { extractColor } = useDominantColor();
 
   const [backgrounds, setBackgrounds] = useState([
@@ -56,14 +52,6 @@ const HomePageComponent = () => {
   ]);
   const backgroundKeyRef = useRef(0);
   const defaultColorRef = useRef("#18181b");
-
-  useEffect(() => {
-    const loadData = async () => {
-      fetchPrimaryHomePageData();
-      fetchSecondaryHomePageData();
-    };
-    loadData();
-  }, [user, isOffline, fetchPrimaryHomePageData, fetchSecondaryHomePageData]);
 
   const changeBackgroundColor = useCallback(
     (color: string) => {

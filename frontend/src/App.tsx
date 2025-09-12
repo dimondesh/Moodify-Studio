@@ -6,26 +6,26 @@ import { useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { useAuthStore } from "./stores/useAuthStore";
 import { useOfflineStore } from "./stores/useOfflineStore";
 import { Helmet } from "react-helmet-async";
-import { useLibraryStore } from "./stores/useLibraryStore";
-import { usePlaylistStore } from "./stores/usePlaylistStore";
-import { useMusicStore } from "./stores/useMusicStore";
+import { useUIStore } from "./stores/useUIStore";
+
 import MainLayout from "./layout/MainLayout";
+import OfflinePage from "./pages/OfflinePage/OfflinePage";
+import LibraryPage from "./pages/LibraryPage/LibraryPage";
+import SettingsPage from "./pages/SettingsPage/SettingsPage";
+import SearchPage from "./pages/SearchPage/SearchPage";
+import LikedSongs from "./pages/LikedSongs/LikedSongs";
+import ChatPage from "./pages/ChatPage/ChatPage";
 
 const HomePage = lazy(() => import("./pages/HomePage/HomePage"));
-const ChatPage = lazy(() => import("./pages/ChatPage/ChatPage"));
 const AlbumPage = lazy(() => import("./pages/AlbumPage/AlbumPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage/AdminPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage/NotFoundPage"));
-const SearchPage = lazy(() => import("./pages/SearchPage/SearchPage"));
-const LikedSongs = lazy(() => import("./pages/LikedSongs/LikedSongs"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
-const LibraryPage = lazy(() => import("./pages/LibraryPage/LibraryPage"));
 const AllSongsPage = lazy(() => import("./pages/AllSongs/AllSongsPage"));
 const PlaylistDetailsPage = lazy(
   () => import("./pages/PlaylistPage/PlaylistDetailsPage")
 );
 const ArtistPage = lazy(() => import("./pages/ArtistPage/ArtistPage"));
-const SettingsPage = lazy(() => import("./pages/SettingsPage/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage/ProfilePage"));
 const DisplayListPage = lazy(
   () => import("./pages/DisplayListPage/DisplayListPage")
@@ -34,7 +34,6 @@ const MixDetailsPage = lazy(
   () => import("./pages/MixDetailsPage/MixDetailsPage")
 );
 const AllMixesPage = lazy(() => import("./pages/AllMixesPage/AllMixesPage"));
-const OfflinePage = lazy(() => import("./pages/OfflinePage/OfflinePage"));
 const GeneratedPlaylistPage = lazy(
   () => import("./pages/GeneratedPlaylistPage/GeneratedPlaylistPage")
 );
@@ -46,23 +45,22 @@ function App() {
   const navigate = useNavigate();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchDataForUser = useCallback(() => {
-    const { fetchLibrary } = useLibraryStore.getState();
-    const { fetchMyPlaylists } = usePlaylistStore.getState();
-    const { fetchArtists } = useMusicStore.getState();
-    const { syncLibrary } = useOfflineStore.getState().actions;
+  const { fetchInitialData } = useUIStore();
 
-    console.log(
-      "fetchDataForUser called. Fetching library, playlists, artists..."
-    );
-    fetchLibrary();
-    fetchMyPlaylists();
-    fetchArtists();
-    if (!useOfflineStore.getState().isOffline) {
+  const fetchDataForUser = useCallback(() => {
+    if (navigator.onLine) {
+      console.log("fetchDataForUser called. Fetching all initial data...");
+      fetchInitialData();
+
+      const { syncLibrary } = useOfflineStore.getState().actions;
       console.log("User is online, syncing library.");
       syncLibrary();
+    } else {
+      console.log(
+        "fetchDataForUser called, but user is offline. Skipping network requests."
+      );
     }
-  }, []);
+  }, [fetchInitialData]);
 
   useEffect(() => {
     const { init: initOffline, checkOnlineStatus } =
@@ -100,9 +98,15 @@ function App() {
   }, [fetchDataForUser]);
 
   useEffect(() => {
-    if (user) {
-      console.log("User detected in App.tsx, ensuring data is fetched.");
+    if (user && navigator.onLine) {
+      console.log(
+        "User detected in App.tsx while online, ensuring data is fetched."
+      );
       fetchDataForUser();
+    } else if (user && !navigator.onLine) {
+      console.log(
+        "User detected in App.tsx while offline. Data should be loaded from DB."
+      );
     }
   }, [user, fetchDataForUser]);
 
@@ -142,6 +146,7 @@ function App() {
           content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood."
         />
       </Helmet>
+
       <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
         <Routes>
           <Route path="admin" element={<AdminPage />} />
@@ -186,7 +191,6 @@ function App() {
               color: "#BAC4C8",
             },
           },
-
           success: {
             style: {
               background: "#27272a",

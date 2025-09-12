@@ -2,6 +2,13 @@
 
 import { create } from "zustand";
 import type { Playlist } from "../types";
+import { useMusicStore } from "./useMusicStore";
+import { useLibraryStore } from "./useLibraryStore";
+import { usePlaylistStore } from "./usePlaylistStore";
+import { useMixesStore } from "./useMixesStore";
+import { useGeneratedPlaylistStore } from "./useGeneratedPlaylistStore";
+import { axiosInstance } from "../lib/axios";
+import toast from "react-hot-toast";
 
 interface ShareEntity {
   type: "song" | "album" | "playlist" | "mix";
@@ -38,6 +45,7 @@ interface UIStore {
   setUserSheetOpen: (isOpen: boolean) => void;
 
   closeAllDialogs: () => void;
+  fetchInitialData: () => Promise<void>;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -76,4 +84,54 @@ export const useUIStore = create<UIStore>((set) => ({
       playlistToDelete: null,
       songToRemoveFromPlaylist: null,
     }),
+
+  fetchInitialData: async () => {
+    set({ isHomePageLoading: true, isSecondaryHomePageLoading: true });
+    try {
+      const { data } = await axiosInstance.get("/home/bootstrap");
+
+      // Гидратация MusicStore
+      useMusicStore.setState({
+        featuredSongs: data.featuredSongs || [],
+        trendingSongs: data.trendingSongs || [],
+        madeForYouSongs: data.madeForYouSongs || [],
+        recentlyListenedSongs: data.recentlyListenedSongs || [],
+        favoriteArtists: data.favoriteArtists || [],
+        newReleases: data.newReleases || [],
+        homePageDataLastFetched: Date.now(),
+      });
+
+      // Гидратация LibraryStore
+      useLibraryStore.setState({
+        albums: data.library.albums || [],
+        likedSongs: data.library.likedSongs || [],
+        playlists: data.library.playlists || [],
+        followedArtists: data.library.followedArtists || [],
+        savedMixes: data.library.savedMixes || [],
+        generatedPlaylists: data.library.generatedPlaylists || [],
+      });
+
+      // Гидратация PlaylistStore
+      usePlaylistStore.setState({
+        publicPlaylists: data.publicPlaylists || [],
+        recommendedPlaylists: data.recommendedPlaylists || [],
+      });
+
+      // Гидратация MixesStore
+      useMixesStore.setState({
+        genreMixes: data.genreMixes || [],
+        moodMixes: data.moodMixes || [],
+      });
+
+      // Гидратация GeneratedPlaylistStore
+      useGeneratedPlaylistStore.setState({
+        allGeneratedPlaylists: data.allGeneratedPlaylists || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch initial app data", error);
+      toast.error("Could not load essential app data.");
+    } finally {
+      set({ isHomePageLoading: false, isSecondaryHomePageLoading: false });
+    }
+  },
 }));

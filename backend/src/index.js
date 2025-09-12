@@ -217,7 +217,7 @@ app.use("/api/playlists", playlistRoutes);
 app.use("/api/artists", artistRoutes);
 app.use("/api/mixes", mixRoutes);
 app.use("/api/generated-playlists", generatedPlaylistRoutes);
-app.use("/api/homepage", homeRoutes);
+app.use("/api/home", homeRoutes);
 
 app.use("/api/cron", cronRoutes);
 app.use("/api/share", shareRoutes);
