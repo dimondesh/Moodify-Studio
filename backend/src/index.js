@@ -1,3 +1,5 @@
+// backend/src/index.js
+
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -25,7 +27,6 @@ import cronRoutes from "./routes/cron.route.js";
 import shareRoutes from "./routes/share.route.js";
 import generatedPlaylistRoutes from "./routes/generatedPlaylist.route.js";
 import imageRoutes from "./routes/image.route.js";
-
 import { updateDailyMixes } from "./controller/mix.controller.js";
 import { ListenHistory } from "./models/listenHistory.model.js";
 import {
@@ -52,6 +53,7 @@ const httpServer = createServer(app);
 const { userSockets, userActivities } = initializeSocket(httpServer);
 
 const allowedOrigin = process.env.CLIENT_ORIGIN_URL;
+console.log(`CORS middleware configured for origin: ${allowedOrigin}`);
 
 app.use(
   cors({
