@@ -1,5 +1,4 @@
 // backend/src/index.js
-
 import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
@@ -38,6 +37,7 @@ import { User } from "./models/user.model.js";
 import {
   generateNewReleasesForUser,
   generatePlaylistRecommendationsForUser,
+  generateFeaturedSongsForUser,
 } from "./lib/recommendation.service.js";
 import homeRoutes from "./routes/home.route.js";
 
@@ -72,6 +72,30 @@ app.use(
 );
 
 const tempDir = path.join(process.cwd(), "temp");
+
+cron.schedule(
+  "0 */6 * * *", // Каждые 6 часов
+  async () => {
+    console.log(
+      'CRON JOB: Starting "Featured Songs" generation for all users...'
+    );
+    try {
+      const allUsers = await User.find({}).select("_id");
+      for (const user of allUsers) {
+        await generateFeaturedSongsForUser(user._id);
+      }
+      console.log(
+        `CRON JOB: "Featured Songs" generation finished for ${allUsers.length} users.`
+      );
+    } catch (error) {
+      console.error('CRON JOB: Error in "Featured Songs" generation:', error);
+    }
+  },
+  {
+    scheduled: true,
+    timezone: "Europe/Kyiv",
+  }
+);
 
 cron.schedule(
   "0 2 */3 * *",

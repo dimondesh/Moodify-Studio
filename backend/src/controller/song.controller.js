@@ -1,8 +1,8 @@
 // backend/src/controller/song.controller.js
-
 import { Song } from "../models/song.model.js";
 import { ListenHistory } from "../models/listenHistory.model.js";
 import { User } from "../models/user.model.js";
+import { UserRecommendation } from "../models/userRecommendation.model.js"; // <-- ИМПОРТ
 import axios from "axios";
 
 export const getAllSongs = async (req, res, next) => {
@@ -27,95 +27,29 @@ export const getQuickPicks = async (
 ) => {
   try {
     const userId = req.user?.id;
+    let finalPicks = [];
 
-    if (!userId) {
-      const trendingFallback = await getTrendingSongs(
-        req,
-        res,
-        next,
-        true,
-        limit
-      );
-      if (returnInternal) return trendingFallback;
-      return res.json(trendingFallback);
-    }
-
-    const listenHistory = await ListenHistory.find({ user: userId })
-      .sort({ listenedAt: -1 })
-      .limit(50)
-      .populate({
-        path: "song",
-        select: "genres moods artist",
+    if (userId) {
+      const recommendations = await UserRecommendation.findOne({
+        user: userId,
+        type: "FEATURED_SONGS",
+      }).populate({
+        path: "items",
+        model: "Song",
+        populate: {
+          path: "artist",
+          model: "Artist",
+          select: "name imageUrl",
+        },
       });
 
-    if (listenHistory.length < 10) {
-      console.log(
-        `User ${userId} has little history, falling back to trending songs.`
-      );
-      const trendingFallback = await getTrendingSongs(
-        req,
-        res,
-        next,
-        true,
-        limit
-      );
-      if (returnInternal) return trendingFallback;
-      return res.json(trendingFallback);
+      if (recommendations && recommendations.items.length > 0) {
+        finalPicks = recommendations.items.slice(0, limit);
+      }
     }
 
-    const listenedSongIds = listenHistory
-      .map((item) => item.song?._id)
-      .filter(Boolean);
-
-    const genreCounts = {};
-    const moodCounts = {};
-    const artistCounts = {};
-
-    listenHistory.forEach((item) => {
-      const { song } = item;
-      if (song) {
-        song.genres?.forEach((genreId) => {
-          genreCounts[genreId] = (genreCounts[genreId] || 0) + 1;
-        });
-        song.moods?.forEach((moodId) => {
-          moodCounts[moodId] = (moodCounts[moodId] || 0) + 1;
-        });
-        song.artist?.forEach((artistId) => {
-          artistCounts[artistId] = (artistCounts[artistId] || 0) + 1;
-        });
-      }
-    });
-
-    const getTopItems = (counts, countLimit) =>
-      Object.keys(counts)
-        .sort((a, b) => counts[b] - counts[a])
-        .slice(0, countLimit);
-
-    const topGenreIds = getTopItems(genreCounts, 3);
-    const topMoodIds = getTopItems(moodCounts, 2);
-    const topArtistIds = getTopItems(artistCounts, 3);
-
-    const recommendations = await Song.find({
-      _id: { $nin: listenedSongIds },
-      $or: [
-        { genres: { $in: topGenreIds } },
-        { moods: { $in: topMoodIds } },
-        { artist: { $in: topArtistIds } },
-      ],
-    })
-      .limit(50)
-      .populate("artist", "name imageUrl");
-
-    const finalPicks = recommendations
-      .sort(() => 0.5 - Math.random())
-      .slice(0, limit);
-
-    if (finalPicks.length < limit) {
-      const trending = await Song.find({ _id: { $nin: listenedSongIds } })
-        .sort({ playCount: -1 })
-        .limit(limit - finalPicks.length)
-        .populate("artist", "name imageUrl");
-      finalPicks.push(...trending);
+    if (finalPicks.length === 0) {
+      finalPicks = await getTrendingSongs(req, res, next, true, limit);
     }
 
     if (returnInternal) {
@@ -124,17 +58,17 @@ export const getQuickPicks = async (
     return res.json(finalPicks);
   } catch (error) {
     console.error("Error fetching 'Quick Picks':", error);
+    const trendingFallback = await getTrendingSongs(
+      req,
+      res,
+      next,
+      true,
+      limit
+    );
     if (returnInternal) {
-      const trendingFallback = await getTrendingSongs(
-        req,
-        res,
-        next,
-        true,
-        limit
-      );
       return trendingFallback;
     }
-    return getTrendingSongs(req, res, next);
+    return res.json(trendingFallback);
   }
 };
 

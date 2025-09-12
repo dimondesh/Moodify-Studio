@@ -1,3 +1,4 @@
+// backend/src/lib/recommendation.service.js
 import mongoose from "mongoose";
 import { Library } from "../models/library.model.js";
 import { Album } from "../models/album.model.js";
@@ -5,6 +6,7 @@ import { UserRecommendation } from "../models/userRecommendation.model.js";
 import { User } from "../models/user.model.js";
 import { Playlist } from "../models/playlist.model.js";
 import { Song } from "../models/song.model.js";
+import { ListenHistory } from "../models/listenHistory.model.js";
 
 export const generateNewReleasesForUser = async (userId) => {
   try {
@@ -163,6 +165,100 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
   } catch (error) {
     console.error(
       `[Playlist Recs] Error generating for user ${userId}:`,
+      error
+    );
+  }
+};
+
+export const generateFeaturedSongsForUser = async (userId, limit = 6) => {
+  try {
+    const listenHistory = await ListenHistory.find({ user: userId })
+      .sort({ listenedAt: -1 })
+      .limit(50)
+      .populate({
+        path: "song",
+        select: "genres moods artist",
+      });
+
+    let finalPicksIds = [];
+
+    // Если история прослушиваний достаточная, генерируем персональные рекомендации
+    if (listenHistory.length >= 10) {
+      const listenedSongIds = listenHistory
+        .map((item) => item.song?._id)
+        .filter(Boolean);
+
+      const genreCounts = {};
+      const moodCounts = {};
+      const artistCounts = {};
+
+      listenHistory.forEach((item) => {
+        const { song } = item;
+        if (song) {
+          song.genres?.forEach((genreId) => {
+            genreCounts[genreId] = (genreCounts[genreId] || 0) + 1;
+          });
+          song.moods?.forEach((moodId) => {
+            moodCounts[moodId] = (moodCounts[moodId] || 0) + 1;
+          });
+          song.artist?.forEach((artistId) => {
+            artistCounts[artistId] = (artistCounts[artistId] || 0) + 1;
+          });
+        }
+      });
+
+      const getTopItems = (counts, countLimit) =>
+        Object.keys(counts)
+          .sort((a, b) => counts[b] - counts[a])
+          .slice(0, countLimit);
+
+      const topGenreIds = getTopItems(genreCounts, 3);
+      const topMoodIds = getTopItems(moodCounts, 2);
+      const topArtistIds = getTopItems(artistCounts, 3);
+
+      const recommendations = await Song.find({
+        _id: { $nin: listenedSongIds },
+        $or: [
+          { genres: { $in: topGenreIds } },
+          { moods: { $in: topMoodIds } },
+          { artist: { $in: topArtistIds } },
+        ],
+      })
+        .limit(50)
+        .select("_id");
+
+      finalPicksIds = recommendations
+        .sort(() => 0.5 - Math.random())
+        .map((s) => s._id)
+        .slice(0, limit);
+    }
+
+    // Если персональных рекомендаций не хватило, дополняем трендами
+    if (finalPicksIds.length < limit) {
+      const trending = await Song.find({ _id: { $nin: finalPicksIds } })
+        .sort({ playCount: -1 })
+        .limit(limit - finalPicksIds.length)
+        .select("_id");
+      finalPicksIds.push(...trending.map((s) => s._id));
+    }
+
+    // Сохраняем результат в базу данных
+    if (finalPicksIds.length > 0) {
+      await UserRecommendation.findOneAndUpdate(
+        { user: userId, type: "FEATURED_SONGS" },
+        {
+          items: finalPicksIds,
+          generatedAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+      console.log(
+        `[Featured Songs] Generated ${finalPicksIds.length} picks for user ${userId}`
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[Featured Songs] Error generating for user ${userId}:`,
       error
     );
   }

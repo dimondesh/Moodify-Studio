@@ -1,16 +1,17 @@
+// backend/src/models/userRecommendation.model.js
 import mongoose from "mongoose";
 
 const userRecommendationSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   type: {
     type: String,
-    enum: ["NEW_RELEASE", "PLAYLIST_FOR_YOU"],
+    enum: ["NEW_RELEASE", "PLAYLIST_FOR_YOU", "FEATURED_SONGS"],
     required: true,
   },
   items: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Album", // В данном случае, ссылаемся на альбомы
+      ref: "Song",
     },
   ],
   generatedAt: { type: Date, default: Date.now },
