@@ -1,7 +1,6 @@
 // src/pages/HomePage/FeaturedSection.tsx
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import FeaturedGridSkeleton from "../../components/ui/skeletons/FeaturedGridSkeleton";
 import { useMusicStore } from "../../stores/useMusicStore";
 import PlayButton from "./PlayButton";
 import { JSX } from "react";
@@ -26,8 +25,7 @@ const FeaturedSectionComponent = ({
   onSongLeave,
 }: FeaturedSectionProps) => {
   const { t } = useTranslation();
-  const { isLoading, featuredSongs, error, artists, fetchArtists } =
-    useMusicStore();
+  const { featuredSongs, error, artists, fetchArtists } = useMusicStore();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { playAlbum, togglePlay, currentSong, isPlaying } = usePlayerStore();
@@ -96,8 +94,6 @@ const FeaturedSectionComponent = ({
 
     return <>{artistElements}</>;
   };
-
-  if (isLoading) return <FeaturedGridSkeleton />;
 
   if (error) return <p className="text-red-500 mb-4 text-lg">{error}</p>;
 
