@@ -97,7 +97,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
       subtitle?: string;
     }) => (
       <div
-        className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-700 cursor-pointer "
+        className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-700 cursor-pointer"
         onClick={() => onCheckedChange(!checked)}
       >
         {imageUrl && (
@@ -108,7 +108,7 @@ const PlaylistMenuContent: React.FC<PlaylistMenuContentProps> = memo(
           />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold truncate">{title}</p>
+          <p className="font-semibold truncate max-w-50">{title}</p>
           {subtitle && <p className="text-xs text-zinc-400">{subtitle}</p>}
         </div>
         <div
@@ -259,7 +259,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
           <SheetContent
             aria-describedby={undefined}
             side="bottom"
-            className="bg-zinc-900 border-zinc-800 text-white rounded-t-2xl h-full z-100 px-4"
+            className="bg-zinc-900/80 backdrop-blur-lg border-zinc-800 text-white rounded-t-2xl h-full z-100 px-4"
           >
             <SheetHeader className="text-center">
               <SheetTitle>{t("player.addToPlaylist")}</SheetTitle>
@@ -285,7 +285,7 @@ export const AddToPlaylistControl: React.FC<AddToPlaylistControlProps> = ({
           <PopoverContent
             side="top"
             align="end"
-            className="w-80 bg-zinc-800 border-zinc-700 text-white p-4"
+            className="w-80 bg-zinc-800/70 backdrop-blur-md border-zinc-700 text-white p-4"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <PlaylistMenuContent
