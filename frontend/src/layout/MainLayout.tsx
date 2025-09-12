@@ -17,7 +17,6 @@ import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage";
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
 import { useUIStore } from "../stores/useUIStore";
-import { useMusicStore } from "../stores/useMusicStore";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { cn } from "../lib/utils";
 
@@ -31,7 +30,6 @@ const MainLayout = () => {
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen,
   } = usePlayerStore();
-  const { fetchAlbums } = useMusicStore();
 
   const {
     isCreatePlaylistDialogOpen,
@@ -53,9 +51,9 @@ const MainLayout = () => {
     !!playlistToDelete ||
     !!songToRemoveFromPlaylist;
 
-  useEffect(() => {
-    fetchAlbums();
-  }, [fetchAlbums]);
+  // !!! УДАЛЕНО: Был удален useEffect с вызовом fetchAlbums() из useMusicStore.
+  // Это была главная причина 12-секундной задержки. Он не нужен для работы
+  // основной части приложения и загружал все альбомы без необходимости.
 
   useEffect(() => {
     const rootElement = document.getElementById("root");

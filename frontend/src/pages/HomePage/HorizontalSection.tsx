@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
 import PlayButton from "./PlayButton";
-// --- ИЗМЕНЕНИЕ: Импортируем новую утилиту ---
 import { getArtistNames, getOptimizedImageUrl } from "../../lib/utils";
 import { useMusicStore } from "../../stores/useMusicStore";
 import type {
@@ -20,7 +19,6 @@ import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TFunction } from "i18next";
 
-// ... (интерфейсы остаются без изменений)
 type DisplayItem =
   | (Song & { itemType: "song" })
   | (Album & { itemType: "album" })

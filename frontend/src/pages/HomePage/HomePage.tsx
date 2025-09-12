@@ -24,9 +24,6 @@ import { useNavigate } from "react-router-dom";
 import { useUIStore } from "../../stores/useUIStore";
 import HomePageSkeleton from "./HomePageSkeleton";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-// --- ИЗМЕНЕНИЕ: Импортируем новый компонент-обертку и скелетон ---
-import LazyLoadSection from "./LazyLoadSection";
-import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 
 const HomePageComponent = () => {
   const { t } = useTranslation();
@@ -62,7 +59,7 @@ const HomePageComponent = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      await fetchPrimaryHomePageData();
+      fetchPrimaryHomePageData();
       fetchSecondaryHomePageData();
     };
     loadData();
@@ -78,7 +75,6 @@ const HomePageComponent = () => {
     [isMobile]
   );
 
-  // ... (остальной код до return остается таким же) ...
   useEffect(() => {
     if (featuredSongs.length > 0 && !isHomePageLoading && !isMobile) {
       extractColor(featuredSongs[0].imageUrl).then((color) => {
@@ -293,131 +289,100 @@ const HomePageComponent = () => {
                 />
 
                 <div className="space-y-6 sm:space-y-8">
-                  {/* --- ИЗМЕНЕНИЕ: Оборачиваем каждую секцию в LazyLoadSection --- */}
-                  <LazyLoadSection placeholder={<HorizontalSectionSkeleton />}>
-                    <HorizontalSection
-                      title={t("homepage.genreMixes")}
-                      items={genreMixesItems}
-                      isLoading={isSecondaryHomePageLoading} // Передаем флаг загрузки
-                      t={t}
-                      limit={12}
-                      onShowAll={handleShowAllGenreMixes}
-                    />
-                  </LazyLoadSection>
+                  <HorizontalSection
+                    title={t("homepage.genreMixes")}
+                    items={genreMixesItems}
+                    isLoading={isSecondaryHomePageLoading}
+                    t={t}
+                    limit={12}
+                    onShowAll={handleShowAllGenreMixes}
+                  />
 
-                  <LazyLoadSection placeholder={<HorizontalSectionSkeleton />}>
+                  <HorizontalSection
+                    title={t("homepage.moodMixes")}
+                    items={moodMixesItems}
+                    isLoading={isSecondaryHomePageLoading}
+                    t={t}
+                    limit={12}
+                    onShowAll={handleShowAllMoodMixes}
+                  />
+
+                  {user && (
                     <HorizontalSection
-                      title={t("homepage.moodMixes")}
-                      items={moodMixesItems}
+                      title={t("homepage.madeForYou")}
+                      items={madeForYouSongsItems}
+                      isLoading={isSecondaryHomePageLoading}
+                      limit={12}
+                      t={t}
+                      onShowAll={handleShowAllMadeForYou}
+                    />
+                  )}
+
+                  {user && (
+                    <HorizontalSection
+                      title={t("homepage.recentlyListened")}
+                      items={recentlyListenedItems}
                       isLoading={isSecondaryHomePageLoading}
                       t={t}
                       limit={12}
-                      onShowAll={handleShowAllMoodMixes}
+                      onShowAll={handleShowAllRecentlyListened}
                     />
-                  </LazyLoadSection>
-
-                  {user && (
-                    <LazyLoadSection
-                      placeholder={<HorizontalSectionSkeleton />}
-                    >
-                      <HorizontalSection
-                        title={t("homepage.madeForYou")}
-                        items={madeForYouSongsItems}
-                        isLoading={isSecondaryHomePageLoading}
-                        limit={12}
-                        t={t}
-                        onShowAll={handleShowAllMadeForYou}
-                      />
-                    </LazyLoadSection>
                   )}
 
-                  {user && (
-                    <LazyLoadSection
-                      placeholder={<HorizontalSectionSkeleton />}
-                    >
-                      <HorizontalSection
-                        title={t("homepage.recentlyListened")}
-                        items={recentlyListenedItems}
-                        isLoading={isSecondaryHomePageLoading}
-                        t={t}
-                        limit={12}
-                        onShowAll={handleShowAllRecentlyListened}
-                      />
-                    </LazyLoadSection>
-                  )}
+                  <HorizontalSection
+                    title={t("homepage.trending")}
+                    items={trendingSongsItems}
+                    isLoading={isSecondaryHomePageLoading}
+                    t={t}
+                    limit={12}
+                    onShowAll={handleShowAllTrending}
+                  />
 
-                  <LazyLoadSection placeholder={<HorizontalSectionSkeleton />}>
+                  {user && (
                     <HorizontalSection
-                      title={t("homepage.trending")}
-                      items={trendingSongsItems}
-                      isLoading={isSecondaryHomePageLoading}
+                      title={t("homepage.favoriteArtists")}
+                      items={favoriteArtistsItems}
                       t={t}
                       limit={12}
-                      onShowAll={handleShowAllTrending}
+                      isLoading={isSecondaryHomePageLoading}
                     />
-                  </LazyLoadSection>
-
-                  {user && (
-                    <LazyLoadSection
-                      placeholder={<HorizontalSectionSkeleton />}
-                    >
-                      <HorizontalSection
-                        title={t("homepage.favoriteArtists")}
-                        items={favoriteArtistsItems}
-                        t={t}
-                        limit={12}
-                        isLoading={isSecondaryHomePageLoading}
-                      />
-                    </LazyLoadSection>
                   )}
 
                   {user && (
-                    <LazyLoadSection
-                      placeholder={<HorizontalSectionSkeleton />}
-                    >
-                      <HorizontalSection
-                        title={t("homepage.newReleases")}
-                        t={t}
-                        items={newReleasesItems}
-                        isLoading={isSecondaryHomePageLoading}
-                        limit={12}
-                      />
-                    </LazyLoadSection>
-                  )}
-
-                  {user && (
-                    <LazyLoadSection
-                      placeholder={<HorizontalSectionSkeleton />}
-                    >
-                      <HorizontalSection
-                        title={t("homepage.playlistsForYou")}
-                        items={recommendedPlaylistsItems}
-                        t={t}
-                        isLoading={isSecondaryHomePageLoading}
-                        limit={12}
-                      />
-                    </LazyLoadSection>
-                  )}
-
-                  <LazyLoadSection placeholder={<HorizontalSectionSkeleton />}>
                     <HorizontalSection
-                      title={t("homepage.generatedForYou")}
-                      items={generatedPlaylistsItems}
+                      title={t("homepage.newReleases")}
+                      t={t}
+                      items={newReleasesItems}
+                      isLoading={isSecondaryHomePageLoading}
+                      limit={12}
+                    />
+                  )}
+
+                  {user && (
+                    <HorizontalSection
+                      title={t("homepage.playlistsForYou")}
+                      items={recommendedPlaylistsItems}
                       t={t}
                       isLoading={isSecondaryHomePageLoading}
                       limit={12}
                     />
-                  </LazyLoadSection>
+                  )}
 
-                  <LazyLoadSection placeholder={<HorizontalSectionSkeleton />}>
-                    <HorizontalSection
-                      title={t("homepage.publicPlaylists")}
-                      items={publicPlaylistsItems}
-                      t={t}
-                      isLoading={isSecondaryHomePageLoading}
-                      limit={12}
-                    />
-                  </LazyLoadSection>
+                  <HorizontalSection
+                    title={t("homepage.generatedForYou")}
+                    items={generatedPlaylistsItems}
+                    t={t}
+                    isLoading={isSecondaryHomePageLoading}
+                    limit={12}
+                  />
+
+                  <HorizontalSection
+                    title={t("homepage.publicPlaylists")}
+                    items={publicPlaylistsItems}
+                    t={t}
+                    isLoading={isSecondaryHomePageLoading}
+                    limit={12}
+                  />
                 </div>
               </div>
             )}

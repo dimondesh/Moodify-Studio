@@ -15,13 +15,12 @@ import {
 } from "./user.controller.js";
 import { getMyGeneratedPlaylists } from "./generatedPlaylist.controller.js";
 
-/**
- * @description Получает только основные данные для первого экрана. Должен быть максимально быстрым.
- */
+const HOME_SECTION_LIMIT = 12;
+
+
 export const getPrimaryHomePageData = async (req, res, next) => {
   try {
-    // Получаем только featuredSongs (бывший getQuickPicks)
-    const featuredSongs = await getQuickPicks(req, res, next, true);
+    const featuredSongs = await getQuickPicks(req, res, next, true, 6);
     res.status(200).json({ featuredSongs });
   } catch (error) {
     console.error("Error fetching primary homepage data:", error);
@@ -29,29 +28,27 @@ export const getPrimaryHomePageData = async (req, res, next) => {
   }
 };
 
-/**
- * @description Получает все остальные данные для главной страницы, которые можно загрузить в фоне.
- */
+
 export const getSecondaryHomePageData = async (req, res, next) => {
   try {
     const userId = req.user?.id;
 
     // --- Запросы, которые выполняются для всех пользователей (кроме featured) ---
     const commonPromises = [
-      getTrendingSongs(req, res, next, true),
-      getDailyMixes(req, res, next, true),
-      getPublicPlaylists(req, res, next, true),
-      getMyGeneratedPlaylists(req, res, next, true),
+      getTrendingSongs(req, res, next, true, HOME_SECTION_LIMIT),
+      getDailyMixes(req, res, next, true, HOME_SECTION_LIMIT),
+      getPublicPlaylists(req, res, next, true, HOME_SECTION_LIMIT),
+      getMyGeneratedPlaylists(req, res, next, true, HOME_SECTION_LIMIT),
     ];
 
     // --- Запросы, которые выполняются только для авторизованных пользователей ---
     const userSpecificPromises = userId
       ? [
-          getMadeForYouSongs(req, res, next, true),
-          getListenHistory(req, res, next, true),
-          getFavoriteArtists(req, res, next, true),
-          getNewReleases(req, res, next, true),
-          getPlaylistRecommendations(req, res, next, true),
+          getMadeForYouSongs(req, res, next, true, HOME_SECTION_LIMIT),
+          getListenHistory(req, res, next, true, HOME_SECTION_LIMIT),
+          getFavoriteArtists(req, res, next, true, HOME_SECTION_LIMIT),
+          getNewReleases(req, res, next, true, HOME_SECTION_LIMIT),
+          getPlaylistRecommendations(req, res, next, true, HOME_SECTION_LIMIT),
         ]
       : [];
 

@@ -420,6 +420,7 @@ export const getPublicPlaylists = async (
           select: "name imageUrl",
         },
       })
+      .limit(18)
       .lean();
 
     if (returnInternal) {

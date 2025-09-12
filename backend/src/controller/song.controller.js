@@ -18,12 +18,24 @@ export const getAllSongs = async (req, res, next) => {
   }
 };
 
-export const getQuickPicks = async (req, res, next, returnInternal = false) => {
+export const getQuickPicks = async (
+  req,
+  res,
+  next,
+  returnInternal = false,
+  limit = 6
+) => {
   try {
     const userId = req.user?.id;
 
     if (!userId) {
-      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      const trendingFallback = await getTrendingSongs(
+        req,
+        res,
+        next,
+        true,
+        limit
+      );
       if (returnInternal) return trendingFallback;
       return res.json(trendingFallback);
     }
@@ -40,7 +52,13 @@ export const getQuickPicks = async (req, res, next, returnInternal = false) => {
       console.log(
         `User ${userId} has little history, falling back to trending songs.`
       );
-      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      const trendingFallback = await getTrendingSongs(
+        req,
+        res,
+        next,
+        true,
+        limit
+      );
       if (returnInternal) return trendingFallback;
       return res.json(trendingFallback);
     }
@@ -68,10 +86,10 @@ export const getQuickPicks = async (req, res, next, returnInternal = false) => {
       }
     });
 
-    const getTopItems = (counts, limit) =>
+    const getTopItems = (counts, countLimit) =>
       Object.keys(counts)
         .sort((a, b) => counts[b] - counts[a])
-        .slice(0, limit);
+        .slice(0, countLimit);
 
     const topGenreIds = getTopItems(genreCounts, 3);
     const topMoodIds = getTopItems(moodCounts, 2);
@@ -90,12 +108,12 @@ export const getQuickPicks = async (req, res, next, returnInternal = false) => {
 
     const finalPicks = recommendations
       .sort(() => 0.5 - Math.random())
-      .slice(0, 6);
+      .slice(0, limit);
 
-    if (finalPicks.length < 6) {
+    if (finalPicks.length < limit) {
       const trending = await Song.find({ _id: { $nin: listenedSongIds } })
         .sort({ playCount: -1 })
-        .limit(6 - finalPicks.length)
+        .limit(limit - finalPicks.length)
         .populate("artist", "name imageUrl");
       finalPicks.push(...trending);
     }
@@ -107,11 +125,15 @@ export const getQuickPicks = async (req, res, next, returnInternal = false) => {
   } catch (error) {
     console.error("Error fetching 'Quick Picks':", error);
     if (returnInternal) {
-      // Fallback for internal calls
-      const trendingFallback = await getTrendingSongs(req, res, next, true);
-      return trendingFallback.slice(0, 6);
+      const trendingFallback = await getTrendingSongs(
+        req,
+        res,
+        next,
+        true,
+        limit
+      );
+      return trendingFallback;
     }
-    // Fallback for API route
     return getTrendingSongs(req, res, next);
   }
 };
@@ -120,7 +142,8 @@ export const getTrendingSongs = async (
   req,
   res,
   next,
-  returnInternal = false
+  returnInternal = false,
+  limit = 12
 ) => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -129,7 +152,7 @@ export const getTrendingSongs = async (
       { $match: { listenedAt: { $gte: sevenDaysAgo } } },
       { $group: { _id: "$song", listenCount: { $sum: 1 } } },
       { $sort: { listenCount: -1 } },
-      { $limit: 20 },
+      { $limit: limit * 2 },
       { $project: { _id: 1 } },
     ]);
 
@@ -142,7 +165,7 @@ export const getTrendingSongs = async (
     if (orderedSongIds.length === 0) {
       finalSongs = await Song.find()
         .sort({ playCount: -1 })
-        .limit(8)
+        .limit(limit)
         .populate("artist", "name imageUrl");
     } else {
       const unorderedSongs = await Song.find({
@@ -155,7 +178,8 @@ export const getTrendingSongs = async (
 
       finalSongs = orderedSongIds
         .map((id) => songMap.get(id.toString()))
-        .filter(Boolean);
+        .filter(Boolean)
+        .slice(0, limit);
     }
 
     if (returnInternal) {
@@ -175,7 +199,8 @@ export const getMadeForYouSongs = async (
   req,
   res,
   next,
-  returnInternal = false
+  returnInternal = false,
+  limit = 12
 ) => {
   try {
     const userId = req.user.id;
@@ -189,7 +214,13 @@ export const getMadeForYouSongs = async (
       });
 
     if (listenHistory.length < 10) {
-      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      const trendingFallback = await getTrendingSongs(
+        req,
+        res,
+        next,
+        true,
+        limit
+      );
       if (returnInternal) return trendingFallback;
       return res.json(trendingFallback);
     }
@@ -197,7 +228,13 @@ export const getMadeForYouSongs = async (
     const validHistory = listenHistory.filter((item) => item.song !== null);
 
     if (validHistory.length === 0) {
-      const trendingFallback = await getTrendingSongs(req, res, next, true);
+      const trendingFallback = await getTrendingSongs(
+        req,
+        res,
+        next,
+        true,
+        limit
+      );
       if (returnInternal) return trendingFallback;
       return res.json(trendingFallback);
     }
@@ -223,10 +260,10 @@ export const getMadeForYouSongs = async (
       }
     });
 
-    const getTopItems = (counts, limit) =>
+    const getTopItems = (counts, countLimit) =>
       Object.keys(counts)
         .sort((a, b) => counts[b] - counts[a])
-        .slice(0, limit);
+        .slice(0, countLimit);
 
     const topGenreIds = getTopItems(genreCounts, 5);
     const topMoodIds = getTopItems(moodCounts, 3);
@@ -245,7 +282,7 @@ export const getMadeForYouSongs = async (
 
     const shuffledRecommendations = recommendations
       .sort(() => 0.5 - Math.random())
-      .slice(0, 18);
+      .slice(0, limit);
 
     if (returnInternal) {
       return shuffledRecommendations;
@@ -304,11 +341,13 @@ export const recordListen = async (req, res, next) => {
     next(error);
   }
 };
+
 export const getListenHistory = async (
   req,
   res,
   next,
-  returnInternal = false
+  returnInternal = false,
+  limit = 12
 ) => {
   try {
     const userId = req.user.id;
@@ -341,7 +380,7 @@ export const getListenHistory = async (
       }
     }
 
-    const result = { songs: uniqueSongs };
+    const result = { songs: uniqueSongs.slice(0, limit) };
 
     if (returnInternal) return result;
     return res.status(200).json(result);

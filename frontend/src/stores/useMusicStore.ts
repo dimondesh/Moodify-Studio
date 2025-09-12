@@ -51,7 +51,6 @@ interface MusicStore {
   favoriteArtists: Artist[];
   newReleases: Album[];
 
-  // --- ИЗМЕНЕНИЕ: Разделяем одну функцию на две ---
   fetchPrimaryHomePageData: () => Promise<void>;
   fetchSecondaryHomePageData: () => Promise<void>;
 
@@ -59,7 +58,7 @@ interface MusicStore {
 
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
-  fetchFeaturedSongs: () => Promise<void>; // Оставим на случай, если где-то используется отдельно
+  fetchFeaturedSongs: () => Promise<void>;
   fetchMadeForYouSongs: () => Promise<void>;
   fetchTrendingSongs: () => Promise<void>;
   fetchGenres: () => Promise<void>;
@@ -82,7 +81,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-export const useMusicStore = create<MusicStore>((set) => ({
+export const useMusicStore = create<MusicStore>((set, get) => ({
   albums: [],
   songs: [],
   artists: [],
@@ -115,12 +114,20 @@ export const useMusicStore = create<MusicStore>((set) => ({
     totalUsers: 0,
     totalArtists: 0,
   },
+
   clearHomePageCache: () => {
     set({ homePageDataLastFetched: null });
     console.log("Homepage cache cleared.");
   },
 
   fetchPrimaryHomePageData: async () => {
+    if (get().homePageDataLastFetched) {
+      console.log("Primary homepage data already loaded. Skipping fetch.");
+      useUIStore.getState().setIsHomePageLoading(false);
+      useUIStore.getState().setIsSecondaryHomePageLoading(false);
+      return;
+    }
+
     const isOffline = useOfflineStore.getState().isOffline;
     if (isOffline) {
       useUIStore.getState().setIsHomePageLoading(false);
@@ -150,6 +157,10 @@ export const useMusicStore = create<MusicStore>((set) => ({
   },
 
   fetchSecondaryHomePageData: async () => {
+    if (get().homePageDataLastFetched) {
+      return;
+    }
+
     const isOffline = useOfflineStore.getState().isOffline;
     if (isOffline) return;
 
