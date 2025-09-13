@@ -358,7 +358,7 @@ const ArtistPage = () => {
             items={albumsItems}
             isLoading={loading}
             t={t}
-            limit={3}
+            limit={6}
             onShowAll={handleShowAllAlbums}
           />
           <HorizontalSection
