@@ -11,5 +11,11 @@
       "destination": "https://moodify-music.vercel.app/",
       "permanent": true
     }
+  ],
+   "rewrites": [
+    {
+      "source": "/((?!api/|sitemap.xml|robots.txt|manifest.webmanifest|favicon.ico|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ]
 }
