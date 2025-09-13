@@ -1,3 +1,5 @@
+// frontend/src/stores/usePlaylistStore.ts
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
@@ -7,16 +9,19 @@ import { useOfflineStore } from "./useOfflineStore";
 import { getUserItem, getAllUserPlaylists } from "@/lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
 
+interface CachedPlaylist {
+  data: Playlist;
+  timestamp: number;
+}
+
 interface PlaylistStore {
   myPlaylists: Playlist[];
   ownedPlaylists: Playlist[];
-
   publicPlaylists: Playlist[];
-
   recommendations: Song[];
   isRecommendationsLoading: boolean;
-
   currentPlaylist: Playlist | null;
+  cachedPlaylists: Map<string, CachedPlaylist>;
   isLoading: boolean;
   error: string | null;
   dominantColor: string | null;
@@ -26,12 +31,9 @@ interface PlaylistStore {
   createPlaylistFromSong: (song: Song) => Promise<void>;
   updateCurrentPlaylistFromSocket: (playlist: Playlist) => void;
   generateAiPlaylist: (prompt: string) => Promise<Playlist | undefined>;
-
   fetchMyPlaylists: () => Promise<void>;
   fetchOwnedPlaylists: () => Promise<void>;
-
   fetchRecommendations: (playlistId: string) => Promise<void>;
-
   fetchPublicPlaylists: () => Promise<void>;
   fetchPlaylistById: (id: string) => Promise<void>;
   createPlaylist: (
@@ -50,24 +52,24 @@ interface PlaylistStore {
   deletePlaylist: (id: string) => Promise<void>;
   addSongToPlaylist: (playlistId: string, songId: string) => Promise<void>;
   removeSongFromPlaylist: (playlistId: string, songId: string) => Promise<void>;
-
   togglePlaylistInUserLibrary: (playlistId: string) => Promise<void>;
   addPlaylistLike: (playlistId: string) => Promise<void>;
   removePlaylistLike: (playlistId: string) => Promise<void>;
-
   resetCurrentPlaylist: () => void;
   fetchPlaylistDetails: (playlistId: string) => Promise<void>;
 }
+
+const CACHE_DURATION = 60 * 60 * 1000;
+
 export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   myPlaylists: [],
   ownedPlaylists: [],
-
   recommendations: [],
   isRecommendationsLoading: false,
   recommendedPlaylists: [],
-
   publicPlaylists: [],
   currentPlaylist: null,
+  cachedPlaylists: new Map(),
   isLoading: false,
   error: null,
   dominantColor: null,
@@ -76,10 +78,70 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   updateCurrentPlaylistFromSocket: (playlist) => {
     set((state) => {
       if (state.currentPlaylist?._id === playlist._id) {
-        return { currentPlaylist: playlist };
+        // Также обновляем кэш
+        const newCachedPlaylists = new Map(state.cachedPlaylists);
+        newCachedPlaylists.set(playlist._id, {
+          data: playlist,
+          timestamp: Date.now(),
+        });
+        return {
+          currentPlaylist: playlist,
+          cachedPlaylists: newCachedPlaylists,
+        };
       }
       return state;
     });
+  },
+
+  fetchPlaylistDetails: async (playlistId: string) => {
+    const { cachedPlaylists } = get();
+    const cachedEntry = cachedPlaylists.get(playlistId);
+    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
+      console.log(`[Cache] Loading playlist ${playlistId} from cache.`);
+      set({ currentPlaylist: cachedEntry.data, isLoading: false, error: null });
+      return;
+    }
+
+    set({ currentPlaylist: null, error: null, isLoading: true });
+    const { isOffline } = useOfflineStore.getState();
+    const { isDownloaded } = useOfflineStore.getState().actions;
+    const userId = useAuthStore.getState().user?.id;
+
+    if (isDownloaded(playlistId) && userId) {
+      console.log(`[Offline] Загрузка плейлиста ${playlistId} из IndexedDB.`);
+      const localPlaylist = await getUserItem("playlists", playlistId, userId);
+      if (localPlaylist) {
+        set({ currentPlaylist: localPlaylist, isLoading: false });
+        return;
+      }
+    }
+
+    if (isOffline) {
+      console.log(`[Offline] Нет сети и плейлист ${playlistId} не скачан.`);
+      const errorMsg = "Этот плейлист не скачан и недоступен в офлайн-режиме.";
+      set({ currentPlaylist: null, error: errorMsg, isLoading: false });
+      toast.error(errorMsg);
+      return;
+    }
+    try {
+      const res = await axiosInstance.get(`/playlists/${playlistId}`);
+      set((state) => ({
+        currentPlaylist: res.data,
+        isLoading: false,
+        cachedPlaylists: new Map(state.cachedPlaylists).set(playlistId, {
+          data: res.data,
+          timestamp: Date.now(),
+        }),
+      }));
+    } catch (e: any) {
+      console.error(`Failed to fetch playlist with ID ${playlistId}:`, e);
+      set({
+        currentPlaylist: null,
+        error: e.response?.data?.message || "Failed to fetch playlist details",
+        isLoading: false,
+      });
+      toast.error(`Failed to load playlist details.`);
+    }
   },
   generateAiPlaylist: async (prompt: string) => {
     set({ isLoading: true, error: null });
@@ -367,10 +429,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         await downloadItem(playlistId, "playlists");
         toast.success("Downloaded playlist updated!", { id: "playlist-sync" });
       }
-      // Убираем полные перезагрузки, полагаемся на сокет
-      // await get().fetchOwnedPlaylists();
-      // await get().fetchMyPlaylists();
-      // await get().fetchPlaylistDetails(playlistId);
       set({ isLoading: false });
     } catch (err: any) {
       console.error("Failed to add song to playlist:", err);
@@ -471,40 +529,4 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   resetCurrentPlaylist: () => set({ currentPlaylist: null }),
-
-  fetchPlaylistDetails: async (playlistId: string) => {
-    set({ currentPlaylist: null, error: null, isLoading: true });
-    const { isOffline } = useOfflineStore.getState();
-    const { isDownloaded } = useOfflineStore.getState().actions;
-    const userId = useAuthStore.getState().user?.id;
-
-    if (isDownloaded(playlistId) && userId) {
-      console.log(`[Offline] Загрузка плейлиста ${playlistId} из IndexedDB.`);
-      const localPlaylist = await getUserItem("playlists", playlistId, userId);
-      if (localPlaylist) {
-        set({ currentPlaylist: localPlaylist, isLoading: false });
-        return;
-      }
-    }
-
-    if (isOffline) {
-      console.log(`[Offline] Нет сети и плейлист ${playlistId} не скачан.`);
-      const errorMsg = "Этот плейлист не скачан и недоступен в офлайн-режиме.";
-      set({ currentPlaylist: null, error: errorMsg, isLoading: false });
-      toast.error(errorMsg);
-      return;
-    }
-    try {
-      const res = await axiosInstance.get(`/playlists/${playlistId}`);
-      set({ currentPlaylist: res.data, isLoading: false });
-    } catch (e: any) {
-      console.error(`Failed to fetch playlist with ID ${playlistId}:`, e);
-      set({
-        currentPlaylist: null,
-        error: e.response?.data?.message || "Failed to fetch playlist details",
-        isLoading: false,
-      });
-      toast.error(`Failed to load playlist details.`);
-    }
-  },
 }));

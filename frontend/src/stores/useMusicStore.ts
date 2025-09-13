@@ -14,6 +14,11 @@ import {
 } from "../lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
 
+interface CachedAlbum {
+  data: Album;
+  timestamp: number;
+}
+
 interface MusicStore {
   albums: Album[];
   songs: Song[];
@@ -21,24 +26,21 @@ interface MusicStore {
   isLoading: boolean;
   error: string | null;
   currentAlbum: Album | null;
+  cachedAlbums: Map<string, CachedAlbum>;
   recentlyListenedSongs: Song[];
   homePageDataLastFetched: number | null;
-
   featuredSongs: Song[];
   genres: Genre[];
   moods: Mood[];
   madeForYouSongs: Song[];
   trendingSongs: Song[];
   stats: Stats;
-
   paginatedSongs: Song[];
   songsPage: number;
   songsTotalPages: number;
-
   paginatedAlbums: Album[];
   albumsPage: number;
   albumsTotalPages: number;
-
   paginatedArtists: Artist[];
   artistsPage: number;
   artistsTotalPages: number;
@@ -46,9 +48,7 @@ interface MusicStore {
   isAppearsOnLoading: boolean;
   favoriteArtists: Artist[];
   newReleases: Album[];
-
   clearHomePageCache: () => void;
-
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
   fetchFeaturedSongs: () => Promise<void>;
@@ -61,12 +61,14 @@ interface MusicStore {
   fetchRecentlyListenedSongs: () => Promise<void>;
   fetchFavoriteArtists: () => Promise<void>;
   fetchNewReleases: () => Promise<void>;
-
   fetchArtists: () => Promise<void>;
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-export const useMusicStore = create<MusicStore>((set) => ({
+// --- ДОБАВЛЕНО: Время жизни кэша (1 день) ---
+const CACHE_DURATION = 24 * 60 * 60 * 1000;
+
+export const useMusicStore = create<MusicStore>((set, get) => ({
   albums: [],
   songs: [],
   artists: [],
@@ -75,6 +77,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   genres: [],
   moods: [],
   currentAlbum: null,
+  cachedAlbums: new Map(),
   featuredSongs: [],
   madeForYouSongs: [],
   trendingSongs: [],
@@ -99,12 +102,10 @@ export const useMusicStore = create<MusicStore>((set) => ({
     totalUsers: 0,
     totalArtists: 0,
   },
-
   clearHomePageCache: () => {
     set({ homePageDataLastFetched: null });
     console.log("Homepage cache cleared.");
   },
-
   fetchArtistAppearsOn: async (artistId: string) => {
     set({ isAppearsOnLoading: true, error: null });
     try {
@@ -142,7 +143,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
       console.error("Failed to fetch new releases:", error);
     }
   },
-
   fetchGenres: async () => {
     try {
       const response = await axiosInstance.get("/admin/genres");
@@ -159,7 +159,6 @@ export const useMusicStore = create<MusicStore>((set) => ({
       console.error("Failed to fetch moods", error);
     }
   },
-
   fetchAlbums: async () => {
     if (useOfflineStore.getState().isOffline) return;
     set({ isLoading: true, error: null });
@@ -173,6 +172,14 @@ export const useMusicStore = create<MusicStore>((set) => ({
     }
   },
   fetchAlbumbyId: async (id: string) => {
+    const { cachedAlbums } = get();
+    const cachedEntry = cachedAlbums.get(id);
+    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
+      console.log(`[Cache] Loading album ${id} from cache.`);
+      set({ currentAlbum: cachedEntry.data, isLoading: false, error: null });
+      return;
+    }
+
     set({ isLoading: true, error: null, currentAlbum: null });
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
@@ -213,7 +220,14 @@ export const useMusicStore = create<MusicStore>((set) => ({
           albumTitle: albumData.title,
         }));
       }
-      set({ currentAlbum: albumData, isLoading: false });
+      set((state) => ({
+        currentAlbum: albumData,
+        isLoading: false,
+        cachedAlbums: new Map(state.cachedAlbums).set(id, {
+          data: albumData,
+          timestamp: Date.now(),
+        }),
+      }));
     } catch (error: any) {
       set({
         error: error.response?.data?.message || "Failed to fetch album",
@@ -221,6 +235,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       });
     }
   },
+
   fetchFeaturedSongs: async () => {
     if (useOfflineStore.getState().isOffline) return;
     set({ isLoading: true, error: null });

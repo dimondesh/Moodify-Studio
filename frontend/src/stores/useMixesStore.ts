@@ -1,3 +1,5 @@
+// frontend/src/stores/useMixesStore.ts
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { axiosInstance } from "@/lib/axios";
@@ -9,6 +11,11 @@ import { getUserItem } from "@/lib/offline-db";
 import { useAuthStore } from "./useAuthStore";
 import i18n from "@/lib/i18n";
 
+interface CachedMix {
+  data: Mix;
+  timestamp: number;
+}
+
 interface MixesData {
   genreMixes: Mix[];
   moodMixes: Mix[];
@@ -18,6 +25,7 @@ interface MixesStore {
   genreMixes: Mix[];
   moodMixes: Mix[];
   currentMix: Mix | null;
+  cachedMixes: Map<string, CachedMix>;
   isLoading: boolean;
   error: string | null;
   fetchMixById: (id: string) => Promise<void>;
@@ -25,12 +33,17 @@ interface MixesStore {
   toggleMixInLibrary: (mixId: string) => Promise<void>;
 }
 
-export const useMixesStore = create<MixesStore>((set) => ({
+// --- ДОБАВЛЕНО: Время жизни кэша (1 день) ---
+const CACHE_DURATION = 60 * 60 * 1000;
+
+export const useMixesStore = create<MixesStore>((set, get) => ({
+  // <-- Добавляем get
   genreMixes: [],
   moodMixes: [],
   isLoading: false,
   error: null,
   currentMix: null,
+  cachedMixes: new Map(),
 
   fetchDailyMixes: async () => {
     set({ isLoading: true, error: null });
@@ -70,6 +83,14 @@ export const useMixesStore = create<MixesStore>((set) => ({
     }
   },
   fetchMixById: async (id: string) => {
+    const { cachedMixes } = get();
+    const cachedEntry = cachedMixes.get(id);
+    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
+      console.log(`[Cache] Loading mix ${id} from cache.`);
+      set({ currentMix: cachedEntry.data, isLoading: false, error: null });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     const { isOffline } = useOfflineStore.getState();
     const { isDownloaded } = useOfflineStore.getState().actions;
@@ -92,7 +113,14 @@ export const useMixesStore = create<MixesStore>((set) => ({
     }
     try {
       const response = await axiosInstance.get(`/mixes/${id}`);
-      set({ currentMix: response.data, isLoading: false });
+      set((state) => ({
+        currentMix: response.data,
+        isLoading: false,
+        cachedMixes: new Map(state.cachedMixes).set(id, {
+          data: response.data,
+          timestamp: Date.now(),
+        }),
+      }));
     } catch (err: any) {
       set({
         error: err.message || i18n.t("errors.fetchMixError"),

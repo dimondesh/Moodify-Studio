@@ -1,3 +1,5 @@
+// frontend/src/Providers/AuthProvider.tsx
+
 import React, { useEffect, useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -67,8 +69,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await fetchUser(firebaseUser.uid);
             fetchInitialData();
           } catch (error) {
-            console.error("AuthProvider: Sync error:", error);
-            logout();
+            console.error(
+              "AuthProvider: Sync error. The user remains logged in with Firebase, but backend data might be stale. Error:",
+              error
+            );
+
           }
         } else {
           console.log("AuthProvider: User data is already fresh.");

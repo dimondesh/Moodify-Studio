@@ -5,15 +5,19 @@ import { axiosInstance } from "@/lib/axios";
 import type { GeneratedPlaylist } from "@/types";
 import toast from "react-hot-toast";
 import { AxiosError } from "axios";
-// --- ИЗМЕНЕНИЕ НАЧАЛО: Импортируем утилиты для работы с офлайн-режимом ---
 import { useOfflineStore } from "./useOfflineStore";
 import { useAuthStore } from "./useAuthStore";
 import { getUserItem } from "@/lib/offline-db";
-// --- ИЗМЕНЕНИЕ КОНЕЦ ---
+
+interface CachedGeneratedPlaylist {
+  data: GeneratedPlaylist;
+  timestamp: number;
+}
 
 interface GeneratedPlaylistStore {
   allGeneratedPlaylists: GeneratedPlaylist[];
   currentPlaylist: GeneratedPlaylist | null;
+  cachedGeneratedPlaylists: Map<string, CachedGeneratedPlaylist>; 
   isLoading: boolean;
   error: string | null;
 
@@ -22,10 +26,13 @@ interface GeneratedPlaylistStore {
   reset: () => void;
 }
 
+const CACHE_DURATION =  60 * 60 * 1000;
+
 export const useGeneratedPlaylistStore = create<GeneratedPlaylistStore>(
-  (set) => ({
+  (set, get) => ({
     allGeneratedPlaylists: [],
     currentPlaylist: null,
+    cachedGeneratedPlaylists: new Map(), 
     isLoading: false,
     error: null,
 
@@ -41,34 +48,42 @@ export const useGeneratedPlaylistStore = create<GeneratedPlaylistStore>(
     },
 
     fetchPlaylistById: async (id: string) => {
+      const { cachedGeneratedPlaylists } = get();
+      const cachedEntry = cachedGeneratedPlaylists.get(id);
+      if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
+        console.log(`[Cache] Loading generated playlist ${id} from cache.`);
+        set({
+          currentPlaylist: cachedEntry.data,
+          isLoading: false,
+          error: null,
+        });
+        return;
+      }
+
       set({ isLoading: true, error: null, currentPlaylist: null });
 
-      // --- ИЗМЕНЕНИЕ НАЧАЛО: Логика для оффлайн-режима ---
       const { isOffline } = useOfflineStore.getState();
       const { isDownloaded } = useOfflineStore.getState().actions;
       const userId = useAuthStore.getState().user?.id;
 
-      // 1. Проверяем, скачан ли плейлист и есть ли пользователь
       if (isDownloaded(id) && userId) {
         console.log(
           `[Offline] Loading generated playlist ${id} from IndexedDB.`
         );
         try {
-          // Генеративные плейлисты хранятся в той же таблице, что и обычные
           const localPlaylist = await getUserItem("playlists", id, userId);
           if (localPlaylist) {
             set({
               currentPlaylist: localPlaylist as unknown as GeneratedPlaylist,
               isLoading: false,
             });
-            return; // Успешно загрузили из офлайна, выходим
+            return;
           }
         } catch (e) {
           console.error("Failed to load generated playlist from DB", e);
         }
       }
 
-      // 2. Если мы в офлайне, а плейлист не скачан, показываем ошибку
       if (isOffline) {
         const errorMsg =
           "This playlist is not downloaded and is unavailable offline.";
@@ -76,12 +91,20 @@ export const useGeneratedPlaylistStore = create<GeneratedPlaylistStore>(
         toast.error(errorMsg);
         return;
       }
-      // --- ИЗМЕНЕНИЕ КОНЕЦ ---
 
-      // 3. Если мы онлайн, делаем запрос к сети (существующая логика)
       try {
         const response = await axiosInstance.get(`/generated-playlists/${id}`);
-        set({ currentPlaylist: response.data, isLoading: false });
+        set((state) => ({
+          currentPlaylist: response.data,
+          isLoading: false,
+          cachedGeneratedPlaylists: new Map(state.cachedGeneratedPlaylists).set(
+            id,
+            {
+              data: response.data,
+              timestamp: Date.now(),
+            }
+          ),
+        }));
       } catch (err) {
         let errorMessage = "Failed to fetch this playlist";
         if (err instanceof AxiosError && err.response?.data?.message) {
