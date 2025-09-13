@@ -7,8 +7,6 @@ import {
   deleteFromBunny,
   getPathFromUrl,
 } from "../lib/bunny.service.js";
-import cloudinary from "../lib/cloudinary.js";
-import { extractPublicId } from "../lib/deleteFromCloudinary.js";
 import * as mm from "music-metadata";
 import { getTagsFromAI } from "../lib/ai.service.js";
 
