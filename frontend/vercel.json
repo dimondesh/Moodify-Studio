@@ -11,14 +11,5 @@
       "destination": "https://moodify-music.vercel.app/",
       "permanent": true
     }
-  ],
-   "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
   ]
 }
