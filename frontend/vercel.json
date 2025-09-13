@@ -12,10 +12,13 @@
       "permanent": true
     }
   ],
-   "rewrites": [
+   "routes": [
     {
-      "source": "/((?!api/|sitemap.xml|robots.txt|manifest.webmanifest|favicon.ico|.*\\..*).*)",
-      "destination": "/index.html"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ]
 }
