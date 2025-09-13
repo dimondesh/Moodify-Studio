@@ -7,13 +7,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SectionGridSkeleton from "@/components/ui/skeletons/PlaylistSkeleton";
 import { useTranslation } from "react-i18next";
+import { getOptimizedImageUrl, getArtistNames } from "@/lib/utils";
+import { Artist } from "@/types";
 
 interface ListItem {
   _id: string;
   name?: string;
   title?: string;
   imageUrl: string;
-  type: "user" | "artist" | "playlist";
+  type: "user" | "artist" | "playlist" | "album";
+  itemType?: "user" | "artist" | "playlist" | "album";
+  artist?: Artist[];
+  owner?: { fullName: string };
+  albumType?: string;
 }
 
 const DisplayListPage = () => {
@@ -21,28 +27,49 @@ const DisplayListPage = () => {
   const [items, setItems] = useState<ListItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
-  const { title, apiEndpoint } = location.state || {
+
+  const {
+    title,
+    apiEndpoint,
+    items: initialItems,
+  } = location.state || {
     title: t("pages.displayList.title"),
     apiEndpoint: null,
+    items: null,
   };
 
   useEffect(() => {
-    if (!apiEndpoint) {
+    if (initialItems && Array.isArray(initialItems)) {
+      const formattedItems = initialItems.map((item) => ({
+        ...item,
+        type: item.itemType || item.type,
+      }));
+      setItems(formattedItems);
       setIsLoading(false);
-      return;
+    } else if (apiEndpoint) {
+      const fetchItems = async () => {
+        try {
+          const response = await axiosInstance.get(apiEndpoint);
+          const data = response.data.items || response.data;
+          if (Array.isArray(data)) {
+            const formattedData = data.map((item) => ({
+              ...item,
+              type: item.itemType || item.type,
+            }));
+            setItems(formattedData);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch ${title}:`, err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchItems();
+    } else {
+      setIsLoading(false);
+      setItems([]);
     }
-    const fetchItems = async () => {
-      try {
-        const response = await axiosInstance.get(apiEndpoint);
-        setItems(response.data.items);
-      } catch (err) {
-        console.error(`Failed to fetch ${title}:`, err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchItems();
-  }, [apiEndpoint, title]);
+  }, [apiEndpoint, title, initialItems]);
 
   const getLink = (item: ListItem) => {
     switch (item.type) {
@@ -52,9 +79,31 @@ const DisplayListPage = () => {
         return `/artists/${item._id}`;
       case "playlist":
         return `/playlists/${item._id}`;
+      case "album":
+        return `/albums/${item._id}`;
       default:
         return "/";
     }
+  };
+
+  const getSubtitle = (item: ListItem) => {
+    const itemTypeCapitalized =
+      (item.albumType as string) ||
+      item.type.charAt(0).toUpperCase() + item.type.slice(1);
+    const typeName = t(
+      `sidebar.subtitle.${itemTypeCapitalized}`,
+      item.type.charAt(0).toUpperCase() + item.type.slice(1)
+    );
+
+    if (item.type === "album" && item.artist) {
+      return `${typeName} • ${getArtistNames(item.artist)}`;
+    }
+    if (item.type === "playlist" && item.owner) {
+      return t("sidebar.subtitle.byUser", {
+        name: item.owner?.fullName || t("common.unknownArtist"),
+      });
+    }
+    return typeName;
   };
 
   if (isLoading) return <SectionGridSkeleton />;
@@ -68,19 +117,21 @@ const DisplayListPage = () => {
             <Link
               to={getLink(item)}
               key={item._id}
-              className="p-4 rounded-md bg-zinc-800/40 hover:bg-zinc-700/40 transition-all group cursor-pointer"
+              className="p-2 rounded-md bg-zinc-950 hover:bg-zinc-700/40 transition-all group cursor-pointer"
             >
-              <div className="relative mb-3 aspect-square object-cover shadow-lg">
-                {item.type === "playlist" ? (
+              <div className="relative mb-3 aspect-square object-cover shadow-lg overflow-hidden rounded-md">
+                {item.type === "playlist" || item.type === "album" ? (
                   <img
-                    src={item.imageUrl || "/liked.png"}
-                    alt={item.title || "Playlist"}
+                    src={
+                      getOptimizedImageUrl(item.imageUrl, 300) || "/liked.png"
+                    }
+                    alt={item.title || "Item cover"}
                     className="absolute inset-0 h-full w-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
                   <Avatar className="absolute inset-0 h-full w-full rounded-full">
                     <AvatarImage
-                      src={item.imageUrl}
+                      src={getOptimizedImageUrl(item.imageUrl, 300)}
                       className="object-cover h-auto w-auto transition-transform duration-300 group-hover:scale-105"
                     />
                     <AvatarFallback>
@@ -92,8 +143,8 @@ const DisplayListPage = () => {
               <h3 className="font-semibold truncate">
                 {item.name || item.title}
               </h3>
-              <p className="text-sm text-zinc-400 capitalize">
-                {t(`sidebar.subtitle.${item.type}`)}
+              <p className="text-sm text-zinc-400 truncate">
+                {getSubtitle(item)}
               </p>
             </Link>
           ))}

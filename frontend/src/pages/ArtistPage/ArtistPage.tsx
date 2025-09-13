@@ -1,11 +1,9 @@
 // frontend/src/pages/ArtistPage/ArtistPage.tsx
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // useNavigate уже здесь
 import axios from "axios";
 import { Button } from "../../components/ui/button";
-import { ScrollArea } from "../../components/ui/scroll-area";
-import AlbumGrid from "../SearchPage/AlbumGrid";
 import { Play, Heart, UserPlus, UserCheck, Pause, Loader2 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import toast from "react-hot-toast";
@@ -18,26 +16,22 @@ import { Helmet } from "react-helmet-async";
 import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useMusicStore } from "../../stores/useMusicStore";
 import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
+import HorizontalSection from "../HomePage/HorizontalSection";
 
 const ArtistPage = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate(); // Инициализируем useNavigate
+  const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
+    usePlayerStore();
+  const { isSongLiked, toggleSongLike, isArtistFollowed, toggleArtistFollow } =
+    useLibraryStore();
+  const { artistAppearsOn, isAppearsOnLoading, fetchArtistAppearsOn } =
+    useMusicStore();
+
   const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
-    usePlayerStore();
-  const {
-    isSongLiked,
-    toggleSongLike,
-    // --- ИЗМЕНЕНИЕ: fetchLikedSongs и fetchFollowedArtists больше не нужны здесь ---
-    isArtistFollowed,
-    toggleArtistFollow,
-  } = useLibraryStore();
-
-  const { artistAppearsOn, isAppearsOnLoading, fetchArtistAppearsOn } =
-    useMusicStore();
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -50,9 +44,8 @@ const ArtistPage = () => {
       }
       try {
         setLoading(true);
-        // --- ИЗМЕНЕНИЕ: Упрощаем Promise.all, так как нам нужна только информация об артисте ---
         const artistRes = await axiosInstance.get<Artist>(`/artists/${id}`);
-        fetchArtistAppearsOn(id); // Запускаем в фоне, не дожидаясь
+        fetchArtistAppearsOn(id);
         setArtist(artistRes.data);
         setError(null);
       } catch (err: unknown) {
@@ -70,12 +63,8 @@ const ArtistPage = () => {
       }
     };
     fetchArtistData();
-    // --- ИЗМЕНЕНИЕ: Удаляем лишние вызовы. Данные для сайдбара уже загружены в App.tsx ---
-    // fetchLikedSongs();
-    // fetchFollowedArtists();
   }, [id, t, fetchArtistAppearsOn]);
 
-  // ... остальной код компонента остается без изменений ...
   const { popularSongs, albums, singlesAndEps } = useMemo(() => {
     const allArtistSongs: Song[] = artist?.songs || [];
     const allArtistAlbums: Album[] = artist?.albums || [];
@@ -87,6 +76,51 @@ const ArtistPage = () => {
       ),
     };
   }, [artist]);
+
+  const albumsItems = useMemo(
+    () => albums.map((album) => ({ ...album, itemType: "album" as const })),
+    [albums]
+  );
+  const singlesAndEpsItems = useMemo(
+    () =>
+      singlesAndEps.map((album) => ({ ...album, itemType: "album" as const })),
+    [singlesAndEps]
+  );
+  const appearsOnItems = useMemo(
+    () =>
+      artistAppearsOn.map((album) => ({
+        ...album,
+        itemType: "album" as const,
+      })),
+    [artistAppearsOn]
+  );
+
+  const handleShowAllAlbums = useCallback(() => {
+    navigate("/list", {
+      state: {
+        title: t("pages.artist.albums"),
+        items: albumsItems, // Передаем готовый массив
+      },
+    });
+  }, [navigate, t, albumsItems]);
+
+  const handleShowAllSinglesAndEps = useCallback(() => {
+    navigate("/list", {
+      state: {
+        title: t("pages.artist.singlesAndEps"),
+        items: singlesAndEpsItems, // Передаем готовый массив
+      },
+    });
+  }, [navigate, t, singlesAndEpsItems]);
+
+  const handleShowAllAppearsOn = useCallback(() => {
+    navigate("/list", {
+      state: {
+        title: t("pages.artist.appearsOn"),
+        items: appearsOnItems, // Передаем готовый массив
+      },
+    });
+  }, [navigate, t, appearsOnItems]);
 
   const isAnyPopularSongPlaying = useMemo(
     () =>
@@ -131,52 +165,27 @@ const ArtistPage = () => {
 
   if (loading) {
     return (
-      <>
-        <Helmet>
-          <title>Loading...</title>
-        </Helmet>
-        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-white">
-          <Loader2 className="animate-spin text-violet-500 size-12" />
-        </main>
-      </>
+      <main className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin text-violet-500 size-12" />
+      </main>
     );
   }
 
   if (error) {
     return (
-      <>
-        {" "}
-        <Helmet>
-          <title>Artist Not Found</title>
-          <meta
-            name="description"
-            content="Sorry, the requested artist could not be found on Moodify."
-          />
-        </Helmet>
-        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-red-500">
-          <p>{error}</p>
-        </main>
-      </>
+      <main className="flex items-center justify-center h-full text-red-500">
+        <p>{error}</p>
+      </main>
     );
   }
 
   if (!artist) {
     return (
-      <>
-        <Helmet>
-          <title>Artist Not Found</title>
-          <meta
-            name="description"
-            content="Sorry, the requested artist could not be found on Moodify."
-          />
-        </Helmet>
-        <main className="rounded-md overflow-hidden h-full bg-zinc-950 flex items-center justify-center text-zinc-400">
-          <p>{t("pages.artist.notFound")}</p>
-        </main>
-      </>
+      <main className="flex items-center justify-center h-full text-zinc-400">
+        <p>{t("pages.artist.notFound")}</p>
+      </main>
     );
   }
-
   const metaDescription = `Listen to ${
     artist.name
   } on Moodify. Discover popular tracks, albums, and the full discography. ${
@@ -189,99 +198,97 @@ const ArtistPage = () => {
         <title>{`${artist.name}`}</title>
         <meta name="description" content={metaDescription} />
       </Helmet>
-      <main className="rounded-md overflow-hidden h-full bg-zinc-950">
-        <ScrollArea className="h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-220px)] lg:h-[calc(100vh-170px)] w-full pb-20 md:pb-0">
-          <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage: `url(${getOptimizedImageUrl(
-                  (window.innerWidth >= 1024
-                    ? artist.bannerUrl
-                    : artist.imageUrl) ||
-                    "https://moodify.b-cdn.net/artist.jpeg",
-                  800
-                )})`,
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/90 z-0" />
-            {!artist.bannerUrl && artist.imageUrl && (
-              <div className="hidden lg:block absolute bottom-10 left-10 z-10">
-                <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
-                  <img
-                    src={getOptimizedImageUrl(artist.imageUrl, 400)}
-                    alt={artist.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            )}
-            <div
-              className={`relative z-10 h-full flex flex-col justify-end px-6 sm:px-10 pb-6 sm:pb-10 ${
-                !artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""
-              }`}
-            >
-              <p className="text-white text-sm font-semibold uppercase mb-2">
-                {t("pages.artist.type")}
-              </p>
-              <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
-                {artist.name}
-              </h1>
-              <div className="mt-4 flex items-center gap-4">
-                <Button
-                  className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
-                  onClick={handlePlayArtistSongs}
-                  title={
-                    isAnyPopularSongPlaying
-                      ? t("pages.artist.actions.pause")
-                      : `${t("pages.artist.actions.play")} ${artist.name}`
-                  }
-                >
-                  {isAnyPopularSongPlaying ? (
-                    <Pause className="h-7 w-7 fill-current" />
-                  ) : (
-                    <Play className="h-7 w-7 fill-current" />
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
-                  onClick={handleToggleFollow}
-                >
-                  {isArtistFollowed(artist._id) ? (
-                    <>
-                      <UserCheck className="h-5 w-5" />
-                      {t("pages.artist.actions.following")}
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-5 w-5" />
-                      {t("pages.artist.actions.follow")}
-                    </>
-                  )}
-                </Button>
+      <div className="bg-zinc-950 overflow-y-auto h-full hide-scrollbar pb-30 lg:pb-0">
+        <div className="relative w-full h-[340px] sm:h-[300px] md:h-[300px] lg:h-[400px]">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${getOptimizedImageUrl(
+                (window.innerWidth >= 1024
+                  ? artist.bannerUrl
+                  : artist.imageUrl) || "https://moodify.b-cdn.net/artist.jpeg",
+                800
+              )})`,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-zinc-950 z-0" />
+          {!artist.bannerUrl && artist.imageUrl && (
+            <div className="hidden lg:block absolute bottom-10 left-10 z-10">
+              <div className="w-40 h-40 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
+                <img
+                  src={getOptimizedImageUrl(artist.imageUrl, 400)}
+                  alt={artist.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
+          )}
+          <div
+            className={`relative z-10 h-full flex flex-col justify-end px-6 sm:px-10 pb-6 sm:pb-10 ${
+              !artist.bannerUrl && artist.imageUrl ? "lg:ml-56" : ""
+            }`}
+          >
+            <p className="text-white text-sm font-semibold uppercase mb-2">
+              {t("pages.artist.type")}
+            </p>
+            <h1 className="text-white text-4xl sm:text-6xl md:text-7xl font-bold leading-tight">
+              {artist.name}
+            </h1>
+            <div className="mt-4 flex items-center gap-4">
+              <Button
+                className="bg-violet-500 hover:bg-violet-600 text-black rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center transition-transform hover:scale-105"
+                onClick={handlePlayArtistSongs}
+                title={
+                  isAnyPopularSongPlaying
+                    ? t("pages.artist.actions.pause")
+                    : `${t("pages.artist.actions.play")} ${artist.name}`
+                }
+              >
+                {isAnyPopularSongPlaying ? (
+                  <Pause className="h-7 w-7 fill-current" />
+                ) : (
+                  <Play className="h-7 w-7 fill-current" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-full px-4 py-2 text-white border-zinc-500 hover:border-white hover:text-white flex items-center gap-2"
+                onClick={handleToggleFollow}
+              >
+                {isArtistFollowed(artist._id) ? (
+                  <>
+                    <UserCheck className="h-5 w-5" />
+                    {t("pages.artist.actions.following")}
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-5 w-5" />
+                    {t("pages.artist.actions.follow")}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
+        </div>
+
+        <div className="p-4 sm:p-6 space-y-8">
           {popularSongs.length > 0 && (
-            <div className="px-6 md:px-10 py-4">
+            <div>
               <h2 className="text-2xl font-bold text-white mb-4">
                 {t("pages.artist.popular")}
               </h2>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="flex flex-col gap-2">
                 {popularSongs.map((song, index) => {
                   const isCurrentSong = currentSong?._id === song._id;
                   return (
                     <div
                       key={song._id}
-                      className="flex items-center md:px-4 gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer "
+                      className="flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800/50 cursor-pointer group"
                       onClick={() => handlePlaySpecificSong(song, index)}
                     >
-                      <div className="flex items-center justify-center w-4">
+                      <div className="flex items-center justify-center w-4 text-zinc-400">
                         {isCurrentSong && isPlaying ? (
-                          <div className="z-10">
-                            <Equalizer />
-                          </div>
+                          <Equalizer />
                         ) : (
                           <span className="group-hover:hidden">
                             {index + 1}
@@ -323,7 +330,7 @@ const ArtistPage = () => {
                         className={`hover:text-white ${
                           isSongLiked(song._id)
                             ? "text-violet-500"
-                            : "text-zinc-400"
+                            : "text-zinc-400 opacity-0 group-hover:opacity-100"
                         } w-8 h-8`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -346,43 +353,44 @@ const ArtistPage = () => {
               </div>
             </div>
           )}
-          <div className="px-6 py-4">
-            {albums.length > 0 && (
-              <AlbumGrid
-                title={t("pages.artist.albums")}
-                albums={albums}
-                isLoading={loading}
-              />
-            )}
-            {singlesAndEps.length > 0 && (
-              <AlbumGrid
-                title={t("pages.artist.singlesAndEps")}
-                albums={singlesAndEps}
-                isLoading={loading}
-              />
-            )}
-
-            {artistAppearsOn.length > 0 && (
-              <AlbumGrid
-                title={t("pages.artist.appearsOn")}
-                albums={artistAppearsOn}
-                isLoading={isAppearsOnLoading}
-              />
-            )}
-          </div>
+          <HorizontalSection
+            title={t("pages.artist.albums")}
+            items={albumsItems}
+            isLoading={loading}
+            t={t}
+            limit={3}
+            onShowAll={handleShowAllAlbums}
+          />
+          <HorizontalSection
+            title={t("pages.artist.singlesAndEps")}
+            items={singlesAndEpsItems}
+            isLoading={loading}
+            t={t}
+            limit={6}
+            onShowAll={handleShowAllSinglesAndEps}
+          />
+          <HorizontalSection
+            title={t("pages.artist.appearsOn")}
+            items={appearsOnItems}
+            isLoading={isAppearsOnLoading}
+            t={t}
+            limit={6}
+            onShowAll={handleShowAllAppearsOn}
+          />
           {artist.bio && (
-            <div className="px-6 py-4">
+            <div>
               <h2 className="text-2xl font-bold text-white mb-4">
                 {t("pages.artist.about")} {artist.name}
               </h2>
               <p className="text-zinc-300 whitespace-pre-wrap">{artist.bio}</p>
             </div>
           )}
-        </ScrollArea>
-      </main>
+        </div>
+      </div>
     </>
   );
 };
+
 const formatTime = (seconds: number) => {
   if (isNaN(seconds) || seconds < 0) return "0:00";
   const minutes = Math.floor(seconds / 60);
