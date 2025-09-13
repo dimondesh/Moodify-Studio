@@ -19,6 +19,12 @@ interface CachedAlbum {
   timestamp: number;
 }
 
+interface CachedArtist {
+  data: Artist;
+  appearsOn: Album[];
+  timestamp: number;
+}
+
 interface MusicStore {
   albums: Album[];
   songs: Song[];
@@ -27,6 +33,8 @@ interface MusicStore {
   error: string | null;
   currentAlbum: Album | null;
   cachedAlbums: Map<string, CachedAlbum>;
+  currentArtist: Artist | null;
+  cachedArtists: Map<string, CachedArtist>;
   recentlyListenedSongs: Song[];
   homePageDataLastFetched: number | null;
   featuredSongs: Song[];
@@ -51,6 +59,7 @@ interface MusicStore {
   clearHomePageCache: () => void;
   fetchAlbums: () => Promise<void>;
   fetchAlbumbyId: (id: string) => Promise<void>;
+  fetchArtistById: (id: string, forceRefetch?: boolean) => Promise<void>;
   fetchFeaturedSongs: () => Promise<void>;
   fetchMadeForYouSongs: () => Promise<void>;
   fetchTrendingSongs: () => Promise<void>;
@@ -65,8 +74,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-// --- ДОБАВЛЕНО: Время жизни кэша (1 день) ---
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа
 
 export const useMusicStore = create<MusicStore>((set, get) => ({
   albums: [],
@@ -78,13 +86,15 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
   moods: [],
   currentAlbum: null,
   cachedAlbums: new Map(),
+  currentArtist: null,
+  cachedArtists: new Map(),
+  recentlyListenedSongs: [],
+  homePageDataLastFetched: null,
   featuredSongs: [],
   madeForYouSongs: [],
   trendingSongs: [],
-  recentlyListenedSongs: [],
   favoriteArtists: [],
   newReleases: [],
-  homePageDataLastFetched: null,
   paginatedSongs: [],
   songsPage: 1,
   songsTotalPages: 1,
@@ -169,6 +179,62 @@ export const useMusicStore = create<MusicStore>((set, get) => ({
       set({ error: error.response.data.message });
     } finally {
       set({ isLoading: false });
+    }
+  },
+  fetchArtistById: async (id: string, forceRefetch = false) => {
+    const { cachedArtists } = get();
+    const cachedEntry = cachedArtists.get(id);
+
+    if (
+      !forceRefetch &&
+      cachedEntry &&
+      Date.now() - cachedEntry.timestamp < CACHE_DURATION
+    ) {
+      console.log(`[Cache] Loading artist ${id} from cache.`);
+      set({
+        currentArtist: cachedEntry.data,
+        artistAppearsOn: cachedEntry.appearsOn,
+        isLoading: false,
+        isAppearsOnLoading: false,
+        error: null,
+      });
+      return;
+    }
+
+    set({
+      isLoading: true,
+      isAppearsOnLoading: true,
+      error: null,
+      currentArtist: null,
+      artistAppearsOn: [],
+    });
+
+    try {
+      const [artistRes, appearsOnRes] = await Promise.all([
+        axiosInstance.get(`/artists/${id}`),
+        axiosInstance.get(`/artists/${id}/appears-on`),
+      ]);
+
+      const artistData = artistRes.data;
+      const appearsOnData = appearsOnRes.data;
+
+      set((state) => ({
+        currentArtist: artistData,
+        artistAppearsOn: appearsOnData,
+        isLoading: false,
+        isAppearsOnLoading: false,
+        cachedArtists: new Map(state.cachedArtists).set(id, {
+          data: artistData,
+          appearsOn: appearsOnData,
+          timestamp: Date.now(),
+        }),
+      }));
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || "Failed to fetch artist data",
+        isLoading: false,
+        isAppearsOnLoading: false,
+      });
     }
   },
   fetchAlbumbyId: async (id: string) => {

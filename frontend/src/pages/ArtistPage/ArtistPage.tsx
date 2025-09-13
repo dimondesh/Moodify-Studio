@@ -1,69 +1,43 @@
 // frontend/src/pages/ArtistPage/ArtistPage.tsx
 
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // useNavigate уже здесь
-import axios from "axios";
+import { useEffect, useMemo, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Play, Heart, UserPlus, UserCheck, Pause, Loader2 } from "lucide-react";
 import { usePlayerStore } from "../../stores/usePlayerStore";
 import toast from "react-hot-toast";
 import { useLibraryStore } from "../../stores/useLibraryStore";
 import Equalizer from "../../components/ui/equalizer";
-import type { Artist, Song, Album } from "../../types";
-import { axiosInstance } from "@/lib/axios";
+import type { Song, Album } from "../../types";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
-import { useOfflineStore } from "@/stores/useOfflineStore";
 import { useMusicStore } from "../../stores/useMusicStore";
-import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
+import { getOptimizedImageUrl } from "@/lib/utils";
 import HorizontalSection from "../HomePage/HorizontalSection";
 
 const ArtistPage = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate(); // Инициализируем useNavigate
+  const navigate = useNavigate();
   const { currentSong, isPlaying, playAlbum, setCurrentSong, togglePlay } =
     usePlayerStore();
   const { isSongLiked, toggleSongLike, isArtistFollowed, toggleArtistFollow } =
     useLibraryStore();
-  const { artistAppearsOn, isAppearsOnLoading, fetchArtistAppearsOn } =
-    useMusicStore();
 
-  const [artist, setArtist] = useState<Artist | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    currentArtist: artist,
+    artistAppearsOn,
+    isLoading: loading,
+    isAppearsOnLoading,
+    error,
+    fetchArtistById,
+  } = useMusicStore();
 
   useEffect(() => {
-    const fetchArtistData = async () => {
-      if (useOfflineStore.getState().isOffline) return;
-
-      if (!id) {
-        setError("Artist ID is missing.");
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const artistRes = await axiosInstance.get<Artist>(`/artists/${id}`);
-        fetchArtistAppearsOn(id);
-        setArtist(artistRes.data);
-        setError(null);
-      } catch (err: unknown) {
-        console.error("Failed to fetch artist data:", err);
-        let errorMessage = t("pages.artist.error");
-        if (axios.isAxiosError(err) && err.response) {
-          errorMessage = err.response.data.message || errorMessage;
-        } else if (err instanceof Error) {
-          errorMessage = err.message;
-        }
-        setError(errorMessage);
-        setArtist(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchArtistData();
-  }, [id, t, fetchArtistAppearsOn]);
+    if (id) {
+      fetchArtistById(id);
+    }
+  }, [id, fetchArtistById]);
 
   const { popularSongs, albums, singlesAndEps } = useMemo(() => {
     const allArtistSongs: Song[] = artist?.songs || [];
@@ -99,7 +73,7 @@ const ArtistPage = () => {
     navigate("/list", {
       state: {
         title: t("pages.artist.albums"),
-        items: albumsItems, // Передаем готовый массив
+        items: albumsItems,
       },
     });
   }, [navigate, t, albumsItems]);
@@ -108,7 +82,7 @@ const ArtistPage = () => {
     navigate("/list", {
       state: {
         title: t("pages.artist.singlesAndEps"),
-        items: singlesAndEpsItems, // Передаем готовый массив
+        items: singlesAndEpsItems,
       },
     });
   }, [navigate, t, singlesAndEpsItems]);
@@ -117,7 +91,7 @@ const ArtistPage = () => {
     navigate("/list", {
       state: {
         title: t("pages.artist.appearsOn"),
-        items: appearsOnItems, // Передаем готовый массив
+        items: appearsOnItems,
       },
     });
   }, [navigate, t, appearsOnItems]);
@@ -149,19 +123,15 @@ const ArtistPage = () => {
   );
 
   const handleToggleFollow = useCallback(async () => {
-    if (!artist) return;
+    if (!artist || !id) return;
     try {
       await toggleArtistFollow(artist._id);
-      toast.success(
-        isArtistFollowed(artist._id)
-          ? `Now you are following ${artist.name}`
-          : `You unfollowed ${artist.name}`
-      );
+      fetchArtistById(id, true);
     } catch (e) {
       toast.error("Failed to change follow status");
       console.error("Error toggling artist follow:", e);
     }
-  }, [artist, toggleArtistFollow, isArtistFollowed]);
+  }, [artist, id, toggleArtistFollow, fetchArtistById]);
 
   if (loading) {
     return (
@@ -315,9 +285,6 @@ const ArtistPage = () => {
                           } truncate`}
                         >
                           {song.title}
-                        </p>
-                        <p className="text-zinc-400 text-sm truncate">
-                          {getArtistNames(song.artist)}
                         </p>
                       </div>
                       <span className="text-zinc-400 text-sm ml-2 hidden sm:block">
