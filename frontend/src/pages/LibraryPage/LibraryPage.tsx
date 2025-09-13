@@ -17,6 +17,9 @@ import {
   FollowedArtistItem,
   MixItem,
   GeneratedPlaylistItem,
+  Album,
+  Playlist,
+  Mix,
 } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -55,16 +58,80 @@ const LibraryPage = () => {
 
   const { artists } = useMusicStore();
   const [user] = useAuthState(auth);
-  const { isDownloaded } = useOfflineStore((s) => s.actions);
-  const { isOffline } = useOfflineStore();
+
+  const { isDownloaded, fetchAllDownloaded } = useOfflineStore(
+    (s) => s.actions
+  );
+  const isOffline = useOfflineStore((s) => s.isOffline);
 
   const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
+  const [downloadedItems, setDownloadedItems] = useState<LibraryItem[]>([]);
 
   useEffect(() => {
     if (isOffline) {
       setActiveFilter("downloaded");
     }
   }, [isOffline]);
+
+  useEffect(() => {
+    if (activeFilter === "downloaded") {
+      const loadDownloaded = async () => {
+        const items = await fetchAllDownloaded();
+        const downloadedLibraryItemsMap = new Map<string, LibraryItem>();
+
+        items.forEach((item) => {
+          if ("songsData" in item && "title" in item) {
+            const isGenerated = (item as any).isGenerated;
+            if (isGenerated) {
+              downloadedLibraryItemsMap.set(item._id, {
+                _id: item._id,
+                type: "generated-playlist",
+                title: t((item as any).nameKey, (item as any).title),
+                imageUrl: item.imageUrl,
+                createdAt: new Date(
+                  (item as any).addedAt || (item as any).generatedOn
+                ),
+                sourceName: "Moodify",
+              } as GeneratedPlaylistItem);
+            } else if ((item as any).owner) {
+              downloadedLibraryItemsMap.set(item._id, {
+                _id: item._id,
+                type: "playlist",
+                title: (item as Playlist).title,
+                imageUrl: (item as Playlist).imageUrl,
+                createdAt: new Date((item as Playlist).updatedAt),
+                owner: (item as Playlist).owner,
+              } as PlaylistItem);
+            } else if ((item as any).artist) {
+              downloadedLibraryItemsMap.set(item._id, {
+                _id: item._id,
+                type: "album",
+                title: (item as Album).title,
+                imageUrl: (item as Album).imageUrl,
+                createdAt: new Date((item as Album).updatedAt),
+                artist: (item as Album).artist,
+                albumType: (item as Album).type,
+              } as AlbumItem);
+            }
+          } else if ("sourceName" in item) {
+            downloadedLibraryItemsMap.set(item._id, {
+              _id: item._id,
+              type: "mix",
+              title: t((item as Mix).name),
+              imageUrl: (item as Mix).imageUrl,
+              createdAt: new Date((item as Mix).generatedOn),
+              sourceName: (item as Mix).sourceName,
+            } as MixItem);
+          }
+        });
+        const sortedItems = Array.from(downloadedLibraryItemsMap.values()).sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        );
+        setDownloadedItems(sortedItems);
+      };
+      loadDownloaded();
+    }
+  }, [activeFilter, fetchAllDownloaded, t]);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -181,15 +248,13 @@ const LibraryPage = () => {
 
   const filteredLibraryItems = useMemo(() => {
     if (activeFilter === "downloaded") {
-      return libraryItems.filter((item) => {
-        if (item.type === "liked-songs" || item.type === "artist") return false;
-        return isDownloaded(item._id);
-      });
+      return downloadedItems;
     }
     return libraryItems;
-  }, [libraryItems, activeFilter, isDownloaded]);
+  }, [libraryItems, activeFilter, downloadedItems]);
 
-  if (isLoading) return <LibraryGridSkeleton />;
+  if (isLoading && activeFilter !== "downloaded")
+    return <LibraryGridSkeleton />;
 
   if (errorMessage && !isOffline) {
     return (
