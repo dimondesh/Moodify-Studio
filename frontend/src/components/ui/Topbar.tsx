@@ -312,7 +312,7 @@ const Topbar = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-48 bg-zinc-800 border-zinc-700 text-white p-1"
+                className="w-48 bg-zinc-800/50 backdrop-blur-md border-zinc-700 text-white p-1"
                 align="end"
               >
                 {user.displayName && (
