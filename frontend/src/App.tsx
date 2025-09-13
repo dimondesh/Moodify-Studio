@@ -19,7 +19,6 @@ import ChatPage from "./pages/ChatPage/ChatPage";
 
 const HomePage = lazy(() => import("./pages/HomePage/HomePage"));
 const AlbumPage = lazy(() => import("./pages/AlbumPage/AlbumPage"));
-const AdminPage = lazy(() => import("./pages/AdminPage/AdminPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage/NotFoundPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
 const AllSongsPage = lazy(() => import("./pages/AllSongs/AllSongsPage"));
@@ -154,7 +153,6 @@ function App() {
 
       <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
         <Routes>
-          <Route path="admin" element={<AdminPage />} />
           <Route path="login" element={<AuthPage />} />
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />

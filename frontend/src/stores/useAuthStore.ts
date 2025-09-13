@@ -37,7 +37,6 @@ interface AuthStore {
   error: string | null;
 
   setUser: (user: AuthUser | null) => void;
-  checkAdminStatus: () => Promise<void>;
   syncUser: (userData: FirebaseUserDataForSync) => Promise<void>;
   fetchUser: (firebaseUid: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -260,39 +259,6 @@ export const useAuthStore = create<AuthStore>()(
             user: null,
             error: error.message || "Failed to fetch user data.",
             isAdmin: false,
-          });
-        }
-      },
-
-      checkAdminStatus: async () => {
-        if (!navigator.onLine) {
-          console.log(
-            "AuthStore (checkAdminStatus): Offline, skipping network request."
-          );
-          return;
-        }
-        set({ isLoading: true, error: null });
-        try {
-          const headers = await getAuthHeaders();
-          const response = await axiosInstance.get("/users/me", headers);
-          const currentUserData = response.data;
-
-          set((state) => ({
-            user: state.user ? { ...state.user, ...currentUserData } : null,
-            isAdmin: currentUserData.isAdmin || false,
-            isLoading: false,
-            error: null,
-          }));
-          console.log(
-            "Admin status checked. Is Admin:",
-            currentUserData.isAdmin
-          );
-        } catch (error: any) {
-          console.error("Admin check error:", error);
-          set({
-            isAdmin: false,
-            error: error.response?.data?.message || "Admin check failed",
-            isLoading: false,
           });
         }
       },

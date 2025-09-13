@@ -63,14 +63,6 @@ interface MusicStore {
   fetchNewReleases: () => Promise<void>;
 
   fetchArtists: () => Promise<void>;
-  deleteSong: (id: string) => Promise<void>;
-  deleteAlbum: (id: string) => Promise<void>;
-  deleteArtist: (id: string) => Promise<void>;
-  updateArtist: (artistId: string, formData: FormData) => Promise<void>;
-  updateSong: (songId: string, formData: FormData) => Promise<void>;
-  fetchPaginatedSongs: (page: number, limit: number) => Promise<void>;
-  fetchPaginatedAlbums: (page: number, limit: number) => Promise<void>;
-  fetchPaginatedArtists: (page: number, limit: number) => Promise<void>;
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
@@ -150,54 +142,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       console.error("Failed to fetch new releases:", error);
     }
   },
-  fetchPaginatedSongs: async (page = 1, limit = 50) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosInstance.get("/admin/songs/paginated", {
-        params: { page, limit },
-      });
-      set({
-        paginatedSongs: response.data.songs,
-        songsPage: response.data.currentPage,
-        songsTotalPages: response.data.totalPages,
-        isLoading: false,
-      });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
-    }
-  },
-  fetchPaginatedAlbums: async (page = 1, limit = 50) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosInstance.get("/admin/albums/paginated", {
-        params: { page, limit },
-      });
-      set({
-        paginatedAlbums: response.data.albums,
-        albumsPage: response.data.currentPage,
-        albumsTotalPages: response.data.totalPages,
-        isLoading: false,
-      });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
-    }
-  },
-  fetchPaginatedArtists: async (page = 1, limit = 50) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosInstance.get("/admin/artists/paginated", {
-        params: { page, limit },
-      });
-      set({
-        paginatedArtists: response.data.artists,
-        artistsPage: response.data.currentPage,
-        artistsTotalPages: response.data.totalPages,
-        isLoading: false,
-      });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
-    }
-  },
+
   fetchGenres: async () => {
     try {
       const response = await axiosInstance.get("/admin/genres");
@@ -214,117 +159,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
       console.error("Failed to fetch moods", error);
     }
   },
-  deleteSong: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      await axiosInstance.delete(`/admin/songs/${id}`);
-      set((state) => ({
-        songs: state.songs.filter((song) => song._id !== id),
-      }));
-      toast.success("Song deleted successfully");
-    } catch (error: any) {
-      console.log("Error in deleteSong", error);
-      toast.error("Error deleting song");
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  deleteAlbum: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      await axiosInstance.delete(`/admin/albums/${id}`);
-      set((state) => ({
-        albums: state.albums.filter((album) => album._id !== id),
-        songs: state.songs.map((song) =>
-          song.albumId === id ? { ...song, albumId: null } : song
-        ),
-      }));
-      toast.success("Album deleted successfully");
-    } catch (error: any) {
-      toast.error("Failed to delete album: " + error.message);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  deleteArtist: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      await axiosInstance.delete(`/admin/artists/${id}`);
-      set((state) => ({
-        artists: state.artists.filter((artist) => artist._id !== id),
-        songs: state.songs
-          .map((song) => ({
-            ...song,
-            artist: song.artist.filter((artist) => artist._id !== id),
-          }))
-          .filter((song) => song.artist.length > 0),
-        albums: state.albums
-          .map((album) => ({
-            ...album,
-            artist: album.artist.filter((artist) => artist._id !== id),
-          }))
-          .filter((album) => album.artist.length > 0),
-      }));
-      toast.success(
-        "Artist and associated content relationships updated/deleted successfully"
-      );
-    } catch (error: any) {
-      console.log("Error in deleteArtist", error);
-      toast.error("Failed to delete artist: " + error.message);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  updateArtist: async (artistId, formData) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosInstance.put(
-        `/admin/artists/${artistId}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      set((state) => ({
-        artists: state.artists.map((artist) =>
-          artist._id === artistId ? response.data : artist
-        ),
-      }));
-      toast.success("Artist updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating artist:", error);
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-  updateSong: async (songId, formData) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosInstance.put(
-        `/admin/songs/${songId}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      set((state) => ({
-        songs: state.songs.map((song) =>
-          song._id === songId ? response.data : song
-        ),
-      }));
-      toast.success("Song updated successfully!");
-    } catch (error: any) {
-      console.error("Error updating song:", error);
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+
   fetchAlbums: async () => {
     if (useOfflineStore.getState().isOffline) return;
     set({ isLoading: true, error: null });

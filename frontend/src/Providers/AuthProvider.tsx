@@ -1,5 +1,3 @@
-// src/Providers/AuthProvider.tsx
-
 import React, { useEffect, useState, useRef } from "react";
 import type { ReactNode } from "react";
 import { onAuthStateChanged } from "firebase/auth";
