@@ -46,7 +46,8 @@ function App() {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { fetchInitialData } = useUIStore();
-  const { fetchLibrary } = useLibraryStore(); // <--- ВАЖНО
+  const { fetchLibrary } = useLibraryStore();
+  const canonicalUrl = `https://moodify-music.vercel.app${location.pathname}`;
 
   const fetchDataForUser = useCallback(() => {
     if (navigator.onLine) {
@@ -142,13 +143,14 @@ function App() {
   return (
     <>
       <Helmet
-        defaultTitle="Moodify - Discover Your Music"
-        titleTemplate="%s | Moodify"
+        defaultTitle="Moodify Music - Discover Your Vibe"
+        titleTemplate="%s | Moodify Music"
       >
         <meta
           name="description"
-          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood."
+          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood. Your ultimate guide in the world of music." // Улучшенное описание
         />
+        <link rel="canonical" href={canonicalUrl} />{" "}
       </Helmet>
 
       <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
