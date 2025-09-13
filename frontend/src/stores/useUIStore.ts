@@ -20,6 +20,8 @@ interface SongRemovalInfo {
   playlistId: string;
 }
 
+type LibraryFilter = "all" | "downloaded";
+
 interface UIStore {
   isCreatePlaylistDialogOpen: boolean;
   editingPlaylist: Playlist | null;
@@ -31,9 +33,11 @@ interface UIStore {
   isUserSheetOpen: boolean;
   isHomePageLoading: boolean;
   isSecondaryHomePageLoading: boolean;
+  libraryFilter: LibraryFilter;
 
   setIsHomePageLoading: (isLoading: boolean) => void;
   setIsSecondaryHomePageLoading: (isLoading: boolean) => void;
+  setLibraryFilter: (filter: LibraryFilter) => void;
 
   openCreatePlaylistDialog: () => void;
   openEditPlaylistDialog: (playlist: Playlist) => void;
@@ -59,10 +63,13 @@ export const useUIStore = create<UIStore>((set) => ({
   isUserSheetOpen: false,
   isHomePageLoading: true,
   isSecondaryHomePageLoading: true,
+  libraryFilter: "all",
 
   setIsHomePageLoading: (isLoading) => set({ isHomePageLoading: isLoading }),
   setIsSecondaryHomePageLoading: (isLoading) =>
     set({ isSecondaryHomePageLoading: isLoading }),
+
+  setLibraryFilter: (filter) => set({ libraryFilter: filter }),
 
   openCreatePlaylistDialog: () => set({ isCreatePlaylistDialogOpen: true }),
   openEditPlaylistDialog: (playlist) => set({ editingPlaylist: playlist }),

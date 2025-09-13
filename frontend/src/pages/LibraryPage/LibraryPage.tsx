@@ -54,27 +54,27 @@ const LibraryPage = () => {
     isCreatePlaylistDialogOpen,
     openCreatePlaylistDialog,
     closeAllDialogs,
+    libraryFilter,
+    setLibraryFilter,
   } = useUIStore();
 
   const { artists } = useMusicStore();
   const [user] = useAuthState(auth);
-
   const { isDownloaded, fetchAllDownloaded } = useOfflineStore(
     (s) => s.actions
   );
   const isOffline = useOfflineStore((s) => s.isOffline);
 
-  const [activeFilter, setActiveFilter] = useState<"all" | "downloaded">("all");
   const [downloadedItems, setDownloadedItems] = useState<LibraryItem[]>([]);
 
   useEffect(() => {
     if (isOffline) {
-      setActiveFilter("downloaded");
+      setLibraryFilter("downloaded");
     }
-  }, [isOffline]);
+  }, [isOffline, setLibraryFilter]);
 
   useEffect(() => {
-    if (activeFilter === "downloaded") {
+    if (libraryFilter === "downloaded") {
       const loadDownloaded = async () => {
         const items = await fetchAllDownloaded();
         const downloadedLibraryItemsMap = new Map<string, LibraryItem>();
@@ -131,7 +131,7 @@ const LibraryPage = () => {
       };
       loadDownloaded();
     }
-  }, [activeFilter, fetchAllDownloaded, t]);
+  }, [libraryFilter, fetchAllDownloaded, t]);
 
   const getArtistNames = (artistsInput: (string | Artist)[] | undefined) => {
     if (!artistsInput || artistsInput.length === 0)
@@ -247,13 +247,13 @@ const LibraryPage = () => {
   ]);
 
   const filteredLibraryItems = useMemo(() => {
-    if (activeFilter === "downloaded") {
+    if (libraryFilter === "downloaded") {
       return downloadedItems;
     }
     return libraryItems;
-  }, [libraryItems, activeFilter, downloadedItems]);
+  }, [libraryItems, libraryFilter, downloadedItems]);
 
-  if (isLoading && activeFilter !== "downloaded")
+  if (isLoading && libraryFilter !== "downloaded")
     return <LibraryGridSkeleton />;
 
   if (errorMessage && !isOffline) {
@@ -306,10 +306,10 @@ const LibraryPage = () => {
               <div className="flex items-center gap-2 mb-6">
                 {!isOffline && (
                   <Button
-                    onClick={() => setActiveFilter("all")}
+                    onClick={() => setLibraryFilter("all")}
                     className={cn(
                       "rounded-full h-8 px-4 text-xs font-semibold",
-                      activeFilter === "all"
+                      libraryFilter === "all"
                         ? "bg-white text-black hover:bg-white/90"
                         : "bg-zinc-800 text-white hover:bg-zinc-700"
                     )}
@@ -318,10 +318,10 @@ const LibraryPage = () => {
                   </Button>
                 )}
                 <Button
-                  onClick={() => setActiveFilter("downloaded")}
+                  onClick={() => setLibraryFilter("downloaded")}
                   className={cn(
                     "rounded-full h-8 px-4 text-xs font-semibold",
-                    activeFilter === "downloaded"
+                    libraryFilter === "downloaded"
                       ? "bg-white text-black hover:bg-white/90"
                       : "bg-zinc-800 text-white hover:bg-zinc-700"
                   )}
@@ -333,7 +333,7 @@ const LibraryPage = () => {
               <div className="flex flex-col gap-2">
                 {filteredLibraryItems.length === 0 ? (
                   <p className="text-zinc-400 px-2">
-                    {activeFilter === "downloaded"
+                    {libraryFilter === "downloaded"
                       ? "You have no downloaded content yet."
                       : t("sidebar.emptyLibrary")}
                   </p>
