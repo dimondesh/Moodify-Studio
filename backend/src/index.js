@@ -51,36 +51,28 @@ const __dirname = path.resolve();
 const httpServer = createServer(app);
 const { userSockets, userActivities } = initializeSocket(httpServer);
 
-// --- НАЧАЛО БЛОКА CORS ---
-// Определяем разрешенные домены из переменных окружения
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN_URL,
   process.env.ADMIN_ORIGIN_URL,
 ];
 
-// Логируем конфигурацию для удобной отладки при старте сервера
 console.log(
   `CORS middleware configured for origins: ${allowedOrigins.join(", ")}`
 );
 
-// Используем middleware cors с функцией для более гибкой проверки
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Разрешаем запросы без origin (например, Postman, мобильные приложения)
-      // или если origin есть в нашем списке разрешенных
       if (!origin || allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        // Блокируем запросы с других доменов
         console.warn(`CORS: Blocked origin -> ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // Это критически важно для передачи токенов аутентификации
+    credentials: true,
   })
 );
-// --- КОНЕЦ БЛОКА CORS ---
 
 app.use(
   fileUpload({
@@ -92,8 +84,6 @@ app.use(
 );
 
 const tempDir = path.join(process.cwd(), "temp");
-
-// ... (весь остальной код вашего файла остается без изменений) ...
 
 cron.schedule(
   "0 */6 * * *", // Каждые 6 часов
