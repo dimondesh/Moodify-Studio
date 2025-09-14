@@ -1,50 +1,51 @@
-# Moodify - Your Personal Music Streaming Service
-
-![Moodify Preview](https://github.com/dimondesh/Moodify/blob/main/Preview.png) Moodify is a modern, full-featured music streaming service designed to help you enjoy your favorite music, organize your collection, and discover new tracks. This project serves as a personal portfolio piece, showcasing a complete web application development cycle.
-
-## 🚀 Key Features
-
-* **Music Library:** Browse and listen to an extensive collection of songs and albums.
-* **Personal Collection:** Add your favorite tracks to your personal liked songs collection.
-* **Playback Control:** An intuitive player with functions for play, pause, track skipping, repeat (single or playlist), shuffle, and volume control.
-* **Responsive Design:** Enjoy your music seamlessly across all devices, from desktop computers to mobile phones.
-* **User Authentication:** Secure login and account management powered by Firebase.
-* **Song Uploads:** Users can upload their own tracks (backend functionality).
-* **Activity Statuses:** Monitor the real-time activity status of other users using Socket.IO.
-* **Search Functionality:** Quickly find songs by title or artist.
-
-## 🛠️ Technologies Used
-
-The Moodify project is built using a modern technology stack:
-
-**Frontend:**
-* **React:** A popular JavaScript library for building user interfaces.
-* **TypeScript:** A superset of JavaScript that adds static typing for improved code reliability and quality.
-* **Vite:** A fast and lightweight build tool for modern web projects.
-* **Tailwind CSS:** A utility-first CSS framework for rapid and flexible styling.
-* **Zustand:** A lightweight and convenient state management solution for React applications.
-* **React Router DOM:** For declarative routing in React applications.
-* **Shadcn/ui:** A collection of reusable UI components built with Radix UI and Tailwind CSS.
-* **Axios:** An HTTP client for making API requests.
-* **Socket.IO Client:** For real-time bidirectional event-based communication.
-
-**Backend:**
-* **Node.js:** A JavaScript runtime environment for server-side applications.
-* **Express.js:** A fast, unopinionated, minimalist web framework for Node.js.
-* **MongoDB:** A NoSQL database for storing application data.
-* **Mongoose:** An ODM (Object Data Modeling) library for MongoDB and Node.js.
-* **Firebase Admin SDK:** For verifying user tokens and integrating with Firebase Authentication.
-* **Socket.IO:** For real-time communication between the client and server.
-* **Express Fileupload:** Middleware for handling file uploads.
-* **Sharp:** (Planned/Used) A high-performance Node.js image processing library (for resizing and cropping album covers).
-* **Cloudinary:** (Planned/Used) A cloud-based service for storing and managing media files (images and audio).
-
-**Database & Authentication:**
-* **MongoDB Atlas:** Cloud-hosted MongoDB database service.
-* **Firebase Authentication:** A service for user management and authentication.
-
-**Deployment:**
-* **Vercel:** For deploying the frontend application.
-* **Render:** For deploying the backend server.
-
-
+Moodify - Your Personal Music Streaming Service
+![alt text](https://github.com/dimondesh/Moodify/blob/main/Preview.png)
+Moodify is a modern, feature-rich music streaming service built from the ground up to provide a personalized, interactive, and seamless listening experience. This full-stack application showcases a wide range of modern web technologies, from an advanced Web Audio API player to real-time social features and complete offline PWA capabilities.
+🚀 Key Features
+🎧 Advanced Audio Player: A high-performance player built with the Web Audio API, featuring:
+Separate instrumental and vocal track controls.
+A multi-band Equalizer with presets and custom settings.
+Reverb effects to simulate different room sizes.
+Adjustable playback speed.
+🤖 AI-Powered Personalization:
+AI Playlist Generator: Describe a mood or activity (e.g., "upbeat rock for a workout"), and let AI curate a playlist for you using the Gemini API.
+Personalized Mixes & Recommendations: Backend cron jobs regularly analyze your listening history to generate daily mixes, "Discover Weekly," "On Repeat," and "New Releases" playlists.
+⚡ Real-Time Social Features:
+Live Chat: Instant messaging between mutual followers, built with Socket.IO.
+Friend Activity: See what your friends are listening to in real-time.
+Features typing indicators and read receipts for a polished experience.
+🌐 Full Offline Support (PWA):
+Download albums, playlists, and mixes for a complete offline listening experience.
+Uses IndexedDB for metadata and the Cache API for audio/image assets.
+Automatic Library Sync: Intelligently updates your downloaded content when you reconnect.
+🌐 Multi-Language Support:
+Fully internationalized frontend with support for English, Russian, and Ukrainian using i18next.
+🛠️ Comprehensive Admin Dashboard:
+A complete interface to manage the music catalog, including songs, albums, and artists.
+Supports bulk album creation from Spotify URLs and ZIP archives.
+🏛️ Project Philosophy & Architecture
+Moodify was designed with scalability, performance, and user experience at its core.
+Frontend: The React application is built on a modular and scalable architecture. State is managed with Zustand, using separate stores for different domains (player, auth, UI) to ensure maintainability. An offline-first approach is central to the design, providing a reliable experience regardless of network conditions.
+Backend: The Express.js server follows a classic MVC-like pattern, separating concerns into routes, controllers, models, and a robust service layer. This ensures that business logic is decoupled and testable. Real-time communication is cleanly handled by a dedicated Socket.IO module, while heavy computational tasks like generating recommendations are offloaded to scheduled cron jobs, keeping the API fast and responsive.
+🛠️ Technologies Used
+Frontend
+Framework: React & TypeScript
+Build Tool: Vite
+State Management: Zustand
+Styling: Tailwind CSS & shadcn/ui
+Routing: React Router DOM
+Data Fetching: Axios
+Real-Time: Socket.IO Client
+Offline: IndexedDB, Service Workers, Cache API
+Backend
+Runtime: Node.js with Express.js
+Language: JavaScript (ESM)
+Database: MongoDB with Mongoose
+Real-Time: Socket.IO
+File Handling: express-fileupload for uploads, Sharp for image optimization
+Scheduling: node-cron for background recommendation jobs
+Authentication & Deployment
+Authentication: Firebase Authentication (Email/Password, Google OAuth)
+File Storage: Bunny.net CDN for optimized media delivery
+AI Services: Google Gemini API
+Deployment: Vercel (Frontend), Render (Backend), MongoDB Atlas (Database)

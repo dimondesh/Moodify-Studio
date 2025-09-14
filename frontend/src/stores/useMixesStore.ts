@@ -33,11 +33,9 @@ interface MixesStore {
   toggleMixInLibrary: (mixId: string) => Promise<void>;
 }
 
-// --- ДОБАВЛЕНО: Время жизни кэша (1 день) ---
 const CACHE_DURATION = 60 * 60 * 1000;
 
 export const useMixesStore = create<MixesStore>((set, get) => ({
-  // <-- Добавляем get
   genreMixes: [],
   moodMixes: [],
   isLoading: false,

@@ -1,7 +1,7 @@
 import { Song } from "../models/song.model.js";
 import { Album } from "../models/album.model.js";
 import { Playlist } from "../models/playlist.model.js";
-import { Mix } from "../models/mix.model.js"; // <--- ИМПОРТ МОДЕЛИ MIX
+import { Mix } from "../models/mix.model.js";
 
 export const getSharedEntity = async (req, res, next) => {
   try {

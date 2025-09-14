@@ -75,8 +75,6 @@ const removeContentFromArtists = async (artistIds, contentId, contentType) => {
   );
 };
 
-// --- CRUD для SONGS ---
-
 export const createSong = async (req, res, next) => {
   try {
     if (!req.user || !req.user.isAdmin)
@@ -111,7 +109,6 @@ export const createSong = async (req, res, next) => {
     const artistIds = JSON.parse(artistIdsJsonString);
 
     if (!finalAlbumId) {
-      // Логика для сингла
       if (!req.files.imageFile)
         return res
           .status(400)
@@ -131,13 +128,11 @@ export const createSong = async (req, res, next) => {
       finalAlbumId = newAlbum._id;
       await updateArtistsContent(artistIds, newAlbum._id, "albums");
     } else {
-      // Логика для трека в существующем альбоме
       const existingAlbum = await Album.findById(finalAlbumId);
       if (!existingAlbum)
         return res.status(404).json({ message: "Album not found." });
 
       if (req.files.imageFile) {
-        // Если у трека своя обложка
         imageUpload = await uploadFile(req.files.imageFile, "songs/images");
       } else {
         imageUpload.url = existingAlbum.imageUrl;
@@ -282,12 +277,13 @@ export const updateSong = async (req, res, next) => {
       }
       const uploadResult = await uploadFile(imageFile, "songs/images");
       song.imageUrl = uploadResult.url;
-      song.imagePublicId = uploadResult.publicId; // Обновляем ID
-    }
-    // ... (остальная логика функции без изменений)
-    else if (!song.albumId || song.albumId === "none" || song.albumId === "") {
+      song.imagePublicId = uploadResult.publicId;
+    } else if (
+      !song.albumId ||
+      song.albumId === "none" ||
+      song.albumId === ""
+    ) {
       if (!song.imageUrl) {
-        // Если нет ни нового, ни старого изображения для сингла
         return res.status(400).json({
           message: "Image file is required for singles.",
         });
@@ -397,8 +393,6 @@ export const deleteSong = async (req, res, next) => {
     next(error);
   }
 };
-
-// --- CRUD для ALBUMS ---
 
 export const createAlbum = async (req, res, next) => {
   try {
@@ -551,8 +545,6 @@ export const deleteAlbum = async (req, res, next) => {
   }
 };
 
-// --- CRUD для ARTISTS ---
-
 export const createArtist = async (req, res, next) => {
   try {
     if (!req.user?.isAdmin)
@@ -682,8 +674,6 @@ export const deleteArtist = async (req, res, next) => {
     next(error);
   }
 };
-
-// --- АВТОМАТИЧЕСКАЯ ЗАГРУЗКА АЛЬБОМА ---
 
 export const uploadFullAlbumAuto = async (req, res, next) => {
   console.log("🚀 Reached /admin/albums/upload-full-album route - AUTO UPLOAD");
@@ -1000,8 +990,6 @@ export const getMoods = async (req, res, next) => {
     next(error);
   }
 };
-
-// ------ ФУНКЦИИ ДЛЯ ПАГИНАЦИИ НА АДМИНКЕ ----
 
 export const getPaginatedSongs = async (req, res, next) => {
   try {

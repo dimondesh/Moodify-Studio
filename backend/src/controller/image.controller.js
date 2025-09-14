@@ -13,21 +13,18 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs/promises";
 
-// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
-// Теперь она сначала сохраняет файл локально, а потом загружает
+
 const optimizeAndUpload = async (imageBuffer, folder) => {
   const tempFileName = `${uuidv4()}.webp`;
   const tempFilePath = path.join(process.cwd(), "temp", tempFileName);
 
   try {
-    // 1. Оптимизируем и сохраняем во временный файл
     await sharp(imageBuffer)
       .resize({ width: 800, height: 800, fit: "cover" })
       .webp({ quality: 80 })
       .toFile(tempFilePath);
 
-    // 2. Загружаем из временного файла в Bunny.net
-    const bunnyFileName = `${uuidv4()}.webp`; // Даем новое уникальное имя для Bunny
+    const bunnyFileName = `${uuidv4()}.webp`; 
     const result = await uploadToBunny(tempFilePath, folder, bunnyFileName);
 
     return result;
@@ -38,11 +35,9 @@ const optimizeAndUpload = async (imageBuffer, folder) => {
     );
     throw error;
   } finally {
-    // 3. Удаляем временный файл в любом случае (успех или ошибка)
     try {
       await fs.unlink(tempFilePath);
     } catch (cleanupError) {
-      // Игнорируем ошибку, если файла уже нет
       if (cleanupError.code !== "ENOENT") {
         console.error(
           `Error deleting temporary file ${tempFilePath}:`,
@@ -53,7 +48,6 @@ const optimizeAndUpload = async (imageBuffer, folder) => {
   }
 };
 
-// Главная функция, которую будем вызывать (остается без изменений)
 export const optimizeExistingImages = async (req, res) => {
   if (!req.user || !req.user.isAdmin) {
     return res.status(403).json({ message: "Access denied." });
@@ -70,7 +64,6 @@ export const optimizeExistingImages = async (req, res) => {
     try {
       console.log("--- Starting Full Image Optimization ---");
 
-      // 1. ОПТИМИЗАЦИЯ ОБЛОЖЕК АЛЬБОМОВ
       const albumsToOptimize = await Album.find({
         imageUrl: { $not: /\.webp/ },
       }).lean();
@@ -115,7 +108,6 @@ export const optimizeExistingImages = async (req, res) => {
         }
       }
 
-      // 2. ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЙ АРТИСТОВ (и баннеров)
       const artistsToOptimize = await Artist.find({
         $or: [
           { imageUrl: { $exists: true, $ne: null, $not: /\.webp/ } },

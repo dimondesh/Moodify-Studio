@@ -5,7 +5,7 @@ import type { Song } from "../types";
 import toast from "react-hot-toast";
 import { useOfflineStore } from "./useOfflineStore";
 import { silentAudioService } from "@/lib/silentAudioService";
-import { axiosInstance } from "@/lib/axios"; // <--- ДОБАВЛЕНО
+import { axiosInstance } from "@/lib/axios"; 
 
 interface PlayerStore {
   currentSong: Song | null;

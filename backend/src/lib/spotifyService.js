@@ -3,17 +3,12 @@ import axios from "axios";
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token"; 
+const SPOTIFY_AUTH_URL = "https://accounts.spotify.com/api/token";
 
-let accessToken = null; 
-let tokenExpiresAt = 0; 
+let accessToken = null;
+let tokenExpiresAt = 0;
 
-/**
- * Получает или обновляет токен доступа Spotify.
- * @returns {Promise<string>} Токен доступа Spotify.
- */
 const getAccessToken = async () => {
-  // Если токен существует и еще действителен, возвращаем его
   if (accessToken && Date.now() < tokenExpiresAt) {
     return accessToken;
   }
@@ -21,7 +16,7 @@ const getAccessToken = async () => {
   try {
     const response = await axios.post(
       SPOTIFY_AUTH_URL,
-      "grant_type=client_credentials", 
+      "grant_type=client_credentials",
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -58,21 +53,11 @@ const getAccessToken = async () => {
   }
 };
 
-/**
- * Извлекает ID альбома из Spotify URL.
- * @param {string} albumUrl - Spotify URL альбома.
- * @returns {string|null} ID альбома или null, если URL недействителен.
- */
 const getAlbumIdFromUrl = (albumUrl) => {
   const match = albumUrl.match(/spotify\.com\/album\/([a-zA-Z0-9]+)/);
   return match ? match[1] : null;
 };
 
-/**
- * Получает детальную информацию об альбоме и его треках из Spotify API.
- * @param {string} albumUrl - Spotify URL альбома.
- * @returns {Promise<object|null>} Объект с информацией об альбоме и треках или null при ошибке.
- */
 export const getAlbumDataFromSpotify = async (albumUrl) => {
   const albumId = getAlbumIdFromUrl(albumUrl);
   if (!albumId) {
@@ -146,7 +131,7 @@ export const getArtistDataFromSpotify = async (artistId) => {
   }
 
   try {
-    const token = await getAccessToken(); 
+    const token = await getAccessToken();
     const response = await axios.get(
       `https://api.spotify.com/v1/artists/${artistId}`,
       {

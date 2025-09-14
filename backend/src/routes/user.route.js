@@ -18,26 +18,25 @@ import {
   removeRecentSearch,
   clearRecentSearches,
   updateUserPrivacy,
-  getFavoriteArtists, // <-- ИМПОРТ
-  getNewReleases, // <-- ИМПОРТ
-  getPlaylistRecommendations, // <-- ИМПОРТ
+  getFavoriteArtists,
+  getNewReleases,
+  getPlaylistRecommendations,
 } from "../controller/user.controller.js";
 
 const router = Router();
 
-// --- СТАТИЧЕСКИЕ МАРШРУТЫ ---
 router.get("/me", protectRoute, getCurrentUser);
 router.get("/mutuals", protectRoute, getMutualFollowers);
 router.get("/unread-counts", protectRoute, getUnreadCounts);
 router.get("/me/recent-searches", protectRoute, getRecentSearches);
 router.post("/me/recent-searches", protectRoute, addRecentSearch);
-router.get("/me/favorite-artists", protectRoute, getFavoriteArtists); // <-- НОВЫЙ РОУТ
-router.get("/me/recommendations/new-releases", protectRoute, getNewReleases); // <-- НОВЫЙ РОУТ
+router.get("/me/favorite-artists", protectRoute, getFavoriteArtists);
+router.get("/me/recommendations/new-releases", protectRoute, getNewReleases);
 router.get(
   "/me/recommendations/playlists",
   protectRoute,
   getPlaylistRecommendations
-); // <-- НОВЫЙ РОУТ
+);
 
 router.delete("/me/recent-searches/all", protectRoute, clearRecentSearches);
 router.delete(
@@ -46,7 +45,6 @@ router.delete(
   removeRecentSearch
 );
 
-// --- ДИНАМИЧЕСКИЕ МАРШРУТЫ ---
 router.get("/messages/:userId", protectRoute, getMessages);
 router.get("/:userId", protectRoute, getUserProfile);
 router.post("/:userId/follow", protectRoute, followUser);

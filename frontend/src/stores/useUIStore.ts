@@ -97,7 +97,6 @@ export const useUIStore = create<UIStore>((set) => ({
     try {
       const { data } = await axiosInstance.get("/home/bootstrap");
 
-      // Гидратация MusicStore
       useMusicStore.setState({
         featuredSongs: data.featuredSongs || [],
         trendingSongs: data.trendingSongs || [],
@@ -108,7 +107,6 @@ export const useUIStore = create<UIStore>((set) => ({
         homePageDataLastFetched: Date.now(),
       });
 
-      // Гидратация LibraryStore
       useLibraryStore.setState({
         albums: data.library.albums || [],
         likedSongs: data.library.likedSongs || [],
@@ -118,19 +116,16 @@ export const useUIStore = create<UIStore>((set) => ({
         generatedPlaylists: data.library.generatedPlaylists || [],
       });
 
-      // Гидратация PlaylistStore
       usePlaylistStore.setState({
         publicPlaylists: data.publicPlaylists || [],
         recommendedPlaylists: data.recommendedPlaylists || [],
       });
 
-      // Гидратация MixesStore
       useMixesStore.setState({
         genreMixes: data.genreMixes || [],
         moodMixes: data.moodMixes || [],
       });
 
-      // Гидратация GeneratedPlaylistStore
       useGeneratedPlaylistStore.setState({
         allGeneratedPlaylists: data.allGeneratedPlaylists || [],
       });

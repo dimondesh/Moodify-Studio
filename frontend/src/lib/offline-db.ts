@@ -61,7 +61,6 @@ const initDB = () => {
 
 export const getDb = initDB;
 
-// --- Общие функции ---
 export const saveUserItem = async <T extends StoreNames<MoodifyDB>>(
   storeName: T,
   item: MoodifyDB[T]["value"]
@@ -108,7 +107,6 @@ export const getAllUserSongs = async (
   return db.getAllFromIndex("songs", "by-user", userId);
 };
 
-// GET ITEM BY ID FOR A USER
 export const getUserItem = async <T extends StoreNames<MoodifyDB>>(
   storeName: T,
   key: string,

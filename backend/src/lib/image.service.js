@@ -6,15 +6,6 @@ import path from "path";
 import os from "os";
 import fs from "fs/promises";
 
-/**
- * Оптимизирует изображение, загружает его на Bunny.net и удаляет временный файл.
- * @param {object | Buffer} source - Файл из express-fileupload или буфер.
- * @param {string} originalFileName - Имя файла для определения типа.
- * @param {string} folder - Папка на Bunny.net (e.g., 'playlist_covers').
- * @param {number} width - Целевая ширина.
- * @param {number} quality - Качество WebP (1-100).
- * @returns {Promise<{url: string, path: string}>}
- */
 export const optimizeAndUploadImage = async (
   source,
   originalFileName,
@@ -23,7 +14,6 @@ export const optimizeAndUploadImage = async (
   quality = 80
 ) => {
   const newFileName = `${uuidv4()}.webp`;
-  // Создаем временный путь, даже если работаем с буфером, для записи результата sharp
   const tempOptimizedFilePath = path.join(os.tmpdir(), newFileName);
 
   const sourceBuffer = source.tempFilePath

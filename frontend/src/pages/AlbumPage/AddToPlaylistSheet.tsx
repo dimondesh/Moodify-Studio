@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // frontend/src/pages/AlbumPage/AddToPlaylistSheet.tsx
 
 import React, { useEffect, useState } from "react";
@@ -46,13 +47,11 @@ const AddToPlaylistSheet: React.FC<AddToPlaylistSheetProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Запрашиваем плейлисты только при открытии
       fetchOwnedPlaylists();
     }
   }, [isOpen, fetchOwnedPlaylists]);
 
   useEffect(() => {
-    // Обновляем локальное состояние, когда пропсы или плейлисты из стора меняются
     if (isOpen) {
       setLocalIsLiked(isSongLiked(song._id));
       const playlistsContainingSong = new Set(

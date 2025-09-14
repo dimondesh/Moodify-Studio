@@ -7,8 +7,8 @@ import type { Song } from "../../types";
 
 type PlayButtonProps = {
   song: Song;
-  songs: Song[]; // Весь список песен для очереди
-  songIndex: number; // Индекс текущей песни в списке
+  songs: Song[];
+  songIndex: number;
   onClick?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 };
 
@@ -16,7 +16,6 @@ const PlayButton = ({ song, songs, songIndex, onClick }: PlayButtonProps) => {
   const { currentSong, isPlaying, playAlbum, togglePlay, queue } =
     usePlayerStore();
 
-  // Проверяем, играет ли именно этот трек в контексте именно этого списка
   const isCurrentlyPlayingFromThisList =
     isPlaying &&
     currentSong?._id === song._id &&
@@ -30,7 +29,6 @@ const PlayButton = ({ song, songs, songIndex, onClick }: PlayButtonProps) => {
     if (isCurrentlyPlayingFromThisList) {
       togglePlay();
     } else {
-      // Используем playAlbum для установки всей подборки как новой очереди
       playAlbum(songs, songIndex);
     }
   };

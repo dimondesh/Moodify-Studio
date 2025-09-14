@@ -18,7 +18,7 @@ const songSchema = new mongoose.Schema(
     albumId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Album",
-      default: null, // Может быть синглом без альбома
+      default: null,
     },
     imageUrl: {
       type: String,

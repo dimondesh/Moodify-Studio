@@ -139,7 +139,6 @@ export const followUser = async (req, res, next) => {
     const isFollowing = currentUser.followingUsers.includes(userToFollowId);
 
     if (isFollowing) {
-      // Отписаться
       await User.updateOne(
         { _id: currentUserMongoId },
         { $pull: { followingUsers: userToFollowId } }
@@ -150,7 +149,6 @@ export const followUser = async (req, res, next) => {
       );
       res.status(200).json({ message: "Unfollowed successfully" });
     } else {
-      // Подписаться
       await User.updateOne(
         { _id: currentUserMongoId },
         { $addToSet: { followingUsers: userToFollowId } }
@@ -197,7 +195,7 @@ export const updateUserProfile = async (req, res, next) => {
         "profile_pictures",
         400,
         85
-      ); 
+      );
       updateDataMongo.imageUrl = result.url;
       updateDataFirebase.photoURL = result.url;
     }

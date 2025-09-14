@@ -498,7 +498,6 @@ export const getPlaylistRecommendations = async (req, res, next) => {
 
     let recommendations = [];
 
-    // --- РЕКОМЕНДАЦИИ НА ОСНОВЕ ТРЕКОВ В ПЛЕЙЛИСТЕ ---
     if (playlist.songs && playlist.songs.length > 0) {
       const songDetails = await Song.find({ _id: { $in: playlist.songs } })
         .select("genres moods artist")
@@ -509,9 +508,7 @@ export const getPlaylistRecommendations = async (req, res, next) => {
       const artistIds = [...new Set(songDetails.flatMap((s) => s.artist))];
 
       recommendations = await Song.aggregate([
-        // Исключаем треки, которые уже есть в плейлисте
         { $match: { _id: { $nin: playlist.songs } } },
-        // Ищем похожие треки
         {
           $match: {
             $or: [
@@ -521,7 +518,6 @@ export const getPlaylistRecommendations = async (req, res, next) => {
             ],
           },
         },
-        // Добавляем "очки" за совпадения
         {
           $addFields: {
             score: {
@@ -533,15 +529,13 @@ export const getPlaylistRecommendations = async (req, res, next) => {
                     { $size: { $setIntersection: ["$artist", artistIds] } },
                     2,
                   ],
-                }, // Увеличиваем вес совпадения по артисту
+                },
               ],
             },
           },
         },
-        // Сортируем по очкам
         { $sort: { score: -1, playCount: -1 } },
         { $limit: 20 },
-        // Популируем артистов
         {
           $lookup: {
             from: "artists",
@@ -553,15 +547,12 @@ export const getPlaylistRecommendations = async (req, res, next) => {
       ]);
     }
 
-    // --- РЕКОМЕНДАЦИИ "MADE FOR YOU" ---
     if (recommendations.length === 0) {
-      // Имитируем req/res для вызова контроллера
       const mockReq = { user: { id: userId } };
       const mockRes = { json: (data) => (recommendations = data) };
       await getMadeForYouSongs(mockReq, mockRes, next);
     }
 
-    // --- Fallback ТРЕНДОВЫЕ/ПОПУЛЯРНЫЕ ТРЕКИ ---
     if (recommendations.length === 0) {
       const mockReq = {};
       const mockRes = { json: (data) => (recommendations = data) };
@@ -584,10 +575,8 @@ export const createPlaylistWithAI = async (req, res, next) => {
       return res.status(400).json({ message: "Prompt is required" });
     }
 
-    // --- Анализ промпта и получение метаданных ---
     const metadata = await analyzePromptForPlaylistMetadata(prompt);
 
-    // Ищем ID жанров и настроений в нашей БД
     const genreDocs = await Genre.find({
       name: { $in: metadata.genres.map((g) => new RegExp(`^${g}$`, "i")) },
     });
@@ -597,12 +586,11 @@ export const createPlaylistWithAI = async (req, res, next) => {
     const genreIds = genreDocs.map((g) => g._id);
     const moodIds = moodDocs.map((m) => m._id);
 
-    // --- Поиск кандидатов в БД ---
     const candidateSongs = await Song.find({
       $or: [{ genres: { $in: genreIds } }, { moods: { $in: moodIds } }],
     })
       .populate("artist", "name")
-      .limit(150) // Собираем большой пул кандидатов
+      .limit(150)
       .lean();
 
     if (candidateSongs.length < 10) {
@@ -618,7 +606,6 @@ export const createPlaylistWithAI = async (req, res, next) => {
       artistName: song.artist.map((a) => a.name).join(", "),
     }));
 
-    // --- Курирование с помощью ИИ ---
     const selectedSongsByAI = await selectSongsFromCandidates(
       prompt,
       formattedCandidates
@@ -642,7 +629,6 @@ export const createPlaylistWithAI = async (req, res, next) => {
       }
     }
 
-    // --- Создание плейлиста ---
     const newPlaylist = new Playlist({
       title: metadata.title,
       description: metadata.description,

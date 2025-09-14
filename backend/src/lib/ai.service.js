@@ -166,7 +166,6 @@ export const analyzePromptForPlaylistMetadata = async (prompt) => {
   }
 };
 
-// Выбирает лучшие треки из предоставленного списка кандидатов.
 export const selectSongsFromCandidates = async (originalPrompt, candidates) => {
   if (!GEMINI_API_KEY) throw new Error("AI Service is not configured.");
   if (candidates.length === 0) return [];
@@ -218,7 +217,7 @@ export const selectSongsFromCandidates = async (originalPrompt, candidates) => {
       "[AI Service] Error in selectSongsFromCandidates:",
       error.response?.data?.error?.message || error.message
     );
-    // Fallback: если ИИ не справился, просто возвращаем 20 случайных треков из кандидатов.
+    //Fallback
     return candidates
       .sort(() => 0.5 - Math.random())
       .slice(0, 20)

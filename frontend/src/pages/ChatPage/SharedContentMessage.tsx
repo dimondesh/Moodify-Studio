@@ -7,7 +7,7 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLibraryStore } from "@/stores/useLibraryStore";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next"; // <--- ИМПОРТ t
+import { useTranslation } from "react-i18next";
 
 interface SharedContentMessageProps {
   entityType: "song" | "album" | "playlist" | "mix";
@@ -27,7 +27,7 @@ export const SharedContentMessage: React.FC<SharedContentMessageProps> = ({
   const [entity, setEntity] = useState<EntityData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { t } = useTranslation(); // <--- ИНИЦИАЛИЗАЦИЯ t
+  const { t } = useTranslation();
 
   const { setCurrentSong, playAlbum } = usePlayerStore();
   const {

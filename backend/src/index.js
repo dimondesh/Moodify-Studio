@@ -17,8 +17,6 @@ import cron from "node-cron";
 import fs from "fs";
 import { initializeSocket, io } from "./lib/socket.js";
 import libraryRoutes from "./routes/library.route.js";
-import { protectRoute } from "./middleware/auth.middleware.js";
-import { Playlist } from "./models/playlist.model.js";
 import artistRoutes from "./routes/artist.route.js";
 import mixRoutes from "./routes/mix.route.js";
 import cronRoutes from "./routes/cron.route.js";

@@ -17,7 +17,7 @@ interface UsersListProps {
   onUserSelect: (user: User) => void;
   selectedUser: User | null;
   onlineUsers: Set<string>;
-  userActivities: Map<string, UserActivity | "Idle">; // Тип уже исправлен
+  userActivities: Map<string, UserActivity | "Idle">;
 }
 
 const UsersList = ({

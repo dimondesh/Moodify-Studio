@@ -78,7 +78,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   updateCurrentPlaylistFromSocket: (playlist) => {
     set((state) => {
       if (state.currentPlaylist?._id === playlist._id) {
-        // Также обновляем кэш
         const newCachedPlaylists = new Map(state.cachedPlaylists);
         newCachedPlaylists.set(playlist._id, {
           data: playlist,

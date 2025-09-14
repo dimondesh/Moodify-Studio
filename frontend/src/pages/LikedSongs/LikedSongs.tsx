@@ -15,7 +15,6 @@ import { format } from "date-fns";
 import EqualizerTitle from "@/components/ui/equalizer-title";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Song } from "@/types";
-// --- ИЗМЕНЕНИЕ: Импортируем утилиты ---
 import { getArtistNames, getOptimizedImageUrl } from "@/lib/utils";
 import SongOptionsDrawer from "../PlaylistPage/SongOptionsDrawer";
 
@@ -106,7 +105,6 @@ const LikedSongsPage = () => {
               className="flex-shrink-0"
             >
               <img
-                // --- ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЯ ---
                 src={getOptimizedImageUrl(
                   song.imageUrl || "/default-song-cover.png",
                   80
@@ -185,7 +183,6 @@ const LikedSongsPage = () => {
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <img
-              // --- ОПТИМИЗАЦИЯ ИЗОБРАЖЕНИЯ ---
               src={getOptimizedImageUrl(
                 song.imageUrl || "/default-song-cover.png",
                 100

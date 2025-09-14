@@ -70,7 +70,6 @@ const RecentSearchesList: React.FC<RecentSearchesListProps> = ({
         : `sidebar.subtitle.${item.itemType.toLowerCase()}`;
     let subtitle = String(t(subtitleKey, item.itemType));
 
-    // Добавляем артистов и для треков тоже
     if (
       (item.itemType === "Album" || item.itemType === "Song") &&
       Array.isArray(item.artist) &&

@@ -33,7 +33,6 @@ export const getSecondaryHomePageData = async (req, res, next) => {
   try {
     const userId = req.user?.id;
 
-    // --- Запросы, которые выполняются для всех пользователей (кроме featured) ---
     const commonPromises = [
       getTrendingSongs(req, res, next, true, HOME_SECTION_LIMIT),
       getDailyMixes(req, res, next, true, HOME_SECTION_LIMIT),
@@ -41,7 +40,6 @@ export const getSecondaryHomePageData = async (req, res, next) => {
       getMyGeneratedPlaylists(req, res, next, true, HOME_SECTION_LIMIT),
     ];
 
-    // --- Запросы, которые выполняются только для авторизованных пользователей ---
     const userSpecificPromises = userId
       ? [
           getMadeForYouSongs(req, res, next, true, HOME_SECTION_LIMIT),
@@ -91,36 +89,27 @@ export const getSecondaryHomePageData = async (req, res, next) => {
   }
 };
 
-// НОВЫЙ ОПТИМИЗИРОВАННЫЙ КОНТРОЛЛЕР
 export const getBootstrapData = async (req, res, next) => {
   try {
     const userId = req.user?.id;
 
-    // --- Параллельно запускаем все запросы ---
     const promises = [
-      // 1. Быстрые подборки (бывший primary)
       getQuickPicks(req, res, next, true, 6),
 
-      // 2. Тренды
       getTrendingSongs(req, res, next, true, HOME_SECTION_LIMIT),
 
-      // 3. Миксы
       getDailyMixes(req, res, next, true, HOME_SECTION_LIMIT),
 
-      // 4. Публичные плейлисты
       getPublicPlaylists(req, res, next, true, HOME_SECTION_LIMIT),
 
-      // 5. Сгенерированные плейлисты
       getMyGeneratedPlaylists(req, res, next, true, HOME_SECTION_LIMIT),
 
-      // 6. Персональные данные
       getMadeForYouSongs(req, res, next, true, HOME_SECTION_LIMIT),
       getListenHistory(req, res, next, true, HOME_SECTION_LIMIT),
       getFavoriteArtists(req, res, next, true, HOME_SECTION_LIMIT),
       getNewReleases(req, res, next, true, HOME_SECTION_LIMIT),
       getPlaylistRecommendations(req, res, next, true, HOME_SECTION_LIMIT),
 
-      // 7. ОПТИМИЗИРОВАННЫЙ ЗАПРОС К БИБЛИОТЕКЕ
       getOptimizedLibrarySummary(userId),
     ];
 
@@ -138,9 +127,7 @@ export const getBootstrapData = async (req, res, next) => {
       librarySummary,
     ] = await Promise.all(promises);
 
-    // --- Формируем единый ответ ---
     const bootstrapData = {
-      // Данные для главной страницы
       featuredSongs,
       trendingSongs,
       genreMixes: mixesData.genreMixes,
@@ -152,7 +139,6 @@ export const getBootstrapData = async (req, res, next) => {
       favoriteArtists,
       newReleases,
       recommendedPlaylists,
-      // Данные библиотеки
       library: librarySummary,
     };
 
@@ -163,15 +149,12 @@ export const getBootstrapData = async (req, res, next) => {
   }
 };
 
-// НОВАЯ ОПТИМИЗИРОВАННАЯ ФУНКЦИЯ для получения библиотеки одним запросом
 async function getOptimizedLibrarySummary(userId) {
   const objectId = new mongoose.Types.ObjectId(userId);
 
   const libraryData = await Library.aggregate([
-    // 1. Находим библиотеку пользователя
     { $match: { userId: objectId } },
 
-    // 2. Выполняем все lookups параллельно
     {
       $lookup: {
         from: "albums",
@@ -220,7 +203,6 @@ async function getOptimizedLibrarySummary(userId) {
         as: "genPlaylistDetails",
       },
     },
-    // Дополнительные lookups для populate
     {
       $lookup: {
         from: "artists",
@@ -246,7 +228,6 @@ async function getOptimizedLibrarySummary(userId) {
       },
     },
 
-    // 3. Проецируем финальный результат
     {
       $project: {
         _id: 0,
@@ -485,7 +466,6 @@ async function getOptimizedLibrarySummary(userId) {
     };
   }
 
-  // Очистка полей owner в плейлистах
   const finalData = libraryData[0];
   if (finalData.playlists) {
     finalData.playlists.forEach((pl) => {

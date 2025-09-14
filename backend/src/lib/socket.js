@@ -166,7 +166,6 @@ export const initializeSocket = (server) => {
           );
           return;
         }
-        // --- ПРОВЕРКА НА ВЗАИМНУЮ ПОДПИСКУ ---
         const sender = await User.findById(senderId)
           .select("followingUsers")
           .lean();
@@ -212,7 +211,6 @@ export const initializeSocket = (server) => {
         }
 
         const message = await Message.create(messageData);
-        // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
@@ -234,7 +232,6 @@ export const initializeSocket = (server) => {
       }
     });
 
-    // Когда пользователь прекращает печатать
     socket.on("typing_stopped", ({ receiverId }) => {
       const receiverSocketId = userSockets.get(receiverId);
       if (receiverSocketId) {
@@ -242,7 +239,6 @@ export const initializeSocket = (server) => {
       }
     });
 
-    // Когда пользователь открывает чат и читает сообщения
     socket.on("mark_messages_as_read", async ({ chatPartnerId }) => {
       try {
         await Message.updateMany(
@@ -250,11 +246,10 @@ export const initializeSocket = (server) => {
           { $set: { isRead: true } }
         );
 
-        // Уведомляем отправителя, что его сообщения прочитаны
         const senderSocketId = userSockets.get(chatPartnerId);
         if (senderSocketId) {
           io.to(senderSocketId).emit("messages_marked_read", {
-            chatPartnerId: userId, // Сообщаем, в каком чате произошли изменения
+            chatPartnerId: userId,
           });
         }
       } catch (error) {
@@ -289,13 +284,11 @@ export const initializeSocket = (server) => {
 
       if (userSockets.has(userId)) {
         userSockets.delete(userId);
-        userActivities.delete(userId); // Удаляем активность при отключении
+        userActivities.delete(userId);
         io.emit("user_disconnected", userId);
       }
     });
   });
 
-  // --- НАЧАЛО ИЗМЕНЕНИЯ ---
   return { userSockets, userActivities };
-  // --- КОНЕЦ ИЗМЕНЕНИЯ ---
 };

@@ -5,7 +5,6 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 var BUNNY_CDN_HOSTNAME = "moodify.b-cdn.net";
-// https://vitejs.dev/config/
 export default defineConfig({
     base: "/",
     plugins: [
@@ -24,18 +23,18 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
-                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
+                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, 
                 runtimeCaching: [
                     {
                         urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
                         handler: "CacheFirst",
                         options: {
-                            cacheName: "bunny-assets-cache", // Новое общее имя кэша
+                            cacheName: "bunny-assets-cache", 
                             expiration: {
-                                maxEntries: 750, // Увеличим лимит для песен и изображений
-                                maxAgeSeconds: 60 * 60 * 24 * 60, // 60 дней
+                                maxEntries: 750, 
+                                maxAgeSeconds: 60 * 60 * 24 * 60, 
                             },
-                            rangeRequests: true, // Важно для стриминга аудио
+                            rangeRequests: true, 
                             cacheableResponse: {
                                 statuses: [0, 200],
                             },

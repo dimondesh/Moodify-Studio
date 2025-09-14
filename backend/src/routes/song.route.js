@@ -7,7 +7,7 @@ import {
   getMadeForYouSongs,
   getTrendingSongs,
   recordListen,
-  getQuickPicks, // <-- ИМПОРТИРУЕМ НОВУЮ ФУНКЦИЮ
+  getQuickPicks,
 } from "../controller/song.controller.js";
 
 const router = Router();

@@ -31,11 +31,11 @@ router.get("/artists", protectRoute, getFollowedArtists);
 router.get("/mixes", protectRoute, getSavedMixes);
 router.post("/mixes/toggle", protectRoute, toggleMixInLibrary);
 router.get("/playlists/owned", protectRoute, getOwnedPlaylists);
-router.get("/generated-playlists", protectRoute, getSavedGeneratedPlaylists); // <-- НОВЫЙ РОУТ
+router.get("/generated-playlists", protectRoute, getSavedGeneratedPlaylists); 
 router.post(
   "/generated-playlists/toggle",
   protectRoute,
   toggleGeneratedPlaylistInLibrary
-); // <-- НОВЫЙ РОУТ
+); 
 
 export default router;

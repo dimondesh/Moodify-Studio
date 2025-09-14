@@ -148,7 +148,7 @@ function App() {
       >
         <meta
           name="description"
-          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood. Your ultimate guide in the world of music." // Улучшенное описание
+          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood. Your ultimate guide in the world of music."
         />
         <link rel="canonical" href={canonicalUrl} />{" "}
       </Helmet>

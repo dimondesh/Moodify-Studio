@@ -4,10 +4,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-// Интерфейс для состояний нормализации
 export type NormalizationMode = "off" | "loud" | "normal" | "quiet";
 
-// Изменяем частоты по умолчанию для 6-полосного эквалайзера
 export const defaultFrequencies = [
   "60",
   "310",
@@ -15,15 +13,13 @@ export const defaultFrequencies = [
   "3000",
   "6000",
   "12000",
-]; // Оставляем 6 частот
+];
 
-// Тип для эквалайзерного пресета
 export interface EqualizerPreset {
   name: string;
   gains: { [key: string]: number };
 }
 
-// пресеты эквалайзера для 6 полос
 export const equalizerPresets: EqualizerPreset[] = [
   {
     name: "Flat",
@@ -185,32 +181,28 @@ export const equalizerPresets: EqualizerPreset[] = [
   },
 ];
 
-// --- ТИПЫ ДЛЯ РЕВЕРБЕРАЦИИ ---
 export type ReverbRoomSize = "small" | "medium" | "large";
 
-// Маппинг размеров комнат к путям IR-файлов
 export const reverbIRPaths: Record<ReverbRoomSize, string> = {
   small: "/ir/small-room.wav",
   medium: "/ir/medium-room.wav",
   large: "/ir/large-hall.wav",
 };
 
-// Интерфейс для состояния настроек аудио
 interface AudioSettings {
   equalizerEnabled: boolean;
   equalizerGains: { [key: string]: number };
   normalizationMode: NormalizationMode;
   waveAnalyzerEnabled: boolean;
-  activePresetName: string; // активный пресет
+  activePresetName: string;
   reverbEnabled: boolean;
-  reverbMix: number; // 0.0 (dry) to 1.0 (wet)
+  reverbMix: number;
   reverbRoomSize: ReverbRoomSize;
   playbackRateEnabled: boolean;
   playbackRate: number;
   isReduceMotionEnabled: boolean;
 }
 
-// Интерфейс для экшенов Zustand-хранилища
 interface AudioStore extends AudioSettings {
   setEqualizerEnabled: (enabled: boolean) => void;
   setEqualizerGain: (frequency: string, gain: number) => void;
@@ -218,7 +210,7 @@ interface AudioStore extends AudioSettings {
   setWaveAnalyzerEnabled: (enabled: boolean) => void;
   applyPreset: (preset: EqualizerPreset) => void;
   resetAudioSettings: () => void;
-  updateCustomPreset: () => void; // Метод для установки "Custom" при ручной настройке
+  updateCustomPreset: () => void;
   setReverbEnabled: (enabled: boolean) => void;
   setReverbMix: (mix: number) => void;
   setReverbRoomSize: (size: ReverbRoomSize) => Promise<void>;
@@ -227,21 +219,19 @@ interface AudioStore extends AudioSettings {
   setIsReduceMotionEnabled: (isLoading: boolean) => void;
 }
 
-// Zustand store для настроек аудио с сохранением в localStorage
 export const useAudioSettingsStore = create<AudioStore>()(
   persist(
     (set) => ({
       equalizerEnabled: false,
-      equalizerGains: { ...equalizerPresets[0].gains }, // Дефолт - "Flat"
+      equalizerGains: { ...equalizerPresets[0].gains },
       normalizationMode: "normal",
       waveAnalyzerEnabled: false,
-      activePresetName: equalizerPresets[0].name, // Дефолт - "Flat"
-      // --- ИНИЦИАЛИЗАЦИЯ СОСТОЯНИЙ РЕВЕРБЕРАЦИИ ---
+      activePresetName: equalizerPresets[0].name,
       reverbEnabled: false,
-      reverbMix: 0.5, // По умолчанию 50% Dry / 50% Wet
-      reverbRoomSize: "medium", // По умолчанию средняя комната
+      reverbMix: 0.5,
+      reverbRoomSize: "medium",
       playbackRateEnabled: false,
-      playbackRate: 0.85, // (дефолтное значение для slowed)
+      playbackRate: 0.85,
       isReduceMotionEnabled: false,
 
       setIsReduceMotionEnabled: (enabled) =>
@@ -257,7 +247,7 @@ export const useAudioSettingsStore = create<AudioStore>()(
             ...state.equalizerGains,
             [frequency]: gain,
           },
-          activePresetName: "Custom", // При изменении любой полосы -> Custom
+          activePresetName: "Custom",
         }));
         webAudioService.applySettingsToGraph();
       },
@@ -277,11 +267,10 @@ export const useAudioSettingsStore = create<AudioStore>()(
       resetAudioSettings: () => {
         set({
           equalizerEnabled: false,
-          equalizerGains: { ...equalizerPresets[0].gains }, // Сбрасываем на "Flat"
+          equalizerGains: { ...equalizerPresets[0].gains },
           normalizationMode: "off",
           waveAnalyzerEnabled: true,
-          activePresetName: equalizerPresets[0].name, // Сбрасываем на "Flat"
-          // --- СБРОС НАСТРОЕК РЕВЕРБЕРАЦИИ ---
+          activePresetName: equalizerPresets[0].name,
           reverbEnabled: false,
           reverbMix: 0.5,
           reverbRoomSize: "medium",
@@ -301,9 +290,7 @@ export const useAudioSettingsStore = create<AudioStore>()(
       },
       setReverbRoomSize: async (size) => {
         set({ reverbRoomSize: size });
-        // Загружаем новый IR-файл и применяем настройки
         await webAudioService.loadIRFile(size);
-        // webAudioService.applySettingsToGraph() вызывается внутри loadIRFile
       },
       setPlaybackRateEnabled: (enabled) => {
         set({ playbackRateEnabled: enabled });
@@ -331,22 +318,21 @@ export const useAudioSettingsStore = create<AudioStore>()(
   )
 );
 
-// Сервис для работы с Web Audio API эффектами
 class WebAudioService {
   private static instance: WebAudioService;
   private audioContext: AudioContext | null = null;
-  private inputNode: AudioNode | null = null; // Входной узел из AudioPlayer (masterGainNode)
-  private outputNode: AudioNode | null = null; // Выходной узел (audioContext.destination)
+  private inputNode: AudioNode | null = null;
+  private outputNode: AudioNode | null = null;
 
   private analyserNode: AnalyserNode | null = null;
-  private gainNodes: { [key: string]: BiquadFilterNode } = {}; // Узлы эквалайзера
+  private gainNodes: { [key: string]: BiquadFilterNode } = {};
   private compressorNode: DynamicsCompressorNode | null = null;
-  private internalOutputNode: GainNode | null = null; // Узел, к которому подключаются все эффекты перед анализатором/выходом
+  private internalOutputNode: GainNode | null = null;
 
   private convolverNode: ConvolverNode | null = null;
   private dryGainNode: GainNode | null = null;
   private wetGainNode: GainNode | null = null;
-  private irBufferCache: Map<ReverbRoomSize, AudioBuffer> = new Map(); // Кэш для IR-файлов
+  private irBufferCache: Map<ReverbRoomSize, AudioBuffer> = new Map();
 
   private constructor() {}
 
@@ -358,7 +344,6 @@ class WebAudioService {
   }
 
   public init(context: AudioContext, input: AudioNode, output: AudioNode) {
-    // Если контекст уже инициализирован и узлы совпадают, просто применяем настройки
     if (
       this.audioContext === context &&
       this.inputNode === input &&
@@ -376,25 +361,21 @@ class WebAudioService {
     this.inputNode = input;
     this.outputNode = output;
 
-    this.cleanupNodes(); // Очищаем старые узлы перед новой инициализацией
+    this.cleanupNodes();
 
-    // Создаем основные узлы, если их нет
     this.internalOutputNode = this.audioContext.createGain();
     this.analyserNode = this.audioContext.createAnalyser();
     this.compressorNode = this.audioContext.createDynamicsCompressor();
 
-    // Создаем узлы реверберации
     this.convolverNode = this.audioContext.createConvolver();
     this.dryGainNode = this.audioContext.createGain();
     this.wetGainNode = this.audioContext.createGain();
 
-    // Настраиваем анализатор
     this.analyserNode.fftSize = 2048;
     this.analyserNode.minDecibels = -90;
     this.analyserNode.maxDecibels = -10;
     this.analyserNode.smoothingTimeConstant = 0.85;
 
-    // Инициализируем 6 фильтров эквалайзера
     defaultFrequencies.map(Number).forEach((freq) => {
       const filter = this.audioContext!.createBiquadFilter();
       filter.type = "peaking";
@@ -406,19 +387,15 @@ class WebAudioService {
 
     console.log("WebAudioService initialized. Connecting nodes...");
 
-    // Загружаем IR-файл по умолчанию при инициализации
-    // Используем useAudioSettingsStore для получения настроек реверберации
     const currentRoomSize = useAudioSettingsStore.getState().reverbRoomSize;
     this.loadIRFile(currentRoomSize).then(() => {
       this.applySettingsToGraph();
     });
   }
 
-  // Метод для очистки всех узлов и их отключения
   private cleanupNodes() {
     if (!this.audioContext) return;
 
-    // Отключаем все узлы, которые могли быть подключены
     try {
       if (this.inputNode) this.inputNode.disconnect();
     } catch (e) {
@@ -432,7 +409,7 @@ class WebAudioService {
         console.warn("Error disconnecting gain node during cleanup:", e);
       }
     });
-    this.gainNodes = {}; // Очищаем gainNodes
+    this.gainNodes = {};
 
     try {
       if (this.compressorNode) this.compressorNode.disconnect();
@@ -477,14 +454,12 @@ class WebAudioService {
     this.internalOutputNode = null;
   }
 
-  // --- Загрузка и кэширование IR-файлов ---
   public async loadIRFile(roomSize: ReverbRoomSize): Promise<void> {
     if (!this.audioContext || !this.convolverNode) {
       console.warn("AudioContext or ConvolverNode not ready for IR loading.");
       return;
     }
 
-    // 1. Проверяем быстрый кэш в памяти (для текущей сессии)
     if (this.irBufferCache.has(roomSize)) {
       this.convolverNode.buffer = this.irBufferCache.get(roomSize)!;
       console.log(`IR file for ${roomSize} loaded from memory cache.`);
@@ -499,27 +474,23 @@ class WebAudioService {
     }
 
     try {
-      // 2. Определяем имя кэша и пытаемся получить доступ к нему
-      const cacheName = "moodify-ir-files-cache"; // Специальный кэш для IR-файлов
+      const cacheName = "moodify-ir-files-cache";
       const cache = await caches.open(cacheName);
       let response = await cache.match(url);
 
-      // 3. Если ответа нет в кэше, загружаем его из сети и сохраняем
       if (!response) {
         console.log(
           `[Cache] IR file not found for ${url}. Fetching from network and caching...`
         );
-        // Загружаем из сети
         const fetchResponse = await fetch(url);
         if (!fetchResponse.ok) {
           throw new Error(
             `Failed to fetch IR file: ${fetchResponse.status} ${fetchResponse.statusText}`
           );
         }
-        // Клонируем ответ, так как его тело можно прочитать только один раз
-        // Один клон пойдет в кэш, другой - для декодирования
+
         await cache.put(url, fetchResponse.clone());
-        response = fetchResponse; // Используем оригинальный ответ для дальнейшей обработки
+        response = fetchResponse;
       } else {
         console.log(`[Cache] IR file for ${url} loaded from Cache Storage.`);
       }
@@ -527,7 +498,6 @@ class WebAudioService {
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
-      // Сохраняем в кэш в памяти для быстрого доступа в этой же сессии
       this.irBufferCache.set(roomSize, audioBuffer);
       this.convolverNode.buffer = audioBuffer;
       console.log(`IR file for ${roomSize} loaded and set.`);
@@ -553,8 +523,8 @@ class WebAudioService {
       !this.convolverNode ||
       !this.dryGainNode ||
       !this.wetGainNode ||
-      !this.compressorNode || // Убедимся, что компрессор инициализирован
-      !this.analyserNode // Убедимся, что анализатор инициализирован
+      !this.compressorNode ||
+      !this.analyserNode
     ) {
       console.warn(
         "WebAudioService not fully initialized. Cannot apply settings to graph."
@@ -562,10 +532,8 @@ class WebAudioService {
       return;
     }
 
-    // Получаем настройки из useAudioSettingsStore
     const settings = useAudioSettingsStore.getState();
 
-    // Отключаем все узлы от их предыдущих соединений перед перестройкой
     try {
       this.inputNode.disconnect();
     } catch (e) {}
@@ -591,13 +559,11 @@ class WebAudioService {
     } catch (e) {}
     try {
       this.analyserNode.disconnect();
-    } catch (e) {} // Анализатор может быть подключен к internalOutputNode
+    } catch (e) {}
 
     let currentNode: AudioNode = this.inputNode;
 
-    // --- Эквалайзер ---
     if (settings.equalizerEnabled) {
-      // Подключаем только те фильтры, которые соответствуют defaultFrequencies
       defaultFrequencies.map(Number).forEach((freqNum) => {
         const freqStr = freqNum.toString();
         const filter = this.gainNodes[freqStr];
@@ -609,74 +575,51 @@ class WebAudioService {
       });
     }
 
-    // --- Нормализация (Компрессор) ---
     if (settings.normalizationMode !== "off") {
       this.applyNormalizationSettings(settings.normalizationMode);
       currentNode.connect(this.compressorNode);
       currentNode = this.compressorNode;
     } else {
-      // Если нормализация выключена, убедимся, что компрессор не влияет на сигнал
-      // Можно сбросить его параметры или просто не подключать.
-      // Здесь мы просто не подключаем его, если он не нужен.
     }
 
-    // --- РЕВЕРБЕРАЦИЯ ---
-    // Внимание: если реверберация включена, поток раздваивается.
-    // Если выключена, поток идет напрямую.
     if (settings.reverbEnabled && this.convolverNode.buffer) {
-      // Отключаем direct-path от предыдущего узла к internalOutputNode, если он был
       try {
         currentNode.disconnect(this.internalOutputNode);
       } catch (e) {}
 
-      // Подключаем текущий узел (после эквалайзера/компрессора) к dry и wet ветвям
       currentNode.connect(this.dryGainNode);
       currentNode.connect(this.convolverNode);
 
-      // Настраиваем гейны для dry/wet микса
       this.dryGainNode.gain.value = 1 - settings.reverbMix;
       this.wetGainNode.gain.value = settings.reverbMix;
 
-      // Подключаем convolver к wetGainNode
       this.convolverNode.connect(this.wetGainNode);
 
-      // Обе ветви (dry и wet) подключаются к internalOutputNode
       this.dryGainNode.connect(this.internalOutputNode);
       this.wetGainNode.connect(this.internalOutputNode);
 
-      // Устанавливаем currentNode на internalOutputNode для дальнейших подключений
       currentNode = this.internalOutputNode;
     } else {
-      // Если реверберация выключена или нет IR-файла, просто подключаем currentNode к internalOutputNode
-      // Убедимся, что dry/wet гейны сброшены, чтобы не было остаточного эффекта
       if (this.dryGainNode) this.dryGainNode.gain.value = 1;
       if (this.wetGainNode) this.wetGainNode.gain.value = 0;
       currentNode.connect(this.internalOutputNode);
       currentNode = this.internalOutputNode;
     }
 
-    // --- Анализатор волн ---
-    // Анализатор всегда подключается к internalOutputNode, но его активность управляется settings.waveAnalyzerEnabled
     if (settings.waveAnalyzerEnabled) {
-      // Если анализатор уже подключен к internalOutputNode, то ничего не делаем.
-      // Если нет, то подключаем.
-      // Простой способ: всегда отключать и подключать заново, чтобы избежать множественных подключений.
       try {
         this.internalOutputNode.disconnect(this.analyserNode);
       } catch (e) {}
       this.internalOutputNode.connect(this.analyserNode);
     } else {
-      // Если анализатор выключен, отключаем его
       try {
         this.internalOutputNode.disconnect(this.analyserNode);
       } catch (e) {}
     }
 
-    // --- Конечный выход ---
-    // internalOutputNode всегда подключается к audioContext.destination
     try {
       this.internalOutputNode.disconnect(this.outputNode);
-    } catch (e) {} // Отключаем, чтобы избежать дублирования
+    } catch (e) {}
     this.internalOutputNode.connect(this.outputNode);
 
     console.log("WebAudioService audio graph rebuilt.");
@@ -685,7 +628,6 @@ class WebAudioService {
   private applyNormalizationSettings(mode: NormalizationMode) {
     if (!this.compressorNode || !this.audioContext) return;
 
-    // Убедимся, что параметры сброшены перед применением новых, если нужно
     this.compressorNode.threshold.setValueAtTime(
       0,
       this.audioContext.currentTime
@@ -757,7 +699,6 @@ class WebAudioService {
         break;
       case "off":
       default:
-        // Параметры уже сброшены до значений по умолчанию в начале функции
         break;
     }
   }
@@ -773,7 +714,6 @@ class WebAudioService {
 
 export const webAudioService = WebAudioService.getInstance();
 
-// Подписка на изменения в useAudioSettingsStore для обновления аудиографа
 useAudioSettingsStore.subscribe((state, prevState) => {
   if (
     webAudioService.getAudioContext() &&
@@ -796,8 +736,6 @@ useAudioSettingsStore.subscribe((state, prevState) => {
       webAudioService.applySettingsToGraph();
     }
 
-    // Отдельная обработка для изменения размера комнаты, так как это асинхронная операция
-    // и loadIRFile уже вызывает applySettingsToGraph после загрузки
     if (state.reverbRoomSize !== prevState.reverbRoomSize) {
     }
   }

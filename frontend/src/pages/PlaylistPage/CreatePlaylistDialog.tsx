@@ -38,14 +38,12 @@ export const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Состояния для ручного режима
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
-  // Состояния для AI режима
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 

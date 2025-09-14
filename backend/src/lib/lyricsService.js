@@ -1,15 +1,6 @@
 // backend/src/lib/lyricsService.js
 import axios from "axios";
 
-/**
- * Пытается получить LRC-тексты из lrclib.net по сигнатуре или по запросу.
- * @param {object} songData - Объект с данными о песне.
- * @param {string} songData.artistName - Имя исполнителя.
- * @param {string} songData.songName - Название песни.
- * @param {string} songData.albumName - Название альбома.
- * @param {number} songData.songDuration - Длительность песни в миллисекундах.
- * @returns {Promise<string|null>} - Промис, который разрешается в строку LRC-текста или null, если текст не найден/ошибка.
- */
 export const getLrcLyricsFromLrclib = async (songData) => {
   const { artistName, songName, albumName, songDuration } = songData;
 

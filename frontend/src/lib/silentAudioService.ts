@@ -1,9 +1,5 @@
 // frontend/src/lib/silentAudioService.ts
 
-/**
- * Сервис для управления скрытым HTMLAudioElement, который проигрывает тишину.
- * Это необходимо для поддержания активной аудио сессии в фоне на iOS.
- */
 class SilentAudioService {
   private audio: HTMLAudioElement | null = null;
   private isInitialized = false;
@@ -23,8 +19,6 @@ class SilentAudioService {
 
     if (playPromise !== undefined) {
       playPromise.catch((error) => {
-        // Ошибка "NotAllowedError" ожидаема до первого взаимодействия пользователя.
-        // Главное, что мы пытаемся запустить воспроизведение.
         console.warn("SilentAudioService: play() was interrupted.", error);
       });
     }
@@ -38,5 +32,4 @@ class SilentAudioService {
   }
 }
 
-// Экспортируем синглтон-экземпляр сервиса
 export const silentAudioService = new SilentAudioService();

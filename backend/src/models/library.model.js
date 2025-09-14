@@ -6,7 +6,7 @@ const librarySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // У каждого пользователя может быть только одна библиотека
+      unique: true,
     },
     likedSongs: [
       {

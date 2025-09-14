@@ -4,7 +4,7 @@ import App from "./App.tsx";
 import { BrowserRouter } from "react-router-dom";
 import AuthProvider from "./Providers/AuthProvider.tsx";
 import "./lib/i18n.ts";
-import { HelmetProvider } from "react-helmet-async"; // <-- 1. ИМПОРТ
+import { HelmetProvider } from "react-helmet-async";
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

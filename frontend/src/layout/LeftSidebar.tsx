@@ -1,4 +1,4 @@
-// /home/dmytro/VS_Projects/Moodify/frontend/src/layout/LeftSidebar.tsx
+//frontend/src/layout/LeftSidebar.tsx
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {

@@ -19,7 +19,6 @@ export const generateOnRepeatPlaylistForUser = async (userId) => {
   ]);
 
   if (listenHistory.length === 0) {
-    // Если истории нет, можно удалить старый плейлист, если он был
     await GeneratedPlaylist.deleteOne({ user: userId, type: "ON_REPEAT" });
     console.log(
       `No listen history for user ${userId}. Deleting old 'On Repeat' if it exists.`
@@ -53,7 +52,6 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
   try {
     console.log(`[Discover Weekly] Starting generation for user: ${userId}`);
 
-    // 1. Получаем историю прослушиваний и лайки пользователя
     const listenHistory = await ListenHistory.find({ user: userId }).select(
       "song -_id"
     );
@@ -67,7 +65,6 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
       : [];
     const excludedSongIds = [...new Set([...listenedSongIds, ...likedSongIds])];
 
-    // Если у пользователя нет истории, мы не можем ничего сгенерировать
     if (listenedSongIds.length < 20) {
       console.log(
         `[Discover Weekly] User ${userId} has insufficient listen history. Skipping.`
@@ -75,10 +72,9 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
       return;
     }
 
-    // 2. Анализируем вкусы пользователя (топ-жанры и топ-артисты)
     const tasteProfile = await ListenHistory.aggregate([
       { $match: { user: userId } },
-      { $limit: 200 }, // Анализируем последние 200 прослушиваний
+      { $limit: 200 }, 
       {
         $lookup: {
           from: "songs",
@@ -115,19 +111,17 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
     const topGenreIds = tasteProfile[0].topGenres.map((g) => g._id);
     const topArtistIds = tasteProfile[0].topArtists.map((a) => a._id);
 
-    // 3. Ищем треки-кандидаты
     const candidates = await Song.find({
-      _id: { $nin: excludedSongIds }, // Самое важное: исключаем уже известные треки
+      _id: { $nin: excludedSongIds }, 
       $or: [
         { genres: { $in: topGenreIds } },
         { artist: { $in: topArtistIds } },
       ],
     })
-      .sort({ playCount: -1 }) // Отдаем предпочтение популярным трекам
-      .limit(200) // Берем с запасом
+      .sort({ playCount: -1 }) 
+      .limit(200) 
       .populate("artist", "name imageUrl");
 
-    // 4. Перемешиваем и выбираем 30 треков
     const finalTracks = candidates.sort(() => 0.5 - Math.random()).slice(0, 30);
 
     if (finalTracks.length < 10) {
@@ -137,7 +131,6 @@ export const generateDiscoverWeeklyForUser = async (userId) => {
       return;
     }
 
-    // 5. Создаем или обновляем плейлист в БД
     const playlistData = {
       user: userId,
       type: "DISCOVER_WEEKLY",
@@ -168,21 +161,19 @@ export const generateOnRepeatRewindForUser = async (userId) => {
   try {
     console.log(`[On Repeat Rewind] Starting generation for user: ${userId}`);
 
-    // 1. Определяем временные рамки
     const now = new Date();
     const oneMonthAgo = new Date(new Date().setMonth(now.getMonth() - 1));
     const sixMonthsAgo = new Date(new Date().setMonth(now.getMonth() - 6));
 
-    // 2. Получаем треки, которые активно слушали в прошлом
     const pastFavorites = await ListenHistory.aggregate([
       {
         $match: {
           user: userId,
-          listenedAt: { $gte: sixMonthsAgo, $lt: oneMonthAgo }, // Слушали в "дальнем" промежутке
+          listenedAt: { $gte: sixMonthsAgo, $lt: oneMonthAgo }, 
         },
       },
       { $group: { _id: "$song", count: { $sum: 1 } } },
-      { $match: { count: { $gt: 3 } } }, // Считаем "любимым", если слушали больше 3 раз
+      { $match: { count: { $gt: 3 } } }, 
       { $sort: { count: -1 } },
       { $limit: 100 },
     ]);
@@ -196,14 +187,12 @@ export const generateOnRepeatRewindForUser = async (userId) => {
       return;
     }
 
-    // 3. Получаем треки, которые слушали недавно, чтобы исключить их
     const recentListens = await ListenHistory.find({
       user: userId,
       listenedAt: { $gte: oneMonthAgo },
     }).select("song -_id");
     const recentSongIds = recentListens.map((item) => item.song);
 
-    // 4. Фильтруем "забытые" треки
     const rewindSongIds = pastFavoriteSongIds.filter(
       (id) => !recentSongIds.some((recentId) => recentId.equals(id))
     );
@@ -215,7 +204,6 @@ export const generateOnRepeatRewindForUser = async (userId) => {
       return;
     }
 
-    // 5. Получаем полные данные по трекам и формируем плейлист
     const finalTracks = await Song.find({
       _id: { $in: rewindSongIds.slice(0, 30) },
     });

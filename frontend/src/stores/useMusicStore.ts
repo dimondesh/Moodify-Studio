@@ -74,7 +74,7 @@ interface MusicStore {
   fetchArtistAppearsOn: (artistId: string) => Promise<void>;
 }
 
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа
+const CACHE_DURATION = 24 * 60 * 60 * 1000; 
 
 export const useMusicStore = create<MusicStore>((set, get) => ({
   albums: [],

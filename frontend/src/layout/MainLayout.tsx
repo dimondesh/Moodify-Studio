@@ -51,10 +51,6 @@ const MainLayout = () => {
     !!playlistToDelete ||
     !!songToRemoveFromPlaylist;
 
-  // !!! УДАЛЕНО: Был удален useEffect с вызовом fetchAlbums() из useMusicStore.
-  // Это была главная причина 12-секундной задержки. Он не нужен для работы
-  // основной части приложения и загружал все альбомы без необходимости.
-
   useEffect(() => {
     const rootElement = document.getElementById("root");
     if (rootElement) {
@@ -88,14 +84,13 @@ const MainLayout = () => {
     if (isFullScreenPlayerOpen || isMobileLyricsFullScreen) {
       contentPaddingBottom = "pb-0";
     } else if (currentSong) {
-      // 4rem (BottomNav) + 3.5rem (PlaybackControls) = 7.5rem
       contentPaddingBottom = "pb-[7.5rem]";
     } else {
       contentPaddingBottom = "pb-16";
     }
   } else {
     if (currentSong) {
-      contentPaddingBottom = "pb-24"; // Height of desktop playback controls
+      contentPaddingBottom = "pb-24";
     } else {
       contentPaddingBottom = "pb-0";
     }

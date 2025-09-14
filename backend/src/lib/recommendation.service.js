@@ -14,17 +14,16 @@ export const generateNewReleasesForUser = async (userId) => {
       "followedArtists.artistId"
     );
     if (!library || library.followedArtists.length === 0) {
-      return; // Нечего рекомендовать
+      return;
     }
 
     const followedArtistIds = library.followedArtists.map((a) => a.artistId);
 
-    // Ищем альбомы за последние 2 недели от отслеживаемых артистов
     const twoWeeksAgo = new Date(new Date().setDate(new Date().getDate() - 14));
 
     const newReleases = await Album.find({
       artist: { $in: followedArtistIds },
-      createdAt: { $gte: twoWeeksAgo }, // Используем createdAt альбома
+      createdAt: { $gte: twoWeeksAgo },
     }).sort({ createdAt: -1 });
 
     if (newReleases.length > 0) {
@@ -48,9 +47,6 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
   try {
     console.log(`[Playlist Recs] Starting generation for user: ${userId}`);
 
-    // --- ЭТАП 1: Формирование "профиля вкуса" пользователя ---
-
-    // 1.1. Собираем все плейлисты пользователя (свои и сохраненные)
     const user = await User.findById(userId).select("playlists");
     const library = await Library.findOne({ userId }).select(
       "playlists.playlistId"
@@ -69,7 +65,6 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
       return;
     }
 
-    // 1.2. Собираем все уникальные треки из этих плейлистов
     const userPlaylists = await Playlist.find({
       _id: { $in: allUserPlaylistIds },
     }).select("songs");
@@ -82,7 +77,6 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
       return;
     }
 
-    // 1.3. Анализируем жанры и настроения этих треков
     const songsWithTags = await Song.find({ _id: { $in: allSongIds } }).select(
       "genres moods"
     );
@@ -105,16 +99,12 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
     const userTopGenres = getTopItems(genreCounts, 5);
     const userTopMoods = getTopItems(moodCounts, 3);
 
-    // --- ЭТАП 2: Поиск и оценка плейлистов-кандидатов ---
-
-    // 2.1. Находим все публичные плейлисты, не принадлежащие пользователю
     const candidatePlaylists = await Playlist.find({
       isPublic: true,
       owner: { $ne: userId },
-      "songs.0": { $exists: true }, // Убедимся, что плейлист не пустой
+      "songs.0": { $exists: true },
     }).populate("songs", "genres moods");
 
-    // 2.2. Оцениваем каждый плейлист-кандидат
     const scoredPlaylists = [];
     for (const playlist of candidatePlaylists) {
       let score = 0;
@@ -125,30 +115,25 @@ export const generatePlaylistRecommendationsForUser = async (userId) => {
         playlist.songs.flatMap((s) => s.moods.map((id) => id.toString()))
       );
 
-      // Сравниваем с профилем пользователя
       userTopGenres.forEach((genreId) => {
-        if (playlistGenreSet.has(genreId)) score += 3; // Большой вес за совпадение жанра
+        if (playlistGenreSet.has(genreId)) score += 3;
       });
       userTopMoods.forEach((moodId) => {
-        if (playlistMoodSet.has(moodId)) score += 2; // Средний вес за совпадение настроения
+        if (playlistMoodSet.has(moodId)) score += 2;
       });
 
-      // Добавляем бонус за популярность (лайки)
       score += Math.log2(playlist.likes + 1);
 
       if (score > 3) {
-        // Отсекаем плейлисты с низким скором
         scoredPlaylists.push({ playlistId: playlist._id, score });
       }
     }
 
-    // 2.3. Сортируем и выбираем лучшие
     scoredPlaylists.sort((a, b) => b.score - a.score);
     const recommendedPlaylistIds = scoredPlaylists
       .slice(0, 10)
       .map((p) => p.playlistId);
 
-    // --- ЭТАП 3: Сохранение рекомендаций ---
     if (recommendedPlaylistIds.length > 0) {
       await UserRecommendation.findOneAndUpdate(
         { user: userId, type: "PLAYLIST_FOR_YOU" },
@@ -182,7 +167,6 @@ export const generateFeaturedSongsForUser = async (userId, limit = 6) => {
 
     let finalPicksIds = [];
 
-    // Если история прослушиваний достаточная, генерируем персональные рекомендации
     if (listenHistory.length >= 10) {
       const listenedSongIds = listenHistory
         .map((item) => item.song?._id)
@@ -233,7 +217,6 @@ export const generateFeaturedSongsForUser = async (userId, limit = 6) => {
         .slice(0, limit);
     }
 
-    // Если персональных рекомендаций не хватило, дополняем трендами
     if (finalPicksIds.length < limit) {
       const trending = await Song.find({ _id: { $nin: finalPicksIds } })
         .sort({ playCount: -1 })
@@ -242,7 +225,6 @@ export const generateFeaturedSongsForUser = async (userId, limit = 6) => {
       finalPicksIds.push(...trending.map((s) => s._id));
     }
 
-    // Сохраняем результат в базу данных
     if (finalPicksIds.length > 0) {
       await UserRecommendation.findOneAndUpdate(
         { user: userId, type: "FEATURED_SONGS" },

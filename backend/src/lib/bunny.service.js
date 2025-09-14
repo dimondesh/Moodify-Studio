@@ -82,9 +82,7 @@ export const uploadToBunny = async (source, remoteFolder) => {
 
     return { url: fileUrl, path: fullRemotePath };
   } catch (error) {
-    // --- УЛУЧШЕННОЕ ЛОГИРОВАНИЕ ---
     console.error(`[Bunny] Smart uploader failed! Source:`, source);
-    // Показываем настоящую ошибку от axios или fs
     if (error.isAxiosError) {
       console.error(
         "[Bunny] Axios Error:",
@@ -93,8 +91,7 @@ export const uploadToBunny = async (source, remoteFolder) => {
     } else {
       console.error("[Bunny] Filesystem or other error:", error);
     }
-    // ------------------------------------
-    throw new Error("Failed to upload file to Bunny.net"); // Кидаем нашу общую ошибку дальше
+    throw new Error("Failed to upload file to Bunny.net");
   } finally {
     if (isTempDownload && localFilePath) {
       try {

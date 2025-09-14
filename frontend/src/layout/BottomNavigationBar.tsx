@@ -59,7 +59,7 @@ const BottomNavigationBar = () => {
             to={item.to}
             className={cn(
               buttonVariants({ variant: "ghost", size: "sm" }),
-              "flex flex-col items-center justify-center p-0 h-full w-auto text-zinc-400 hover:text-white transition-colors duration-200 relative", // <-- ДОБАВЛЕНО relative
+              "flex flex-col items-center justify-center p-0 h-full w-auto text-zinc-400 hover:text-white transition-colors duration-200 relative",
               isActive ? "text-white" : "text-zinc-400"
             )}
           >

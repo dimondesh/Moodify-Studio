@@ -527,7 +527,7 @@ const AudioPlayer = () => {
         const elapsedRealTime = audioContext.currentTime - startTimeRef.current;
         const newTime = offsetTimeRef.current + elapsedRealTime;
 
-        // isPlayerUpdate = true, чтобы не вызывать seekToTime и предотвратить зацикливание
+
         usePlayerStore.getState().setCurrentTime(newTime, true);
       }
     }, 500);
