@@ -49,6 +49,13 @@ function App() {
   const { fetchLibrary } = useLibraryStore();
   const canonicalUrl = `https://moodify-music.vercel.app${location.pathname}`;
 
+  useEffect(() => {
+    if (user && navigator.onLine) {
+      console.log("App.tsx: User detected, fetching initial app data.");
+      fetchInitialData();
+    }
+  }, [user, fetchInitialData]);
+
   const fetchDataForUser = useCallback(() => {
     if (navigator.onLine) {
       console.log("fetchDataForUser called. Fetching all initial data...");

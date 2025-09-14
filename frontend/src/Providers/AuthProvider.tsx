@@ -10,7 +10,6 @@ import { Card, CardContent } from "../components/ui/card";
 import { Loader } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { useUIStore } from "../stores/useUIStore";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -30,8 +29,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const disconnectSocket = useChatStore((state) => state.disconnectSocket);
   const isConnected = useChatStore((state) => state.isConnected);
   const chatError = useChatStore((state) => state.error);
-
-  const { fetchInitialData } = useUIStore();
 
   const { i18n } = useTranslation();
   const socketInitializedRef = useRef(false);
@@ -67,13 +64,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log("AuthProvider: Online, syncing user with backend...");
           try {
             await fetchUser(firebaseUser.uid);
-            fetchInitialData();
           } catch (error) {
             console.error(
               "AuthProvider: Sync error. The user remains logged in with Firebase, but backend data might be stale. Error:",
               error
             );
-
           }
         } else {
           console.log("AuthProvider: User data is already fresh.");
@@ -96,7 +91,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, [setUser, fetchUser, logout, disconnectSocket, t, fetchInitialData]);
+  }, [setUser, fetchUser, logout, disconnectSocket, t]); // --- fetchInitialData удален из зависимостей
 
   useEffect(() => {
     if (
