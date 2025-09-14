@@ -191,7 +191,7 @@ const Topbar = () => {
                 placeholder={t("topbar.searchPlaceholder")}
                 value={query}
                 onChange={handleChange}
-                className="w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out cursor-pointer"
+                className="w-full bg-zinc-800 rounded-full py-2.5 pl-12 pr-4 text-base text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 transition duration-150 ease-in-out cursor-pointer"
                 spellCheck={false}
                 autoComplete="off"
               />
