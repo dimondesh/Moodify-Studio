@@ -1,6 +1,6 @@
 // frontend/src/layout/MainLayout.tsx
 
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -12,7 +12,7 @@ import AudioPlayer from "./AudioPlayer";
 import PlaybackControls from "./PlaybackControls";
 import Topbar from "../components/ui/Topbar";
 import BottomNavigationBar from "./BottomNavigationBar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePlayerStore } from "../stores/usePlayerStore";
 import LyricsPage from "@/pages/LyricsPage/LyricsPage";
 import DynamicTitleUpdater from "@/components/DynamicTitleUpdater";
@@ -22,6 +22,8 @@ import { cn } from "../lib/utils";
 
 const MainLayout = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const location = useLocation();
+  const prevLocationPathname = useRef(location.pathname);
 
   const [isCompactView, setIsCompactView] = useState(false);
   const {
@@ -29,6 +31,8 @@ const MainLayout = () => {
     isFullScreenPlayerOpen,
     isDesktopLyricsOpen,
     isMobileLyricsFullScreen,
+    setIsDesktopLyricsOpen,
+    setIsMobileLyricsFullScreen,
   } = usePlayerStore();
 
   const {
@@ -50,6 +54,24 @@ const MainLayout = () => {
     isEditProfileDialogOpen ||
     !!playlistToDelete ||
     !!songToRemoveFromPlaylist;
+
+  useEffect(() => {
+    if (prevLocationPathname.current !== location.pathname) {
+      if (isDesktopLyricsOpen) {
+        setIsDesktopLyricsOpen(false);
+      }
+      if (isMobileLyricsFullScreen) {
+        setIsMobileLyricsFullScreen(false);
+      }
+    }
+    prevLocationPathname.current = location.pathname;
+  }, [
+    location.pathname,
+    isDesktopLyricsOpen,
+    isMobileLyricsFullScreen,
+    setIsDesktopLyricsOpen,
+    setIsMobileLyricsFullScreen,
+  ]);
 
   useEffect(() => {
     const rootElement = document.getElementById("root");
