@@ -297,7 +297,7 @@ const ArtistPage = () => {
                         className={`hover:text-white ${
                           isSongLiked(song._id)
                             ? "text-violet-500"
-                            : "text-zinc-400 opacity-0 group-hover:opacity-100"
+                            : "text-zinc-400 opacity-100 lg:opacity-0 group-hover:opacity-100"
                         } w-8 h-8`}
                         onClick={(e) => {
                           e.stopPropagation();
