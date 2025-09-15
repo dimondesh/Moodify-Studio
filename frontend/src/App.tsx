@@ -8,6 +8,7 @@ import { useOfflineStore } from "./stores/useOfflineStore";
 import { Helmet } from "react-helmet-async";
 import { useUIStore } from "./stores/useUIStore";
 import { useLibraryStore } from "./stores/useLibraryStore";
+import { usePlaylistStore } from "./stores/usePlaylistStore"; // --- ДОБАВЛЕНО
 
 import MainLayout from "./layout/MainLayout";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
@@ -47,6 +48,7 @@ function App() {
 
   const { fetchInitialData } = useUIStore();
   const { fetchLibrary } = useLibraryStore();
+  const { fetchMyPlaylists } = usePlaylistStore(); // --- ДОБАВЛЕНО
   const canonicalUrl = `https://moodify-music.vercel.app${location.pathname}`;
 
   useEffect(() => {
@@ -116,11 +118,12 @@ function App() {
   useEffect(() => {
     if (user && !navigator.onLine) {
       console.log(
-        "App.tsx: User detected while offline. Triggering offline data load from library."
+        "App.tsx: User detected while offline. Triggering offline data load."
       );
       fetchLibrary();
+      fetchMyPlaylists();
     }
-  }, [user, fetchLibrary]);
+  }, [user, fetchLibrary, fetchMyPlaylists]);
 
   useEffect(() => {
     const exactSafePaths = [
