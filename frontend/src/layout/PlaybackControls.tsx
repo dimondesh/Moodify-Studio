@@ -789,7 +789,7 @@ const PlaybackControls = () => {
         <footer
           className={`h-20 bg-zinc-900 border-t border-zinc-800 px-4 z-40`}
         >
-          <div className="flex justify-between items-center h-full max-w-[1800px] mx-auto">
+          <div className="flex justify-between items-center h-full max-w-screen mx-auto">
             <div className="flex items-center gap-4 min-w-[180px] w-[30%]">
               {currentSong && (
                 <>
