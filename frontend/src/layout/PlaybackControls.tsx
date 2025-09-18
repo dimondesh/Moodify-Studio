@@ -993,7 +993,7 @@ const PlaybackControls = () => {
                 >
                   <DropdownMenuItem className="focus:bg-transparent">
                     <div className="flex items-center w-full gap-2">
-                      <span className="text-sm text-zinc-400 w-8 mr-2">
+                      <span className="text-sm text-zinc-400 w-8 mr-4">
                         {t("player.reverb")}
                       </span>
                       <Slider

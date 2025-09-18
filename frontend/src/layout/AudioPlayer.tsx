@@ -424,6 +424,7 @@ const AudioPlayer = () => {
         newInstrumentalSource.onended = (event) => {
           if (event.target === instrumentalSourceRef.current) {
             if (repeatMode === "one") {
+              listenRecordedRef.current = false; // Сбрасываем флаг при повторе
               usePlayerStore.getState().seekToTime(0);
             } else {
               playNext();
@@ -450,7 +451,18 @@ const AudioPlayer = () => {
     };
 
     managePlayback();
-  }, [isPlaying, currentSong, isAudioContextReady, seekVersion]);
+  }, [
+    isPlaying,
+    currentSong,
+    isAudioContextReady,
+    seekVersion,
+    currentTime,
+    playNext,
+    playbackRate,
+    playbackRateEnabled,
+    repeatMode,
+    setCurrentTime
+  ]);
 
   // --- Эффект 4: Обновление громкости ---
   useEffect(() => {
@@ -548,7 +560,7 @@ const AudioPlayer = () => {
       !user.isAnonymous &&
       currentSong &&
       currentSong._id &&
-      currentTime >= 30 &&
+      currentTime >= (currentSong.duration || 0) / 3 &&
       !listenRecordedRef.current &&
       !isOffline
     ) {
