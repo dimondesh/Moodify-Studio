@@ -456,12 +456,7 @@ const AudioPlayer = () => {
     currentSong,
     isAudioContextReady,
     seekVersion,
-    currentTime,
-    playNext,
-    playbackRate,
-    playbackRateEnabled,
-    repeatMode,
-    setCurrentTime
+   
   ]);
 
   // --- Эффект 4: Обновление громкости ---
