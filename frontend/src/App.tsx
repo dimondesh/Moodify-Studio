@@ -2,7 +2,7 @@
 
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { useEffect, useRef, lazy, Suspense, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useAuthStore } from "./stores/useAuthStore";
 import { useOfflineStore } from "./stores/useOfflineStore";
 import { Helmet } from "react-helmet-async";
@@ -10,7 +10,18 @@ import { useUIStore } from "./stores/useUIStore";
 import { useLibraryStore } from "./stores/useLibraryStore";
 import { usePlaylistStore } from "./stores/usePlaylistStore";
 import ErrorBoundary from "./components/ErrorBoundary";
-import LoadingFallback from "./components/LoadingFallback";
+import HomePage from "./pages/HomePage/HomePage";
+import AlbumPage from "./pages/AlbumPage/AlbumPage";
+import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
+import AuthPage from "./pages/AuthPage/AuthPage";
+import AllSongsPage from "./pages/AllSongs/AllSongsPage";
+import PlaylistDetailsPage from "./pages/PlaylistPage/PlaylistDetailsPage";
+import ArtistPage from "./pages/ArtistPage/ArtistPage";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import DisplayListPage from "./pages/DisplayListPage/DisplayListPage";
+import MixDetailsPage from "./pages/MixDetailsPage/MixDetailsPage";
+import AllMixesPage from "./pages/AllMixesPage/AllMixesPage";
+import GeneratedPlaylistPage from "./pages/GeneratedPlaylistPage/GeneratedPlaylistPage";
 
 import MainLayout from "./layout/MainLayout";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
@@ -20,38 +31,6 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import ChatPage from "./pages/ChatPage/ChatPage";
 
-const HomePage = lazy(() => {
-  import("./pages/AlbumPage/AlbumPage");
-  import("./pages/SearchPage/SearchPage");
-  return import("./pages/HomePage/HomePage");
-});
-
-const AlbumPage = lazy(() => {
-  import("./pages/ArtistPage/ArtistPage");
-  return import("./pages/AlbumPage/AlbumPage");
-});
-
-const NotFoundPage = lazy(() => import("./pages/NotFoundPage/NotFoundPage"));
-const AuthPage = lazy(() => {
-  import("./pages/HomePage/HomePage");
-  return import("./pages/AuthPage/AuthPage");
-});
-const AllSongsPage = lazy(() => import("./pages/AllSongs/AllSongsPage"));
-const PlaylistDetailsPage = lazy(
-  () => import("./pages/PlaylistPage/PlaylistDetailsPage")
-);
-const ArtistPage = lazy(() => import("./pages/ArtistPage/ArtistPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage/ProfilePage"));
-const DisplayListPage = lazy(
-  () => import("./pages/DisplayListPage/DisplayListPage")
-);
-const MixDetailsPage = lazy(
-  () => import("./pages/MixDetailsPage/MixDetailsPage")
-);
-const AllMixesPage = lazy(() => import("./pages/AllMixesPage/AllMixesPage"));
-const GeneratedPlaylistPage = lazy(
-  () => import("./pages/GeneratedPlaylistPage/GeneratedPlaylistPage")
-);
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -62,7 +41,7 @@ function App() {
 
   const { fetchInitialData } = useUIStore();
   const { fetchLibrary } = useLibraryStore();
-  const { fetchMyPlaylists } = usePlaylistStore(); // --- ДОБАВЛЕНО
+  const { fetchMyPlaylists } = usePlaylistStore(); 
   const canonicalUrl = `https://moodify-music.vercel.app${location.pathname}`;
 
   useEffect(() => {
@@ -178,9 +157,8 @@ function App() {
       </Helmet>
 
       <ErrorBoundary>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="login" element={<AuthPage />} />
+        <Routes>
+          <Route path="login" element={<AuthPage />} />
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/all-songs/:category?" element={<AllSongsPage />} />
@@ -190,10 +168,7 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/liked-songs" element={<LikedSongs />} />
             <Route path="/library" element={<LibraryPage />} />
-            <Route
-              path="/playlists/:playlistId"
-              element={<PlaylistDetailsPage />}
-            />
+            <Route path="/playlists/:playlistId" element={<PlaylistDetailsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/artists/:id" element={<ArtistPage />} />
             <Route path="/users/:userId" element={<ProfilePage />} />
@@ -201,13 +176,9 @@ function App() {
             <Route path="/mixes/:mixId" element={<MixDetailsPage />} />
             <Route path="/all-mixes/:category" element={<AllMixesPage />} />
             <Route path="/offline" element={<OfflinePage />} />
-            <Route
-              path="/generated-playlists/:id"
-              element={<GeneratedPlaylistPage />}
-            />
+            <Route path="/generated-playlists/:id" element={<GeneratedPlaylistPage />} />
           </Route>
         </Routes>
-        </Suspense>
       </ErrorBoundary>
       <Toaster
         toastOptions={{
