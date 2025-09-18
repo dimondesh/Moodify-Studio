@@ -1,6 +1,6 @@
 // frontend/src/pages/HomePage/HorizontalSection.tsx
 
-import React from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { ScrollArea, ScrollBar } from "../../components/ui/scroll-area";
@@ -18,6 +18,8 @@ import type {
 import HorizontalSectionSkeleton from "./HorizontalSectionSkeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TFunction } from "i18next";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 type DisplayItem =
   | (Song & { itemType: "song" })
@@ -46,6 +48,61 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
 }) => {
   const navigate = useNavigate();
   const { artists: allArtists } = useMusicStore();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  const checkScrollability = useCallback(() => {
+    const element = scrollContainerRef.current?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (element) {
+      const { scrollLeft, scrollWidth, clientWidth } = element;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  }, []);
+
+  useEffect(() => {
+    const scrollAreaElement = scrollContainerRef.current;
+    const viewportElement = scrollAreaElement?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]"
+    );
+
+    if (viewportElement) {
+      checkScrollability();
+      viewportElement.addEventListener("scroll", checkScrollability, { passive: true });
+      window.addEventListener("resize", checkScrollability);
+
+      const resizeObserver = new ResizeObserver(checkScrollability);
+      resizeObserver.observe(viewportElement);
+      
+      // Также наблюдаем за контейнером контента внутри viewport
+      if (viewportElement.firstChild) {
+        resizeObserver.observe(viewportElement.firstChild as Element);
+      }
+
+      return () => {
+        viewportElement.removeEventListener("scroll", checkScrollability);
+        window.removeEventListener("resize", checkScrollability);
+        resizeObserver.disconnect();
+      };
+    }
+  }, [items, isLoading, checkScrollability]);
+
+  const scroll = (direction: "left" | "right") => {
+    const element = scrollContainerRef.current?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (element) {
+      const scrollAmount = element.clientWidth * 0.8;
+      element.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   if (isLoading) {
     return <HorizontalSectionSkeleton />;
@@ -117,7 +174,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
   };
 
   return (
-    <div className="mb-4 sm:mb-8">
+    <div className="mb-4 sm:mb-8 relative group/section">
       <div className="flex items-center justify-between mb-2 sm:mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
         {canShowAll && (
@@ -131,7 +188,32 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
         )}
       </div>
 
-      <ScrollArea className="w-full whitespace-nowrap rounded-md">
+      {isDesktop && canScrollLeft && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute left-
+          0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 bg-black/50 hover:bg-black/80 rounded-full h-10 w-10 opacity-0 group-hover/section:opacity-100 transition-opacity"
+          onClick={() => scroll("left")}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+      )}
+      {isDesktop && canScrollRight && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-20 bg-black/50 hover:bg-black/80 rounded-full h-10 w-10 opacity-0 group-hover/section:opacity-100 transition-opacity"
+          onClick={() => scroll("right")}
+        >
+          <ChevronRight className="h-6 w-6" />
+        </Button>
+      )}
+
+      <ScrollArea
+        className="w-full whitespace-nowrap rounded-md"
+        ref={scrollContainerRef}
+      >
         <div className="flex gap-4 pb-4">
           {itemsToShow.map((item) => {
             if (item.itemType === "mix") {

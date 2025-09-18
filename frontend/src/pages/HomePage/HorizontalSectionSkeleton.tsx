@@ -10,7 +10,7 @@ const HorizontalSectionSkeleton = () => {
       <ScrollArea className="w-full whitespace-nowrap rounded-md">
         <div className="flex space-x-4 pb-4">
           {" "}
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
               className="bg-zinc-800/40 p-4 rounded-md animate-pulse w-40 sm:w-48 flex-shrink-0"
