@@ -661,6 +661,11 @@
     "downloadError": "Failed to download: {{error}}"
   },
   "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "reloadPage": "Reload page",
+    "loadingFailed": "Loading failed",
+    "chunkLoadError": "Failed to load page content",
+    "tryAgain": "Please try again",
     "userNotAvailableOffline": "User not available for offline library.",
     "fetchLibraryOfflineError": "Failed to fetch library from storage",
     "fetchLibraryError": "Failed to fetch library",

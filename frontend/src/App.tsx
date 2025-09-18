@@ -8,7 +8,9 @@ import { useOfflineStore } from "./stores/useOfflineStore";
 import { Helmet } from "react-helmet-async";
 import { useUIStore } from "./stores/useUIStore";
 import { useLibraryStore } from "./stores/useLibraryStore";
-import { usePlaylistStore } from "./stores/usePlaylistStore"; // --- ДОБАВЛЕНО
+import { usePlaylistStore } from "./stores/usePlaylistStore";
+import ErrorBoundary from "./components/ErrorBoundary";
+import LoadingFallback from "./components/LoadingFallback";
 
 import MainLayout from "./layout/MainLayout";
 import OfflinePage from "./pages/OfflinePage/OfflinePage";
@@ -18,10 +20,22 @@ import SearchPage from "./pages/SearchPage/SearchPage";
 import LikedSongs from "./pages/LikedSongs/LikedSongs";
 import ChatPage from "./pages/ChatPage/ChatPage";
 
-const HomePage = lazy(() => import("./pages/HomePage/HomePage"));
-const AlbumPage = lazy(() => import("./pages/AlbumPage/AlbumPage"));
+const HomePage = lazy(() => {
+  import("./pages/AlbumPage/AlbumPage");
+  import("./pages/SearchPage/SearchPage");
+  return import("./pages/HomePage/HomePage");
+});
+
+const AlbumPage = lazy(() => {
+  import("./pages/ArtistPage/ArtistPage");
+  return import("./pages/AlbumPage/AlbumPage");
+});
+
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage/NotFoundPage"));
-const AuthPage = lazy(() => import("./pages/AuthPage/AuthPage"));
+const AuthPage = lazy(() => {
+  import("./pages/HomePage/HomePage");
+  return import("./pages/AuthPage/AuthPage");
+});
 const AllSongsPage = lazy(() => import("./pages/AllSongs/AllSongsPage"));
 const PlaylistDetailsPage = lazy(
   () => import("./pages/PlaylistPage/PlaylistDetailsPage")
@@ -163,9 +177,10 @@ function App() {
         <link rel="canonical" href={canonicalUrl} />{" "}
       </Helmet>
 
-      <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
-        <Routes>
-          <Route path="login" element={<AuthPage />} />
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="login" element={<AuthPage />} />
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/all-songs/:category?" element={<AllSongsPage />} />
@@ -192,7 +207,8 @@ function App() {
             />
           </Route>
         </Routes>
-      </Suspense>
+        </Suspense>
+      </ErrorBoundary>
       <Toaster
         toastOptions={{
           iconTheme: {

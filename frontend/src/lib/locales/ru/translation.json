@@ -662,6 +662,11 @@
     "downloadError": "Ошибка загрузки: {{error}}"
   },
   "errors": {
+    "somethingWentWrong": "Что-то пошло не так",
+    "reloadPage": "Перезагрузить страницу",
+    "loadingFailed": "Ошибка загрузки",
+    "chunkLoadError": "Не удалось загрузить содержимое страницы",
+    "tryAgain": "Пожалуйста, попробуйте снова",
     "userNotAvailableOffline": "Пользователь недоступен для оффлайн-медиатеки.",
     "fetchLibraryOfflineError": "Не удалось загрузить медиатеку из хранилища",
     "fetchLibraryError": "Не удалось загрузить медиатеку",
