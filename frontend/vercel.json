@@ -8,7 +8,7 @@
         }
       ],
       "source": "/(.*)",
-      "destination": "https://moodify-music.vercel.app/",
+      "destination": "https://moodify-studio.vercel.app/",
       "permanent": true
     }
   ]

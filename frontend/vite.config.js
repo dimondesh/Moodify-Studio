@@ -23,18 +23,18 @@ export default defineConfig({
             },
             workbox: {
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,wav,mp3}"],
-                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, 
+                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
                 runtimeCaching: [
                     {
                         urlPattern: new RegExp("^https://".concat(BUNNY_CDN_HOSTNAME, "/.*"), "i"),
                         handler: "CacheFirst",
                         options: {
-                            cacheName: "bunny-assets-cache", 
+                            cacheName: "bunny-assets-cache",
                             expiration: {
-                                maxEntries: 750, 
-                                maxAgeSeconds: 60 * 60 * 24 * 60, 
+                                maxEntries: 750,
+                                maxAgeSeconds: 60 * 60 * 24 * 60,
                             },
-                            rangeRequests: true, 
+                            rangeRequests: true,
                             cacheableResponse: {
                                 statuses: [0, 200],
                             },
@@ -74,9 +74,9 @@ export default defineConfig({
                 "ir/large-hall.wav",
             ],
             manifest: {
-                name: "Moodify",
-                short_name: "Moodify",
-                description: "Your ultimate guide in the world of music.",
+                name: "Moodify Studio",
+                short_name: "Moodify Studio",
+                description: "An advanced music streaming service for enthusiasts. Create complex mixes, use AI-generated playlists, and connect with friends in a rich audio environment.",
                 theme_color: "#7B39EC",
                 background_color: "#18181b",
                 icons: [

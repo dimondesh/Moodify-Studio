@@ -147,7 +147,7 @@ const ProfilePage = () => {
           <title>User Not Found</title>
           <meta
             name="description"
-            content="The user profile you are looking for does not exist on Moodify."
+            content="The user profile you are looking for does not exist on Moodify Studio."
           />
         </Helmet>
         <div className="text-center p-10">{t("pages.profile.notFound")}</div>

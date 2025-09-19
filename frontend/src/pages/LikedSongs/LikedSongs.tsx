@@ -267,7 +267,7 @@ const LikedSongsPage = () => {
         <title>Liked Songs</title>
         <meta
           name="description"
-          content={`Your collection of ${songsCount} liked songs. Play all your favorite tracks saved on Moodify.`}
+          content={`Your collection of ${songsCount} liked songs. Play all your favorite tracks saved on Moodify Studio.`}
         />
       </Helmet>
       <div className="h-full relative">

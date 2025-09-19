@@ -365,7 +365,7 @@ const GeneratedPlaylistPage = () => {
                     {t(currentPlaylist.descriptionKey)}
                   </p>
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 text-xs sm:text-sm text-zinc-100 mt-2">
-                    <img src="/Moodify.svg" alt="Moodify" className="size-4" />
+                    <img src="/Moodify.svg" alt="Moodify Studio" className="size-4" />
                     <span className="font-semibold text-white">Moodify</span>
                     <span className="hidden lg:inline">
                       • {currentPlaylist.songs.length}{" "}
