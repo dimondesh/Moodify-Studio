@@ -154,7 +154,7 @@ const ProfilePage = () => {
       </>
     );
   }
-  const metaDescription = `${profileData.fullName} on Moodify. Check out their public playlists, followers, and who they follow.`;
+  const metaDescription = `${profileData.fullName} on Moodify Studio. Check out their public playlists, followers, and who they follow.`;
 
   return (
     <>

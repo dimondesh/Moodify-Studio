@@ -34,7 +34,7 @@ export default defineConfig({
             urlPattern: new RegExp(`^https://${BUNNY_CDN_HOSTNAME}/.*`, "i"),
             handler: "CacheFirst",
             options: {
-              cacheName: "bunny-assets-cache", 
+              cacheName: "moodify-studio-assets-cache", 
               expiration: {
                 maxEntries: 750, 
                 maxAgeSeconds: 60 * 60 * 24 * 60, 
@@ -50,7 +50,7 @@ export default defineConfig({
               url.origin === "https://moodify-yf1r.onrender.com/api",
             handler: "NetworkFirst",
             options: {
-              cacheName: "moodify-api-cache",
+              cacheName: "moodify-studio-api-cache",
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 50,
@@ -65,8 +65,8 @@ export default defineConfig({
       },
       includeAssets: [
         "silent.mp3",
-        "Moodify.png",
-        "Moodify.svg",
+        "Moodify-Studio.png",
+        "Moodify-Studio.svg",
         "Spotify.svg",
         "liked.png",
         "liked.svg",
@@ -84,13 +84,13 @@ export default defineConfig({
         background_color: "#18181b",
         icons: [
           {
-            src: "Moodify.png",
+            src: "Moodify-Studio.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any maskable",
           },
           {
-            src: "Moodify.png",
+            src: "Moodify-Studio.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",

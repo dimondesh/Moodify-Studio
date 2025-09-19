@@ -130,7 +130,7 @@ const LeftSidebar = () => {
           title: t(playlist.nameKey),
           imageUrl: playlist.imageUrl,
           createdAt: new Date(playlist.addedAt || playlist.generatedOn),
-          sourceName: "Moodify",
+          sourceName: "Moodify Studio",
         } as GeneratedPlaylistItem);
       }
     });

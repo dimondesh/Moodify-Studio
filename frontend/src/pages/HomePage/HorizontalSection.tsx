@@ -163,7 +163,7 @@ const HorizontalSectionComponent: React.FC<HorizontalSectionProps> = ({
             (item as Playlist).owner?.fullName || t("sidebar.subtitle.user"),
         });
       case "generated-playlist":
-        return `${t("sidebar.subtitle.playlist")} • Moodify`;
+        return `${t("sidebar.subtitle.playlist")} • Moodify Studio`;
       case "mix":
         return t("sidebar.subtitle.dailyMix");
       case "artist":

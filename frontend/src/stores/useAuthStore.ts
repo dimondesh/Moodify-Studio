@@ -283,7 +283,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: "auth-storage",
+      name: "moodify-studio-auth-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
