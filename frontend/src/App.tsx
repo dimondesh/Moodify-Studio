@@ -158,6 +158,7 @@ const canonicalUrl = `https://moodify-studio.vercel.app${location.pathname}`;
 
       <ErrorBoundary>
         <Routes>
+          <Route path="sitemap.xml" element={"/sitemap.xml"}/>
           <Route path="login" element={<AuthPage />} />
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
