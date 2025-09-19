@@ -77,9 +77,9 @@ export default defineConfig({
         "ir/large-hall.wav",
       ],
       manifest: {
-        name: "Moodify",
-        short_name: "Moodify",
-        description: "Your ultimate guide in the world of music.",
+        name: "Moodify Studio",
+        short_name: "Moodify Studio",
+        description: "An advanced music streaming service for enthusiasts. Create complex mixes, use AI-generated playlists, and connect with friends in a rich audio environment.",
         theme_color: "#7B39EC",
         background_color: "#18181b",
         icons: [

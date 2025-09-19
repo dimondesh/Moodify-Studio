@@ -42,7 +42,7 @@ function App() {
   const { fetchInitialData } = useUIStore();
   const { fetchLibrary } = useLibraryStore();
   const { fetchMyPlaylists } = usePlaylistStore(); 
-  const canonicalUrl = `https://moodify-music.vercel.app${location.pathname}`;
+const canonicalUrl = `https://moodify-studio.vercel.app${location.pathname}`;
 
   useEffect(() => {
     if (user && navigator.onLine) {
@@ -145,16 +145,16 @@ function App() {
 
   return (
     <>
-      <Helmet
-        defaultTitle="Moodify Music - Discover Your Vibe"
-        titleTemplate="%s | Moodify Music"
-      >
-        <meta
-          name="description"
-          content="Moodify is a music streaming service where you can find new artists, create playlists, and enjoy music tailored to your mood. Your ultimate guide in the world of music."
-        />
-        <link rel="canonical" href={canonicalUrl} />{" "}
-      </Helmet>
+    <Helmet
+  defaultTitle="Moodify Studio - Your Music Creation Space"
+  titleTemplate="%s | Moodify Studio"
+>
+  <meta
+    name="description"
+    content="Moodify Studio is an advanced music streaming service for enthusiasts. Create complex mixes, use AI-generated playlists, and connect with friends in a rich audio environment."
+  />
+  <link rel="canonical" href={canonicalUrl} />
+</Helmet>
 
       <ErrorBoundary>
         <Routes>
