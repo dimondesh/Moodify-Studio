@@ -279,7 +279,7 @@ const LeftSidebar = () => {
                     const albumItem = item as AlbumItem;
                     linkPath = `/albums/${albumItem._id}`;
                     subtitle = `${
-                      t(`sidebar.subtitle.${albumItem.albumType}`) ||
+                      t(`pages.album.${albumItem.albumType}`) ||
                       t("sidebar.subtitle.album")
                     } • ${getArtistNames(albumItem.artist)}`;
                     break;

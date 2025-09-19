@@ -833,6 +833,9 @@
       "notFoundTitle": "Album Not Found",
       "notFoundDesc": "The album you are looking for could not be found.",
       "type": "Album",
+      "EP": "EP",
+      "Single": "Single", 
+      "Album": "Album",
       "songs": "songs",
       "song": "song",
       "actions": {
@@ -1051,4 +1054,5 @@
     "description": "It seems you're not connected to the internet. You can still access your downloaded music.",
     "goToLibrary": "Go to Your Library"
   }
+
 }

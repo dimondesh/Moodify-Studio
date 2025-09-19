@@ -300,7 +300,7 @@ const AlbumPage = () => {
         </div>
       );
     });
-
+  const type = currentAlbum.type
   return (
     <>
       <Helmet>
@@ -333,7 +333,7 @@ const AlbumPage = () => {
                 />
                 <div className="flex flex-col justify-end text-center sm:text-left min-w-0">
                   <p className="text-xs sm:text-sm font-medium ">
-                    {currentAlbum.type || t("pages.album.type")}
+                    {t(`pages.album.${type}`)  || currentAlbum.type}
                   </p>
                   <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mt-2 mb-2 sm:my-4 break-words">
                     {currentAlbum.title}
